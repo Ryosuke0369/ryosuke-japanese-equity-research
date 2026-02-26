@@ -16,6 +16,12 @@ Python-automated financial models for Japanese listed companies. Built by a nati
 - **Deliverables**: Dynamic Excel model (7 sheets) + Python scripts
 - **Key Finding**: Dilutive under all scenarios (-33% to -106%); ¥131mn+ annual synergies required to break even
 
+### [3. KFC Holdings Japan (9873.T) — LBO Analysis](./kfc-japan-lbo/)
+- **Transaction**: Carlyle Group's take-private of KFC Japan from Mitsubishi Corporation (May 2024)
+- **Analysis**: Full LBO model with 5-year projections, debt schedule (TLA/TLB), returns analysis (MOIC/IRR), and sensitivity tables
+- **Deliverables**: Dynamic Excel model (710 formula cells, zero errors) + 8-page PDF report
+- **Key Finding**: 2.4x MOIC / 19.2% IRR at base case (15x exit, Year 5)
+
 ## Tech Stack
 - Python (pandas, numpy, yfinance, openpyxl)
 - Excel (formula-driven dynamic models)
