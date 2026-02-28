@@ -1,34 +1,65 @@
-# Japanese Equity Research & Financial Modeling
+# Japanese Equity Research — Financial Models & Templates
 
-Python-automated financial models for Japanese listed companies. Built by a native Japanese analyst who reads original filings (決算短信, 有価証券報告書, 適時開示) directly.
+Automated financial model generators for Japanese equity analysis.
+Each model uses a config-driven Python build script that generates
+professional Excel workbooks with live formulas.
 
-## Projects
+## Models
 
-### 1. Core Corporation (2359.T) — DCF & Comparable Company Analysis
-- **DCF Valuation**: 5-year FCF projection, WACC (CAPM + size premium), terminal value (perpetuity growth + exit multiple), sensitivity analysis
-- **Comps Analysis**: 8 Japanese IT/SIer peers, EV/EBITDA, PER, PBR with percentile-based valuation range
-- **Deliverables**: Dynamic Excel model (227 formula cells, zero errors) + Python scripts
-- **Key Finding**: Integrated valuation range ¥2,466 - ¥2,946 (+10% to +32% upside)
+### 1. DCF & Comparable Company Analysis
+**Base case:** Core Corporation (2359.T) — GIS/Defense IT
+- 5-sheet Excel: Executive Summary → Financial Statements → DCF Model → Comps Analysis → Sensitivity
+- Config-driven: Edit `config` dict → run `python dcf_comps_build.py` → Excel generated
+- 152 Excel formulas, cross-sheet references, BUY/HOLD/SELL recommendation logic
+- Target: ¥2,734 (BUY, +22% upside from ¥2,240)
 
-### 2. Headwaters (4011.T) × BBD Initiative (5259.T) — M&A Accretion/Dilution Analysis
-- **Transaction**: Stock-for-stock absorption merger, ratio 0.50
-- **Analysis**: Pro forma EPS (3 scenarios), transaction multiples, pro forma balance sheet, goodwill calculation, sensitivity analysis
-- **Deliverables**: Dynamic Excel model (7 sheets) + Python scripts
-- **Key Finding**: Dilutive under all scenarios (-33% to -106%); ¥131mn+ annual synergies required to break even
+### 2. LBO Analysis
+**Base case:** KFC Holdings Japan (9873) — Carlyle Take-Private (May 2024)
+- 8-sheet Excel: Cover → Transaction Assumptions → IS → Transaction Summary → BS → CF → Debt Schedule → Returns
+- Config-driven: Edit `config` dict → run `python lbo_build.py` → Excel generated
+- Full 3-statement model with BS balance check and CF consistency check
+- Returns: 2.4x MOIC / 19.2% IRR (15x exit, Year 5)
 
-### [3. KFC Holdings Japan (9873.T) — LBO Analysis](./kfc-japan-lbo/)
-- **Transaction**: Carlyle Group's take-private of KFC Japan from Mitsubishi Corporation (May 2024)
-- **Analysis**: Full LBO model with 5-year projections, debt schedule (TLA/TLB), returns analysis (MOIC/IRR), and sensitivity tables
-- **Deliverables**: Dynamic Excel model (710 formula cells, zero errors) + 8-page PDF report
-- **Key Finding**: 2.4x MOIC / 19.2% IRR at base case (15x exit, Year 5)
+### 3. M&A Accretion/Dilution Analysis
+**Base case:** Headwaters (4011.T) × BBD Initiative (5259.T) — Stock-for-Stock Merger
+- 7-sheet Excel: Executive Summary → Transaction Overview → Pre-Deal Financials → Pro Forma EPS → Transaction Multiples → Pro Forma BS → Sensitivity
+- Pro Forma EPS impact across 3 scenarios (Base/Downside/Synergy)
 
 ## Tech Stack
-- Python (pandas, numpy, yfinance, openpyxl)
-- Excel (formula-driven dynamic models)
-- Data Sources: EDINET, TDnet, yfinance
+- Python + openpyxl (Excel generation with live formulas)
+- recalc.py (LibreOffice-based formula recalculation & error checking)
+- Consistent styling across all models (blue=input, black=formula, green=cross-sheet ref)
+
+## How to Use Templates
+
+```bash
+# Example: Generate DCF/Comps for a new ticker
+# 1. Edit config dict in dcf_comps_build.py with new company data
+# 2. Run
+python core-corporation-2359/dcf_comps_build.py
+# 3. Verify
+python scripts/recalc.py output.xlsx
+# 4. Open in Excel — formulas auto-calculate
+```
+
+## Repository Structure
+
+```
+├── core-corporation-2359/
+│   ├── Core_Corporation_2359T_Equity_Research.xlsx
+│   └── dcf_comps_build.py
+├── headwaters-bbd-merger/
+│   ├── HW_BBD_MA_Accretion_Dilution.xlsx
+│   └── HW_BBD_MA_build.py
+├── kfc-japan-lbo/
+│   ├── KFC_Japan_LBO_EN.xlsx
+│   └── lbo_build.py
+└── scripts/
+    └── recalc.py
+```
 
 ## About
-Financial analyst based in Japan with 8+ years of experience in finance and business operations. Specializing in Japanese equity research for foreign investors, bridging the language and information gap between global capital and Japan's undercovered small/mid-cap market.
-
-## Disclaimer
-All analyses are for informational and demonstration purposes only. They do not constitute investment advice.
+Built by Ryosuke Sato — Freelance Financial Analyst (Japan)
+- 8+ years in finance & business operations
+- Native Japanese + English for cross-border equity research
+- Specializing in Japanese market analysis for international investors
