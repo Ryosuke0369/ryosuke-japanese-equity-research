@@ -1,65 +1,121 @@
-# Japanese Equity Research — Financial Models & Templates
+# Japanese Equity Research Automation
 
-Automated financial model generators for Japanese equity analysis.
-Each model uses a config-driven Python build script that generates
-professional Excel workbooks with live formulas.
+**Python x Excel — Fully Automated Equity Research Workflow for Japanese Stocks**
 
-## Models
+End-to-end automation that transforms raw financial PDFs into institutional-grade Excel models with a single command. Built for analysts covering Japanese equities who need speed without sacrificing rigor.
 
-### 1. DCF & Comparable Company Analysis
-**Base case:** Core Corporation (2359.T) — GIS/Defense IT
-- 5-sheet Excel: Executive Summary → Financial Statements → DCF Model → Comps Analysis → Sensitivity
-- Config-driven: Edit `config` dict → run `python dcf_comps_build.py` → Excel generated
-- 152 Excel formulas, cross-sheet references, BUY/HOLD/SELL recommendation logic
-- Target: ¥2,734 (BUY, +22% upside from ¥2,240)
+---
 
-### 2. LBO Analysis
-**Base case:** KFC Holdings Japan (9873) — Carlyle Take-Private (May 2024)
-- 8-sheet Excel: Cover → Transaction Assumptions → IS → Transaction Summary → BS → CF → Debt Schedule → Returns
-- Config-driven: Edit `config` dict → run `python lbo_build.py` → Excel generated
-- Full 3-statement model with BS balance check and CF consistency check
-- Returns: 2.4x MOIC / 19.2% IRR (15x exit, Year 5)
+## Key Features
 
-### 3. M&A Accretion/Dilution Analysis
-**Base case:** Headwaters (4011.T) × BBD Initiative (5259.T) — Stock-for-Stock Merger
-- 7-sheet Excel: Executive Summary → Transaction Overview → Pre-Deal Financials → Pro Forma EPS → Transaction Multiples → Pro Forma BS → Sensitivity
-- Pro Forma EPS impact across 3 scenarios (Base/Downside/Synergy)
+| Feature | Description |
+|---------|-------------|
+| **PDF Financial Scraping** | Automatically extracts revenue, operating income, COGS, SGA, cash flow, and balance sheet items from Japanese corporate filings (TDnet format) using spatial PDF parsing |
+| **Live Market Data** | Fetches real-time stock prices, shares outstanding, and market cap via yfinance API |
+| **DCF + Comps Model** | Generates a 5-sheet Excel workbook with 150+ live formulas: Executive Summary, Financial Statements, DCF Valuation, Comparable Company Analysis, and Sensitivity Tables |
+| **LBO Model** | Full 3-statement LBO model (8 sheets) with debt schedules, IRR/MOIC returns analysis, and balance sheet integrity checks |
+| **M&A Accretion/Dilution** | Stock-for-stock merger analysis (7 sheets) with pro forma EPS impact across multiple scenarios |
+| **One-Click Generation** | Config-driven architecture — edit a Python dict, run the script, get a complete Excel model |
 
-## Tech Stack
-- Python + openpyxl (Excel generation with live formulas)
-- recalc.py (LibreOffice-based formula recalculation & error checking)
-- Consistent styling across all models (blue=input, black=formula, green=cross-sheet ref)
-
-## How to Use Templates
-
-```bash
-# Example: Generate DCF/Comps for a new ticker
-# 1. Edit config dict in dcf_comps_build.py with new company data
-# 2. Run
-python core-corporation-2359/dcf_comps_build.py
-# 3. Verify
-python scripts/recalc.py output.xlsx
-# 4. Open in Excel — formulas auto-calculate
-```
+---
 
 ## Repository Structure
 
 ```
-├── core-corporation-2359/
-│   ├── Core_Corporation_2359T_Equity_Research.xlsx
-│   └── dcf_comps_build.py
-├── headwaters-bbd-merger/
-│   ├── HW_BBD_MA_Accretion_Dilution.xlsx
-│   └── HW_BBD_MA_build.py
-├── kfc-japan-lbo/
-│   ├── KFC_Japan_LBO_EN.xlsx
-│   └── lbo_build.py
-└── scripts/
-    └── recalc.py
+ryosuke-japanese-equity-research/
+├── templates/                          # Reusable model generators (start here!)
+│   ├── dcf_comps_template.py           #   DCF + Comparable Company Analysis
+│   ├── lbo_template.py                 #   Leveraged Buyout Analysis
+│   └── ma_accretion_template.py        #   M&A Accretion / Dilution Analysis
+│
+├── scripts/                            # Shared utilities
+│   ├── pdf_parser.py                   #   PDF financial data extractor
+│   └── recalc.py                       #   Excel formula verifier (LibreOffice)
+│
+└── examples/                           # Completed case studies
+    ├── core-corporation-2359/          #   DCF/Comps — GIS & Defense IT
+    ├── kudan-4425/                     #   DCF/Comps — Deep Learning SLAM
+    ├── kfc-japan-lbo/                  #   LBO — Carlyle Take-Private
+    └── headwaters-bbd-merger/          #   M&A — Stock-for-Stock Merger
 ```
 
-## About
-Built by Ryosuke Sato — Freelance Financial Analyst (Japan)
-- 8+ years in finance & business operations
-- Native Japanese + English for cross-border equity research
-- Specializing in Japanese market analysis for international investors
+---
+
+## Completed Case Studies
+
+### DCF & Comparable Company Analysis
+
+**Core Corporation (2359.T)** — GIS/Defense IT Services
+- Target price: JPY 2,734 (BUY, +22% upside)
+- 152 Excel formulas with cross-sheet references and BUY/HOLD/SELL recommendation logic
+
+**Kudan (4425.T)** — Deep Learning Visual SLAM
+- PDF auto-parsing from 3 years of annual reports (TDnet filings)
+- Live yfinance integration for real-time equity valuation
+
+### LBO Analysis
+
+**KFC Holdings Japan (9873)** — Carlyle Take-Private (May 2024)
+- Full 3-statement model with BS balance check and CF consistency check
+- Returns: 2.4x MOIC / 19.2% IRR (15x exit, Year 5)
+
+### M&A Accretion/Dilution
+
+**Headwaters (4011.T) x BBD Initiative (5259.T)** — Stock-for-Stock Merger
+- Pro forma EPS impact across Base / Downside / Synergy scenarios
+
+---
+
+## Quick Start — Generate a DCF Model for Any Company
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/Ryosuke0369/ryosuke-japanese-equity-research.git
+cd ryosuke-japanese-equity-research
+
+# 2. Install dependencies
+pip install openpyxl yfinance PyMuPDF
+
+# 3. Create a folder for the new company and add PDF reports
+mkdir examples/my-company-1234
+# Place TDnet annual report PDFs into the folder
+
+# 4. Copy the template
+cp templates/dcf_comps_template.py examples/my-company-1234/
+
+# 5. Edit the config dict in the template
+#    - Set ticker, company name, fiscal years
+#    - Adjust growth assumptions and WACC parameters
+#    - Add comparable companies with their multiples
+
+# 6. Run the script
+python examples/my-company-1234/dcf_comps_template.py
+
+# 7. Verify formulas (requires LibreOffice)
+python scripts/recalc.py examples/my-company-1234/1234_Equity_Research_V3.xlsx
+
+# 8. Open in Excel — all formulas auto-calculate
+```
+
+---
+
+## Tech Stack
+
+- **Python 3** — Core automation engine
+- **openpyxl** — Excel generation with live formulas (no hardcoded values)
+- **PyMuPDF (fitz)** — Spatial PDF parsing for Japanese financial filings
+- **yfinance** — Real-time stock price and market data
+- **LibreOffice** — Headless formula recalculation and error checking
+
+---
+
+## About the Author
+
+**Ryosuke Sato** — Financial Analyst & Python Developer
+
+- 8+ years in finance and business operations
+- Specializing in Japanese equity research automation and financial modeling
+- Python-driven workflow optimization: transforming manual Excel processes into reproducible, auditable pipelines
+- Native Japanese + English — bridging Japanese market data for international investors
+
+[GitHub](https://github.com/Ryosuke0369)

@@ -1,5 +1,31 @@
+# Python
 __pycache__/
 *.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# OS
 .DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temp / Cache
 *.csv
 *.tmp
+*.log
+
+# Environment
+.env
+.venv/
+venv/
