@@ -1,161 +1,134 @@
 """
-dcf_comps_build_v3.py - DCF / Comps Equity Research Excel Generator (V3)
+generate_core_v4.py - Generate Core Corporation (2359.T) DCF/Comps model
+using the latest dcf_comps_template.py (V3 with NWC + Scenario Matrix).
 
-V3 changes from V2:
-  - Full PL waterfall: Revenue → COGS → Gross Profit → SGA → Operating Income
-  - All historical data extracted from PDFs (COGS, SGA, OCF, Capex, BS)
-  - DCF projected EBIT = Revenue - COGS - SGA (full waterfall)
-  - Sensitivity: Revenue Growth vs Gross Margin %
-  - Net debt extracted from BS (cash - debt)
-
-Edit the config dict below, then run:  python kudan_4425_dcf_comps.py
+Outputs: Core_Corporation_2359T_Equity_Research.xlsx
 """
 
-import openpyxl
-from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
-from openpyxl.utils import get_column_letter
-from openpyxl.worksheet.datavalidation import DataValidation
-import subprocess, sys, os
+import sys
+import os
 
+# ── Setup paths ──
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
+sys.path.insert(0, os.path.join(PROJECT_ROOT, "scripts"))
+
+from comps_fetcher import get_comps_data
+
+# ── Core Corporation Config ──
+config_core = {
+    # ── Company Info ──
+    "company_name": "Core Corporation",
+    "ticker": "2359.T",
+    "exchange": "TSE Prime",
+    "sector": "Information & Communication",
+
+    # ── Historical Financials (JPY mn) ──
+    "hist_years": ["FY2020", "FY2021", "FY2022", "FY2023", "FY2024E"],
+    "hist_revenue":          [20904, 21919, 22534, 23554, 24500],
+    "hist_cogs":             [16570, 17290, 17578, 18378, 19110],
+    "hist_sga":              [2525, 2649, 2816, 2981, 3100],
+    "hist_operating_income": [1808, 1979, 2139, 2194, 2290],
+    "hist_net_income":       [1186, 1284, 1515, 1488, 1550],
+    "hist_ocf":              [1323, 2118, 1172, 2302, 2000],
+    "hist_capex":            [151, 144, 202, 107, 150],
+    "hist_cash":             [7703, 9089, 9370, 10260, 10500],
+    "hist_debt":             [38, 30, 8, 3, 0],
+    "net_debt":              -10257,
+    "base_year_revenue":     24500,
+
+    # ── DCF Assumptions (Scenarios) ──
+    "scenarios": {
+        "Base": {
+            "revenue_growth": [0.04, 0.04, 0.04, 0.04, 0.04],
+            "cogs_pct": [0.78, 0.78, 0.78, 0.78, 0.78],
+            "sga_pct": [0.13, 0.13, 0.13, 0.13, 0.13],
+            "nwc_pct": [0.10, 0.10, 0.10, 0.10, 0.10],
+        },
+        "Upside": {
+            "revenue_growth": [0.06, 0.06, 0.06, 0.06, 0.06],
+            "cogs_pct": [0.76, 0.76, 0.76, 0.76, 0.76],
+            "sga_pct": [0.12, 0.12, 0.12, 0.12, 0.12],
+            "nwc_pct": [0.09, 0.09, 0.09, 0.09, 0.09],
+        },
+        "Management": {
+            "revenue_growth": [0.05, 0.05, 0.05, 0.05, 0.05],
+            "cogs_pct": [0.77, 0.77, 0.77, 0.77, 0.77],
+            "sga_pct": [0.13, 0.13, 0.13, 0.13, 0.13],
+            "nwc_pct": [0.10, 0.10, 0.10, 0.10, 0.10],
+        },
+        "Downside 1": {
+            "revenue_growth": [0.02, 0.02, 0.02, 0.02, 0.02],
+            "cogs_pct": [0.80, 0.80, 0.80, 0.80, 0.80],
+            "sga_pct": [0.14, 0.14, 0.14, 0.14, 0.14],
+            "nwc_pct": [0.11, 0.11, 0.11, 0.11, 0.11],
+        },
+        "Downside 2": {
+            "revenue_growth": [0.00, 0.00, 0.00, 0.00, 0.00],
+            "cogs_pct": [0.82, 0.82, 0.82, 0.82, 0.82],
+            "sga_pct": [0.15, 0.15, 0.15, 0.15, 0.15],
+            "nwc_pct": [0.12, 0.12, 0.12, 0.12, 0.12],
+        },
+    },
+
+    "capex_pct": 0.01,
+    "da_pct": 0.01,
+    "tax_rate": 0.306,
+    "risk_free": 0.015,
+    "beta": 0.85,
+    "erp": 0.060,
+    "size_premium": 0.020,
+    "cost_of_debt_at": 0.01,
+    "de_ratio": 0.0,
+    "terminal_growth": 0.005,
+    "exit_multiple": 10.0,
+    "projection_years": 5,
+
+    # ── Core Financials for Comps implied valuation ──
+    "core_ebitda": 2290 + 245,
+    "core_net_income": 1550,
+
+    # ── Comps Data ──
+    "comps_csv_path": os.path.join(SCRIPT_DIR, "comps_input_core_CSV.csv"),
+    "primary_multiple": "EV/EBITDA",
+
+    # ── Investment Thesis & Risks ──
+    "investment_thesis": [
+        "1. Stable IT services business with consistent revenue growth",
+        "2. Strong net cash position (JPY 10.5bn) providing downside protection",
+        "3. Expanding margins through operational efficiency improvements",
+    ],
+    "key_risks": [
+        "1. Mature domestic IT services market with limited upside surprise",
+        "2. Labor shortage in Japan's IT sector could pressure margins",
+        "3. Low growth profile limits re-rating potential",
+    ],
+
+}
+
+# ── Load comps from CSV ──
+print("Loading comps data...")
+config_core["comps"] = get_comps_data(config_core["comps_csv_path"])
+
+# ── Restore flat arrays from Base scenario (backward compat for sensitivity) ──
+_base = config_core["scenarios"]["Base"]
+config_core["revenue_growth"]    = _base["revenue_growth"]
+config_core["cogs_pct"]          = _base["cogs_pct"]
+config_core["sga_pct"]           = _base["sga_pct"]
+config_core["nwc_pct"]           = _base["nwc_pct"]
+config_core["base_year_nwc"]     = config_core["base_year_revenue"] * config_core["nwc_pct"][0]
+
+# ── Fetch live market data ──
 try:
     import yfinance as yf
     YFINANCE_AVAILABLE = True
 except ImportError:
     YFINANCE_AVAILABLE = False
 
-# =====================================================================
-# DYNAMIC PDF EXTRACTION
-# =====================================================================
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'scripts')))
-from pdf_parser import extract_all_financials
-from comps_fetcher import get_comps_data
-
-# By default, reads PDFs from the same folder as this script
-_script_dir = os.path.dirname(os.path.abspath(__file__))
-_pdf_result = extract_all_financials(_script_dir)
-
-# Fallback values if PDF extraction fails
-_FALLBACK = {
-    "hist_revenue": [271, 332, 490, 517],
-    "hist_operating_income": [-433, -598, -527, -800],
-    "hist_net_income": [-2237, -413, -69, -801],
-    "hist_cogs": [147, 156, 52, 177],
-    "hist_sga": [558, 775, 966, 1141],
-    "hist_ocf": [-515, -619, -491, -815],
-    "hist_capex": [137, 20, 433, 162],
-    "hist_cash": [604, 852, 1720, 2594],
-    "hist_debt": [None, 200, 200, 200],
-    "latest_net_debt": -2394,
-}
-
-if _pdf_result is None:
-    print("FATAL: PDF extraction failed. Using fallback values.")
-    _pdf_result = _FALLBACK
-
-# Helper to get extracted values with fallback
-def _get(key):
-    val = _pdf_result.get(key)
-    if val is None:
-        return _FALLBACK.get(key)
-    return val
-
-print(f"\n[Dynamic] hist_revenue:          {_get('hist_revenue')}")
-print(f"[Dynamic] hist_operating_income: {_get('hist_operating_income')}")
-print(f"[Dynamic] hist_net_income:       {_get('hist_net_income')}")
-print(f"[Dynamic] hist_cogs:             {_get('hist_cogs')}")
-print(f"[Dynamic] hist_sga:              {_get('hist_sga')}")
-print(f"[Dynamic] hist_ocf:              {_get('hist_ocf')}")
-print(f"[Dynamic] hist_capex:            {_get('hist_capex')}")
-print(f"[Dynamic] latest_net_debt:       {_get('latest_net_debt')}")
-
-# =====================================================================
-# CONFIG — Edit this section for each company
-# =====================================================================
-config = {
-    # ── Company Info ──
-    "company_name": "TEMPLATE COMPANY",
-    "ticker": "0000.T",
-    "exchange": "TSE Growth",
-    "sector": "Information & Communication",
-    "current_price": 1000,
-    "shares_outstanding": 10_000_000,
-    "net_debt": _get("latest_net_debt") or -1000,  # JPY mn (negative = net cash), from BS
-
-    # ── Historical Financials (JPY mn) — all from PDFs ──
-    "hist_years": ["FY2022 (Mar-22)", "FY2023 (Mar-23)", "FY2024 (Mar-24)", "FY2025 (Mar-25)"],
-    "hist_revenue":          _get("hist_revenue"),
-    "hist_operating_income": _get("hist_operating_income"),
-    "hist_net_income":       _get("hist_net_income"),
-    "hist_cogs":             _get("hist_cogs"),
-    "hist_sga":              _get("hist_sga"),
-    "hist_ocf":              _get("hist_ocf"),
-    "hist_capex":            _get("hist_capex"),
-    "hist_cash":             _get("hist_cash"),
-    "hist_debt":             _get("hist_debt"),
-
-    # ── DCF Assumptions — Future Projections ──
-    "scenarios": {
-        "Base":       {"revenue_growth": [0.10,0.08,0.07,0.06,0.05], "cogs_pct": [0.70,0.70,0.70,0.70,0.70], "sga_pct": [0.13,0.13,0.13,0.13,0.13], "nwc_pct": [0.05,0.05,0.05,0.05,0.05]},
-        "Upside":     {"revenue_growth": [0.10,0.12,0.18,0.20,0.15], "cogs_pct": [0.71,0.705,0.70,0.70,0.68], "sga_pct": [0.12,0.12,0.12,0.12,0.12], "nwc_pct": [0.04,0.04,0.04,0.04,0.04]},
-        "Management": {"revenue_growth": [0.10,0.10,0.10,0.10,0.10], "cogs_pct": [0.70,0.70,0.70,0.70,0.70], "sga_pct": [0.13,0.13,0.13,0.13,0.13], "nwc_pct": [0.05,0.05,0.05,0.05,0.05]},
-        "Downside 1": {"revenue_growth": [0.02,0.02,0.02,0.02,0.02], "cogs_pct": [0.73,0.73,0.74,0.75,0.73], "sga_pct": [0.14,0.14,0.14,0.14,0.14], "nwc_pct": [0.06,0.06,0.06,0.06,0.06]},
-        "Downside 2": {"revenue_growth": [0.00,0.00,0.00,0.00,0.00], "cogs_pct": [0.76,0.76,0.76,0.76,0.76], "sga_pct": [0.15,0.15,0.15,0.15,0.15], "nwc_pct": [0.07,0.07,0.07,0.07,0.07]},
-    },
-    "capex_pct": 0.03,
-    "da_pct": 0.015,
-    "tax_rate": 0.30,
-    "risk_free": 0.022,
-    "beta": 1.75,
-    "erp": 0.060,
-    "size_premium": 0.050,
-    "cost_of_debt_at": 0.015,
-    "de_ratio": 0.05,
-    "terminal_growth": 0.020,
-    "exit_multiple": 15.0,
-    "projection_years": 5,
-    "base_year_revenue": (_get("hist_revenue") or [517])[-1],
-
-    # ── Comparable Companies (loaded dynamically from CSV) ──
-    "comps": get_comps_data(os.path.join(_script_dir, "comps_input.csv")),
-
-    # ── Kudan Comps Data (for implied valuation) ──
-    "core_ebitda": (_get("hist_operating_income") or [-800])[-1] + 8,
-    "core_net_income": (_get("hist_net_income") or [-801])[-1],
-
-    # ── Investment Thesis & Risks ──
-    "investment_thesis": [
-        "1. Global leader in Artificial Perception (SLAM) technology",
-        "2. High leverage on revenue growth due to fixed-cost intensive IP licensing model",
-        "3. Transitioning from R&D phase to commercial scaling phase",
-    ],
-    "key_risks": [
-        "1. Prolonged losses and negative free cash flow burning cash runway",
-        "2. Long sales cycles converting PoC (Proof of Concept) to commercial licenses",
-        "3. High WACC (17.7%) depressing present value heavily",
-    ],
-
-    # ── V3 Settings ──
-    "primary_multiple": "EV/Sales",  # "EV/EBITDA" or "EV/Sales"
-}
-
-# Restore flat arrays from Base scenario (backward compatibility for sensitivity analysis)
-_base = config["scenarios"]["Base"]
-config["revenue_growth"]    = _base["revenue_growth"]
-config["cogs_pct"]          = _base["cogs_pct"]
-config["sga_pct"]           = _base["sga_pct"]
-config["nwc_pct"]           = _base["nwc_pct"]
-config["base_year_nwc"]     = config["base_year_revenue"] * config["nwc_pct"][0]
-
-# =====================================================================
-# V2: DYNAMIC STOCK DATA FETCHING
-# =====================================================================
-def get_live_market_data(ticker_str, fallback_price, fallback_shares):
+def get_live_market_data(ticker_str, fallback_price=1000, fallback_shares=10_000_000):
     if not YFINANCE_AVAILABLE:
         print("yfinance not installed. Using fallback market data.")
         return fallback_price, fallback_shares
-
     try:
         print(f"Fetching live data for {ticker_str} via yfinance...")
         tkr = yf.Ticker(ticker_str)
@@ -168,24 +141,33 @@ def get_live_market_data(ticker_str, fallback_price, fallback_shares):
         print(f"Warning: Failed to fetch live data ({e}). Using fallback market data.")
         return fallback_price, fallback_shares
 
-config["current_price"], config["shares_outstanding"] = get_live_market_data(
-    config.get("ticker", ""),
-    config.get("current_price", 0),
-    config.get("shares_outstanding", 0)
+config_core["current_price"], config_core["shares_outstanding"] = get_live_market_data(
+    config_core["ticker"]
 )
 
 # =====================================================================
-# V3: SETTINGS
+# Now exec the template's build logic with our config injected.
+# We read the template, replace the config + skip PDF extraction.
 # =====================================================================
+
+import openpyxl
+from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
+from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.datavalidation import DataValidation
+
+# ── Assign config shorthand ──
+config = config_core
+C = config
+
 USE_EV_SALES = (config.get("primary_multiple", "EV/EBITDA") == "EV/Sales")
 
 # =====================================================================
-# V3: ROW NUMBERS — Full waterfall, no SGA_OFFSET toggle
+# ROW NUMBERS (same as template)
 # =====================================================================
-R_DRV_GROWTH   = 28  # driver row: Revenue Growth (YoY)
-R_DRV_COGS     = 29  # driver row: COGS % of Revenue
-R_DRV_SGA      = 30  # driver row: SGA Expense
-R_DRV_NWC_PCT  = 31  # driver row: NWC % of Revenue
+R_DRV_GROWTH   = 28
+R_DRV_COGS     = 29
+R_DRV_SGA      = 30
+R_DRV_NWC_PCT  = 31
 R_REVENUE      = 32
 R_COGS         = 33
 R_GROSS_PROFIT = 34
@@ -197,12 +179,12 @@ R_TAX          = 39
 R_NOPAT        = 40
 R_DA           = 41
 R_CAPEX        = 42
-R_NWC          = 43  # NWC balance (Revenue * NWC%)
-R_CHG_NWC      = 44  # Change in NWC
+R_NWC          = 43
+R_CHG_NWC      = 44
 R_UFCF         = 45
 R_DISC         = 46
 R_PV_FCF       = 47
-# PGM section: R_PV_FCF + 2 gap
+
 R_PGM_SEC    = R_PV_FCF + 2
 R_SUM_PV     = R_PGM_SEC + 1
 R_TV_PGM     = R_SUM_PV + 1
@@ -210,7 +192,7 @@ R_PV_TV_PGM  = R_TV_PGM + 1
 R_EV_PGM     = R_PV_TV_PGM + 1
 R_EQ_PGM     = R_EV_PGM + 1
 R_PRICE_PGM  = R_EQ_PGM + 1
-# Exit section: R_PRICE_PGM + 2 gap
+
 R_EXIT_SEC   = R_PRICE_PGM + 2
 R_SUM_PV_EX  = R_EXIT_SEC + 1
 R_YR5_EBITDA = R_SUM_PV_EX + 1
@@ -220,14 +202,11 @@ R_EV_EXIT    = R_PV_TV_EXIT + 1
 R_EQ_EXIT    = R_EV_EXIT + 1
 R_PRICE_EXIT = R_EQ_EXIT + 1
 
-# Scenario Matrix Section (below Exit valuation)
 SCENARIO_NAMES = ["Base", "Upside", "Management", "Downside 1", "Downside 2"]
 NUM_SCENARIOS  = 5
 
-R_SCEN_SEC        = R_PRICE_EXIT + 2       # Section header
-R_SCEN_YEARS      = R_SCEN_SEC + 1         # Year 1-5 column headers
-
-# Each block: sub-header 1 row + 5 scenario rows + 1 blank = 7 rows
+R_SCEN_SEC        = R_PRICE_EXIT + 2
+R_SCEN_YEARS      = R_SCEN_SEC + 1
 R_SCEN_BLK_GROWTH = R_SCEN_YEARS + 1
 R_SCEN_BLK_COGS   = R_SCEN_BLK_GROWTH + 7
 R_SCEN_BLK_SGA    = R_SCEN_BLK_COGS + 7
@@ -294,17 +273,13 @@ def col_letter(col_num):
     return get_column_letter(col_num)
 
 def choose_formula(block_start, cl):
-    """Generate CHOOSE formula referencing 5 scenario rows in the matrix."""
     refs = [f"{cl}{block_start + 1 + s}" for s in range(NUM_SCENARIOS)]
     return f"=CHOOSE($D$25,{','.join(refs)})"
 
 # =====================================================================
-# SENSITIVITY ANALYSIS HELPERS (V3: full waterfall)
+# SENSITIVITY ANALYSIS HELPERS
 # =====================================================================
 def calc_dcf_pgm(rev_growth, gross_margin, wacc, tg, cfg):
-    """Calculate implied share price using Perpetuity Growth Method.
-    V3: Uses gross_margin (GM%) and absolute SGA to compute EBIT.
-    """
     n = cfg["projection_years"]
     capex_pct = cfg["capex_pct"]
     da_pct = cfg["da_pct"]
@@ -330,7 +305,6 @@ def calc_dcf_pgm(rev_growth, gross_margin, wacc, tg, cfg):
         gp = rev - cogs
         sga = rev * sga_pct_list[yr_idx]
         ebit = gp - sga
-        # NOPAT floor: no tax benefit when EBIT < 0
         if ebit < 0:
             nopat = ebit
         else:
@@ -353,9 +327,6 @@ def calc_dcf_pgm(rev_growth, gross_margin, wacc, tg, cfg):
     return price
 
 def calc_dcf_exit(rev_growth, gross_margin, wacc, exit_mult, cfg):
-    """Calculate implied share price using Exit Multiple Method.
-    V3: Uses gross_margin (GM%) and absolute SGA.
-    """
     n = cfg["projection_years"]
     capex_pct = cfg["capex_pct"]
     da_pct = cfg["da_pct"]
@@ -403,9 +374,6 @@ def calc_dcf_exit(rev_growth, gross_margin, wacc, exit_mult, cfg):
     price = round(equity * 1_000_000 / shares)
     return price
 
-# =====================================================================
-# Derived values for WACC
-# =====================================================================
 def calc_wacc(cfg):
     ke = cfg["risk_free"] + cfg["beta"] * cfg["erp"] + cfg["size_premium"]
     we = 1 / (1 + cfg["de_ratio"])
@@ -416,10 +384,8 @@ def calc_wacc(cfg):
 # BUILD WORKBOOK
 # =====================================================================
 wb = openpyxl.Workbook()
-C = config  # shorthand
 
-ticker_safe = C["ticker"].replace(".", "")
-output_file = f"{ticker_safe}_Equity_Research_V3.xlsx"
+output_file = os.path.join(SCRIPT_DIR, "Core_Corporation_2359T_Equity_Research.xlsx")
 
 # =====================================================================
 # SHEET 1: Executive Summary
@@ -434,19 +400,16 @@ ws1.column_dimensions["C"].width = 22
 ws1.column_dimensions["D"].width = 22
 ws1.column_dimensions["E"].width = 22
 
-# Disclaimer
 set_cell(ws1, 1, 2,
     "DISCLAIMER: This is a sample analysis for demonstration purposes only. "
     "It does not constitute investment advice.",
     font=GREY_FONT)
 ws1.merge_cells("B1:E1")
 
-# Title
 set_cell(ws1, 3, 2, f'{C["company_name"]} ({C["ticker"]})', font=TITLE_FONT)
 ws1.merge_cells("B3:D3")
 set_cell(ws1, 4, 2, "Equity Research Report", font=SUB_FONT)
 
-# Company info
 set_cell(ws1, 6, 2, "Company", font=BOLD_FONT)
 set_cell(ws1, 6, 3, C["company_name"])
 set_cell(ws1, 7, 2, "Ticker", font=BOLD_FONT)
@@ -456,19 +419,15 @@ set_cell(ws1, 8, 3, C["sector"])
 set_cell(ws1, 9, 2, "Current Price", font=BOLD_FONT)
 set_cell(ws1, 9, 3, C["current_price"], font=BLUE_FONT, fmt=FMT_YEN)
 
-# Target Price = average of 4 methods (C16:C19)
 set_cell(ws1, 10, 2, "Target Price (Mid)", font=BOLD_FONT)
 set_cell(ws1, 10, 3, "=ROUND(AVERAGE(C16:C19),0)", font=BLACK_FONT, fmt=FMT_YEN)
 
-# Recommendation
 set_cell(ws1, 11, 2, "Recommendation", font=BOLD_FONT)
 set_cell(ws1, 11, 3, '=IF(C12>0.15,"BUY",IF(C12>0.05,"HOLD","SELL"))', font=BLACK_FONT)
 
-# Upside / Downside
 set_cell(ws1, 12, 2, "Upside / Downside", font=BOLD_FONT)
 set_cell(ws1, 12, 3, "=(C10-C9)/C9", font=BLACK_FONT, fmt=FMT_PCT)
 
-# Valuation Summary section
 c = set_cell(ws1, 14, 2, "Valuation Summary", font=SUB_FONT)
 c.fill = LIGHT_FILL
 for col_idx in range(3, 5):
@@ -476,17 +435,14 @@ for col_idx in range(3, 5):
 
 header_row(ws1, 15, 2, 4, ["Methodology", "Implied Value (JPY)", "vs Current Price"])
 
-# DCF - Perpetuity Growth
 set_cell(ws1, 16, 2, "DCF - Perpetuity Growth")
 set_cell(ws1, 16, 3, f"='DCF Model'!C{R_PRICE_PGM}", font=GREEN_FONT, fmt=FMT_YEN)
 set_cell(ws1, 16, 4, "=(C16-C9)/C9", font=BLACK_FONT, fmt=FMT_PCT)
 
-# DCF - Exit Multiple
 set_cell(ws1, 17, 2, "DCF - Exit Multiple")
 set_cell(ws1, 17, 3, f"='DCF Model'!C{R_PRICE_EXIT}", font=GREEN_FONT, fmt=FMT_YEN)
 set_cell(ws1, 17, 4, "=(C17-C9)/C9", font=BLACK_FONT, fmt=FMT_PCT)
 
-# Comps
 if USE_EV_SALES:
     set_cell(ws1, 18, 2, "Comps - EV/Sales Median")
 else:
@@ -498,11 +454,9 @@ set_cell(ws1, 19, 2, "Comps - PER Median")
 set_cell(ws1, 19, 3, "='Comps Analysis'!C28", font=GREEN_FONT, fmt=FMT_YEN)
 set_cell(ws1, 19, 4, "=(C19-C9)/C9", font=BLACK_FONT, fmt=FMT_PCT)
 
-# Integrated Valuation Range
 set_cell(ws1, 21, 2, "Integrated Valuation Range", font=BOLD_FONT)
 set_cell(ws1, 21, 3, '=MIN(C16:C19)&" - "&MAX(C16:C19)', font=BLACK_FONT)
 
-# Investment Thesis
 c = set_cell(ws1, 23, 2, "Key Investment Thesis", font=SUB_FONT)
 c.fill = LIGHT_FILL
 for col_idx in range(3, 5):
@@ -510,7 +464,6 @@ for col_idx in range(3, 5):
 for i, line in enumerate(C["investment_thesis"]):
     set_cell(ws1, 24 + i, 2, line)
 
-# Key Risks
 c = set_cell(ws1, 28, 2, "Key Risks", font=SUB_FONT)
 c.fill = LIGHT_FILL
 for col_idx in range(3, 5):
@@ -519,14 +472,14 @@ for i, line in enumerate(C["key_risks"]):
     set_cell(ws1, 29 + i, 2, line)
 
 # =====================================================================
-# SHEET 2: Financial Statements (V3 — Full PL Waterfall + BS Highlights)
+# SHEET 2: Financial Statements
 # =====================================================================
 ws2 = wb.create_sheet("Financial Statements")
 ws2.sheet_properties.tabColor = "003366"
 
 ws2.column_dimensions["A"].width = 3
 ws2.column_dimensions["B"].width = 32
-for letter in ["C", "D", "E", "F"]:
+for letter in ["C", "D", "E", "F", "G"]:
     ws2.column_dimensions[letter].width = 18
 
 set_cell(ws2, 2, 2, f'{C["company_name"]} - Historical Financials (JPY mn)', font=TITLE_FONT)
@@ -534,7 +487,6 @@ set_cell(ws2, 2, 2, f'{C["company_name"]} - Historical Financials (JPY mn)', fon
 n_hist = len(C["hist_years"])
 header_row(ws2, 4, 3, 3 + n_hist - 1, C["hist_years"])
 
-# ── Income Statement (V3 full waterfall) ──
 section_title(ws2, 5, 2, "Income Statement")
 
 set_cell(ws2, 6, 2, "Revenue", font=BOLD_FONT)
@@ -553,27 +505,17 @@ for i in range(n_hist):
     col = 3 + i
     cl = col_letter(col)
 
-    # Revenue
     set_cell(ws2, 6, col, C["hist_revenue"][i], font=BLUE_FONT, fmt=FMT_YEN)
-    # COGS
     cogs_val = C["hist_cogs"][i] if C["hist_cogs"] and i < len(C["hist_cogs"]) else None
     set_cell(ws2, 7, col, cogs_val, font=BLUE_FONT, fmt=FMT_YEN)
-    # Gross Profit = Revenue - COGS
     set_cell(ws2, 8, col, f"={cl}6-{cl}7", font=BLACK_FONT, fmt=FMT_YEN)
-    # Gross Margin = GP / Revenue
     set_cell(ws2, 9, col, f"={cl}8/{cl}6", font=BLACK_FONT, fmt=FMT_PCT)
-    # SGA
     sga_val = C["hist_sga"][i] if C["hist_sga"] and i < len(C["hist_sga"]) else None
     set_cell(ws2, 10, col, sga_val, font=BLUE_FONT, fmt=FMT_YEN)
-    # Operating Income
     set_cell(ws2, 11, col, C["hist_operating_income"][i], font=BLUE_FONT, fmt=FMT_YEN)
-    # Net Income
     set_cell(ws2, 12, col, C["hist_net_income"][i], font=BLUE_FONT, fmt=FMT_YEN)
-    # Operating Margin
     set_cell(ws2, 13, col, f"={cl}11/{cl}6", font=BLACK_FONT, fmt=FMT_PCT)
-    # Net Margin
     set_cell(ws2, 14, col, f"={cl}12/{cl}6", font=BLACK_FONT, fmt=FMT_PCT)
-    # YoY Growth
     if i == 0:
         set_cell(ws2, 15, col, "n/a")
         set_cell(ws2, 16, col, "n/a")
@@ -582,7 +524,6 @@ for i in range(n_hist):
         set_cell(ws2, 15, col, f"=({cl}6-{prev_cl}6)/{prev_cl}6", font=BLACK_FONT, fmt=FMT_PCT)
         set_cell(ws2, 16, col, f"=({cl}11-{prev_cl}11)/{prev_cl}11", font=BLACK_FONT, fmt=FMT_PCT)
 
-# ── Cash Flow Statement ──
 section_title(ws2, 18, 2, "Cash Flow Statement")
 set_cell(ws2, 19, 2, "Operating Cash Flow", font=BOLD_FONT)
 set_cell(ws2, 20, 2, "Capex", font=BOLD_FONT)
@@ -601,7 +542,6 @@ for i in range(n_hist):
     set_cell(ws2, 22, col, f"={cl}21/{cl}6", font=BLACK_FONT, fmt=FMT_PCT)
     set_cell(ws2, 23, col, f"={cl}20/{cl}6", font=BLACK_FONT, fmt=FMT_PCT)
 
-# ── Balance Sheet Highlights ──
 section_title(ws2, 25, 2, "Balance Sheet Highlights")
 set_cell(ws2, 26, 2, "Cash & Deposits", font=BOLD_FONT)
 set_cell(ws2, 27, 2, "Short-term Debt", font=BOLD_FONT)
@@ -614,11 +554,10 @@ for i in range(n_hist):
     debt_val = C["hist_debt"][i] if C["hist_debt"] and i < len(C["hist_debt"]) else None
     set_cell(ws2, 26, col, cash_val, font=BLUE_FONT, fmt=FMT_YEN)
     set_cell(ws2, 27, col, debt_val if debt_val is not None else 0, font=BLUE_FONT, fmt=FMT_YEN)
-    # Net Debt = Debt - Cash (negative = net cash)
     set_cell(ws2, 28, col, f"={cl}27-{cl}26", font=BLACK_FONT, fmt=FMT_YEN)
 
 # =====================================================================
-# SHEET 3: DCF Model (V3 — Full Waterfall)
+# SHEET 3: DCF Model
 # =====================================================================
 ws3 = wb.create_sheet("DCF Model")
 ws3.sheet_properties.tabColor = "006600"
@@ -630,36 +569,33 @@ for letter in ["C", "D", "E", "F", "G"]:
 
 set_cell(ws3, 2, 2, f'DCF Valuation Model - {C["company_name"]}', font=TITLE_FONT)
 
-# ── Assumptions ──
 c = section_title(ws3, 4, 2, "Assumptions")
 c.fill = LIGHT_FILL
 for col_idx in range(3, 8):
     ws3.cell(row=4, column=col_idx).fill = LIGHT_FILL
 
 assumptions = [
-    # Revenue Growth Rate and COGS % removed — now in per-year driver rows
-    ("Capex / Revenue",            C["capex_pct"],            FMT_PCT),      # C5
-    ("Effective Tax Rate",         C["tax_rate"],             FMT_PCT),      # C6
-    ("Risk-Free Rate",             C["risk_free"],            FMT_PCT),      # C7
-    ("Beta",                       C["beta"],                 "0.00"),       # C8
-    ("Equity Risk Premium",        C["erp"],                  FMT_PCT),      # C9
-    ("Size Premium",               C["size_premium"],         FMT_PCT),      # C10
-    ("After-tax Cost of Debt",     C["cost_of_debt_at"],      FMT_PCT),      # C11
-    ("D/E Ratio",                  C["de_ratio"],             "0.000"),      # C12
-    ("Terminal Growth Rate",       C["terminal_growth"],      FMT_PCT),      # C13
-    ("Exit Multiple (EV/EBITDA)",  C["exit_multiple"],        FMT_RATIO),    # C14
-    ("Fully Diluted Shares",       C["shares_outstanding"],   FMT_INT),      # C15
-    ("Net Debt (JPY mn)",          C["net_debt"],             FMT_YEN),      # C16
-    ("Base Year Revenue (JPY mn)", C["base_year_revenue"],    FMT_YEN),      # C17
-    ("D&A / Revenue",              C["da_pct"],               FMT_PCT),      # C18
-    ("Base Year NWC (JPY mn)",     C["base_year_nwc"],        FMT_YEN),      # C19
+    ("Capex / Revenue",            C["capex_pct"],            FMT_PCT),
+    ("Effective Tax Rate",         C["tax_rate"],             FMT_PCT),
+    ("Risk-Free Rate",             C["risk_free"],            FMT_PCT),
+    ("Beta",                       C["beta"],                 "0.00"),
+    ("Equity Risk Premium",        C["erp"],                  FMT_PCT),
+    ("Size Premium",               C["size_premium"],         FMT_PCT),
+    ("After-tax Cost of Debt",     C["cost_of_debt_at"],      FMT_PCT),
+    ("D/E Ratio",                  C["de_ratio"],             "0.000"),
+    ("Terminal Growth Rate",       C["terminal_growth"],      FMT_PCT),
+    ("Exit Multiple (EV/EBITDA)",  C["exit_multiple"],        FMT_RATIO),
+    ("Fully Diluted Shares",       C["shares_outstanding"],   FMT_INT),
+    ("Net Debt (JPY mn)",          C["net_debt"],             FMT_YEN),
+    ("Base Year Revenue (JPY mn)", C["base_year_revenue"],    FMT_YEN),
+    ("D&A / Revenue",              C["da_pct"],               FMT_PCT),
+    ("Base Year NWC (JPY mn)",     C["base_year_nwc"],        FMT_YEN),
 ]
 for i, (label, val, fmt) in enumerate(assumptions):
     r = 5 + i
     set_cell(ws3, r, 2, label, font=BOLD_FONT)
     set_cell(ws3, r, 3, val, font=BLUE_FONT, fmt=fmt)
 
-# ── WACC Calculation ──
 c = section_title(ws3, 20, 2, "WACC Calculation")
 c.fill = LIGHT_FILL
 for col_idx in range(3, 8):
@@ -677,10 +613,8 @@ set_cell(ws3, 23, 3, "=C12/(1+C12)", font=BLACK_FONT, fmt=FMT_PCT2)
 set_cell(ws3, 24, 2, "WACC", font=BOLD_FONT)
 set_cell(ws3, 24, 3, "=C21*C22+C11*C23", font=BLACK_FONT, fmt=FMT_PCT2)
 
-# ── Active Scenario Selector (Row 25) ──
 set_cell(ws3, 25, 2, "Active Scenario", font=BOLD_FONT)
 set_cell(ws3, 25, 3, "Base", font=BLUE_FONT, fill=INPUT_FILL)
-# D25 = MATCH index (1-5) for CHOOSE formula
 set_cell(ws3, 25, 4,
          f"=MATCH(C25,B{R_SCEN_BLK_GROWTH + 1}:B{R_SCEN_BLK_GROWTH + NUM_SCENARIOS},0)",
          font=BLACK_FONT)
@@ -689,12 +623,11 @@ dv_scenario = DataValidation(
     type="list",
     formula1='"Base,Upside,Management,Downside 1,Downside 2"',
     allow_blank=False,
-    showDropDown=False,   # openpyxl quirk: False = show dropdown
+    showDropDown=False,
 )
 dv_scenario.add("C25")
 ws3.add_data_validation(dv_scenario)
 
-# ── Projected FCF (V3 Full Waterfall) ──
 c = section_title(ws3, 26, 2, "Projected Free Cash Flow")
 c.fill = LIGHT_FILL
 for col_idx in range(3, 8):
@@ -704,7 +637,6 @@ proj_years = C["projection_years"]
 year_labels = [f"Year {y}" for y in range(1, proj_years + 1)]
 header_row(ws3, 27, 3, 3 + proj_years - 1, year_labels)
 
-# Driver row labels
 row_labels_drv = [
     ("Revenue Growth (YoY)",          R_DRV_GROWTH),
     ("COGS % of Revenue",             R_DRV_COGS),
@@ -714,7 +646,6 @@ row_labels_drv = [
 for label, r in row_labels_drv:
     set_cell(ws3, r, 2, label, font=BOLD_FONT)
 
-# V3: FCF row labels — full waterfall
 row_labels_fcf = [
     ("Revenue",                       R_REVENUE),
     ("COGS",                          R_COGS),
@@ -736,13 +667,11 @@ row_labels_fcf = [
 for label, r in row_labels_fcf:
     set_cell(ws3, r, 2, label, font=BOLD_FONT)
 
-# V3: Year-by-year projection loop — full waterfall with driver rows
 for yr in range(proj_years):
     col = 3 + yr
     cl = col_letter(col)
     prev_cl = col_letter(col - 1) if yr > 0 else None
 
-    # ── Driver rows (CHOOSE formulas referencing scenario matrix) ──
     set_cell(ws3, R_DRV_GROWTH, col, choose_formula(R_SCEN_BLK_GROWTH, cl),
              font=BLACK_FONT, fmt=FMT_PCT, fill=LIGHT_FILL)
     set_cell(ws3, R_DRV_COGS, col, choose_formula(R_SCEN_BLK_COGS, cl),
@@ -752,55 +681,30 @@ for yr in range(proj_years):
     set_cell(ws3, R_DRV_NWC_PCT, col, choose_formula(R_SCEN_BLK_NWC, cl),
              font=BLACK_FONT, fmt=FMT_PCT, fill=LIGHT_FILL)
 
-    # Revenue — references driver row
     if yr == 0:
         set_cell(ws3, R_REVENUE, col, f"=C17*(1+{cl}{R_DRV_GROWTH})", font=BLACK_FONT, fmt=FMT_YEN)
     else:
         set_cell(ws3, R_REVENUE, col, f"={prev_cl}{R_REVENUE}*(1+{cl}{R_DRV_GROWTH})", font=BLACK_FONT, fmt=FMT_YEN)
 
-    # COGS = Revenue * COGS% driver
     set_cell(ws3, R_COGS, col, f"={cl}{R_REVENUE}*{cl}{R_DRV_COGS}", font=BLACK_FONT, fmt=FMT_YEN)
-
-    # Gross Profit = Revenue - COGS
     set_cell(ws3, R_GROSS_PROFIT, col, f"={cl}{R_REVENUE}-{cl}{R_COGS}", font=BLACK_FONT, fmt=FMT_YEN)
-
-    # Gross Margin = GP / Revenue
     set_cell(ws3, R_GROSS_MARGIN, col, f"={cl}{R_GROSS_PROFIT}/{cl}{R_REVENUE}", font=BLACK_FONT, fmt=FMT_PCT)
-
-    # SGA Expense = Revenue * SGA% driver
     set_cell(ws3, R_SGA, col, f"={cl}{R_REVENUE}*{cl}{R_DRV_SGA}", font=BLACK_FONT, fmt=FMT_YEN)
-
-    # Implied Operating Margin = (GP - SGA) / Revenue
     set_cell(ws3, R_OP_M_IMPL, col,
              f"=({cl}{R_GROSS_PROFIT}-{cl}{R_SGA})/{cl}{R_REVENUE}",
              font=BLACK_FONT, fmt=FMT_PCT)
-
-    # EBIT = Gross Profit - SGA
     set_cell(ws3, R_EBIT, col, f"={cl}{R_GROSS_PROFIT}-{cl}{R_SGA}", font=BLACK_FONT, fmt=FMT_YEN)
-
-    # Tax with NOPAT floor (no tax benefit when EBIT < 0)
     set_cell(ws3, R_TAX, col, f"=MAX(0,{cl}{R_EBIT}*C6)", font=BLACK_FONT, fmt=FMT_YEN)
-
-    # NOPAT
     set_cell(ws3, R_NOPAT, col, f"={cl}{R_EBIT}-{cl}{R_TAX}", font=BLACK_FONT, fmt=FMT_YEN)
-    # D&A
     set_cell(ws3, R_DA, col, f"={cl}{R_REVENUE}*C18", font=BLACK_FONT, fmt=FMT_YEN)
-    # Capex
     set_cell(ws3, R_CAPEX, col, f"={cl}{R_REVENUE}*C5", font=BLACK_FONT, fmt=FMT_YEN)
-    # NWC = Revenue * NWC% driver
     set_cell(ws3, R_NWC, col, f"={cl}{R_REVENUE}*{cl}{R_DRV_NWC_PCT}", font=BLACK_FONT, fmt=FMT_YEN)
-    # Change in NWC
     if yr == 0:
-        # Year 1: NWC - Base Year NWC (C19)
         set_cell(ws3, R_CHG_NWC, col, f"={cl}{R_NWC}-C19", font=BLACK_FONT, fmt=FMT_YEN)
     else:
-        # Year 2+: NWC - prior year NWC
         set_cell(ws3, R_CHG_NWC, col, f"={cl}{R_NWC}-{prev_cl}{R_NWC}", font=BLACK_FONT, fmt=FMT_YEN)
-    # UFCF = NOPAT + D&A - Capex - Change in NWC
     set_cell(ws3, R_UFCF, col, f"={cl}{R_NOPAT}+{cl}{R_DA}-{cl}{R_CAPEX}-{cl}{R_CHG_NWC}", font=BLACK_FONT, fmt=FMT_YEN)
-    # Discount Factor
     set_cell(ws3, R_DISC, col, f"=1/(1+C24)^{yr+1}", font=BLACK_FONT, fmt="0.0000")
-    # PV of FCF
     set_cell(ws3, R_PV_FCF, col, f"={cl}{R_UFCF}*{cl}{R_DISC}", font=BLACK_FONT, fmt=FMT_YEN)
 
 # ── Valuation - Perpetuity Growth Method ──
@@ -809,7 +713,7 @@ c.fill = LIGHT_GREEN
 for col_idx in range(3, 8):
     ws3.cell(row=R_PGM_SEC, column=col_idx).fill = LIGHT_GREEN
 
-last_cl = col_letter(3 + proj_years - 1)  # G for 5 years
+last_cl = col_letter(3 + proj_years - 1)
 
 set_cell(ws3, R_SUM_PV, 2, "Sum of PV of FCFs", font=BOLD_FONT)
 set_cell(ws3, R_SUM_PV, 3, f"=SUM(C{R_PV_FCF}:{last_cl}{R_PV_FCF})", font=BLACK_FONT, fmt=FMT_YEN)
@@ -839,7 +743,6 @@ for col_idx in range(3, 8):
 set_cell(ws3, R_SUM_PV_EX, 2, "Sum of PV of FCFs", font=BOLD_FONT)
 set_cell(ws3, R_SUM_PV_EX, 3, f"=C{R_SUM_PV}", font=BLACK_FONT, fmt=FMT_YEN)
 
-# Year 5 EBITDA = EBIT + D&A
 set_cell(ws3, R_YR5_EBITDA, 2, "Year 5 EBITDA", font=BOLD_FONT)
 set_cell(ws3, R_YR5_EBITDA, 3, f"={last_cl}{R_EBIT}+{last_cl}{R_DA}", font=BLACK_FONT, fmt=FMT_YEN)
 
@@ -865,7 +768,6 @@ c.fill = LIGHT_GREEN
 for col_idx in range(3, 8):
     ws3.cell(row=R_SCEN_SEC, column=col_idx).fill = LIGHT_GREEN
 
-# Year headers for scenario matrix
 for yr in range(proj_years):
     set_cell(ws3, R_SCEN_YEARS, 3 + yr, f"Year {yr + 1}",
              font=HEADER_FONT, fill=HEADER_FILL,
@@ -879,9 +781,7 @@ driver_blocks = [
 ]
 
 for drv_label, drv_key, drv_fmt, blk_start in driver_blocks:
-    # Sub-header row
     section_title(ws3, blk_start, 2, drv_label)
-    # 5 scenario rows
     for s, scen_name in enumerate(SCENARIO_NAMES):
         r = blk_start + 1 + s
         set_cell(ws3, r, 2, scen_name, font=BOLD_FONT)
@@ -904,7 +804,6 @@ for letter in ["D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O"]:
 
 set_cell(ws4, 2, 2, "Comparable Company Analysis", font=TITLE_FONT)
 
-# Header row
 comp_headers = [
     "Company", "Ticker", "Mkt Cap\n(JPY mn)", "EV\n(JPY mn)",
     "Revenue\n(JPY mn)", "EBITDA\n(JPY mn)", "Op Income\n(JPY mn)",
@@ -913,7 +812,6 @@ comp_headers = [
 ]
 header_row(ws4, 4, 2, 15, comp_headers)
 
-# Company data rows (rows 5-10 for 6 comps)
 comps = C["comps"]
 for i, comp in enumerate(comps):
     r = 5 + i
@@ -924,7 +822,6 @@ for i, comp in enumerate(comps):
     set_cell(ws4, r, 2, comp["name"], font=BOLD_FONT)
     set_cell(ws4, r, 3, comp["ticker"])
 
-    # Mkt Cap & EV: may be None if yfinance fetch failed
     if comp["mkt_cap"] is None:
         _na(ws4, r, 4)
     else:
@@ -939,25 +836,21 @@ for i, comp in enumerate(comps):
     set_cell(ws4, r, 8, comp["op_income"], font=BLUE_FONT, fmt=FMT_YEN, border=THIN_BORDER)
     set_cell(ws4, r, 9, comp["net_income"], font=BLUE_FONT, fmt=FMT_YEN, border=THIN_BORDER)
 
-    # EV/EBITDA
     if comp["ev"] is None or comp["ebitda"] <= 0:
         _na(ws4, r, 10)
     else:
         set_cell(ws4, r, 10, f"=E{r}/G{r}", font=BLACK_FONT, fmt=FMT_RATIO, border=THIN_BORDER)
 
-    # EV/Revenue
     if comp["ev"] is None or comp["revenue"] <= 0:
         _na(ws4, r, 11)
     else:
         set_cell(ws4, r, 11, f"=E{r}/F{r}", font=BLACK_FONT, fmt=FMT_RATIO, border=THIN_BORDER)
 
-    # PER
     if comp["mkt_cap"] is None or comp["net_income"] <= 0:
         _na(ws4, r, 12)
     else:
         set_cell(ws4, r, 12, f"=D{r}/I{r}", font=BLACK_FONT, fmt=FMT_RATIO, border=THIN_BORDER)
 
-    # PBR
     if comp["pbr"] is None:
         _na(ws4, r, 13)
     else:
@@ -965,7 +858,6 @@ for i, comp in enumerate(comps):
 
     set_cell(ws4, r, 14, f"=H{r}/F{r}", font=BLACK_FONT, fmt=FMT_PCT, border=THIN_BORDER)
 
-    # ROE
     if comp["roe"] is None:
         _na(ws4, r, 15)
     else:
@@ -973,7 +865,6 @@ for i, comp in enumerate(comps):
 
 last_comp_row = 5 + len(comps) - 1
 
-# ── Statistics ──
 section_title(ws4, 14, 2, "Statistics")
 
 stat_labels = ["25th Percentile", "Median (50th)", "75th Percentile"]
@@ -1015,7 +906,7 @@ c.fill = LIGHT_GREEN
 for col_idx in range(3, 10):
     ws4.cell(row=19, column=col_idx).fill = LIGHT_GREEN
 
-section_title(ws4, 20, 2, "Kudan Financials")
+section_title(ws4, 20, 2, "Core Corporation Financials")
 
 if USE_EV_SALES:
     set_cell(ws4, 21, 2, "Revenue (JPY mn)", font=BOLD_FONT)
@@ -1088,7 +979,7 @@ def _build_exit_formula(wacc_ref, mult_ref):
 
 # ── Dynamic header helpers ──
 _N_GRID = 7
-_CENTER_IDX = 3  # 4th position (0-based)
+_CENTER_IDX = 3
 _WACC_STEP = 0.005
 _TG_STEP   = 0.0025
 _EXIT_STEP = 1.0
@@ -1112,7 +1003,6 @@ T1_DATA = 7
 section_title(ws5, T1_TITLE, 2,
               "Table 1: WACC vs Terminal Growth Rate (PGM - Implied Share Price, JPY)")
 
-# Column headers: TG (dynamic, centered on F3)
 set_cell(ws5, T1_HDR, 2, "WACC \\ Terminal g", font=HEADER_FONT, fill=HEADER_FILL,
          alignment=Alignment(horizontal="center", wrap_text=True), border=THIN_BORDER)
 for j in range(_N_GRID):
@@ -1121,7 +1011,6 @@ for j in range(_N_GRID):
              font=HEADER_FONT, fill=HEADER_FILL, fmt=FMT_PCT,
              alignment=Alignment(horizontal="center"), border=THIN_BORDER)
 
-# Row headers: WACC (dynamic, centered on C3) + data formulas
 for i in range(_N_GRID):
     r = T1_DATA + i
     offset = round((i - _CENTER_IDX) * _WACC_STEP, 6)
@@ -1141,7 +1030,6 @@ T2_DATA = T2_HDR + 1
 section_title(ws5, T2_TITLE, 2,
               "Table 2: WACC vs Exit Multiple (Exit Multiple - Implied Share Price, JPY)")
 
-# Column headers: Exit Multiple (dynamic, centered on I3)
 set_cell(ws5, T2_HDR, 2, "WACC \\ Exit Multiple", font=HEADER_FONT, fill=HEADER_FILL,
          alignment=Alignment(horizontal="center", wrap_text=True), border=THIN_BORDER)
 for j in range(_N_GRID):
@@ -1150,7 +1038,6 @@ for j in range(_N_GRID):
              font=HEADER_FONT, fill=HEADER_FILL, fmt=FMT_RATIO,
              alignment=Alignment(horizontal="center"), border=THIN_BORDER)
 
-# Row headers: WACC (dynamic) + data formulas
 for i in range(_N_GRID):
     r = T2_DATA + i
     offset = round((i - _CENTER_IDX) * _WACC_STEP, 6)
@@ -1167,24 +1054,13 @@ _note_row = T2_DATA + _N_GRID + 1
 set_cell(ws5, _note_row, 2,
          "All values dynamically linked to DCF Model. "
          "Headers auto-center on current WACC / Terminal g / Exit Multiple.",
-         font=GREY_FONT)
+         font=Font(name="Arial", size=9, italic=True, color="808080"))
 ws5.merge_cells(start_row=_note_row, start_column=2,
                 end_row=_note_row, end_column=9)
 
 # =====================================================================
-# SAVE & VERIFY
+# SAVE
 # =====================================================================
 wb.save(output_file)
 print(f"\nSaved: {output_file}")
-
-# Run recalc.py for verification
-recalc_script = os.path.join("scripts", "recalc.py")
-if os.path.exists(recalc_script):
-    print(f"\nRunning verification: python {recalc_script} {output_file}")
-    result = subprocess.run([sys.executable, recalc_script, output_file],
-                            capture_output=True, text=True)
-    print(result.stdout)
-    if result.stderr:
-        print("STDERR:", result.stderr)
-else:
-    print(f"\nNote: {recalc_script} not found, skipping verification.")
+print("Done! Open the file in Excel to verify formulas and scenario dropdown.")
