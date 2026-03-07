@@ -25,6 +25,9 @@ Desktop.ini
 *.tmp
 *.log
 
+# EDINET downloaded data (regenerable via API)
+tmp/edinet_data/*/
+
 # Environment
 .env
 .venv/

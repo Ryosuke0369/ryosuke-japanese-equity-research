@@ -2,7 +2,21 @@
 
 **Python x Excel — Fully Automated Equity Research Workflow for Japanese Stocks**
 
-End-to-end automation that transforms raw financial PDFs into institutional-grade Excel models with a single command. Built for analysts covering Japanese equities who need speed without sacrificing rigor.
+End-to-end automation that fetches financial data directly from Japan's regulatory API and generates institutional-grade Excel models with a single command. Built for analysts covering Japanese equities who need speed without sacrificing rigor.
+
+---
+
+## What's New — Phase 2: EDINET API Integration
+
+> **No more PDFs.** Financial data is now pulled directly from the Financial Services Agency's EDINET API (v2), parsed from official XBRL filings, and aggregated into a multi-year matrix — fully automated.
+
+### Highlights
+
+- **One command, 5 years of data** — Enter a securities code, get 5 years of annual reports + the latest semi-annual report, automatically downloaded, extracted, and parsed
+- **XBRL precision** — Revenue, operating income, net income, D&A, working capital (AR/AP/inventory), debt, and cash flow extracted at 100% accuracy (JPY millions) directly from regulatory XBRL instance documents
+- **LTM auto-calculation** — Last Twelve Months financials computed automatically by combining the latest interim period with the most recent full-year data
+- **Post-2024 reform support** — Handles both the legacy quarterly system (docType 140) and the new semi-annual system (docType 160) introduced by the April 2024 金融商品取引法改正
+- **Adaptive Search** — Predicts filing dates from fiscal year-end and uses spiral search (±20 days) to find documents in ~3 API calls instead of scanning hundreds of dates
 
 ---
 
@@ -10,12 +24,47 @@ End-to-end automation that transforms raw financial PDFs into institutional-grad
 
 | Feature | Description |
 |---------|-------------|
-| **PDF Financial Scraping** | Automatically extracts revenue, operating income, COGS, SGA, cash flow, and balance sheet items from Japanese corporate filings (TDnet format) using spatial PDF parsing |
+| **EDINET API Data Fetching** | Fully automated 5-year financial data retrieval from the FSA's EDINET API (v2) — just provide a securities code |
+| **XBRL Financial Parser** | Extracts all DCF-critical variables from `.xbrl` instance documents with 100% accuracy (JPY millions) |
+| **LTM Calculation** | Automatically computes Last Twelve Months financials from the latest interim + annual data |
 | **Live Market Data** | Fetches real-time stock prices, shares outstanding, and market cap via yfinance API |
 | **DCF + Comps Model** | Generates a 5-sheet Excel workbook with 150+ live formulas: Executive Summary, Financial Statements, DCF Valuation, Comparable Company Analysis, and Sensitivity Tables |
-| **LBO Model** | Full 3-statement LBO model (8 sheets) with debt schedules, IRR/MOIC returns analysis, and balance sheet integrity checks |
-| **M&A Accretion/Dilution** | Stock-for-stock merger analysis (7 sheets) with pro forma EPS impact across multiple scenarios |
-| **One-Click Generation** | Config-driven architecture — edit a Python dict, run the script, get a complete Excel model |
+| **LBO Model** | Full 3-statement LBO model (8 sheets) with debt schedules, IRR/MOIC returns analysis |
+| **M&A Accretion/Dilution** | Stock-for-stock merger analysis (7 sheets) with pro forma EPS impact across scenarios |
+
+---
+
+## Quick Start — EDINET Financial Data Extraction
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/Ryosuke0369/ryosuke-japanese-equity-research.git
+cd ryosuke-japanese-equity-research
+
+# 2. Install dependencies
+pip install openpyxl yfinance requests beautifulsoup4 lxml python-dotenv
+
+# 3. Set your EDINET API key
+#    Get a free key at: https://disclosure2dl.edinet-fsa.go.jp/guide/static/register
+echo "EDINET_API_KEY=your-subscription-key-here" > .env
+
+# 4. Run — fetches 5 years of annual data + LTM for any listed company
+python scripts/edinet_fetcher.py 2359          # Core Corporation (3月決算)
+python scripts/edinet_fetcher.py 2359 --years 3  # 3 years only
+```
+
+### Sample Output
+
+```
+  Item                                      LTM(2Q 2025-09)    FY2025    FY2024    FY2023    FY2022    FY2021
+  Revenue (売上高)                                   25,117    24,599    23,999    22,848    21,798    20,785
+  Operating Income (営業利益)                          3,483     3,175     3,141     2,744     2,368     2,032
+  Net Income (当期純利益)                               2,426     2,242     2,271     1,968     1,623     1,423
+  Operating Cash Flow (営業CF)                       2,749     2,373     2,190     1,944     1,799     1,851
+  Net Debt (ネットデット)                               -7,297    -6,174    -4,565    -3,775    -2,737    -1,526
+```
+
+> All values in JPY millions (百万円). LTM is computed from the latest H1 semi-annual + full-year annual data.
 
 ---
 
@@ -23,20 +72,54 @@ End-to-end automation that transforms raw financial PDFs into institutional-grad
 
 ```
 ryosuke-japanese-equity-research/
-├── templates/                          # Reusable model generators (start here!)
-│   ├── dcf_comps_template.py           #   DCF + Comparable Company Analysis
-│   ├── lbo_template.py                 #   Leveraged Buyout Analysis
-│   └── ma_accretion_template.py        #   M&A Accretion / Dilution Analysis
+├── scripts/                               # Core automation engine
+│   ├── edinet_fetcher.py                  #   EDINET API client — fetches & downloads XBRL
+│   ├── edinet_parser.py                   #   XBRL parser — extracts financials & computes LTM
+│   ├── comps_fetcher.py                   #   Comparable company data fetcher
+│   └── pdf_parser.py                      #   Legacy PDF financial data extractor
 │
-├── scripts/                            # Shared utilities
-│   ├── pdf_parser.py                   #   PDF financial data extractor
-│   └── recalc.py                       #   Excel formula verifier (LibreOffice)
+├── templates/                             # Reusable Excel model generators
+│   ├── dcf_comps_template.py              #   DCF + Comparable Company Analysis
+│   ├── lbo_template.py                    #   Leveraged Buyout Analysis
+│   └── ma_accretion_template.py           #   M&A Accretion / Dilution Analysis
 │
-└── examples/                           # Completed case studies
-    ├── core-corporation-2359/          #   DCF/Comps — GIS & Defense IT
-    ├── kudan-4425/                     #   DCF/Comps — Deep Learning SLAM
-    ├── kfc-japan-lbo/                  #   LBO — Carlyle Take-Private
-    └── headwaters-bbd-merger/          #   M&A — Stock-for-Stock Merger
+├── examples/                              # Completed case studies
+│   ├── core-corporation-2359/             #   DCF/Comps — GIS & Defense IT
+│   ├── kudan-4425/                        #   DCF/Comps — Deep Learning SLAM
+│   ├── kfc-japan-lbo/                     #   LBO — Carlyle Take-Private
+│   └── headwaters-bbd-merger/             #   M&A — Stock-for-Stock Merger
+│
+└── tmp/edinet_data/                       # Auto-cleaned download cache (gitignored)
+```
+
+---
+
+## How It Works
+
+```
+Securities Code (e.g. 2359)
+        │
+        ▼
+┌─────────────────────────┐
+│   edinet_fetcher.py     │  ← EDINET API v2 (documents.json)
+│   • Adaptive Search     │     Finds 5 annual + 1 interim report
+│   • ZIP download        │     Downloads & extracts XBRL files
+└────────┬────────────────┘
+         │ .xbrl files
+         ▼
+┌─────────────────────────┐
+│   edinet_parser.py      │  ← BeautifulSoup + lxml
+│   • Context mapping     │     Maps XBRL contexts to fiscal periods
+│   • Data extraction     │     Extracts all financial line items
+│   • LTM calculation     │     FY + H1_current − H1_prior = LTM
+└────────┬────────────────┘
+         │ Structured data (OrderedDict)
+         ▼
+┌─────────────────────────┐
+│   dcf_comps_template.py │  ← openpyxl
+│   • 5-sheet Excel model │     DCF, Comps, Sensitivity, etc.
+│   • 150+ live formulas  │     No hardcoded values
+└─────────────────────────┘
 ```
 
 ---
@@ -66,46 +149,23 @@ ryosuke-japanese-equity-research/
 
 ---
 
-## Quick Start — Generate a DCF Model for Any Company
+## Roadmap
 
-```bash
-# 1. Clone the repository
-git clone https://github.com/Ryosuke0369/ryosuke-japanese-equity-research.git
-cd ryosuke-japanese-equity-research
-
-# 2. Install dependencies
-pip install openpyxl yfinance PyMuPDF
-
-# 3. Create a folder for the new company and add PDF reports
-mkdir examples/my-company-1234
-# Place TDnet annual report PDFs into the folder
-
-# 4. Copy the template
-cp templates/dcf_comps_template.py examples/my-company-1234/
-
-# 5. Edit the config dict in the template
-#    - Set ticker, company name, fiscal years
-#    - Adjust growth assumptions and WACC parameters
-#    - Add comparable companies with their multiples
-
-# 6. Run the script
-python examples/my-company-1234/dcf_comps_template.py
-
-# 7. Verify formulas (requires LibreOffice)
-python scripts/recalc.py examples/my-company-1234/1234_Equity_Research_V3.xlsx
-
-# 8. Open in Excel — all formulas auto-calculate
-```
+- [x] **Phase 1** — Template-based Excel model generation (DCF, LBO, M&A)
+- [x] **Phase 2** — EDINET API integration for automated XBRL data extraction + LTM
+- [ ] **Phase 3** — End-to-end pipeline: securities code → finished Excel model (zero manual input)
+- [ ] **Phase 4** — Multi-company batch processing and automated comps table generation
 
 ---
 
 ## Tech Stack
 
 - **Python 3** — Core automation engine
+- **EDINET API v2** — Official FSA disclosure API for XBRL financial filings
+- **BeautifulSoup + lxml** — XBRL/XML parsing
 - **openpyxl** — Excel generation with live formulas (no hardcoded values)
-- **PyMuPDF (fitz)** — Spatial PDF parsing for Japanese financial filings
 - **yfinance** — Real-time stock price and market data
-- **LibreOffice** — Headless formula recalculation and error checking
+- **python-dotenv** — Secure API key management
 
 ---
 

@@ -97,11 +97,11 @@ config = {
 
     # ── DCF Assumptions — Future Projections ──
     "scenarios": {
-        "Base":       {"revenue_growth": [0.10,0.08,0.07,0.06,0.05], "cogs_pct": [0.70,0.70,0.70,0.70,0.70], "sga_pct": [0.13,0.13,0.13,0.13,0.13], "nwc_pct": [0.05,0.05,0.05,0.05,0.05]},
-        "Upside":     {"revenue_growth": [0.10,0.12,0.18,0.20,0.15], "cogs_pct": [0.71,0.705,0.70,0.70,0.68], "sga_pct": [0.12,0.12,0.12,0.12,0.12], "nwc_pct": [0.04,0.04,0.04,0.04,0.04]},
-        "Management": {"revenue_growth": [0.10,0.10,0.10,0.10,0.10], "cogs_pct": [0.70,0.70,0.70,0.70,0.70], "sga_pct": [0.13,0.13,0.13,0.13,0.13], "nwc_pct": [0.05,0.05,0.05,0.05,0.05]},
-        "Downside 1": {"revenue_growth": [0.02,0.02,0.02,0.02,0.02], "cogs_pct": [0.73,0.73,0.74,0.75,0.73], "sga_pct": [0.14,0.14,0.14,0.14,0.14], "nwc_pct": [0.06,0.06,0.06,0.06,0.06]},
-        "Downside 2": {"revenue_growth": [0.00,0.00,0.00,0.00,0.00], "cogs_pct": [0.76,0.76,0.76,0.76,0.76], "sga_pct": [0.15,0.15,0.15,0.15,0.15], "nwc_pct": [0.07,0.07,0.07,0.07,0.07]},
+        "Base":       {"revenue_growth": [0.10,0.08,0.07,0.06,0.05], "cogs_pct": [0.70,0.70,0.70,0.70,0.70], "sga_pct": [0.13,0.13,0.13,0.13,0.13], "dso_days": [60,60,60,60,60], "dih_days": [30,30,30,30,30], "dpo_days": [45,45,45,45,45]},
+        "Upside":     {"revenue_growth": [0.10,0.12,0.18,0.20,0.15], "cogs_pct": [0.71,0.705,0.70,0.70,0.68], "sga_pct": [0.12,0.12,0.12,0.12,0.12], "dso_days": [55,55,55,55,55], "dih_days": [28,28,28,28,28], "dpo_days": [48,48,48,48,48]},
+        "Management": {"revenue_growth": [0.10,0.10,0.10,0.10,0.10], "cogs_pct": [0.70,0.70,0.70,0.70,0.70], "sga_pct": [0.13,0.13,0.13,0.13,0.13], "dso_days": [60,60,60,60,60], "dih_days": [30,30,30,30,30], "dpo_days": [45,45,45,45,45]},
+        "Downside 1": {"revenue_growth": [0.02,0.02,0.02,0.02,0.02], "cogs_pct": [0.73,0.73,0.74,0.75,0.73], "sga_pct": [0.14,0.14,0.14,0.14,0.14], "dso_days": [65,65,65,65,65], "dih_days": [33,33,33,33,33], "dpo_days": [42,42,42,42,42]},
+        "Downside 2": {"revenue_growth": [0.00,0.00,0.00,0.00,0.00], "cogs_pct": [0.76,0.76,0.76,0.76,0.76], "sga_pct": [0.15,0.15,0.15,0.15,0.15], "dso_days": [70,70,70,70,70], "dih_days": [35,35,35,35,35], "dpo_days": [40,40,40,40,40]},
     },
     "capex_pct": 0.03,
     "da_pct": 0.015,
@@ -116,6 +116,12 @@ config = {
     "exit_multiple": 15.0,
     "projection_years": 5,
     "base_year_revenue": (_get("hist_revenue") or [517])[-1],
+    "base_year_cogs": (_get("hist_cogs") or [177])[-1],
+
+    # ── NWC Base Year Actuals (JPY mn) — edit for each company ──
+    "base_year_ar":   85,    # Accounts Receivable
+    "base_year_inv":  14,    # Inventory
+    "base_year_ap":   22,    # Accounts Payable
 
     # ── Comparable Companies (loaded dynamically from CSV) ──
     "comps": get_comps_data(os.path.join(_script_dir, "comps_input.csv")),
@@ -145,8 +151,6 @@ _base = config["scenarios"]["Base"]
 config["revenue_growth"]    = _base["revenue_growth"]
 config["cogs_pct"]          = _base["cogs_pct"]
 config["sga_pct"]           = _base["sga_pct"]
-config["nwc_pct"]           = _base["nwc_pct"]
-config["base_year_nwc"]     = config["base_year_revenue"] * config["nwc_pct"][0]
 
 # =====================================================================
 # V2: DYNAMIC STOCK DATA FETCHING
@@ -185,23 +189,21 @@ USE_EV_SALES = (config.get("primary_multiple", "EV/EBITDA") == "EV/Sales")
 R_DRV_GROWTH   = 28  # driver row: Revenue Growth (YoY)
 R_DRV_COGS     = 29  # driver row: COGS % of Revenue
 R_DRV_SGA      = 30  # driver row: SGA Expense
-R_DRV_NWC_PCT  = 31  # driver row: NWC % of Revenue
-R_REVENUE      = 32
-R_COGS         = 33
-R_GROSS_PROFIT = 34
-R_GROSS_MARGIN = 35
-R_SGA          = 36
-R_OP_M_IMPL   = 37
-R_EBIT         = 38
-R_TAX          = 39
-R_NOPAT        = 40
-R_DA           = 41
-R_CAPEX        = 42
-R_NWC          = 43  # NWC balance (Revenue * NWC%)
-R_CHG_NWC      = 44  # Change in NWC
-R_UFCF         = 45
-R_DISC         = 46
-R_PV_FCF       = 47
+R_REVENUE      = 31
+R_COGS         = 32
+R_GROSS_PROFIT = 33
+R_GROSS_MARGIN = 34
+R_SGA          = 35
+R_OP_M_IMPL   = 36
+R_EBIT         = 37
+R_TAX          = 38
+R_NOPAT        = 39
+R_DA           = 40
+R_CAPEX        = 41
+R_CHG_NWC      = 42  # Change in NWC (linked from NWC Schedule)
+R_UFCF         = 43
+R_DISC         = 44
+R_PV_FCF       = 45
 # PGM section: R_PV_FCF + 2 gap
 R_PGM_SEC    = R_PV_FCF + 2
 R_SUM_PV     = R_PGM_SEC + 1
@@ -231,7 +233,26 @@ R_SCEN_YEARS      = R_SCEN_SEC + 1         # Year 1-5 column headers
 R_SCEN_BLK_GROWTH = R_SCEN_YEARS + 1
 R_SCEN_BLK_COGS   = R_SCEN_BLK_GROWTH + 7
 R_SCEN_BLK_SGA    = R_SCEN_BLK_COGS + 7
-R_SCEN_BLK_NWC    = R_SCEN_BLK_SGA + 7
+
+# ── NWC Schedule Row Numbers ──
+NWC_R_DSO      = 5
+NWC_R_DIH      = 6
+NWC_R_DPO      = 7
+NWC_R_REV      = 9
+NWC_R_COGS     = 10
+NWC_R_AR       = 12
+NWC_R_INV      = 13
+NWC_R_CA       = 14
+NWC_R_AP       = 15
+NWC_R_CL       = 16
+NWC_R_NWC      = 18
+NWC_R_CHG_NWC  = 19
+
+NWC_R_SCEN_SEC      = 22
+NWC_R_SCEN_YEARS    = 23
+NWC_R_SCEN_BLK_DSO  = 24
+NWC_R_SCEN_BLK_DIH  = NWC_R_SCEN_BLK_DSO + 7
+NWC_R_SCEN_BLK_DPO  = NWC_R_SCEN_BLK_DIH + 7
 
 # =====================================================================
 # STYLE CONSTANTS
@@ -264,6 +285,7 @@ FMT_PCT2    = '0.00%;(0.00%)'
 FMT_RATIO   = '0.00"x"'
 FMT_INT     = '#,##0'
 FMT_EPS     = '#,##0.0;(#,##0.0)'
+FMT_DAYS    = '#,##0'
 
 # =====================================================================
 # HELPER FUNCTIONS
@@ -298,6 +320,11 @@ def choose_formula(block_start, cl):
     refs = [f"{cl}{block_start + 1 + s}" for s in range(NUM_SCENARIOS)]
     return f"=CHOOSE($D$25,{','.join(refs)})"
 
+def nwc_choose_formula(block_start, cl):
+    """Generate CHOOSE formula for NWC Schedule referencing DCF Model scenario index."""
+    refs = [f"{cl}{block_start + 1 + s}" for s in range(NUM_SCENARIOS)]
+    return f"=CHOOSE('DCF Model'!$D$25,{','.join(refs)})"
+
 # =====================================================================
 # SENSITIVITY ANALYSIS HELPERS (V3: full waterfall)
 # =====================================================================
@@ -319,10 +346,6 @@ def calc_dcf_pgm(rev_growth, gross_margin, wacc, tg, cfg):
         rev = rev * (1 + rev_growth)
         revenues.append(rev)
 
-    nwc_pct_list = cfg.get("nwc_pct", [0] * n)
-    base_nwc = cfg.get("base_year_nwc", 0)
-    prev_nwc = base_nwc
-
     sum_pv_fcf = 0
     last_fcf = 0
     for yr_idx, rev in enumerate(revenues):
@@ -330,17 +353,10 @@ def calc_dcf_pgm(rev_growth, gross_margin, wacc, tg, cfg):
         gp = rev - cogs
         sga = rev * sga_pct_list[yr_idx]
         ebit = gp - sga
-        # NOPAT floor: no tax benefit when EBIT < 0
-        if ebit < 0:
-            nopat = ebit
-        else:
-            nopat = ebit * (1 - tax)
+        nopat = ebit * (1 - tax) if ebit > 0 else ebit
         da = rev * da_pct
         capex = rev * capex_pct
-        nwc = rev * nwc_pct_list[yr_idx]
-        chg_nwc = nwc - prev_nwc
-        fcf = nopat + da - capex - chg_nwc
-        prev_nwc = nwc
+        fcf = nopat + da - capex
         df = 1 / (1 + wacc) ** (yr_idx + 1)
         sum_pv_fcf += fcf * df
         last_fcf = fcf
@@ -353,9 +369,7 @@ def calc_dcf_pgm(rev_growth, gross_margin, wacc, tg, cfg):
     return price
 
 def calc_dcf_exit(rev_growth, gross_margin, wacc, exit_mult, cfg):
-    """Calculate implied share price using Exit Multiple Method.
-    V3: Uses gross_margin (GM%) and absolute SGA.
-    """
+    """Calculate implied share price using Exit Multiple Method."""
     n = cfg["projection_years"]
     capex_pct = cfg["capex_pct"]
     da_pct = cfg["da_pct"]
@@ -370,10 +384,6 @@ def calc_dcf_exit(rev_growth, gross_margin, wacc, exit_mult, cfg):
         rev = rev * (1 + rev_growth)
         revenues.append(rev)
 
-    nwc_pct_list = cfg.get("nwc_pct", [0] * n)
-    base_nwc = cfg.get("base_year_nwc", 0)
-    prev_nwc = base_nwc
-
     sum_pv_fcf = 0
     last_ebit = 0
     for yr_idx, rev in enumerate(revenues):
@@ -381,16 +391,10 @@ def calc_dcf_exit(rev_growth, gross_margin, wacc, exit_mult, cfg):
         gp = rev - cogs
         sga = rev * sga_pct_list[yr_idx]
         ebit = gp - sga
-        if ebit < 0:
-            nopat = ebit
-        else:
-            nopat = ebit * (1 - tax)
+        nopat = ebit * (1 - tax) if ebit > 0 else ebit
         da = rev * da_pct
         capex = rev * capex_pct
-        nwc = rev * nwc_pct_list[yr_idx]
-        chg_nwc = nwc - prev_nwc
-        fcf = nopat + da - capex - chg_nwc
-        prev_nwc = nwc
+        fcf = nopat + da - capex
         df = 1 / (1 + wacc) ** (yr_idx + 1)
         sum_pv_fcf += fcf * df
         last_ebit = ebit
@@ -652,7 +656,6 @@ assumptions = [
     ("Net Debt (JPY mn)",          C["net_debt"],             FMT_YEN),      # C16
     ("Base Year Revenue (JPY mn)", C["base_year_revenue"],    FMT_YEN),      # C17
     ("D&A / Revenue",              C["da_pct"],               FMT_PCT),      # C18
-    ("Base Year NWC (JPY mn)",     C["base_year_nwc"],        FMT_YEN),      # C19
 ]
 for i, (label, val, fmt) in enumerate(assumptions):
     r = 5 + i
@@ -708,8 +711,7 @@ header_row(ws3, 27, 3, 3 + proj_years - 1, year_labels)
 row_labels_drv = [
     ("Revenue Growth (YoY)",          R_DRV_GROWTH),
     ("COGS % of Revenue",             R_DRV_COGS),
-    ("SGA Expense",                   R_DRV_SGA),
-    ("NWC % of Revenue",              R_DRV_NWC_PCT),
+    ("SGA % of Revenue",              R_DRV_SGA),
 ]
 for label, r in row_labels_drv:
     set_cell(ws3, r, 2, label, font=BOLD_FONT)
@@ -727,7 +729,6 @@ row_labels_fcf = [
     ("NOPAT",                         R_NOPAT),
     ("Plus: D&A",                     R_DA),
     ("Less: Capex",                   R_CAPEX),
-    ("NWC",                           R_NWC),
     ("Change in NWC",                 R_CHG_NWC),
     ("Unlevered Free Cash Flow",      R_UFCF),
     ("Discount Factor",               R_DISC),
@@ -748,8 +749,6 @@ for yr in range(proj_years):
     set_cell(ws3, R_DRV_COGS, col, choose_formula(R_SCEN_BLK_COGS, cl),
              font=BLACK_FONT, fmt=FMT_PCT, fill=LIGHT_FILL)
     set_cell(ws3, R_DRV_SGA, col, choose_formula(R_SCEN_BLK_SGA, cl),
-             font=BLACK_FONT, fmt=FMT_PCT, fill=LIGHT_FILL)
-    set_cell(ws3, R_DRV_NWC_PCT, col, choose_formula(R_SCEN_BLK_NWC, cl),
              font=BLACK_FONT, fmt=FMT_PCT, fill=LIGHT_FILL)
 
     # Revenue — references driver row
@@ -787,15 +786,11 @@ for yr in range(proj_years):
     set_cell(ws3, R_DA, col, f"={cl}{R_REVENUE}*C18", font=BLACK_FONT, fmt=FMT_YEN)
     # Capex
     set_cell(ws3, R_CAPEX, col, f"={cl}{R_REVENUE}*C5", font=BLACK_FONT, fmt=FMT_YEN)
-    # NWC = Revenue * NWC% driver
-    set_cell(ws3, R_NWC, col, f"={cl}{R_REVENUE}*{cl}{R_DRV_NWC_PCT}", font=BLACK_FONT, fmt=FMT_YEN)
-    # Change in NWC
-    if yr == 0:
-        # Year 1: NWC - Base Year NWC (C19)
-        set_cell(ws3, R_CHG_NWC, col, f"={cl}{R_NWC}-C19", font=BLACK_FONT, fmt=FMT_YEN)
-    else:
-        # Year 2+: NWC - prior year NWC
-        set_cell(ws3, R_CHG_NWC, col, f"={cl}{R_NWC}-{prev_cl}{R_NWC}", font=BLACK_FONT, fmt=FMT_YEN)
+    # Change in NWC (linked from NWC Schedule; NWC col = DCF col + 1)
+    nwc_col_letter = col_letter(col + 1)
+    set_cell(ws3, R_CHG_NWC, col,
+             f"='NWC Schedule'!{nwc_col_letter}{NWC_R_CHG_NWC}",
+             font=BLACK_FONT, fmt=FMT_YEN)
     # UFCF = NOPAT + D&A - Capex - Change in NWC
     set_cell(ws3, R_UFCF, col, f"={cl}{R_NOPAT}+{cl}{R_DA}-{cl}{R_CAPEX}-{cl}{R_CHG_NWC}", font=BLACK_FONT, fmt=FMT_YEN)
     # Discount Factor
@@ -875,7 +870,6 @@ driver_blocks = [
     ("Revenue Growth (YoY)", "revenue_growth",    FMT_PCT, R_SCEN_BLK_GROWTH),
     ("COGS % of Revenue",    "cogs_pct",          FMT_PCT, R_SCEN_BLK_COGS),
     ("SGA % of Revenue",     "sga_pct",           FMT_PCT, R_SCEN_BLK_SGA),
-    ("NWC % of Revenue",     "nwc_pct",           FMT_PCT, R_SCEN_BLK_NWC),
 ]
 
 for drv_label, drv_key, drv_fmt, blk_start in driver_blocks:
@@ -891,7 +885,168 @@ for drv_label, drv_key, drv_fmt, blk_start in driver_blocks:
                      font=BLUE_FONT, fmt=drv_fmt, fill=INPUT_FILL)
 
 # =====================================================================
-# SHEET 4: Comps Analysis
+# SHEET 4: NWC Schedule (DSO/DIH/DPO)
+# =====================================================================
+ws_nwc = wb.create_sheet("NWC Schedule")
+ws_nwc.sheet_properties.tabColor = "CC6600"
+
+ws_nwc.column_dimensions["A"].width = 3
+ws_nwc.column_dimensions["B"].width = 28
+ws_nwc.column_dimensions["C"].width = 16
+for letter in ["D", "E", "F", "G", "H"]:
+    ws_nwc.column_dimensions[letter].width = 16
+
+set_cell(ws_nwc, 2, 2, f'NWC Schedule - {C["company_name"]}', font=TITLE_FONT)
+
+# ── Headers: Base Year + Year 1-5 ──
+nwc_headers = ["Base Year"] + [f"Year {y}" for y in range(1, proj_years + 1)]
+header_row(ws_nwc, 4, 3, 3 + proj_years, nwc_headers)
+
+# ── Working Capital Drivers ──
+c = section_title(ws_nwc, NWC_R_DSO - 1, 2, "Working Capital Drivers (Days)")
+c.fill = LIGHT_FILL
+for col_idx in range(3, 3 + proj_years + 1):
+    ws_nwc.cell(row=NWC_R_DSO - 1, column=col_idx).fill = LIGHT_FILL
+
+set_cell(ws_nwc, NWC_R_DSO, 2, "DSO (Days Sales Outstanding)", font=BOLD_FONT)
+set_cell(ws_nwc, NWC_R_DIH, 2, "DIH (Days Inventory Held)", font=BOLD_FONT)
+set_cell(ws_nwc, NWC_R_DPO, 2, "DPO (Days Payable Outstanding)", font=BOLD_FONT)
+
+# Base Year DSO/DIH/DPO (computed from actuals)
+set_cell(ws_nwc, NWC_R_DSO, 3, f"=C{NWC_R_AR}/C{NWC_R_REV}*365",
+         font=BLACK_FONT, fmt=FMT_DAYS)
+set_cell(ws_nwc, NWC_R_DIH, 3, f"=C{NWC_R_INV}/C{NWC_R_COGS}*365",
+         font=BLACK_FONT, fmt=FMT_DAYS)
+set_cell(ws_nwc, NWC_R_DPO, 3, f"=C{NWC_R_AP}/C{NWC_R_COGS}*365",
+         font=BLACK_FONT, fmt=FMT_DAYS)
+
+# Projected DSO/DIH/DPO (CHOOSE from scenario matrix)
+for yr in range(proj_years):
+    nwc_col = 4 + yr
+    cl = col_letter(nwc_col)
+    set_cell(ws_nwc, NWC_R_DSO, nwc_col,
+             nwc_choose_formula(NWC_R_SCEN_BLK_DSO, cl),
+             font=BLACK_FONT, fmt=FMT_DAYS, fill=LIGHT_FILL)
+    set_cell(ws_nwc, NWC_R_DIH, nwc_col,
+             nwc_choose_formula(NWC_R_SCEN_BLK_DIH, cl),
+             font=BLACK_FONT, fmt=FMT_DAYS, fill=LIGHT_FILL)
+    set_cell(ws_nwc, NWC_R_DPO, nwc_col,
+             nwc_choose_formula(NWC_R_SCEN_BLK_DPO, cl),
+             font=BLACK_FONT, fmt=FMT_DAYS, fill=LIGHT_FILL)
+
+# ── Revenue & COGS (linked from DCF Model) ──
+c = section_title(ws_nwc, NWC_R_REV - 1, 2, "P&L Reference (JPY mn)")
+c.fill = LIGHT_FILL
+for col_idx in range(3, 3 + proj_years + 1):
+    ws_nwc.cell(row=NWC_R_REV - 1, column=col_idx).fill = LIGHT_FILL
+
+set_cell(ws_nwc, NWC_R_REV, 2, "Revenue", font=BOLD_FONT)
+set_cell(ws_nwc, NWC_R_COGS, 2, "COGS", font=BOLD_FONT)
+
+# Base Year
+set_cell(ws_nwc, NWC_R_REV, 3, C["base_year_revenue"], font=BLUE_FONT, fmt=FMT_YEN)
+set_cell(ws_nwc, NWC_R_COGS, 3, C["base_year_cogs"], font=BLUE_FONT, fmt=FMT_YEN)
+
+# Projected (linked to DCF Model; NWC col D = DCF col C, offset +1)
+for yr in range(proj_years):
+    nwc_col = 4 + yr
+    dcf_col_letter = col_letter(3 + yr)
+    set_cell(ws_nwc, NWC_R_REV, nwc_col,
+             f"='DCF Model'!{dcf_col_letter}{R_REVENUE}",
+             font=BLACK_FONT, fmt=FMT_YEN)
+    set_cell(ws_nwc, NWC_R_COGS, nwc_col,
+             f"='DCF Model'!{dcf_col_letter}{R_COGS}",
+             font=BLACK_FONT, fmt=FMT_YEN)
+
+# ── Working Capital Items ──
+c = section_title(ws_nwc, NWC_R_AR - 1, 2, "Working Capital Items (JPY mn)")
+c.fill = LIGHT_FILL
+for col_idx in range(3, 3 + proj_years + 1):
+    ws_nwc.cell(row=NWC_R_AR - 1, column=col_idx).fill = LIGHT_FILL
+
+set_cell(ws_nwc, NWC_R_AR, 2, "Accounts Receivable", font=BOLD_FONT)
+set_cell(ws_nwc, NWC_R_INV, 2, "Inventory", font=BOLD_FONT)
+set_cell(ws_nwc, NWC_R_CA, 2, "Current Assets (AR + Inv)", font=BOLD_FONT)
+set_cell(ws_nwc, NWC_R_AP, 2, "Accounts Payable", font=BOLD_FONT)
+set_cell(ws_nwc, NWC_R_CL, 2, "Current Liabilities (AP)", font=BOLD_FONT)
+
+# Base Year actuals
+set_cell(ws_nwc, NWC_R_AR, 3, C["base_year_ar"], font=BLUE_FONT, fmt=FMT_YEN)
+set_cell(ws_nwc, NWC_R_INV, 3, C["base_year_inv"], font=BLUE_FONT, fmt=FMT_YEN)
+set_cell(ws_nwc, NWC_R_CA, 3, f"=C{NWC_R_AR}+C{NWC_R_INV}", font=BLACK_FONT, fmt=FMT_YEN)
+set_cell(ws_nwc, NWC_R_AP, 3, C["base_year_ap"], font=BLUE_FONT, fmt=FMT_YEN)
+set_cell(ws_nwc, NWC_R_CL, 3, f"=C{NWC_R_AP}", font=BLACK_FONT, fmt=FMT_YEN)
+
+# Projected WC items
+for yr in range(proj_years):
+    nwc_col = 4 + yr
+    cl = col_letter(nwc_col)
+    set_cell(ws_nwc, NWC_R_AR, nwc_col,
+             f"={cl}{NWC_R_REV}*{cl}{NWC_R_DSO}/365", font=BLACK_FONT, fmt=FMT_YEN)
+    set_cell(ws_nwc, NWC_R_INV, nwc_col,
+             f"={cl}{NWC_R_COGS}*{cl}{NWC_R_DIH}/365", font=BLACK_FONT, fmt=FMT_YEN)
+    set_cell(ws_nwc, NWC_R_CA, nwc_col,
+             f"={cl}{NWC_R_AR}+{cl}{NWC_R_INV}", font=BLACK_FONT, fmt=FMT_YEN)
+    set_cell(ws_nwc, NWC_R_AP, nwc_col,
+             f"={cl}{NWC_R_COGS}*{cl}{NWC_R_DPO}/365", font=BLACK_FONT, fmt=FMT_YEN)
+    set_cell(ws_nwc, NWC_R_CL, nwc_col,
+             f"={cl}{NWC_R_AP}", font=BLACK_FONT, fmt=FMT_YEN)
+
+# ── NWC Summary ──
+c = section_title(ws_nwc, NWC_R_NWC - 1, 2, "Net Working Capital (JPY mn)")
+c.fill = LIGHT_GREEN
+for col_idx in range(3, 3 + proj_years + 1):
+    ws_nwc.cell(row=NWC_R_NWC - 1, column=col_idx).fill = LIGHT_GREEN
+
+set_cell(ws_nwc, NWC_R_NWC, 2, "Net Working Capital", font=BOLD_FONT)
+set_cell(ws_nwc, NWC_R_CHG_NWC, 2, "Change in NWC", font=BOLD_FONT)
+
+# Base Year NWC
+set_cell(ws_nwc, NWC_R_NWC, 3, f"=C{NWC_R_CA}-C{NWC_R_CL}",
+         font=BLACK_FONT, fmt=FMT_YEN, border=BOTTOM_BORDER)
+set_cell(ws_nwc, NWC_R_CHG_NWC, 3, "n/a", font=BLACK_FONT)
+
+# Projected NWC & Change
+for yr in range(proj_years):
+    nwc_col = 4 + yr
+    cl = col_letter(nwc_col)
+    prev_cl = col_letter(nwc_col - 1)
+    set_cell(ws_nwc, NWC_R_NWC, nwc_col,
+             f"={cl}{NWC_R_CA}-{cl}{NWC_R_CL}",
+             font=BLACK_FONT, fmt=FMT_YEN, border=BOTTOM_BORDER)
+    set_cell(ws_nwc, NWC_R_CHG_NWC, nwc_col,
+             f"={cl}{NWC_R_NWC}-{prev_cl}{NWC_R_NWC}",
+             font=BLACK_FONT, fmt=FMT_YEN, border=TOP_BOTTOM)
+
+# ── Scenario Input Matrix (DSO, DIH, DPO) ──
+c = section_title(ws_nwc, NWC_R_SCEN_SEC, 2, "Scenario Input Matrix (Working Capital Days)")
+c.fill = LIGHT_GREEN
+for col_idx in range(3, 3 + proj_years + 1):
+    ws_nwc.cell(row=NWC_R_SCEN_SEC, column=col_idx).fill = LIGHT_GREEN
+
+for yr in range(proj_years):
+    set_cell(ws_nwc, NWC_R_SCEN_YEARS, 4 + yr, f"Year {yr + 1}",
+             font=HEADER_FONT, fill=HEADER_FILL,
+             alignment=Alignment(horizontal="center"))
+
+nwc_driver_blocks = [
+    ("DSO (Days)", "dso_days", FMT_DAYS, NWC_R_SCEN_BLK_DSO),
+    ("DIH (Days)", "dih_days", FMT_DAYS, NWC_R_SCEN_BLK_DIH),
+    ("DPO (Days)", "dpo_days", FMT_DAYS, NWC_R_SCEN_BLK_DPO),
+]
+
+for drv_label, drv_key, drv_fmt, blk_start in nwc_driver_blocks:
+    section_title(ws_nwc, blk_start, 2, drv_label)
+    for s, scen_name in enumerate(SCENARIO_NAMES):
+        r = blk_start + 1 + s
+        set_cell(ws_nwc, r, 2, scen_name, font=BOLD_FONT)
+        scen_data = config["scenarios"][scen_name][drv_key]
+        for yr in range(proj_years):
+            set_cell(ws_nwc, r, 4 + yr, scen_data[yr],
+                     font=BLUE_FONT, fmt=drv_fmt, fill=INPUT_FILL)
+
+# =====================================================================
+# SHEET 5: Comps Analysis
 # =====================================================================
 ws4 = wb.create_sheet("Comps Analysis")
 ws4.sheet_properties.tabColor = "006600"
@@ -1047,7 +1202,7 @@ set_cell(ws4, 28, 3, "=ROUND(C22*F16*1000000/C23,0)", font=BLACK_FONT, fmt=FMT_Y
          border=TOP_BOTTOM)
 
 # =====================================================================
-# SHEET 5: Sensitivity Analysis (Dynamic Excel formulas)
+# SHEET 6: Sensitivity Analysis (Dynamic Excel formulas)
 # =====================================================================
 ws5 = wb.create_sheet("Sensitivity Analysis")
 ws5.sheet_properties.tabColor = "996600"

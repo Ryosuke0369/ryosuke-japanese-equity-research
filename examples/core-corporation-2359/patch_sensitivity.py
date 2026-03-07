@@ -35,9 +35,9 @@ TG_STEP   = 0.0025      # 0.25%
 EXIT_STEP = 1.0         # 1.0x
 
 # DCF Model sheet row constants (must match the generated file)
-R_EBIT = 38
-R_DA   = 41
-R_UFCF = 45
+R_EBIT = 37
+R_DA   = 40
+R_UFCF = 43
 PROJ_YEARS = 5
 LAST_PROJ_COL = get_column_letter(3 + PROJ_YEARS - 1)  # "G"
 
