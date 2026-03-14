@@ -6,6 +6,41 @@ End-to-end automation that fetches financial data directly from Japan's regulato
 
 ---
 
+## What's New — Phase 4: Intelligent WACC & Scenario-Driven Valuation
+
+> **Professional-grade DCF inputs, automatically.** Phase 4 brings intelligent WACC calculation, multi-scenario analysis, and working capital modeling — eliminating hours of manual setup while keeping the analyst in control of forward assumptions.
+
+### Intelligent WACC Auto-Calculation
+
+- **Beta** — Fetched from yfinance with abnormal-value guard (clamped to 0.6–1.5 range; defaults to 1.0 fallback)
+- **Size Premium** — Automatically determined by market cap: 0.0% (large-cap), 1.5% (mid-cap), 3.0% (small-cap)
+- **D/E Ratio** — Dynamically computed from Net Debt / Market Cap (live market data)
+
+### D&A / Capex Auto-Estimation
+
+- Historical revenue ratios calculated from EDINET filings (average of available periods)
+- Graceful fallback to conservative default ratios when EDINET data is unavailable
+
+### 5-Scenario Matrix
+
+```
+Scenario Dropdown (Excel Data Validation)
+┌─────────────────────────────────────────────┐
+│  Base  │ Upside │ Management │ Down 1 │ Down 2 │
+├─────────────────────────────────────────────┤
+│  Revenue Growth, COGS%, SGA%, NWC days      │
+│  — all independently configurable per       │
+│    scenario via Excel dropdown              │
+└─────────────────────────────────────────────┘
+```
+
+### NWC Schedule
+
+- DSO / DIH / DPO-based working capital schedule integrated into the DCF model
+- Change in NWC automatically flows into Free Cash Flow calculation
+
+---
+
 ## What's New — Phase 3: Hybrid LTM with Adaptive Fallback
 
 > **The 2024 regulatory wall, solved.** Japan's April 2024 金融商品取引法改正 (Financial Instruments and Exchange Act amendment) eliminated mandatory XBRL submissions for Q1/Q3 quarterly reports. This created a critical data gap — mid-cycle LTM calculations became impossible from EDINET alone.
@@ -41,6 +76,11 @@ EDINET (XBRL)          yfinance (quarterly)         Hybrid LTM
 | **DCF + Comps Model** | Generates a 5-sheet Excel workbook with 150+ live formulas: Executive Summary, Financial Statements, DCF Valuation, Comparable Company Analysis, and Sensitivity Tables |
 | **LBO Model** | Full 3-statement LBO model (8 sheets) with debt schedules, IRR/MOIC returns analysis |
 | **M&A Accretion/Dilution** | Stock-for-stock merger analysis (7 sheets) with pro forma EPS impact across scenarios |
+| **5-Scenario Analysis** | Base / Upside / Management / Downside 1 & 2 — switch via Excel dropdown. Revenue Growth, COGS%, SGA%, NWC days all independently configurable per scenario |
+| **NWC Schedule** | DSO / DIH / DPO-based working capital schedule. Change in NWC automatically flows into DCF Free Cash Flow |
+| **Sensitivity Analysis** | Auto-generated 2-axis sensitivity tables: WACC × Terminal Growth Rate and WACC × Exit Multiple |
+| **Intelligent WACC** | Beta abnormal-value guard, market-cap-linked Size Premium, and dynamic D/E Ratio calculation for professional WACC estimation |
+| **Comps CSV Workflow** | Drop a CSV into `data/comps/` and comparable company analysis is automatically integrated into the model |
 
 ---
 
@@ -59,6 +99,8 @@ The generated Excel model provides:
 
 **You bring the thesis. The tool brings the infrastructure.**
 
+However, WACC components (Beta, Size Premium, D/E Ratio) and D&A/Capex ratios — parameters that can be objectively derived from historical and market data — are auto-calculated. We draw a clear boundary between subjective forward projections and objective market-observable inputs.
+
 ---
 
 ## Quick Start
@@ -69,7 +111,7 @@ git clone https://github.com/Ryosuke0369/ryosuke-japanese-equity-research.git
 cd ryosuke-japanese-equity-research
 
 # 2. Install dependencies
-pip install openpyxl yfinance requests beautifulsoup4 lxml python-dotenv
+pip install openpyxl yfinance requests beautifulsoup4 lxml python-dotenv pandas
 
 # 3. Set your EDINET API key
 #    Get a free key at: https://disclosure2dl.edinet-fsa.go.jp/guide/static/register
@@ -79,6 +121,12 @@ echo "EDINET_API_KEY=your-subscription-key-here" > .env
 python scripts/generate_dcf.py 2359          # Core Corporation (3月決算)
 python scripts/generate_dcf.py 2359 --years 3  # 3 years only
 ```
+
+### Adding Comparable Companies
+
+1. Create a CSV in the `data/comps/` directory (e.g., `7974_comps.csv`)
+2. CSV format: `Ticker,Company Name` (e.g., `6758.T,Sony Group`)
+3. Loaded automatically via `--comps-csv` option or auto-detection by securities code
 
 ### What Happens Under the Hood
 
@@ -182,6 +230,12 @@ ryosuke-japanese-equity-research/
 - PDF auto-parsing from 3 years of annual reports (TDnet filings)
 - Live yfinance integration for real-time equity valuation
 
+**Nintendo (7974.T)** — Global Gaming & Entertainment
+- Switch 2 launch cycle analysis with 5-scenario framework
+- Comps: Sony, Capcom, EA, Take-Two
+- WACC auto-calculated: Beta guard (1.0 fallback), Size Premium 0.0% (large-cap)
+- Sensitivity Analysis: WACC vs Terminal Growth / Exit Multiple
+
 ### LBO Analysis
 
 **KFC Holdings Japan (9873)** — Carlyle Take-Private (May 2024)
@@ -200,7 +254,8 @@ ryosuke-japanese-equity-research/
 - [x] **Phase 1** — Template-based Excel model generation (DCF, LBO, M&A)
 - [x] **Phase 2** — EDINET API integration for automated XBRL data extraction + LTM
 - [x] **Phase 3** — Hybrid LTM generation with yfinance adaptive fallback (Q1/Q3 data gap solution)
-- [ ] **Phase 4** — Multi-company batch processing and automated comps table generation
+- [x] **Phase 4** — Intelligent WACC, 5-scenario analysis, NWC schedule, sensitivity tables, comps CSV workflow
+- [ ] **Phase 5** — EDINET XBRL tag expansion (non-standard Capex/D&A extraction), company guidance auto-integration
 
 ---
 
@@ -211,6 +266,7 @@ ryosuke-japanese-equity-research/
 - **yfinance** — Quarterly financial data & real-time market data (adaptive fallback source)
 - **BeautifulSoup + lxml** — XBRL/XML parsing
 - **openpyxl** — Excel generation with live formulas (no hardcoded values)
+- **pandas** — Comps CSV reading and data manipulation
 - **python-dotenv** — Secure API key management
 
 ---

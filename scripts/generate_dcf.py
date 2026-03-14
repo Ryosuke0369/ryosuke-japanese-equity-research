@@ -97,15 +97,27 @@ def merged_data_to_config(company_info, merged_data):
     base_year_ap = _val(base_data, "accounts_payable")
     net_debt = _val(base_data, "net_debt")
 
-    # Auto-calculate DCF assumptions from latest FY
-    latest_rev = _val(latest_fy_data, "revenue", 1)
-    capex_pct = round(_val(latest_fy_data, "capex") / latest_rev, 4) if latest_rev else 0.03
-    depreciation = _val(latest_fy_data, "depreciation")
-    da_pct = round(depreciation / latest_rev, 4) if (latest_rev and depreciation) else 0.02
+    # Auto-calculate DCF assumptions: average da_pct/capex_pct across all FY years
+    da_ratios = []
+    capex_ratios = []
+    for k in fy_keys_oldest_first:
+        rev_k = _val(merged_data[k], "revenue")
+        if rev_k > 0:
+            dep_k = _val(merged_data[k], "depreciation")
+            capex_k = _val(merged_data[k], "capex")
+            if dep_k > 0:
+                da_ratios.append(dep_k / rev_k)
+            if capex_k > 0:
+                capex_ratios.append(capex_k / rev_k)
+
+    da_pct = round(sum(da_ratios) / len(da_ratios), 4) if da_ratios else 0.02
+    capex_pct = round(sum(capex_ratios) / len(capex_ratios), 4) if capex_ratios else 0.03
 
     # Clamp to reasonable ranges
     capex_pct = max(0.005, min(capex_pct, 0.20))
     da_pct = max(0.005, min(da_pct, 0.15))
+
+    latest_rev = _val(latest_fy_data, "revenue", 1)
 
     # Calculate CAGR from last 3 years of revenue
     if len(hist_revenue) >= 3 and hist_revenue[-3] and hist_revenue[-3] > 0 and hist_revenue[-1] > 0:
@@ -353,12 +365,28 @@ def main():
     print(f"\n[Step 3/6] Building DCF configuration...")
     config = merged_data_to_config(company_info, merged_data)
 
-    # Step 4: Fetch live market data via yfinance
+    # Step 4: Fetch live market data via yfinance (price, shares, beta)
     print(f"\n[Step 4/6] Fetching market data...")
     ticker_str = config["ticker"]
-    config["current_price"], config["shares_outstanding"] = get_live_market_data(
+    config["current_price"], config["shares_outstanding"], live_beta = get_live_market_data(
         ticker_str, config["current_price"], config["shares_outstanding"]
     )
+    config["beta"] = live_beta  # raw value; template normalizes to [0.6, 1.5]
+
+    # Auto-calculate D/E ratio from net_debt and market cap
+    try:
+        market_cap = config["current_price"] * config["shares_outstanding"] / 1_000_000  # JPY mn
+        if config["net_debt"] > 0 and market_cap > 0:
+            config["de_ratio"] = round(config["net_debt"] / market_cap, 4)
+        else:
+            config["de_ratio"] = 0.0
+        config["de_ratio"] = min(config["de_ratio"], 2.0)
+    except Exception:
+        market_cap = 0
+        config["de_ratio"] = 0.10
+
+    # Beta & Size Premium are normalized inside generate_dcf_workbook (template-level)
+    print(f"  Raw Beta: {live_beta:.2f}, D/E Ratio: {config['de_ratio']:.4f}, Mkt Cap: {market_cap:,.0f} mn")
 
     # Step 5: Load comparable companies data
     print(f"\n[Step 5/6] Loading comparable companies...")

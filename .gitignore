@@ -21,12 +21,21 @@ Desktop.ini
 *~
 
 # Temp / Cache
-*.csv
 *.tmp
 *.log
 
+# Output (generated models are regenerable)
+output/
+
 # EDINET downloaded data (regenerable via API)
-tmp/edinet_data/*/
+tmp/
+
+# Examples: backup files and debug/test scripts
+examples/**/*_backup.xlsx
+examples/**/debug_*.py
+examples/**/test_*.py
+examples/**/output_*.txt
+examples/**/tasks/
 
 # Environment
 .env

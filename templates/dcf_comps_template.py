@@ -96,7 +96,7 @@ NWC_R_SCEN_BLK_DPO  = NWC_R_SCEN_BLK_DIH + 7
 # =====================================================================
 # STYLE CONSTANTS
 # =====================================================================
-BLUE_FONT   = Font(name="Arial", size=10, color="0000CC", bold=False)
+BLUE_FONT   = Font(name="Arial", size=10, color="000000", bold=False)  # unified to black
 BLACK_FONT  = Font(name="Arial", size=10, color="000000")
 GREEN_FONT  = Font(name="Arial", size=10, color="006600")
 BOLD_FONT   = Font(name="Arial", size=10, bold=True)
@@ -105,17 +105,25 @@ TITLE_FONT  = Font(name="Arial", size=14, bold=True)
 SUB_FONT    = Font(name="Arial", size=11, bold=True)
 GREY_FONT   = Font(name="Arial", size=9, italic=True, color="808080")
 
-HEADER_FILL  = PatternFill(start_color="003366", end_color="003366", fill_type="solid")
-LIGHT_FILL   = PatternFill(start_color="DCE6F1", end_color="DCE6F1", fill_type="solid")
-LIGHT_GREEN  = PatternFill(start_color="E2EFDA", end_color="E2EFDA", fill_type="solid")
-LIGHT_YELLOW = PatternFill(start_color="FFF2CC", end_color="FFF2CC", fill_type="solid")
-INPUT_FILL   = PatternFill(start_color="FFFFCC", end_color="FFFFCC", fill_type="solid")
+HEADER_FILL    = PatternFill(start_color="000080", end_color="000080", fill_type="solid")
+LIGHT_FILL     = PatternFill(start_color="DCE6F1", end_color="DCE6F1", fill_type="solid")
+LIGHT_GREEN    = PatternFill(start_color="E2EFDA", end_color="E2EFDA", fill_type="solid")
+LIGHT_YELLOW   = PatternFill(start_color="FFF2CC", end_color="FFF2CC", fill_type="solid")
+SUBTOTAL_FILL  = PatternFill(start_color="F2F2F2", end_color="F2F2F2", fill_type="solid")
 
-THIN_BORDER   = Border(left=Side(style="thin"), right=Side(style="thin"),
-                        top=Side(style="thin"), bottom=Side(style="thin"))
-BOTTOM_BORDER = Border(bottom=Side(style="thin"))
-BOTTOM_DOUBLE = Border(bottom=Side(style="double"))
-TOP_BOTTOM    = Border(top=Side(style="thin"), bottom=Side(style="double"))
+# Borders
+THIN_BORDER     = Border(left=Side(style="thin"), right=Side(style="thin"),
+                          top=Side(style="thin"), bottom=Side(style="thin"))
+_GRAY_SIDE      = Side(style="thin", color="B0B0B0")
+LIGHT_GRAY_BORDER = Border(bottom=Side(style="dotted", color="B0B0B0"))
+_GRAY_HAIR       = Side(style="hair", color="B0B0B0")
+NWC_DATA_BORDER  = Border(left=_GRAY_HAIR, right=_GRAY_HAIR,
+                           top=_GRAY_HAIR, bottom=_GRAY_HAIR)
+SECTION_BOTTOM  = Border(bottom=Side(style="thin"))
+SUBTOTAL_BORDER = Border(top=Side(style="thin"), bottom=Side(style="thin"))
+TOP_BOTTOM      = Border(top=Side(style="thin"), bottom=Side(style="double"))
+INPUT_BORDER    = Border(left=_GRAY_SIDE, right=_GRAY_SIDE,
+                          top=_GRAY_SIDE, bottom=_GRAY_SIDE)
 
 FMT_YEN     = '#,##0;(#,##0)'
 FMT_YEN_DEC = '#,##0.0;(#,##0.0)'
@@ -144,7 +152,7 @@ def header_row(ws, row, col_start, col_end, labels, fill=HEADER_FILL, font=HEADE
         c.font = font
         c.fill = fill
         c.alignment = Alignment(horizontal="center", wrap_text=True)
-        c.border = THIN_BORDER
+        c.border = SECTION_BOTTOM
 
 def section_title(ws, row, col, text, font=SUB_FONT):
     c = ws.cell(row=row, column=col, value=text)
@@ -264,7 +272,7 @@ def calc_wacc(cfg):
 def get_live_market_data(ticker_str, fallback_price, fallback_shares):
     if not YFINANCE_AVAILABLE:
         print("yfinance not installed. Using fallback market data.")
-        return fallback_price, fallback_shares
+        return fallback_price, fallback_shares, 1.0
 
     try:
         print(f"Fetching live data for {ticker_str} via yfinance...")
@@ -272,11 +280,17 @@ def get_live_market_data(ticker_str, fallback_price, fallback_shares):
         info = tkr.info
         live_price = info.get("currentPrice") or info.get("regularMarketPrice") or fallback_price
         live_shares = info.get("sharesOutstanding") or fallback_shares
-        print(f"Successfully fetched: Price={live_price}, Shares={live_shares}")
-        return float(live_price), int(live_shares)
+        raw_beta = info.get("beta")
+        if raw_beta and 0.6 <= raw_beta <= 1.5:
+            live_beta = raw_beta
+        else:
+            live_beta = 1.0  # sector-standard fallback
+            print(f"  Beta {raw_beta} outside [0.6, 1.5] range - using fallback 1.0")
+        print(f"Successfully fetched: Price={live_price}, Shares={live_shares}, Beta={live_beta}")
+        return float(live_price), int(live_shares), float(live_beta)
     except Exception as e:
-        print(f"Warning: Failed to fetch live data ({e}). Using fallback market data.")
-        return fallback_price, fallback_shares
+        print(f"Warning: Failed to fetch live data ({str(e).encode('ascii', 'replace').decode()}). Using fallback market data.")
+        return fallback_price, fallback_shares, 1.0
 
 
 # =====================================================================
@@ -293,6 +307,23 @@ def generate_dcf_workbook(config, output_path=None):
         str: Path to saved Excel file.
     """
     C = config
+
+    # ── Normalize WACC inputs ──
+    # Beta: clamp to [0.6, 1.5]; outside range → sector-standard 1.0
+    raw_beta = C.get("beta", 1.0)
+    if not raw_beta or raw_beta < 0.6 or raw_beta > 1.5:
+        C["beta"] = 1.0
+    # Size Premium: auto-determine from market cap (JPY mn)
+    try:
+        mkt_cap = C["current_price"] * C["shares_outstanding"] / 1_000_000
+    except (KeyError, TypeError):
+        mkt_cap = 0
+    if mkt_cap >= 1_000_000:        # >= 1 trillion JPY
+        C["size_premium"] = 0.0
+    elif mkt_cap >= 100_000:         # >= 100 billion JPY
+        C["size_premium"] = 0.015
+    else:
+        C["size_premium"] = 0.03
 
     # Restore flat arrays from Base scenario
     _base = C["scenarios"]["Base"]
@@ -563,7 +594,7 @@ def generate_dcf_workbook(config, output_path=None):
 
     # ── Active Scenario Selector (Row 25) ──
     set_cell(ws3, 27, 2, "Active Scenario", font=BOLD_FONT)
-    set_cell(ws3, 27, 3, "Base", font=BLUE_FONT, fill=INPUT_FILL)
+    set_cell(ws3, 27, 3, "Base", font=BLUE_FONT, border=INPUT_BORDER)
     # D25 = MATCH index (1-5) for CHOOSE formula
     set_cell(ws3, 27, 4,
              f"=MATCH(C27,B{R_SCEN_BLK_GROWTH + 1}:B{R_SCEN_BLK_GROWTH + NUM_SCENARIOS},0)",
@@ -649,7 +680,8 @@ def generate_dcf_workbook(config, output_path=None):
         set_cell(ws3, R_COGS, col, f"={cl}{R_REVENUE}*{cl}{R_DRV_COGS}", font=BLACK_FONT, fmt=FMT_YEN)
 
         # Gross Profit = Revenue - COGS
-        set_cell(ws3, R_GROSS_PROFIT, col, f"={cl}{R_REVENUE}-{cl}{R_COGS}", font=BLACK_FONT, fmt=FMT_YEN)
+        set_cell(ws3, R_GROSS_PROFIT, col, f"={cl}{R_REVENUE}-{cl}{R_COGS}", font=BLACK_FONT, fmt=FMT_YEN,
+                 border=SUBTOTAL_BORDER)
 
         # Gross Margin = GP / Revenue
         set_cell(ws3, R_GROSS_MARGIN, col, f"={cl}{R_GROSS_PROFIT}/{cl}{R_REVENUE}", font=BLACK_FONT, fmt=FMT_PCT)
@@ -663,13 +695,15 @@ def generate_dcf_workbook(config, output_path=None):
                  font=BLACK_FONT, fmt=FMT_PCT)
 
         # EBIT = Gross Profit - SGA
-        set_cell(ws3, R_EBIT, col, f"={cl}{R_GROSS_PROFIT}-{cl}{R_SGA}", font=BLACK_FONT, fmt=FMT_YEN)
+        set_cell(ws3, R_EBIT, col, f"={cl}{R_GROSS_PROFIT}-{cl}{R_SGA}", font=BLACK_FONT, fmt=FMT_YEN,
+                 border=SUBTOTAL_BORDER)
 
         # Tax with NOPAT floor (no tax benefit when EBIT < 0)
         set_cell(ws3, R_TAX, col, f"=MAX(0,{cl}{R_EBIT}*C6)", font=BLACK_FONT, fmt=FMT_YEN)
 
         # NOPAT
-        set_cell(ws3, R_NOPAT, col, f"={cl}{R_EBIT}-{cl}{R_TAX}", font=BLACK_FONT, fmt=FMT_YEN)
+        set_cell(ws3, R_NOPAT, col, f"={cl}{R_EBIT}-{cl}{R_TAX}", font=BLACK_FONT, fmt=FMT_YEN,
+                 border=SUBTOTAL_BORDER)
         # D&A
         set_cell(ws3, R_DA, col, f"={cl}{R_REVENUE}*C18", font=BLACK_FONT, fmt=FMT_YEN)
         # Capex
@@ -680,11 +714,13 @@ def generate_dcf_workbook(config, output_path=None):
                  f"='NWC Schedule'!{nwc_col_letter}{NWC_R_CHG_NWC}",
                  font=BLACK_FONT, fmt=FMT_YEN)
         # UFCF = NOPAT + D&A - Capex - Change in NWC
-        set_cell(ws3, R_UFCF, col, f"={cl}{R_NOPAT}+{cl}{R_DA}-{cl}{R_CAPEX}-{cl}{R_CHG_NWC}", font=BLACK_FONT, fmt=FMT_YEN)
+        set_cell(ws3, R_UFCF, col, f"={cl}{R_NOPAT}+{cl}{R_DA}-{cl}{R_CAPEX}-{cl}{R_CHG_NWC}", font=BLACK_FONT, fmt=FMT_YEN,
+                 border=SUBTOTAL_BORDER, fill=SUBTOTAL_FILL)
         # Discount Factor
         set_cell(ws3, R_DISC, col, f"=1/(1+C26)^(C19+{yr})", font=BLACK_FONT, fmt="0.0000")
         # PV of FCF
-        set_cell(ws3, R_PV_FCF, col, f"={cl}{R_UFCF}*{cl}{R_DISC}", font=BLACK_FONT, fmt=FMT_YEN)
+        set_cell(ws3, R_PV_FCF, col, f"={cl}{R_UFCF}*{cl}{R_DISC}", font=BLACK_FONT, fmt=FMT_YEN,
+                 border=SUBTOTAL_BORDER)
 
     # ── Valuation - Perpetuity Growth Method ──
     c = section_title(ws3, R_PGM_SEC, 2, "Valuation - Perpetuity Growth Method")
@@ -770,7 +806,7 @@ def generate_dcf_workbook(config, output_path=None):
             scen_data = config["scenarios"][scen_name][drv_key]
             for yr in range(proj_years):
                 set_cell(ws3, r, 3 + yr, scen_data[yr],
-                         font=BLUE_FONT, fmt=drv_fmt, fill=INPUT_FILL)
+                         font=BLUE_FONT, fmt=drv_fmt, border=INPUT_BORDER)
 
     # =====================================================================
     # SHEET 4: NWC Schedule (DSO/DIH/DPO)
@@ -814,13 +850,13 @@ def generate_dcf_workbook(config, output_path=None):
         cl = col_letter(nwc_col)
         set_cell(ws_nwc, NWC_R_DSO, nwc_col,
                  nwc_choose_formula(NWC_R_SCEN_BLK_DSO, cl),
-                 font=BLACK_FONT, fmt=FMT_DAYS, fill=LIGHT_FILL)
+                 font=BLACK_FONT, fmt=FMT_DAYS)
         set_cell(ws_nwc, NWC_R_DIH, nwc_col,
                  nwc_choose_formula(NWC_R_SCEN_BLK_DIH, cl),
-                 font=BLACK_FONT, fmt=FMT_DAYS, fill=LIGHT_FILL)
+                 font=BLACK_FONT, fmt=FMT_DAYS)
         set_cell(ws_nwc, NWC_R_DPO, nwc_col,
                  nwc_choose_formula(NWC_R_SCEN_BLK_DPO, cl),
-                 font=BLACK_FONT, fmt=FMT_DAYS, fill=LIGHT_FILL)
+                 font=BLACK_FONT, fmt=FMT_DAYS)
 
     # ── Revenue & COGS (linked from DCF Model) ──
     c = section_title(ws_nwc, NWC_R_REV - 1, 2, "P&L Reference (JPY mn)")
@@ -891,7 +927,7 @@ def generate_dcf_workbook(config, output_path=None):
 
     # Base Year NWC
     set_cell(ws_nwc, NWC_R_NWC, 3, f"=C{NWC_R_CA}-C{NWC_R_CL}",
-             font=BLACK_FONT, fmt=FMT_YEN, border=BOTTOM_BORDER)
+             font=BLACK_FONT, fmt=FMT_YEN, border=SUBTOTAL_BORDER, fill=SUBTOTAL_FILL)
     set_cell(ws_nwc, NWC_R_CHG_NWC, 3, "n/a", font=BLACK_FONT)
 
     # Projected NWC & Change
@@ -901,10 +937,31 @@ def generate_dcf_workbook(config, output_path=None):
         prev_cl = col_letter(nwc_col - 1)
         set_cell(ws_nwc, NWC_R_NWC, nwc_col,
                  f"={cl}{NWC_R_CA}-{cl}{NWC_R_CL}",
-                 font=BLACK_FONT, fmt=FMT_YEN, border=BOTTOM_BORDER)
+                 font=BLACK_FONT, fmt=FMT_YEN, border=SUBTOTAL_BORDER, fill=SUBTOTAL_FILL)
         set_cell(ws_nwc, NWC_R_CHG_NWC, nwc_col,
                  f"={cl}{NWC_R_NWC}-{prev_cl}{NWC_R_NWC}",
                  font=BLACK_FONT, fmt=FMT_YEN, border=TOP_BOTTOM)
+
+    # ── Apply consistent borders to all NWC data rows ──
+    _nwc_data_rows = (
+        list(range(NWC_R_DSO, NWC_R_DPO + 1))       # Drivers: DSO, DIH, DPO
+        + list(range(NWC_R_REV, NWC_R_COGS + 1))     # P&L Reference: Revenue, COGS
+        + list(range(NWC_R_AR, NWC_R_CL + 1))         # WC Items: AR, Inv, CA, AP, CL
+        + [NWC_R_NWC, NWC_R_CHG_NWC]                  # NWC Summary
+    )
+    _nwc_col_end = 3 + proj_years  # last data column
+    for _r in _nwc_data_rows:
+        for _ci in range(2, _nwc_col_end + 1):
+            _cell = ws_nwc.cell(row=_r, column=_ci)
+            # Preserve existing meaningful borders (SUBTOTAL_BORDER, TOP_BOTTOM, etc.)
+            _has_border = (_cell.border and any([
+                getattr(_cell.border.top, 'style', None),
+                getattr(_cell.border.bottom, 'style', None),
+                getattr(_cell.border.left, 'style', None),
+                getattr(_cell.border.right, 'style', None),
+            ]))
+            if not _has_border:
+                _cell.border = NWC_DATA_BORDER
 
     # ── Scenario Input Matrix (DSO, DIH, DPO) ──
     c = section_title(ws_nwc, NWC_R_SCEN_SEC, 2, "Scenario Input Matrix (Working Capital Days)")
@@ -931,7 +988,7 @@ def generate_dcf_workbook(config, output_path=None):
             scen_data = config["scenarios"][scen_name][drv_key]
             for yr in range(proj_years):
                 set_cell(ws_nwc, r, 4 + yr, scen_data[yr],
-                         font=BLUE_FONT, fmt=drv_fmt, fill=INPUT_FILL)
+                         font=BLUE_FONT, fmt=drv_fmt, border=INPUT_BORDER)
 
     # =====================================================================
     # SHEET 5: Comps Analysis
@@ -1170,7 +1227,7 @@ def generate_dcf_workbook(config, output_path=None):
         r = T1_DATA + i
         offset = round((i - _CENTER_IDX) * _WACC_STEP, 6)
         set_cell(ws5, r, 2, _offset_formula(_ANCHOR_WACC, offset),
-                 font=BLUE_FONT, fmt=FMT_PCT, border=THIN_BORDER, fill=INPUT_FILL)
+                 font=BLUE_FONT, fmt=FMT_PCT, border=THIN_BORDER)
         for j in range(_N_GRID):
             col = 3 + j
             cl = col_letter(col)
@@ -1199,7 +1256,7 @@ def generate_dcf_workbook(config, output_path=None):
         r = T2_DATA + i
         offset = round((i - _CENTER_IDX) * _WACC_STEP, 6)
         set_cell(ws5, r, 2, _offset_formula(_ANCHOR_WACC, offset),
-                 font=BLUE_FONT, fmt=FMT_PCT, border=THIN_BORDER, fill=INPUT_FILL)
+                 font=BLUE_FONT, fmt=FMT_PCT, border=THIN_BORDER)
         for j in range(_N_GRID):
             col = 3 + j
             cl = col_letter(col)
