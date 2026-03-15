@@ -8,6 +8,7 @@ Usage:
 """
 
 import argparse
+import json
 import os
 import sys
 import re
@@ -18,7 +19,7 @@ from collections import OrderedDict
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from scripts.edinet_fetcher import fetch_and_parse_multi_year
+from scripts.edinet_fetcher import fetch_and_parse_multi_year, fetch_tanshin
 from scripts.comps_fetcher import get_comps_data
 from scripts.yfinance_quarterly import enrich_merged_data_with_yfinance
 from templates.dcf_comps_template import generate_dcf_workbook, get_live_market_data
@@ -27,12 +28,14 @@ from templates.dcf_comps_template import generate_dcf_workbook, get_live_market_
 # =====================================================================
 # MERGED DATA -> CONFIG CONVERSION
 # =====================================================================
-def merged_data_to_config(company_info, merged_data):
+def merged_data_to_config(company_info, merged_data, forecast_data=None):
     """Convert EDINET merged_data into the config dict expected by generate_dcf_workbook.
 
     Args:
         company_info: Dict from edinet_parser with company_name, securities_code, etc.
         merged_data: OrderedDict from fetch_and_parse_multi_year with FY/LTM keys.
+        forecast_data: Optional dict with forecast_revenue, forecast_operating_income, etc.
+                       If provided, Management scenario Year 1 growth uses guidance.
 
     Returns:
         dict: Config dict ready for generate_dcf_workbook().
@@ -198,6 +201,24 @@ def merged_data_to_config(company_info, merged_data):
         },
     }
 
+    # ── Guidance Integration: override Management scenario Year 1 ──
+    if forecast_data and forecast_data.get("forecast_revenue"):
+        guidance_rev = forecast_data["forecast_revenue"]
+        # Implied Year 1 growth = (guidance_revenue / latest_actual_revenue) - 1
+        if base_year_revenue and base_year_revenue > 0:
+            guidance_growth = round(guidance_rev / base_year_revenue - 1, 4)
+            # Clamp to reasonable range
+            guidance_growth = max(-0.50, min(guidance_growth, 3.0))
+            # Update Management scenario Year 1 with guidance growth
+            mgmt_growth = scenarios["Management"]["revenue_growth"]
+            mgmt_growth[0] = guidance_growth
+            # Taper remaining years toward CAGR
+            for i in range(1, 5):
+                blend = guidance_growth * (1 - i / 5) + cagr_3yr * (i / 5)
+                mgmt_growth[i] = round(blend, 4)
+            print(f"  Guidance integrated: FY Rev forecast = {guidance_rev:,.0f} mn "
+                  f"-> Year 1 growth = {guidance_growth:.1%}")
+
     # Company info
     company_name = company_info.get("company_name", "Unknown Company")
     securities_code = company_info.get("securities_code", "0000")
@@ -339,21 +360,37 @@ def main():
     parser.add_argument("--years", type=int, default=5, help="Number of years to fetch (default: 5)")
     parser.add_argument("--output-dir", default="output", help="Output directory (default: output)")
     parser.add_argument("--comps-csv", default=None, help="Path to comps CSV (default: data/comps/<ticker>_comps.csv)")
+    parser.add_argument("--overrides", default=None,
+                        help="Path to JSON override file (e.g. data/overrides/2359_overrides.json)")
     args = parser.parse_args()
 
     ticker_code = args.ticker.strip()
     num_years = min(args.years, 5)
+
+    # Auto-detect overrides file if not specified
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    if args.overrides is None:
+        auto_override = os.path.join(project_root, "data", "overrides", f"{ticker_code}_overrides.json")
+        if os.path.isfile(auto_override):
+            args.overrides = auto_override
+            print(f"  Auto-detected overrides: {auto_override}")
+
+    # Load overrides once (reused in Steps 4.5 and 5)
+    _overrides = None
+    if args.overrides and os.path.isfile(args.overrides):
+        with open(args.overrides, encoding="utf-8") as f:
+            _overrides = json.load(f)
 
     print(f"\n{'=' * 60}")
     print(f"DCF Model Generator - Ticker: {ticker_code}")
     print(f"{'=' * 60}")
 
     # Step 1: EDINET fetch + parse
-    print(f"\n[Step 1/6] Fetching {num_years} years of financial data from EDINET...")
+    print(f"\n[Step 1/7] Fetching {num_years} years of financial data from EDINET...")
     company_info, merged_data = fetch_and_parse_multi_year(ticker_code, num_years)
 
     # Step 2: Check LTM coverage, yfinance fallback if needed
-    print(f"\n[Step 2/6] Checking LTM data coverage...")
+    print(f"\n[Step 2/7] Checking LTM data coverage...")
     ticker_4digit = re.sub(r"0$", "", (company_info.get("securities_code") or ticker_code)[:5])
     config_ticker_str = f"{ticker_4digit}.T"
     fiscal_year_end = company_info.get("fiscal_year_end")
@@ -361,12 +398,84 @@ def main():
         merged_data, config_ticker_str, fiscal_year_end
     )
 
-    # Step 3: Convert to config
-    print(f"\n[Step 3/6] Building DCF configuration...")
-    config = merged_data_to_config(company_info, merged_data)
+    # Step 3: Extract company guidance/forecast data (業績予想)
+    print(f"\n[Step 3/7] Extracting company guidance (業績予想)...")
+    forecast_data = None
+    try:
+        from scripts.edinet_parser import parse_xbrl_file, extract_forecast_data
+    except ImportError:
+        from edinet_parser import parse_xbrl_file, extract_forecast_data
 
-    # Step 4: Fetch live market data via yfinance (price, shares, beta)
-    print(f"\n[Step 4/6] Fetching market data...")
+    # Try extracting forecasts from already-downloaded XBRL files first
+    import glob
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    edinet_cache = os.path.join(project_root, "tmp", "edinet_data")
+    xbrl_candidates = glob.glob(os.path.join(edinet_cache, "**", "*.xbrl"), recursive=True)
+    for xbrl_path in xbrl_candidates:
+        try:
+            soup = parse_xbrl_file(xbrl_path)
+            fd = extract_forecast_data(soup)
+            if fd and fd.get("forecast_revenue"):
+                forecast_data = fd
+                print(f"  Found guidance in: {os.path.basename(xbrl_path)}")
+                print(f"    Revenue forecast: {fd['forecast_revenue']:,.0f} mn")
+                if fd.get("forecast_operating_income"):
+                    print(f"    OI forecast:     {fd['forecast_operating_income']:,.0f} mn")
+                break
+        except Exception as e:
+            continue
+
+    # Fallback: fetch_tanshin if no forecast found in existing files
+    if not forecast_data:
+        print("  No guidance in existing XBRL. Trying fetch_tanshin...")
+        try:
+            tanshin_result = fetch_tanshin(ticker_code)
+            if tanshin_result:
+                forecast_data = tanshin_result["forecast_data"]
+                print(f"  Found guidance in tanshin docID={tanshin_result['doc_id']}")
+                if forecast_data.get("forecast_revenue"):
+                    print(f"    Revenue forecast: {forecast_data['forecast_revenue']:,.0f} mn")
+            else:
+                print("  No guidance data found. Management scenario will use CAGR-based estimate.")
+        except Exception as e:
+            print(f"  Tanshin fetch failed: {e}")
+            print("  Management scenario will use CAGR-based estimate.")
+
+    # Step 4: Convert to config
+    print(f"\n[Step 4/7] Building DCF configuration...")
+    config = merged_data_to_config(company_info, merged_data, forecast_data=forecast_data)
+
+    # Step 4.5: Apply manual overrides if provided
+    if _overrides:
+        print(f"\n[Step 4.5] Applying overrides from {args.overrides}...")
+        for key, value in _overrides.items():
+            if key == "scenarios" and isinstance(value, dict):
+                # Deep merge: each scenario individually
+                if "scenarios" not in config:
+                    config["scenarios"] = {}
+                for scen_name, scen_data in value.items():
+                    if scen_name in config["scenarios"]:
+                        config["scenarios"][scen_name].update(scen_data)
+                    else:
+                        config["scenarios"][scen_name] = scen_data
+            else:
+                config[key] = value
+
+        # Re-apply flat arrays from Base scenario after override
+        if "scenarios" in _overrides and "Base" in _overrides["scenarios"]:
+            _base = config["scenarios"]["Base"]
+            if "revenue_growth" in _base:
+                config["revenue_growth"] = _base["revenue_growth"]
+            if "cogs_pct" in _base:
+                config["cogs_pct"] = _base["cogs_pct"]
+            if "sga_pct" in _base:
+                config["sga_pct"] = _base["sga_pct"]
+
+        override_keys = list(_overrides.keys())
+        print(f"  Applied {len(override_keys)} override fields: {', '.join(override_keys[:10])}")
+
+    # Step 5: Fetch live market data via yfinance (price, shares, beta)
+    print(f"\n[Step 5/7] Fetching market data...")
     ticker_str = config["ticker"]
     config["current_price"], config["shares_outstanding"], live_beta = get_live_market_data(
         ticker_str, config["current_price"], config["shares_outstanding"]
@@ -385,11 +494,18 @@ def main():
         market_cap = 0
         config["de_ratio"] = 0.10
 
+    # Re-apply overrides for market data fields (if user has specific values)
+    if _overrides:
+        for field in ["current_price", "shares_outstanding", "beta", "de_ratio"]:
+            if field in _overrides:
+                config[field] = _overrides[field]
+                print(f"  Override applied: {field} = {_overrides[field]}")
+
     # Beta & Size Premium are normalized inside generate_dcf_workbook (template-level)
-    print(f"  Raw Beta: {live_beta:.2f}, D/E Ratio: {config['de_ratio']:.4f}, Mkt Cap: {market_cap:,.0f} mn")
+    print(f"  Raw Beta: {config['beta']:.2f}, D/E Ratio: {config['de_ratio']:.4f}, Mkt Cap: {market_cap:,.0f} mn")
 
     # Step 5: Load comparable companies data
-    print(f"\n[Step 5/6] Loading comparable companies...")
+    print(f"\n[Step 6/7] Loading comparable companies...")
     # Resolve comps CSV path: --comps-csv > data/comps/<ticker>_comps.csv
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     if args.comps_csv:
@@ -411,7 +527,7 @@ def main():
         config["comps"] = []
 
     # Step 6: Generate Excel
-    print(f"\n[Step 6/6] Generating DCF workbook...")
+    print(f"\n[Step 7/7] Generating DCF workbook...")
     os.makedirs(args.output_dir, exist_ok=True)
     date_str = datetime.now().strftime("%Y%m%d")
     output_path = os.path.join(args.output_dir, f"{ticker_code}_DCF_Model_{date_str}.xlsx")

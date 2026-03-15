@@ -496,6 +496,98 @@ def get_latest_interim_id(ticker_code, fiscal_year_end=None):
     return None
 
 
+def fetch_tanshin(securities_code, edinet_api_key=None):
+    """Fetch the latest 決算短信 (earnings summary) containing forecast data.
+
+    Searches for docTypeCode="140" (四半期報告書/決算短信) and downloads the XBRL.
+    Then extracts forecast/guidance data (業績予想) from the XBRL.
+
+    Args:
+        securities_code: Stock ticker code (e.g. "7974" or 7974).
+        edinet_api_key: Optional API key override. If None, reads from environment.
+
+    Returns:
+        dict with keys:
+            'forecast_data': {forecast_revenue, forecast_operating_income, ...} in JPY mn
+            'doc_id': EDINET document ID
+            'period_end': Period end date string
+        Returns None if no tanshin found or no forecast data extracted.
+    """
+    if edinet_api_key:
+        os.environ["EDINET_API_KEY"] = edinet_api_key
+    api_key = _get_api_key()
+    sec_code = str(securities_code).strip() + SEC_CODE_SUFFIX
+    today = date.today()
+
+    logger.info("Searching for 決算短信 (docTypeCode=140): secCode=%s", sec_code)
+
+    # Search recent dates for docTypeCode="140"
+    # Also try annual report docs (120) as they often contain forecast contexts
+    DOC_TYPES_TO_TRY = [DOC_TYPE_QUARTERLY_REPORT, DOC_TYPE_ANNUAL_REPORT]
+    found_doc = None
+    api_calls = 0
+
+    for doc_type in DOC_TYPES_TO_TRY:
+        if found_doc:
+            break
+        # Search backwards from today, check peak filing windows
+        for months_back in range(0, 18):
+            if found_doc or api_calls >= 30:
+                break
+            search_date_obj = today - timedelta(days=months_back * 15)
+            # Search a 5-day window around each candidate date
+            for delta in range(0, 10):
+                d = search_date_obj - timedelta(days=delta)
+                if d > today or d.weekday() >= 5:
+                    continue
+                result = _search_single_date(api_key, d, sec_code, doc_type)
+                api_calls += 1
+                if result is None:
+                    time.sleep(3)
+                    continue
+                if result:
+                    found_doc = result[0]
+                    logger.info("Found tanshin candidate: docID=%s, period=%s, type=%s",
+                                found_doc["doc_id"], found_doc["period_end"], doc_type)
+                    break
+                time.sleep(REQUEST_DELAY_SEC)
+
+    if not found_doc:
+        logger.info("No 決算短信 found for secCode=%s (%d API calls)", sec_code, api_calls)
+        return None
+
+    # Download and extract XBRL
+    try:
+        dl_result = download_and_extract_xbrl(found_doc["doc_id"])
+    except EdinetApiError as e:
+        logger.warning("Failed to download tanshin docID=%s: %s", found_doc["doc_id"], e)
+        return None
+
+    xbrl_files = [f for f in dl_result["xbrl_files"] if f.lower().endswith(".xbrl")]
+    if not xbrl_files:
+        logger.warning("No XBRL files in tanshin docID=%s", found_doc["doc_id"])
+        return None
+
+    # Parse and extract forecast data
+    try:
+        from scripts.edinet_parser import parse_xbrl_file, extract_forecast_data
+    except ImportError:
+        from edinet_parser import parse_xbrl_file, extract_forecast_data
+
+    soup = parse_xbrl_file(xbrl_files[0])
+    forecast_data = extract_forecast_data(soup)
+
+    if not forecast_data:
+        logger.info("No forecast data found in tanshin docID=%s", found_doc["doc_id"])
+        return None
+
+    return {
+        "forecast_data": forecast_data,
+        "doc_id": found_doc["doc_id"],
+        "period_end": found_doc["period_end"],
+    }
+
+
 def download_and_extract_xbrl(doc_id, output_dir=None):
     """Download a full disclosure ZIP from EDINET and extract XBRL files.
 

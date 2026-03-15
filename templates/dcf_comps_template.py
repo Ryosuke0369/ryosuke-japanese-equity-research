@@ -1115,7 +1115,7 @@ def generate_dcf_workbook(config, output_path=None):
     for col_idx in range(3, 10):
         ws4.cell(row=19, column=col_idx).fill = LIGHT_GREEN
 
-    section_title(ws4, 20, 2, "Kudan Financials")
+    section_title(ws4, 20, 2, f'{C["company_name"]} Financials')
 
     if USE_EV_SALES:
         set_cell(ws4, 21, 2, "Revenue (JPY mn)", font=BOLD_FONT)

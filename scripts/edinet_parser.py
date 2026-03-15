@@ -181,9 +181,19 @@ FINANCIAL_ITEMS = OrderedDict([
         "label": "Depreciation & Amortization (減価償却費)",
         "type": "duration",
         "tags": [
+            # J-GAAP standard
             "DepreciationAndAmortizationOpeCF",
             "DepreciationAndAmortization",
             "DepreciationSGA",
+            # IFRS Taxonomy
+            "DepreciationAmortisationAndImpairmentLossReversalOfImpairmentLossRecognisedInProfitOrLoss",
+            "DepreciationAndAmortisationExpense",
+            "DepreciationExpense",
+            "AmortisationExpense",
+            # Additional J-GAAP variants
+            "DepreciationCOS",
+            "DepreciationAndAmortizationNOPE",
+            "Depreciation",
         ],
         "sum": False,
     }),
@@ -199,15 +209,56 @@ FINANCIAL_ITEMS = OrderedDict([
         "label": "Capital Expenditure (設備投資)",
         "type": "duration",
         "tags": [
+            # J-GAAP standard
             "PurchaseOfPropertyPlantAndEquipmentAndIntangibleAssets",
             "PurchaseOfPropertyPlantAndEquipment",
             "PurchaseOfPropertyPlantAndEquipmentInvCF",
             "PurchaseOfNoncurrentAssetsInvCF",
+            # IFRS Taxonomy
+            "PurchaseOfPropertyPlantAndEquipmentClassifiedAsInvestingActivities",
+            "AcquisitionsOfPropertyPlantAndEquipment",
+            # Additional J-GAAP variants
+            "PurchaseOfPropertyPlantAndEquipmentAndOtherAssets",
+            "PaymentsForPurchaseOfPropertyPlantAndEquipment",
+            "PurchaseOfTangibleAndIntangibleAssets",
+            "PurchaseOfFixedAssetsInvCF",
+            "IncreaseInPropertyPlantAndEquipmentAndIntangibleAssets",
+            # Broader fallbacks
+            "PurchaseOfNonCurrentAssets",
+            "PaymentsToAcquirePropertyPlantAndEquipment",
+            "AdditionsToNoncurrentAssetsOtherThanFinancialInstrumentsDeferredTaxAssetsDefinedBenefitAssetsRightsArisingUnderInsuranceContractsAndRightsArisingUnderReinsuranceContracts",
         ],
         "sum": False,
-        "negate": True,  # CF statement reports as negative; we want positive
+        "negate": True,
     }),
 ])
+
+# Company guidance / forecast items (決算短信の業績予想)
+FORECAST_ITEMS = {
+    "forecast_revenue": {
+        "label": "Forecast Revenue (売上高予想)",
+        "tags": [
+            "ForecastRevenueOperatingRevenue1",
+            "ForecastNetSales",
+            "ForecastRevenue",
+        ],
+    },
+    "forecast_operating_income": {
+        "label": "Forecast Operating Income (営業利益予想)",
+        "tags": [
+            "ForecastOperatingIncome",
+            "ForecastOperatingProfit",
+        ],
+    },
+    "forecast_net_income": {
+        "label": "Forecast Net Income (当期純利益予想)",
+        "tags": [
+            "ForecastProfitLossAttributableToOwnersOfParent",
+            "ForecastNetIncome",
+            "ForecastProfitLoss",
+        ],
+    },
+}
 
 # Components that should be summed when a single aggregate tag is not found
 _SUM_COMPONENTS = {
@@ -510,6 +561,66 @@ def extract_company_info(soup):
                 break
 
     return info
+
+
+# =====================================================================
+# FORECAST / GUIDANCE EXTRACTION (決算短信・業績予想)
+# =====================================================================
+def extract_forecast_data(soup, scale=SCALE_TO_MN):
+    """Extract company guidance/forecast data from XBRL.
+
+    Forecast data appears in contexts with ForecastMember scenario dimension,
+    commonly found in 決算短信 (earnings summaries) and annual reports.
+
+    Args:
+        soup: BeautifulSoup object of parsed XBRL.
+        scale: Unit divisor (default: 1_000_000 for JPY mn).
+
+    Returns:
+        dict: {item_key: value_in_jpy_mn, ...} or empty dict if no forecasts found.
+              Keys: forecast_revenue, forecast_operating_income, forecast_net_income.
+    """
+    # Find contexts with ForecastMember in scenario dimension
+    forecast_ctx_ids = []
+    for ctx in soup.find_all("xbrli:context"):
+        ctx_id = ctx.get("id", "")
+        scenario = ctx.find("xbrli:scenario")
+        if scenario is None:
+            continue
+        # Check for ForecastMember in scenario (covers both explicit dimension
+        # members and context ID naming conventions)
+        scenario_str = str(scenario)
+        if "ForecastMember" in scenario_str or "ResultForecastMember" in scenario_str:
+            # Prefer CurrentYearDuration forecast (next FY forecast)
+            forecast_ctx_ids.append(ctx_id)
+
+    if not forecast_ctx_ids:
+        logger.info("No forecast contexts (ForecastMember) found in XBRL.")
+        return {}
+
+    # Prioritize: CurrentYearDuration forecasts first, then others
+    forecast_ctx_ids.sort(key=lambda x: (
+        "CurrentYear" not in x,
+        "NextYear" not in x,
+        x,
+    ))
+    logger.info("Found %d forecast context(s): %s",
+                len(forecast_ctx_ids), forecast_ctx_ids[:5])
+
+    result = {}
+    for item_key, item_def in FORECAST_ITEMS.items():
+        for ctx_id in forecast_ctx_ids:
+            for tag in item_def["tags"]:
+                val = _get_value(soup, tag, ctx_id)
+                if val is not None:
+                    result[item_key] = val / scale if scale else val
+                    logger.info("  Forecast: %s = %.1f mn (tag=%s, ctx=%s)",
+                                item_key, result[item_key], tag, ctx_id)
+                    break
+            if item_key in result:
+                break
+
+    return result
 
 
 # =====================================================================

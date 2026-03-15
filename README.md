@@ -6,6 +6,51 @@ End-to-end automation that fetches financial data directly from Japan's regulato
 
 ---
 
+## What's New — Phase 5: Research-Grade Overrides
+
+> **Your research, your assumptions — automatically injected.** Phase 5 adds a JSON override system that lets you layer research-backed assumptions on top of EDINET auto-generated models. Perfect for analysts who have done deep-dive segment analysis and want precise control over growth drivers, margins, and working capital — without losing the automation.
+
+### JSON Override System
+
+```bash
+# Auto-detected (just place a JSON file in data/overrides/)
+python scripts/generate_dcf.py 2359
+#   → Auto-detects data/overrides/2359_overrides.json
+
+# Explicit path
+python scripts/generate_dcf.py 2359 --overrides path/to/custom_overrides.json
+```
+
+### What You Can Override
+
+| Category | Override Fields | Use Case |
+|----------|----------------|----------|
+| **Growth** | `scenarios.Base.revenue_growth` | Segment-level revenue buildup |
+| **Margins** | `scenarios.*.cogs_pct`, `sga_pct` | Layer 2 solution mix improvement |
+| **FCF** | `capex_pct`, `da_pct` | Verified from 有報 (annual report) |
+| **NWC** | `scenarios.*.dso_days`, `dih_days`, `dpo_days` | BS-verified working capital |
+| **WACC** | `risk_free`, `terminal_growth`, `exit_multiple` | Thesis-specific adjustments |
+| **Thesis** | `investment_thesis`, `key_risks` | Narrative for Executive Summary |
+
+### How It Works
+
+```
+EDINET Auto-Data              JSON Overrides              Final Config
+┌──────────────────┐       ┌──────────────────┐       ┌──────────────────┐
+│ Revenue: 24,599  │       │ scenarios:       │       │ Revenue: 24,599  │
+│ COGS: 17,821     │  ──►  │   growth: 9.8%   │  ──►  │ Growth: 9.8%     │
+│ Growth: auto 2.5%│       │   OPM: 15.0%     │       │ OPM: 15.0%       │
+│ Thesis: [blank]  │       │ thesis: Defense   │       │ Thesis: Defense   │
+└──────────────────┘       └──────────────────┘       └──────────────────┘
+      (automatic)              (analyst input)            (merged output)
+```
+
+- Fields **not** in the JSON → EDINET auto-values preserved
+- Fields **in** the JSON → analyst's values take priority
+- Scenarios are deep-merged (you can override just Base without touching Downside)
+
+---
+
 ## What's New — Phase 4: Intelligent WACC & Scenario-Driven Valuation
 
 > **Professional-grade DCF inputs, automatically.** Phase 4 brings intelligent WACC calculation, multi-scenario analysis, and working capital modeling — eliminating hours of manual setup while keeping the analyst in control of forward assumptions.
@@ -73,7 +118,7 @@ EDINET (XBRL)          yfinance (quarterly)         Hybrid LTM
 | **Hybrid LTM Generation** | Automatically detects Q1/Q3 data gaps and constructs hybrid LTM by combining EDINET + yfinance quarterly data |
 | **Adaptive Fallback** | Seamlessly switches between EDINET XBRL and yfinance data sources depending on availability |
 | **Live Market Data** | Fetches real-time stock prices, shares outstanding, and market cap via yfinance API |
-| **DCF + Comps Model** | Generates a 5-sheet Excel workbook with 150+ live formulas: Executive Summary, Financial Statements, DCF Valuation, Comparable Company Analysis, and Sensitivity Tables |
+| **DCF + Comps Model** | Generates a 6-sheet Excel workbook with 150+ live formulas: Executive Summary, Financial Statements, DCF Valuation, NWC Schedule, Comparable Company Analysis, and Sensitivity Tables |
 | **LBO Model** | Full 3-statement LBO model (8 sheets) with debt schedules, IRR/MOIC returns analysis |
 | **M&A Accretion/Dilution** | Stock-for-stock merger analysis (7 sheets) with pro forma EPS impact across scenarios |
 | **5-Scenario Analysis** | Base / Upside / Management / Downside 1 & 2 — switch via Excel dropdown. Revenue Growth, COGS%, SGA%, NWC days all independently configurable per scenario |
@@ -120,6 +165,10 @@ echo "EDINET_API_KEY=your-subscription-key-here" > .env
 # 4. Generate a complete DCF model (one command)
 python scripts/generate_dcf.py 2359          # Core Corporation (3月決算)
 python scripts/generate_dcf.py 2359 --years 3  # 3 years only
+
+# 5. (Optional) Apply research-backed assumptions
+#    Place a JSON override file in data/overrides/
+python scripts/generate_dcf.py 2359 --overrides data/overrides/2359_overrides.json
 ```
 
 ### Adding Comparable Companies
@@ -160,8 +209,9 @@ Securities Code (e.g. 2359)
 ┌─────────────────────────┐
 │   generate_dcf.py       │  ← One-click orchestrator
 │   • Config builder      │     Converts data → model parameters
+│   • JSON overrides      │     Layers research assumptions on auto-data
 │   • Comps integration   │     Fetches peer group multiples
-│   • Excel generation    │     5-sheet workbook, 150+ formulas
+│   • Excel generation    │     6-sheet workbook, 150+ formulas
 └────────┬────────────────┘
          │
          ▼
@@ -203,6 +253,7 @@ ryosuke-japanese-equity-research/
 │   └── comps_input_template.csv           #   Peer company input template
 │
 ├── data/comps/                            # Input data (peer company CSVs)
+├── data/overrides/                        # Research-grade assumption overrides (JSON)
 ├── output/                                # Generated Excel models
 ├── tmp/edinet_data/                       # Auto-cleaned download cache (gitignored)
 │
@@ -222,9 +273,11 @@ ryosuke-japanese-equity-research/
 
 ### DCF & Comparable Company Analysis
 
-**Core Corporation (2359.T)** — GIS/Defense IT Services
-- Target price: JPY 2,734 (BUY, +22% upside)
-- 152 Excel formulas with cross-sheet references and BUY/HOLD/SELL recommendation logic
+**Core Corporation (2359.T)** — GIS / Defense Tech / DX Solutions
+- Investment thesis: Defense tech moat (GNSS anti-spoofing) + AX-driven margin expansion + Earnings surprise (EPS >¥200 vs consensus ¥174)
+- Segment-level revenue buildup: Layer 1 (staff augmentation) + Layer 2 (solutions) with verified FCF bridge from 有報
+- 5-scenario DCF with JSON override integration — research-grade assumptions layered on EDINET auto-data
+- Comps: Systena, SRA HD, CEC, Cresco, DTS (5 peers, SaaS/scale mismatches excluded)
 
 **Kudan (4425.T)** — Deep Learning Visual SLAM
 - PDF auto-parsing from 3 years of annual reports (TDnet filings)
@@ -255,7 +308,8 @@ ryosuke-japanese-equity-research/
 - [x] **Phase 2** — EDINET API integration for automated XBRL data extraction + LTM
 - [x] **Phase 3** — Hybrid LTM generation with yfinance adaptive fallback (Q1/Q3 data gap solution)
 - [x] **Phase 4** — Intelligent WACC, 5-scenario analysis, NWC schedule, sensitivity tables, comps CSV workflow
-- [ ] **Phase 5** — EDINET XBRL tag expansion (non-standard Capex/D&A extraction), company guidance auto-integration
+- [x] **Phase 5** — Research-grade overrides: JSON-based manual assumption injection (scenarios, FCF bridge, investment thesis) layered on top of EDINET auto-data
+- [ ] **Phase 6** — EDINET XBRL tag expansion (non-standard Capex/D&A extraction), company guidance auto-integration
 
 ---
 

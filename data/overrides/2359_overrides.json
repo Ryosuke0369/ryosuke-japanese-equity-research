@@ -1,0 +1,72 @@
+{
+    "sector": "Information & Communication",
+    "capex_pct": 0.0062,
+    "da_pct": 0.0088,
+    "tax_rate": 0.305,
+    "risk_free": 0.012,
+    "cost_of_debt_at": 0.005,
+    "terminal_growth": 0.015,
+    "exit_multiple": 10.0,
+    "ltm_revenue": 24599,
+    "projection_start_fy": "FY2026(E)",
+    "stub_fraction": 0.25,
+    "stub_months_elapsed": 9,
+    "base_year_ar": 7861,
+    "base_year_inv": 247,
+    "base_year_ap": 1735,
+    "core_ebitda": 3391,
+    "core_net_income": 2207,
+    "primary_multiple": "EV/EBITDA",
+    "scenarios": {
+        "Base": {
+            "revenue_growth": [0.098, 0.104, 0.070, 0.050, 0.040],
+            "cogs_pct": [0.717, 0.713, 0.710, 0.705, 0.700],
+            "sga_pct": [0.133, 0.130, 0.128, 0.126, 0.125],
+            "dso_days": [115, 113, 112, 110, 110],
+            "dih_days": [6, 6, 6, 6, 6],
+            "dpo_days": [35, 35, 35, 35, 35]
+        },
+        "Upside": {
+            "revenue_growth": [0.098, 0.140, 0.100, 0.080, 0.060],
+            "cogs_pct": [0.717, 0.705, 0.695, 0.690, 0.685],
+            "sga_pct": [0.130, 0.125, 0.122, 0.120, 0.118],
+            "dso_days": [112, 110, 108, 105, 105],
+            "dih_days": [5, 5, 5, 5, 5],
+            "dpo_days": [36, 37, 38, 38, 38]
+        },
+        "Management": {
+            "revenue_growth": [0.098, 0.080, 0.060, 0.050, 0.040],
+            "cogs_pct": [0.724, 0.722, 0.720, 0.718, 0.716],
+            "sga_pct": [0.146, 0.143, 0.140, 0.138, 0.135],
+            "dso_days": [115, 115, 113, 112, 110],
+            "dih_days": [6, 6, 6, 6, 6],
+            "dpo_days": [35, 35, 35, 35, 35]
+        },
+        "Downside 1": {
+            "revenue_growth": [0.098, 0.040, 0.030, 0.020, 0.020],
+            "cogs_pct": [0.724, 0.730, 0.735, 0.738, 0.740],
+            "sga_pct": [0.140, 0.142, 0.145, 0.145, 0.145],
+            "dso_days": [118, 120, 122, 122, 122],
+            "dih_days": [7, 7, 7, 7, 7],
+            "dpo_days": [34, 33, 33, 33, 33]
+        },
+        "Downside 2": {
+            "revenue_growth": [0.098, 0.000, -0.020, 0.000, 0.010],
+            "cogs_pct": [0.730, 0.745, 0.750, 0.748, 0.745],
+            "sga_pct": [0.148, 0.150, 0.155, 0.155, 0.150],
+            "dso_days": [120, 125, 128, 128, 125],
+            "dih_days": [8, 8, 8, 8, 8],
+            "dpo_days": [32, 30, 30, 30, 30]
+        }
+    },
+    "investment_thesis": [
+        "1. Defense Tech: GNSS anti-spoofing tech for JASDF; 4-layer moat (proprietary receiver + QZSS auth + security clearance + space tech track record)",
+        "2. AX Transformation: Layer 2 (solution) ratio rising 25.9% → 33.3%, structurally improving OPM",
+        "3. Earnings Surprise: Base case EPS >¥200 vs consensus ~¥174; Q3 OP progress rate 82.5% implies ~¥4,050M OP"
+    ],
+    "key_risks": [
+        "1. Defense contracts still in R&D/validation phase — mass production orders unconfirmed",
+        "2. Key person risk in specialized GNSS/space technology division",
+        "3. Revenue concentration in Japanese domestic IT services market"
+    ]
+}

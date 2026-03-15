@@ -37,6 +37,15 @@ examples/**/test_*.py
 examples/**/output_*.txt
 examples/**/tasks/
 
+# Windows shortcuts
+*.lnk
+
+# Override JSONs contain analyst assumptions (optional: remove if you want public)
+# data/overrides/
+
+# Tasks (development notes)
+tasks/
+
 # Environment
 .env
 .venv/
