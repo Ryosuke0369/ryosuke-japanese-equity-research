@@ -118,13 +118,15 @@ FINANCIAL_ITEMS = OrderedDict([
         "label": "Accounts Receivable (売上債権)",
         "type": "instant",
         "tags": [
-            "NotesAndAccountsReceivableTradeAndContractAssets",
+            # Aggregate tags (excluding contract assets for cleaner DSO)
             "NotesAndAccountsReceivableTrade",
             "NotesAndOperatingAccountsReceivableTrade",
-            # Fallback: sum individual components
+            # Fallback: sum individual trade receivable components
+            # (ContractAssets excluded — it inflates DSO for progress-billing companies)
             "AccountsReceivableTrade",
             "NotesReceivableTrade",
-            "ContractAssets",
+            "ElectronicallyRecordedMonetaryClaimsOperatingCA",
+            "ElectronicallyRecordedMonetaryClaimsOperatingAccounts",
         ],
         "sum": "fallback",  # try single tags first, then sum components
     }),
@@ -266,7 +268,8 @@ _SUM_COMPONENTS = {
     "accounts_receivable": [
         "AccountsReceivableTrade",
         "NotesReceivableTrade",
-        "ContractAssets",
+        "ElectronicallyRecordedMonetaryClaimsOperatingCA",
+        "ElectronicallyRecordedMonetaryClaimsOperatingAccounts",
     ],
     "inventories": [
         "MerchandiseAndFinishedGoods",

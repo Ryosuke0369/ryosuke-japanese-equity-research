@@ -670,9 +670,10 @@ def generate_dcf_workbook(config, output_path=None):
         set_cell(ws3, R_DRV_SGA, col, choose_formula(R_SCEN_BLK_SGA, cl),
                  font=BLACK_FONT, fmt=FMT_PCT, fill=LIGHT_FILL)
 
-        # Revenue — references driver row
+        # Revenue — Year 1 grows from Base Year Revenue (latest FY actual, C17)
+        # NOT from LTM Revenue (C20), which would create a visible gap vs historicals
         if yr == 0:
-            set_cell(ws3, R_REVENUE, col, f"=C20*(1+{cl}{R_DRV_GROWTH})", font=BLACK_FONT, fmt=FMT_YEN)
+            set_cell(ws3, R_REVENUE, col, f"=C17*(1+{cl}{R_DRV_GROWTH})", font=BLACK_FONT, fmt=FMT_YEN)
         else:
             set_cell(ws3, R_REVENUE, col, f"={prev_cl}{R_REVENUE}*(1+{cl}{R_DRV_GROWTH})", font=BLACK_FONT, fmt=FMT_YEN)
 
@@ -822,8 +823,15 @@ def generate_dcf_workbook(config, output_path=None):
 
     set_cell(ws_nwc, 2, 2, f'NWC Schedule - {C["company_name"]}', font=TITLE_FONT)
 
-    # ── Headers: Base Year + Year 1-5 ──
-    nwc_headers = ["Base Year"] + [f"Year {y}" for y in range(1, proj_years + 1)]
+    # ── Headers: Base Year + FY labels (matching DCF Model sheet) ──
+    nwc_proj_labels = [f"Year {y}" for y in range(1, proj_years + 1)]
+    if C.get("projection_start_fy"):
+        import re as _re
+        _m = _re.search(r"FY(\d+)", C["projection_start_fy"])
+        if _m:
+            _base_fy = int(_m.group(1))
+            nwc_proj_labels = [f"FY{_base_fy + y}(E)" for y in range(proj_years)]
+    nwc_headers = ["Base Year"] + nwc_proj_labels
     header_row(ws_nwc, 4, 3, 3 + proj_years, nwc_headers)
 
     # ── Working Capital Drivers ──
@@ -970,7 +978,8 @@ def generate_dcf_workbook(config, output_path=None):
         ws_nwc.cell(row=NWC_R_SCEN_SEC, column=col_idx).fill = LIGHT_GREEN
 
     for yr in range(proj_years):
-        set_cell(ws_nwc, NWC_R_SCEN_YEARS, 4 + yr, f"Year {yr + 1}",
+        _scen_yr_label = nwc_proj_labels[yr] if yr < len(nwc_proj_labels) else f"Year {yr + 1}"
+        set_cell(ws_nwc, NWC_R_SCEN_YEARS, 4 + yr, _scen_yr_label,
                  font=HEADER_FONT, fill=HEADER_FILL,
                  alignment=Alignment(horizontal="center"))
 

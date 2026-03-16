@@ -85,19 +85,34 @@ def merged_data_to_config(company_info, merged_data, forecast_data=None):
     base_data = merged_data[base_key]
     latest_fy_data = merged_data[latest_fy_key] if latest_fy_key else base_data
 
-    base_year_revenue = _val(base_data, "revenue", 1)
-    base_year_cogs = _val(base_data, "cogs")
+    # Base year revenue/cogs: use latest FY actuals (not LTM)
+    # This ensures projection Year 1 connects naturally to the last historical FY
+    # (e.g., FY2025: 21,579 → FY2026(E): 21,579 × 1.10 = 23,737)
+    # LTM revenue is kept separately for reference/stub discounting.
+    latest_annual_fy = merged_data[fy_keys_oldest_first[-1]] if fy_keys_oldest_first else base_data
+    base_year_revenue = _val(latest_annual_fy, "revenue", 1)
+    base_year_cogs = _val(latest_annual_fy, "cogs")
     # If cogs is 0 in base, reverse-calc
     if base_year_cogs == 0 and base_year_revenue != 0:
         base_year_cogs = round(
-            _val(base_data, "revenue") - _val(base_data, "operating_income") - _val(base_data, "sga"), 1
+            _val(latest_annual_fy, "revenue") - _val(latest_annual_fy, "operating_income") - _val(latest_annual_fy, "sga"), 1
         )
         if base_year_cogs < 0:
             base_year_cogs = 0
 
-    base_year_ar = _val(base_data, "accounts_receivable")
-    base_year_inv = _val(base_data, "inventories")
-    base_year_ap = _val(base_data, "accounts_payable")
+    # NWC base year: prefer latest FY annual BS over LTM snapshot
+    # LTM BS is a point-in-time snapshot that may not be representative
+    # (e.g., equipment makers have volatile AR depending on delivery timing)
+    latest_annual_key = fy_keys_oldest_first[-1] if fy_keys_oldest_first else None
+    if latest_annual_key:
+        latest_annual = merged_data[latest_annual_key]
+        base_year_ar = _val(latest_annual, "accounts_receivable") or _val(base_data, "accounts_receivable")
+        base_year_inv = _val(latest_annual, "inventories") or _val(base_data, "inventories")
+        base_year_ap = _val(latest_annual, "accounts_payable") or _val(base_data, "accounts_payable")
+    else:
+        base_year_ar = _val(base_data, "accounts_receivable")
+        base_year_inv = _val(base_data, "inventories")
+        base_year_ap = _val(base_data, "accounts_payable")
     net_debt = _val(base_data, "net_debt")
 
     # Auto-calculate DCF assumptions: average da_pct/capex_pct across all FY years
