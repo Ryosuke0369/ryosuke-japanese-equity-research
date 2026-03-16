@@ -63,17 +63,24 @@ def get_comps_data(csv_path):
     comps = []
 
     with open(csv_path, encoding="utf-8", newline="") as f:
-        reader = csv.DictReader(f)
+        # Auto-detect delimiter (handles both comma and tab-separated files)
+        sample = f.readline()
+        f.seek(0)
+        delimiter = "\t" if "\t" in sample else ","
+        reader = csv.DictReader(f, delimiter=delimiter)
         for row in reader:
             ticker = row["Ticker"].strip()
             name = row["Name"].strip()
 
+            # Normalize column names: strip whitespace from keys
+            row = {k.strip(): v.strip() for k, v in row.items()}
+
             revenue = float(row["Revenue"])
             ebitda = float(row["EBITDA"])
-            op_income = float(row["Operating_Income"])
-            net_income = float(row["Net_Income"])
-            book_value = float(row["Book_Value"])
-            net_debt = float(row["Net_Debt"])
+            op_income = float(row.get("Operating_Income") or row.get("Operating Income", "0"))
+            net_income = float(row.get("Net_Income") or row.get("Net Income", "0"))
+            book_value = float(row.get("Book_Value") or row.get("Book Value", "0"))
+            net_debt = float(row.get("Net_Debt") or row.get("Net Debt", "0"))
 
             # Fetch market cap from yfinance
             mkt_cap = _fetch_market_cap(ticker)

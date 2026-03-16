@@ -70,6 +70,7 @@ FINANCIAL_ITEMS = OrderedDict([
         "type": "duration",
         "tags": [
             "CostOfSales",
+            "CostOfProductsManufactured",
             "CostOfSalesOfCompletedConstructionContracts",
             "OperatingExpenses",
         ],
@@ -311,6 +312,10 @@ def identify_clean_contexts(soup):
     top-level consolidated financial totals. Contexts with dimension members
     (e.g., equity components, segments) should be excluded.
 
+    For non-consolidated companies (単体), all data lives under
+    NonConsolidatedMember contexts. If clean contexts yield no revenue data,
+    we fall back to these.
+
     Args:
         soup: BeautifulSoup object of parsed XBRL.
 
@@ -339,6 +344,50 @@ def identify_clean_contexts(soup):
                         logger.info("  Context %-25s -> %s", ctx_id, instant.text)
                     elif start and end:
                         logger.info("  Context %-25s -> %s to %s", ctx_id, start.text, end.text)
+
+    # --- Fallback for non-consolidated (単体) companies ---
+    # If clean contexts found no revenue data, try NonConsolidatedMember contexts
+    if clean_contexts:
+        has_revenue = False
+        revenue_tags = FINANCIAL_ITEMS["revenue"]["tags"]
+        dur_ctx = clean_contexts.get("current_duration")
+        if dur_ctx:
+            for tag in revenue_tags:
+                if _get_value(soup, tag, dur_ctx) is not None:
+                    has_revenue = True
+                    break
+        if has_revenue:
+            return clean_contexts
+
+    # Look for NonConsolidatedMember contexts as fallback
+    noncon_contexts = {}
+    for ctx in soup.find_all("xbrli:context"):
+        ctx_id = ctx.get("id", "")
+        scenario = ctx.find("xbrli:scenario")
+        if scenario is None:
+            continue
+        # Check if this is a pure NonConsolidatedMember context
+        # (single dimension: ConsolidatedOrNonConsolidatedAxis:NonConsolidatedMember)
+        if "NonConsolidatedMember" not in ctx_id:
+            continue
+
+        for key, pattern in CONTEXT_PATTERNS.items():
+            expected_id = f"{pattern}_NonConsolidatedMember"
+            if ctx_id == expected_id:
+                noncon_contexts[key] = ctx_id
+                period = ctx.find("xbrli:period")
+                if period:
+                    instant = period.find("xbrli:instant")
+                    start = period.find("xbrli:startDate")
+                    end = period.find("xbrli:endDate")
+                    if instant:
+                        logger.info("  NonCon Context %-25s -> %s", ctx_id, instant.text)
+                    elif start and end:
+                        logger.info("  NonCon Context %-25s -> %s to %s", ctx_id, start.text, end.text)
+
+    if noncon_contexts:
+        logger.info("Using NonConsolidatedMember contexts (単体 company fallback)")
+        return noncon_contexts
 
     return clean_contexts
 
@@ -743,6 +792,69 @@ def identify_quarterly_contexts(soup):
     if quarter_number:
         result["quarter_number"] = quarter_number
 
+    # --- Fallback for non-consolidated (単体) companies ---
+    # If clean quarterly contexts have no revenue data, try NonConsolidatedMember variants
+    _need_noncon_fallback = not result.get("current_accumulated_duration")
+    if not _need_noncon_fallback and result.get("current_accumulated_duration"):
+        _has_q_revenue = False
+        for tag in FINANCIAL_ITEMS["revenue"]["tags"]:
+            if _get_value(soup, tag, result["current_accumulated_duration"]) is not None:
+                _has_q_revenue = True
+                break
+        if not _has_q_revenue:
+            _need_noncon_fallback = True
+            # Clear the empty clean contexts so NonCon can replace them
+            result = {k: v for k, v in result.items()
+                      if k in ("quarter_number", "period_end")}
+
+    if _need_noncon_fallback:
+        for ctx in soup.find_all("xbrli:context"):
+            ctx_id = ctx.get("id", "")
+            if "NonConsolidatedMember" not in ctx_id:
+                continue
+
+            for q in [3, 2, 1]:
+                cur_pat = f"CurrentAccumulatedQ{q}Duration_NonConsolidatedMember"
+                pri_pat = f"Prior1AccumulatedQ{q}Duration_NonConsolidatedMember"
+
+                if ctx_id == cur_pat and "current_accumulated_duration" not in result:
+                    result["current_accumulated_duration"] = ctx_id
+                    quarter_number = q
+                    result["quarter_number"] = q
+                    period = ctx.find("xbrli:period")
+                    if period:
+                        end = period.find("xbrli:endDate")
+                        if end:
+                            result["period_end"] = end.text
+                    logger.info("  NonCon Q%d Context %s", q, ctx_id)
+
+                if ctx_id == pri_pat and "prior1_accumulated_duration" not in result:
+                    result["prior1_accumulated_duration"] = ctx_id
+                    logger.info("  NonCon Q%d Context %s", q, ctx_id)
+
+            if ctx_id == "CurrentQuarterInstant_NonConsolidatedMember":
+                result["current_quarter_instant"] = ctx_id
+            if ctx_id == "Prior1QuarterInstant_NonConsolidatedMember":
+                result["prior1_quarter_instant"] = ctx_id
+            if ctx_id == "InterimInstant_NonConsolidatedMember":
+                result.setdefault("current_quarter_instant", ctx_id)
+            if ctx_id == "Prior1InterimInstant_NonConsolidatedMember":
+                result.setdefault("prior1_quarter_instant", ctx_id)
+            if ctx_id == "InterimDuration_NonConsolidatedMember":
+                result.setdefault("current_accumulated_duration", ctx_id)
+                if not result.get("quarter_number"):
+                    result["quarter_number"] = 2
+                period = ctx.find("xbrli:period")
+                if period:
+                    end = period.find("xbrli:endDate")
+                    if end:
+                        result.setdefault("period_end", end.text)
+            if ctx_id == "Prior1InterimDuration_NonConsolidatedMember":
+                result.setdefault("prior1_accumulated_duration", ctx_id)
+
+        if result.get("current_accumulated_duration"):
+            logger.info("Using NonConsolidatedMember quarterly contexts (単体 company fallback)")
+
     return result
 
 
@@ -1064,7 +1176,7 @@ def main():
     # Identify clean contexts
     contexts = identify_clean_contexts(soup)
     if not contexts:
-        print("ERROR: No clean consolidated contexts found in XBRL file.")
+        print("ERROR: No clean contexts found in XBRL file (checked both consolidated and non-consolidated).")
         sys.exit(1)
 
     # Extract data
