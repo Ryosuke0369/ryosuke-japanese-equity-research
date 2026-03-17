@@ -313,17 +313,18 @@ def generate_dcf_workbook(config, output_path=None):
     raw_beta = C.get("beta", 1.0)
     if not raw_beta or raw_beta < 0.6 or raw_beta > 1.5:
         C["beta"] = 1.0
-    # Size Premium: auto-determine from market cap (JPY mn)
-    try:
-        mkt_cap = C["current_price"] * C["shares_outstanding"] / 1_000_000
-    except (KeyError, TypeError):
-        mkt_cap = 0
-    if mkt_cap >= 1_000_000:        # >= 1 trillion JPY
-        C["size_premium"] = 0.0
-    elif mkt_cap >= 100_000:         # >= 100 billion JPY
-        C["size_premium"] = 0.015
-    else:
-        C["size_premium"] = 0.03
+    # Size Premium: auto-determine from market cap (JPY mn) unless explicitly overridden
+    if "size_premium" not in C.get("_override_keys", set()):
+        try:
+            mkt_cap = C["current_price"] * C["shares_outstanding"] / 1_000_000
+        except (KeyError, TypeError):
+            mkt_cap = 0
+        if mkt_cap >= 1_000_000:        # >= 1 trillion JPY
+            C["size_premium"] = 0.0
+        elif mkt_cap >= 100_000:         # >= 100 billion JPY
+            C["size_premium"] = 0.015
+        else:
+            C["size_premium"] = 0.03
 
     # Restore flat arrays from Base scenario
     _base = C["scenarios"]["Base"]

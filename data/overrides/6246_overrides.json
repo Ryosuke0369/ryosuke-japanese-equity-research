@@ -1,0 +1,72 @@
+{
+  "company_name": "TechnoSmart Corporation",
+  "ticker": "6246.T",
+  "exchange": "TSE Standard",
+  "sector": "Machinery",
+
+  "investment_thesis": [
+    "1. LiB electrode coating equipment with ~20% global market share (duopoly with Hirano Tecseed)",
+    "2. Dual revenue pillars (optical display + battery) provide counter-cyclical stability, sustaining 16% OPM",
+    "3. Structural tailwind: electricity demand acceleration (AI/DC + EV + grid storage) drives battery capex cycle",
+    "4. Effissimo Capital (activist) as major shareholder - catalyst for capital efficiency improvement and enhanced returns"
+  ],
+  "key_risks": [
+    "1. EV market capex delay directly reduces battery coating equipment orders",
+    "2. Order-driven business model creates significant quarterly earnings volatility",
+    "3. Competitive pressure from Hirano Tecseed (6245) in core LiB coating market",
+    "4. Low daily trading volume (JPY 5-10mn) creates liquidity risk for institutional investors"
+  ],
+
+  "risk_free": 0.022,
+  "erp": 0.065,
+  "beta": 0.90,
+  "size_premium": 0.04,
+  "cost_of_debt_at": 0.005,
+  "terminal_growth": 0.015,
+  "exit_multiple": 8.0,
+  "tax_rate": 0.30,
+  "primary_multiple": "EV/EBITDA",
+
+  "scenarios": {
+    "Base": {
+      "revenue_growth": [0.10, 0.12, 0.08, 0.06, 0.05],
+      "cogs_pct": [0.77, 0.77, 0.765, 0.765, 0.76],
+      "sga_pct": [0.06, 0.06, 0.06, 0.06, 0.06],
+      "dso_days": [65, 63, 62, 60, 60],
+      "dih_days": [10, 10, 10, 10, 10],
+      "dpo_days": [40, 40, 40, 40, 40]
+    },
+    "Upside": {
+      "revenue_growth": [0.15, 0.18, 0.15, 0.12, 0.10],
+      "cogs_pct": [0.76, 0.76, 0.76, 0.75, 0.75],
+      "sga_pct": [0.05, 0.05, 0.05, 0.05, 0.05],
+      "dso_days": [60, 58, 56, 55, 55],
+      "dih_days": [9, 9, 9, 9, 9],
+      "dpo_days": [42, 43, 43, 43, 43]
+    },
+    "Management": {
+      "revenue_growth": [0.08, 0.08, 0.06, 0.05, 0.04],
+      "cogs_pct": [0.77, 0.77, 0.77, 0.77, 0.77],
+      "sga_pct": [0.06, 0.06, 0.06, 0.06, 0.06],
+      "dso_days": [65, 65, 63, 62, 60],
+      "dih_days": [10, 10, 10, 10, 10],
+      "dpo_days": [40, 40, 40, 40, 40]
+    },
+    "Downside 1": {
+      "revenue_growth": [0.03, 0.02, 0.02, 0.02, 0.02],
+      "cogs_pct": [0.78, 0.78, 0.78, 0.78, 0.78],
+      "sga_pct": [0.07, 0.07, 0.07, 0.07, 0.07],
+      "dso_days": [70, 72, 72, 70, 70],
+      "dih_days": [12, 12, 12, 12, 12],
+      "dpo_days": [38, 36, 36, 36, 36]
+    },
+    "Downside 2": {
+      "revenue_growth": [-0.05, -0.03, 0.00, 0.02, 0.02],
+      "cogs_pct": [0.79, 0.79, 0.79, 0.79, 0.79],
+      "sga_pct": [0.08, 0.08, 0.08, 0.08, 0.08],
+      "dso_days": [75, 78, 78, 75, 75],
+      "dih_days": [14, 14, 14, 14, 14],
+      "dpo_days": [35, 33, 33, 33, 33]
+    }
+  }
+}

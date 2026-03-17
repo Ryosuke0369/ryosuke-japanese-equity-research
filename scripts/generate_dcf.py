@@ -487,6 +487,7 @@ def main():
                 config["sga_pct"] = _base["sga_pct"]
 
         override_keys = list(_overrides.keys())
+        config["_override_keys"] = set(override_keys)
         print(f"  Applied {len(override_keys)} override fields: {', '.join(override_keys[:10])}")
 
     # Step 5: Fetch live market data via yfinance (price, shares, beta)
