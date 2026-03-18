@@ -27,46 +27,115 @@
   "tax_rate": 0.30,
   "primary_multiple": "EV/EBITDA",
 
+  "nwc_method": "revenue_pct",
+
   "scenarios": {
     "Base": {
       "revenue_growth": [0.10, 0.12, 0.08, 0.06, 0.05],
       "cogs_pct": [0.77, 0.77, 0.765, 0.765, 0.76],
       "sga_pct": [0.06, 0.06, 0.06, 0.06, 0.06],
-      "dso_days": [65, 63, 62, 60, 60],
-      "dih_days": [10, 10, 10, 10, 10],
-      "dpo_days": [40, 40, 40, 40, 40]
+      "nwc_pct": [0.72, 0.70, 0.68, 0.66, 0.65]
     },
     "Upside": {
       "revenue_growth": [0.15, 0.18, 0.15, 0.12, 0.10],
       "cogs_pct": [0.76, 0.76, 0.76, 0.75, 0.75],
       "sga_pct": [0.05, 0.05, 0.05, 0.05, 0.05],
-      "dso_days": [60, 58, 56, 55, 55],
-      "dih_days": [9, 9, 9, 9, 9],
-      "dpo_days": [42, 43, 43, 43, 43]
+      "nwc_pct": [0.68, 0.66, 0.64, 0.62, 0.60]
     },
     "Management": {
       "revenue_growth": [0.08, 0.08, 0.06, 0.05, 0.04],
       "cogs_pct": [0.77, 0.77, 0.77, 0.77, 0.77],
       "sga_pct": [0.06, 0.06, 0.06, 0.06, 0.06],
-      "dso_days": [65, 65, 63, 62, 60],
-      "dih_days": [10, 10, 10, 10, 10],
-      "dpo_days": [40, 40, 40, 40, 40]
+      "nwc_pct": [0.72, 0.71, 0.70, 0.68, 0.66]
     },
     "Downside 1": {
       "revenue_growth": [0.03, 0.02, 0.02, 0.02, 0.02],
       "cogs_pct": [0.78, 0.78, 0.78, 0.78, 0.78],
       "sga_pct": [0.07, 0.07, 0.07, 0.07, 0.07],
-      "dso_days": [70, 72, 72, 70, 70],
-      "dih_days": [12, 12, 12, 12, 12],
-      "dpo_days": [38, 36, 36, 36, 36]
+      "nwc_pct": [0.75, 0.76, 0.76, 0.75, 0.75]
     },
     "Downside 2": {
       "revenue_growth": [-0.05, -0.03, 0.00, 0.02, 0.02],
       "cogs_pct": [0.79, 0.79, 0.79, 0.79, 0.79],
       "sga_pct": [0.08, 0.08, 0.08, 0.08, 0.08],
-      "dso_days": [75, 78, 78, 75, 75],
-      "dih_days": [14, 14, 14, 14, 14],
-      "dpo_days": [35, 33, 33, 33, 33]
+      "nwc_pct": [0.80, 0.80, 0.80, 0.80, 0.80]
     }
-  }
+  },
+
+  "segments": [
+    {
+      "name": "Display Components",
+      "name_jp": "ディスプレイ部品関連",
+      "driver_type": "backlog",
+      "historical": {
+        "revenue": [7464, 6349, 9843],
+        "op": [null, null, null],
+        "orders": [null, 14662, 6594],
+        "backlog_end": [null, 15343, 12094]
+      },
+      "projections": {
+        "revenue": [11000, 12500, 13500, 14000],
+        "orders": [10000, 11500, 12500, 13000],
+        "op_margin": [0.25, 0.26, 0.27, 0.27]
+      }
+    },
+    {
+      "name": "Functional Film (MLCC)",
+      "name_jp": "機能性フィルム関連",
+      "driver_type": "backlog",
+      "historical": {
+        "revenue": [null, 4388, 5164],
+        "op": [null, null, null],
+        "orders": [null, 1835, 3349],
+        "backlog_end": [null, 7093, 5279]
+      },
+      "projections": {
+        "revenue": [6000, 7000, 8000, 9000],
+        "orders": [5500, 7500, 8500, 9500],
+        "op_margin": [0.18, 0.19, 0.20, 0.21]
+      }
+    },
+    {
+      "name": "Energy (LiB)",
+      "name_jp": "エネルギー関連",
+      "driver_type": "backlog",
+      "historical": {
+        "revenue": [null, 5206, 5193],
+        "op": [null, null, null],
+        "orders": [null, 5963, 3025],
+        "backlog_end": [null, 7883, 5715]
+      },
+      "projections": {
+        "revenue": [5500, 6000, 6500, 7500],
+        "orders": [5000, 6500, 7000, 8000],
+        "op_margin": [0.15, 0.16, 0.17, 0.18]
+      }
+    },
+    {
+      "name": "Electronic Components",
+      "name_jp": "電子部品関連",
+      "driver_type": "manual",
+      "historical": {
+        "revenue": [null, 1999, 389],
+        "op": [null, null, null]
+      },
+      "projections": {
+        "revenue": [500, 600, 700, 800],
+        "op_margin": [0.10, 0.10, 0.11, 0.11]
+      }
+    },
+    {
+      "name": "Other",
+      "name_jp": "その他・化工",
+      "driver_type": "manual",
+      "historical": {
+        "revenue": [null, 1301, 990],
+        "op": [null, null, null]
+      },
+      "projections": {
+        "revenue": [700, 700, 700, 700],
+        "op_margin": [0.05, 0.05, 0.05, 0.05]
+      }
+    }
+  ]
 }

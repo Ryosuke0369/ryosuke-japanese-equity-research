@@ -294,6 +294,703 @@ def get_live_market_data(ticker_str, fallback_price, fallback_shares):
 
 
 # =====================================================================
+# SEGMENT ANALYSIS SHEET
+# =====================================================================
+def _create_segment_sheet(wb, C, segments, proj_years, year_labels):
+    """Generate Segment Analysis sheet from overrides JSON segments data.
+
+    Layout:
+      Row 2: Title
+      Row 4: Header row (Historical years + Projection years)
+      Row 5+: Per-segment blocks (Revenue, OP, OPM, blank)
+      After all segments: Total block + Reconciliation check
+    """
+    ws = wb.create_sheet("Segment Analysis")
+    ws.sheet_properties.tabColor = "8B0000"  # Dark red
+
+    ws.column_dimensions["A"].width = 3
+    ws.column_dimensions["B"].width = 34
+
+    # Determine historical years from segment data
+    n_hist = 0
+    for seg in segments:
+        hist_rev = seg.get("historical", {}).get("revenue", [])
+        if len(hist_rev) > n_hist:
+            n_hist = len(hist_rev)
+
+    n_data_cols = n_hist + proj_years
+    for ci in range(n_data_cols):
+        ws.column_dimensions[col_letter(3 + ci)].width = 16
+
+    # Title
+    set_cell(ws, 2, 2, f'Segment Analysis - {C["company_name"]}', font=TITLE_FONT)
+
+    # Header row: historical FY labels + projection year labels
+    hist_labels = []
+    if n_hist >= 3:
+        hist_labels = ["FY-2", "FY-1", "FY0 (Base)"]
+    elif n_hist == 2:
+        hist_labels = ["FY-1", "FY0 (Base)"]
+    elif n_hist == 1:
+        hist_labels = ["FY0 (Base)"]
+
+    # If projection_start_fy is available, use actual FY labels
+    if C.get("projection_start_fy"):
+        import re as _re
+        _m = _re.search(r"FY(\d+)", C["projection_start_fy"])
+        if _m:
+            _base_fy = int(_m.group(1))
+            hist_labels = [f"FY{_base_fy - n_hist + 1 + i}" for i in range(n_hist)]
+
+    all_headers = hist_labels + year_labels
+    header_row(ws, 4, 3, 3 + len(all_headers) - 1, all_headers)
+
+    cur_row = 5  # Start of segment blocks
+
+    seg_rev_rows = []   # Track revenue row for each segment (for Total SUM)
+    seg_op_rows = []    # Track OP row for each segment
+
+    for seg_idx, seg in enumerate(segments):
+        seg_name = seg.get("name", f"Segment {seg_idx + 1}")
+        seg_name_jp = seg.get("name_jp", "")
+        display_name = f"{seg_name}" + (f" ({seg_name_jp})" if seg_name_jp else "")
+
+        hist = seg.get("historical", {})
+        proj = seg.get("projections", {})
+        hist_rev = hist.get("revenue", [None] * n_hist)
+        hist_op = hist.get("op", [None] * n_hist)
+        proj_rev = proj.get("revenue", [None] * proj_years)
+        proj_op_margin = proj.get("op_margin", [None] * proj_years)
+
+        # Pad historical arrays to n_hist
+        while len(hist_rev) < n_hist:
+            hist_rev.insert(0, None)
+        while len(hist_op) < n_hist:
+            hist_op.insert(0, None)
+
+        # ── Segment header ──
+        c = section_title(ws, cur_row, 2, display_name)
+        c.fill = LIGHT_FILL
+        for ci in range(3, 3 + n_data_cols):
+            ws.cell(row=cur_row, column=ci).fill = LIGHT_FILL
+        cur_row += 1
+
+        # ── Revenue row ──
+        rev_row = cur_row
+        seg_rev_rows.append(rev_row)
+        set_cell(ws, rev_row, 2, "Revenue", font=BOLD_FONT)
+
+        # Historical revenue
+        for i in range(n_hist):
+            col = 3 + i
+            val = hist_rev[i]
+            if val is not None:
+                set_cell(ws, rev_row, col, val, font=BLUE_FONT, fmt=FMT_YEN,
+                         border=NWC_DATA_BORDER)
+            else:
+                set_cell(ws, rev_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+
+        # Projected revenue (from JSON — analyst input)
+        for yr in range(proj_years):
+            col = 3 + n_hist + yr
+            val = proj_rev[yr] if yr < len(proj_rev) else None
+            if val is not None:
+                set_cell(ws, rev_row, col, val, font=BLUE_FONT, fmt=FMT_YEN,
+                         border=INPUT_BORDER)
+            else:
+                set_cell(ws, rev_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+        cur_row += 1
+
+        # ── Operating Profit row ──
+        op_row = cur_row
+        seg_op_rows.append(op_row)
+        set_cell(ws, op_row, 2, "Operating Profit", font=BOLD_FONT)
+
+        # Historical OP
+        for i in range(n_hist):
+            col = 3 + i
+            val = hist_op[i]
+            if val is not None:
+                set_cell(ws, op_row, col, val, font=BLUE_FONT, fmt=FMT_YEN,
+                         border=NWC_DATA_BORDER)
+            else:
+                set_cell(ws, op_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+
+        # Projected OP = Revenue × OP Margin (Excel formula)
+        for yr in range(proj_years):
+            col = 3 + n_hist + yr
+            cl = col_letter(col)
+            margin_val = proj_op_margin[yr] if yr < len(proj_op_margin) else None
+            if margin_val is not None:
+                # OP = Revenue × Margin (formula)
+                set_cell(ws, op_row, col,
+                         f"={cl}{rev_row}*{margin_val}",
+                         font=BLACK_FONT, fmt=FMT_YEN, border=NWC_DATA_BORDER)
+            else:
+                set_cell(ws, op_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+        cur_row += 1
+
+        # ── OP Margin row ──
+        opm_row = cur_row
+        set_cell(ws, opm_row, 2, "OP Margin", font=Font(name="Arial", size=10,
+                 italic=True, color="808080"))
+
+        for i in range(n_hist):
+            col = 3 + i
+            cl = col_letter(col)
+            # Only show margin if both revenue and OP are available
+            if hist_rev[i] is not None and hist_op[i] is not None:
+                set_cell(ws, opm_row, col, f"={cl}{op_row}/{cl}{rev_row}",
+                         font=BLACK_FONT, fmt=FMT_PCT, border=NWC_DATA_BORDER)
+            else:
+                set_cell(ws, opm_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+
+        for yr in range(proj_years):
+            col = 3 + n_hist + yr
+            cl = col_letter(col)
+            set_cell(ws, opm_row, col,
+                     f"=IFERROR({cl}{op_row}/{cl}{rev_row},\"—\")",
+                     font=BLACK_FONT, fmt=FMT_PCT, border=NWC_DATA_BORDER)
+        cur_row += 2  # blank row between segments
+
+    # ═══════════════════════════════════════════════════════════════
+    # TOTAL BLOCK
+    # ═══════════════════════════════════════════════════════════════
+    c = section_title(ws, cur_row, 2, "Consolidated Total")
+    c.fill = LIGHT_GREEN
+    for ci in range(3, 3 + n_data_cols):
+        ws.cell(row=cur_row, column=ci).fill = LIGHT_GREEN
+    cur_row += 1
+
+    # Total Revenue
+    total_rev_row = cur_row
+    set_cell(ws, total_rev_row, 2, "Total Revenue", font=BOLD_FONT)
+    for ci in range(n_data_cols):
+        col = 3 + ci
+        cl = col_letter(col)
+        refs = [f"{cl}{r}" for r in seg_rev_rows]
+        formula = f"={'+'.join(refs)}"
+        set_cell(ws, total_rev_row, col, formula, font=BLACK_FONT, fmt=FMT_YEN,
+                 border=SUBTOTAL_BORDER, fill=SUBTOTAL_FILL)
+    cur_row += 1
+
+    # Total OP
+    total_op_row = cur_row
+    set_cell(ws, total_op_row, 2, "Total Operating Profit", font=BOLD_FONT)
+    for ci in range(n_data_cols):
+        col = 3 + ci
+        cl = col_letter(col)
+        refs = [f"{cl}{r}" for r in seg_op_rows]
+        formula = f"={'+'.join(refs)}"
+        set_cell(ws, total_op_row, col, formula, font=BLACK_FONT, fmt=FMT_YEN,
+                 border=SUBTOTAL_BORDER, fill=SUBTOTAL_FILL)
+    cur_row += 1
+
+    # Total OP Margin
+    total_opm_row = cur_row
+    set_cell(ws, total_opm_row, 2, "Total OP Margin", font=Font(name="Arial", size=10,
+             italic=True, color="808080"))
+    for ci in range(n_data_cols):
+        col = 3 + ci
+        cl = col_letter(col)
+        set_cell(ws, total_opm_row, col,
+                 f"=IFERROR({cl}{total_op_row}/{cl}{total_rev_row},\"—\")",
+                 font=BLACK_FONT, fmt=FMT_PCT, border=NWC_DATA_BORDER)
+    cur_row += 2
+
+    # ═══════════════════════════════════════════════════════════════
+    # RECONCILIATION CHECK (projected years only)
+    # ═══════════════════════════════════════════════════════════════
+    c = section_title(ws, cur_row, 2, "Reconciliation vs DCF Model")
+    c.fill = LIGHT_YELLOW
+    for ci in range(3, 3 + n_data_cols):
+        ws.cell(row=cur_row, column=ci).fill = LIGHT_YELLOW
+    cur_row += 1
+
+    set_cell(ws, cur_row, 2, "DCF Model Revenue", font=BOLD_FONT)
+    for yr in range(proj_years):
+        col = 3 + n_hist + yr
+        dcf_col_letter = col_letter(3 + yr)
+        set_cell(ws, cur_row, col,
+                 f"='DCF Model'!{dcf_col_letter}{R_REVENUE}",
+                 font=GREEN_FONT, fmt=FMT_YEN, border=NWC_DATA_BORDER)
+    cur_row += 1
+
+    set_cell(ws, cur_row, 2, "Segment Total Revenue", font=BOLD_FONT)
+    for yr in range(proj_years):
+        col = 3 + n_hist + yr
+        cl = col_letter(col)
+        set_cell(ws, cur_row, col,
+                 f"={cl}{total_rev_row}",
+                 font=BLACK_FONT, fmt=FMT_YEN, border=NWC_DATA_BORDER)
+    cur_row += 1
+
+    recon_diff_row = cur_row
+    set_cell(ws, recon_diff_row, 2, "Difference", font=BOLD_FONT)
+    for yr in range(proj_years):
+        col = 3 + n_hist + yr
+        cl = col_letter(col)
+        set_cell(ws, recon_diff_row, col,
+                 f"={cl}{cur_row - 1}-{cl}{cur_row - 2}",
+                 font=BLACK_FONT, fmt=FMT_YEN, border=TOP_BOTTOM)
+
+    # Freeze pane
+    ws.freeze_panes = "C5"
+
+
+# =====================================================================
+# DRIVER ANALYSIS SHEET
+# =====================================================================
+def _create_driver_sheet(wb, C, segments, proj_years, year_labels):
+    """Generate Driver Analysis sheet with driver_type-specific sections.
+
+    Supported driver_types:
+      - 'backlog': Order backlog → revenue recognition (equipment makers)
+      - 'manmonth': Headcount × utilization × unit price (IT services)
+      - 'growth_rate': Revenue growth rate based (generic)
+      - 'manual': Direct revenue input (no driver decomposition)
+    """
+    ws = wb.create_sheet("Driver Analysis")
+    ws.sheet_properties.tabColor = "4B0082"  # Indigo
+
+    ws.column_dimensions["A"].width = 3
+    ws.column_dimensions["B"].width = 34
+
+    # Determine historical years (same logic as segment sheet)
+    n_hist = 0
+    for seg in segments:
+        hist_rev = seg.get("historical", {}).get("revenue", [])
+        if len(hist_rev) > n_hist:
+            n_hist = len(hist_rev)
+
+    n_data_cols = n_hist + proj_years
+    for ci in range(n_data_cols):
+        ws.column_dimensions[col_letter(3 + ci)].width = 16
+
+    set_cell(ws, 2, 2, f'Driver Analysis - {C["company_name"]}', font=TITLE_FONT)
+
+    # Header row
+    hist_labels = []
+    if n_hist >= 3:
+        hist_labels = ["FY-2", "FY-1", "FY0 (Base)"]
+    elif n_hist == 2:
+        hist_labels = ["FY-1", "FY0 (Base)"]
+    elif n_hist == 1:
+        hist_labels = ["FY0 (Base)"]
+
+    if C.get("projection_start_fy"):
+        import re as _re
+        _m = _re.search(r"FY(\d+)", C["projection_start_fy"])
+        if _m:
+            _base_fy = int(_m.group(1))
+            hist_labels = [f"FY{_base_fy - n_hist + 1 + i}" for i in range(n_hist)]
+
+    all_headers = hist_labels + year_labels
+    header_row(ws, 4, 3, 3 + len(all_headers) - 1, all_headers)
+
+    cur_row = 5
+
+    for seg_idx, seg in enumerate(segments):
+        seg_name = seg.get("name", f"Segment {seg_idx + 1}")
+        seg_name_jp = seg.get("name_jp", "")
+        display_name = f"{seg_name}" + (f" ({seg_name_jp})" if seg_name_jp else "")
+        driver_type = seg.get("driver_type", "manual")
+
+        hist = seg.get("historical", {})
+        proj = seg.get("projections", {})
+
+        # ── Segment header ──
+        c = section_title(ws, cur_row, 2, f"{display_name} [{driver_type}]")
+        c.fill = LIGHT_FILL
+        for ci in range(3, 3 + n_data_cols):
+            ws.cell(row=cur_row, column=ci).fill = LIGHT_FILL
+        cur_row += 1
+
+        # ══════════════════════════════════════════════════════════
+        if driver_type == "backlog":
+            cur_row = _driver_backlog(ws, seg, hist, proj, n_hist, proj_years, cur_row)
+
+        elif driver_type == "manmonth":
+            cur_row = _driver_manmonth(ws, seg, hist, proj, n_hist, proj_years, cur_row)
+
+        elif driver_type == "growth_rate":
+            cur_row = _driver_growth_rate(ws, seg, hist, proj, n_hist, proj_years, cur_row)
+
+        else:  # "manual" or unknown
+            cur_row = _driver_manual(ws, seg, hist, proj, n_hist, proj_years, cur_row)
+
+        cur_row += 1  # blank row between segments
+
+    # Freeze pane
+    ws.freeze_panes = "C5"
+
+
+# ── Driver sub-functions ──
+
+def _driver_backlog(ws, seg, hist, proj, n_hist, proj_years, cur_row):
+    """Backlog-based driver: Beginning Backlog + Orders - Revenue = Ending Backlog."""
+
+    hist_rev = hist.get("revenue", [None] * n_hist)
+    hist_orders = hist.get("orders", [None] * n_hist)
+    hist_backlog = hist.get("backlog_end", [None] * n_hist)
+    proj_rev = proj.get("revenue", [None] * proj_years)
+    proj_orders = proj.get("orders", [None] * proj_years)
+
+    # Pad to n_hist
+    while len(hist_rev) < n_hist:
+        hist_rev.insert(0, None)
+    while len(hist_orders) < n_hist:
+        hist_orders.insert(0, None)
+    while len(hist_backlog) < n_hist:
+        hist_backlog.insert(0, None)
+
+    n_data_cols = n_hist + proj_years
+
+    # Row: Beginning Backlog
+    bb_row = cur_row
+    set_cell(ws, bb_row, 2, "Beginning Backlog", font=BOLD_FONT)
+    for i in range(n_hist):
+        col = 3 + i
+        if i > 0 and hist_backlog[i - 1] is not None:
+            set_cell(ws, bb_row, col, hist_backlog[i - 1], font=BLUE_FONT,
+                     fmt=FMT_YEN, border=NWC_DATA_BORDER)
+        else:
+            set_cell(ws, bb_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    for yr in range(proj_years):
+        col = 3 + n_hist + yr
+        cl = col_letter(col)
+        prev_cl = col_letter(col - 1)
+        # Beginning Backlog = previous period's Ending Backlog
+        eb_row = bb_row + 3  # Ending backlog row (calculated below)
+        if yr == 0 and hist_backlog[-1] is not None:
+            set_cell(ws, bb_row, col, hist_backlog[-1], font=BLUE_FONT,
+                     fmt=FMT_YEN, border=NWC_DATA_BORDER)
+        else:
+            set_cell(ws, bb_row, col, f"={prev_cl}{eb_row}",
+                     font=BLACK_FONT, fmt=FMT_YEN, border=NWC_DATA_BORDER)
+    cur_row += 1
+
+    # Row: + New Orders
+    ord_row = cur_row
+    set_cell(ws, ord_row, 2, "+ New Orders", font=BOLD_FONT)
+    for i in range(n_hist):
+        col = 3 + i
+        val = hist_orders[i]
+        if val is not None:
+            set_cell(ws, ord_row, col, val, font=BLUE_FONT, fmt=FMT_YEN,
+                     border=NWC_DATA_BORDER)
+        else:
+            set_cell(ws, ord_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    for yr in range(proj_years):
+        col = 3 + n_hist + yr
+        val = proj_orders[yr] if yr < len(proj_orders) else None
+        if val is not None:
+            set_cell(ws, ord_row, col, val, font=BLUE_FONT, fmt=FMT_YEN,
+                     border=INPUT_BORDER)
+        else:
+            set_cell(ws, ord_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    cur_row += 1
+
+    # Row: - Revenue (Recognized)
+    rev_row = cur_row
+    set_cell(ws, rev_row, 2, "- Revenue (Recognized)", font=BOLD_FONT)
+    for i in range(n_hist):
+        col = 3 + i
+        val = hist_rev[i]
+        if val is not None:
+            set_cell(ws, rev_row, col, val, font=BLUE_FONT, fmt=FMT_YEN,
+                     border=NWC_DATA_BORDER)
+        else:
+            set_cell(ws, rev_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    for yr in range(proj_years):
+        col = 3 + n_hist + yr
+        val = proj_rev[yr] if yr < len(proj_rev) else None
+        if val is not None:
+            set_cell(ws, rev_row, col, val, font=BLUE_FONT, fmt=FMT_YEN,
+                     border=INPUT_BORDER)
+        else:
+            set_cell(ws, rev_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    cur_row += 1
+
+    # Row: = Ending Backlog (formula: BB + Orders - Revenue)
+    eb_row = cur_row
+    set_cell(ws, eb_row, 2, "= Ending Backlog", font=BOLD_FONT)
+    for i in range(n_hist):
+        col = 3 + i
+        val = hist_backlog[i]
+        if val is not None:
+            set_cell(ws, eb_row, col, val, font=BLUE_FONT, fmt=FMT_YEN,
+                     border=SUBTOTAL_BORDER, fill=SUBTOTAL_FILL)
+        else:
+            set_cell(ws, eb_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    for yr in range(proj_years):
+        col = 3 + n_hist + yr
+        cl = col_letter(col)
+        set_cell(ws, eb_row, col,
+                 f"={cl}{bb_row}+{cl}{ord_row}-{cl}{rev_row}",
+                 font=BLACK_FONT, fmt=FMT_YEN,
+                 border=SUBTOTAL_BORDER, fill=SUBTOTAL_FILL)
+    cur_row += 1
+
+    # Row: Book-to-Bill ratio
+    btb_row = cur_row
+    set_cell(ws, btb_row, 2, "Book-to-Bill",
+             font=Font(name="Arial", size=10, italic=True, color="808080"))
+    for ci in range(n_data_cols):
+        col = 3 + ci
+        cl = col_letter(col)
+        set_cell(ws, btb_row, col,
+                 f"=IFERROR({cl}{ord_row}/{cl}{rev_row},\"—\")",
+                 font=BLACK_FONT, fmt=FMT_RATIO, border=NWC_DATA_BORDER)
+    cur_row += 1
+
+    return cur_row
+
+
+def _driver_manmonth(ws, seg, hist, proj, n_hist, proj_years, cur_row):
+    """Man-month driver: HC × Utilization × Unit Price × 12 = Layer 1, + Layer 2."""
+
+    hist_rev = hist.get("revenue", [None] * n_hist)
+    hist_l2 = hist.get("layer2_revenue", [None] * n_hist)
+    proj_hc = proj.get("headcount", [None] * proj_years)
+    proj_util = proj.get("utilization", [None] * proj_years)
+    proj_price = proj.get("unit_price_monthly", [None] * proj_years)
+    proj_l2 = proj.get("layer2_revenue", [None] * proj_years)
+
+    while len(hist_rev) < n_hist:
+        hist_rev.insert(0, None)
+    while len(hist_l2) < n_hist:
+        hist_l2.insert(0, None)
+
+    n_data_cols = n_hist + proj_years
+
+    # Headcount
+    hc_row = cur_row
+    set_cell(ws, hc_row, 2, "Headcount", font=BOLD_FONT)
+    for i in range(n_hist):
+        set_cell(ws, hc_row, 3 + i, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    for yr in range(proj_years):
+        col = 3 + n_hist + yr
+        val = proj_hc[yr] if yr < len(proj_hc) else None
+        if val is not None:
+            set_cell(ws, hc_row, col, val, font=BLUE_FONT, fmt=FMT_INT,
+                     border=INPUT_BORDER)
+        else:
+            set_cell(ws, hc_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    cur_row += 1
+
+    # Utilization
+    util_row = cur_row
+    set_cell(ws, util_row, 2, "× Utilization", font=BOLD_FONT)
+    for i in range(n_hist):
+        set_cell(ws, util_row, 3 + i, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    for yr in range(proj_years):
+        col = 3 + n_hist + yr
+        val = proj_util[yr] if yr < len(proj_util) else None
+        if val is not None:
+            set_cell(ws, util_row, col, val, font=BLUE_FONT, fmt=FMT_PCT,
+                     border=INPUT_BORDER)
+        else:
+            set_cell(ws, util_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    cur_row += 1
+
+    # Unit Price (M/month)
+    price_row = cur_row
+    set_cell(ws, price_row, 2, "× Unit Price (JPY mn/month)", font=BOLD_FONT)
+    for i in range(n_hist):
+        set_cell(ws, price_row, 3 + i, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    for yr in range(proj_years):
+        col = 3 + n_hist + yr
+        val = proj_price[yr] if yr < len(proj_price) else None
+        if val is not None:
+            set_cell(ws, price_row, col, val, font=BLUE_FONT, fmt=FMT_YEN_DEC,
+                     border=INPUT_BORDER)
+        else:
+            set_cell(ws, price_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    cur_row += 1
+
+    # Layer 1 Revenue = HC × Util × Price × 12
+    l1_row = cur_row
+    set_cell(ws, l1_row, 2, "= Layer 1 Revenue", font=BOLD_FONT)
+    for i in range(n_hist):
+        set_cell(ws, l1_row, 3 + i, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    for yr in range(proj_years):
+        col = 3 + n_hist + yr
+        cl = col_letter(col)
+        set_cell(ws, l1_row, col,
+                 f"={cl}{hc_row}*{cl}{util_row}*{cl}{price_row}*12",
+                 font=BLACK_FONT, fmt=FMT_YEN,
+                 border=SUBTOTAL_BORDER, fill=SUBTOTAL_FILL)
+    cur_row += 1
+
+    # Layer 2 (Solution) Revenue
+    l2_row = cur_row
+    set_cell(ws, l2_row, 2, "+ Layer 2 (Solution) Revenue", font=BOLD_FONT)
+    for i in range(n_hist):
+        col = 3 + i
+        val = hist_l2[i]
+        if val is not None:
+            set_cell(ws, l2_row, col, val, font=BLUE_FONT, fmt=FMT_YEN,
+                     border=NWC_DATA_BORDER)
+        else:
+            set_cell(ws, l2_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    for yr in range(proj_years):
+        col = 3 + n_hist + yr
+        val = proj_l2[yr] if yr < len(proj_l2) else None
+        if val is not None:
+            set_cell(ws, l2_row, col, val, font=BLUE_FONT, fmt=FMT_YEN,
+                     border=INPUT_BORDER)
+        else:
+            set_cell(ws, l2_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    cur_row += 1
+
+    # Segment Revenue = L1 + L2
+    seg_rev_row = cur_row
+    set_cell(ws, seg_rev_row, 2, "= Segment Revenue", font=BOLD_FONT)
+    for i in range(n_hist):
+        col = 3 + i
+        val = hist_rev[i]
+        if val is not None:
+            set_cell(ws, seg_rev_row, col, val, font=BLUE_FONT, fmt=FMT_YEN,
+                     border=SUBTOTAL_BORDER, fill=SUBTOTAL_FILL)
+        else:
+            set_cell(ws, seg_rev_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    for yr in range(proj_years):
+        col = 3 + n_hist + yr
+        cl = col_letter(col)
+        set_cell(ws, seg_rev_row, col,
+                 f"={cl}{l1_row}+{cl}{l2_row}",
+                 font=BLACK_FONT, fmt=FMT_YEN,
+                 border=SUBTOTAL_BORDER, fill=SUBTOTAL_FILL)
+    cur_row += 1
+
+    # Layer 2 Mix %
+    mix_row = cur_row
+    set_cell(ws, mix_row, 2, "Layer 2 Mix %",
+             font=Font(name="Arial", size=10, italic=True, color="808080"))
+    for ci in range(n_data_cols):
+        col = 3 + ci
+        cl = col_letter(col)
+        set_cell(ws, mix_row, col,
+                 f"=IFERROR({cl}{l2_row}/{cl}{seg_rev_row},\"—\")",
+                 font=BLACK_FONT, fmt=FMT_PCT, border=NWC_DATA_BORDER)
+    cur_row += 1
+
+    return cur_row
+
+
+def _driver_growth_rate(ws, seg, hist, proj, n_hist, proj_years, cur_row):
+    """Growth rate driver: Revenue = Prior × (1 + g)."""
+
+    hist_rev = hist.get("revenue", [None] * n_hist)
+    proj_growth = proj.get("revenue_growth", [None] * proj_years)
+
+    while len(hist_rev) < n_hist:
+        hist_rev.insert(0, None)
+
+    n_data_cols = n_hist + proj_years
+
+    # Revenue Growth row
+    g_row = cur_row
+    set_cell(ws, g_row, 2, "Revenue Growth (YoY)", font=BOLD_FONT)
+    # Historical: compute from data
+    for i in range(n_hist):
+        col = 3 + i
+        cl = col_letter(col)
+        if i == 0 or hist_rev[i] is None or hist_rev[i - 1] is None:
+            set_cell(ws, g_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+        else:
+            prev_cl = col_letter(col - 1)
+            rev_row = cur_row + 1  # revenue row is next
+            set_cell(ws, g_row, col,
+                     f"=({cl}{rev_row}-{prev_cl}{rev_row})/{prev_cl}{rev_row}",
+                     font=BLACK_FONT, fmt=FMT_PCT, border=NWC_DATA_BORDER)
+    for yr in range(proj_years):
+        col = 3 + n_hist + yr
+        val = proj_growth[yr] if yr < len(proj_growth) else None
+        if val is not None:
+            set_cell(ws, g_row, col, val, font=BLUE_FONT, fmt=FMT_PCT,
+                     border=INPUT_BORDER)
+        else:
+            set_cell(ws, g_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    cur_row += 1
+
+    # Revenue row
+    rev_row = cur_row
+    set_cell(ws, rev_row, 2, "Revenue", font=BOLD_FONT)
+    for i in range(n_hist):
+        col = 3 + i
+        val = hist_rev[i]
+        if val is not None:
+            set_cell(ws, rev_row, col, val, font=BLUE_FONT, fmt=FMT_YEN,
+                     border=NWC_DATA_BORDER)
+        else:
+            set_cell(ws, rev_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    for yr in range(proj_years):
+        col = 3 + n_hist + yr
+        cl = col_letter(col)
+        prev_cl = col_letter(col - 1)
+        set_cell(ws, rev_row, col,
+                 f"={prev_cl}{rev_row}*(1+{cl}{g_row})",
+                 font=BLACK_FONT, fmt=FMT_YEN,
+                 border=SUBTOTAL_BORDER, fill=SUBTOTAL_FILL)
+    cur_row += 1
+
+    return cur_row
+
+
+def _driver_manual(ws, seg, hist, proj, n_hist, proj_years, cur_row):
+    """Manual driver: Revenue directly input, no decomposition."""
+
+    hist_rev = hist.get("revenue", [None] * n_hist)
+    proj_rev = proj.get("revenue", [None] * proj_years)
+
+    while len(hist_rev) < n_hist:
+        hist_rev.insert(0, None)
+
+    n_data_cols = n_hist + proj_years
+
+    # Revenue row (direct input)
+    rev_row = cur_row
+    set_cell(ws, rev_row, 2, "Revenue (Direct Input)", font=BOLD_FONT)
+    for i in range(n_hist):
+        col = 3 + i
+        val = hist_rev[i]
+        if val is not None:
+            set_cell(ws, rev_row, col, val, font=BLUE_FONT, fmt=FMT_YEN,
+                     border=NWC_DATA_BORDER)
+        else:
+            set_cell(ws, rev_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    for yr in range(proj_years):
+        col = 3 + n_hist + yr
+        val = proj_rev[yr] if yr < len(proj_rev) else None
+        if val is not None:
+            set_cell(ws, rev_row, col, val, font=BLUE_FONT, fmt=FMT_YEN,
+                     border=INPUT_BORDER)
+        else:
+            set_cell(ws, rev_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    cur_row += 1
+
+    # YoY Growth (computed)
+    g_row = cur_row
+    set_cell(ws, g_row, 2, "YoY Growth",
+             font=Font(name="Arial", size=10, italic=True, color="808080"))
+    for ci in range(n_data_cols):
+        col = 3 + ci
+        cl = col_letter(col)
+        if ci == 0:
+            set_cell(ws, g_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+        else:
+            prev_cl = col_letter(col - 1)
+            set_cell(ws, g_row, col,
+                     f"=IFERROR(({cl}{rev_row}-{prev_cl}{rev_row})/{prev_cl}{rev_row},\"—\")",
+                     font=BLACK_FONT, fmt=FMT_PCT, border=NWC_DATA_BORDER)
+    cur_row += 1
+
+    return cur_row
+
+
+# =====================================================================
 # BUILD WORKBOOK
 # =====================================================================
 def generate_dcf_workbook(config, output_path=None):
@@ -835,170 +1532,311 @@ def generate_dcf_workbook(config, output_path=None):
     nwc_headers = ["Base Year"] + nwc_proj_labels
     header_row(ws_nwc, 4, 3, 3 + proj_years, nwc_headers)
 
-    # ── Working Capital Drivers ──
-    c = section_title(ws_nwc, NWC_R_DSO - 1, 2, "Working Capital Drivers (Days)")
-    c.fill = LIGHT_FILL
-    for col_idx in range(3, 3 + proj_years + 1):
-        ws_nwc.cell(row=NWC_R_DSO - 1, column=col_idx).fill = LIGHT_FILL
+    # ── Determine NWC method ──
+    nwc_method = C.get("nwc_method", "days")
 
-    set_cell(ws_nwc, NWC_R_DSO, 2, "DSO (Days Sales Outstanding)", font=BOLD_FONT)
-    set_cell(ws_nwc, NWC_R_DIH, 2, "DIH (Days Inventory Held)", font=BOLD_FONT)
-    set_cell(ws_nwc, NWC_R_DPO, 2, "DPO (Days Payable Outstanding)", font=BOLD_FONT)
+    if nwc_method == "revenue_pct":
+        # ================================================================
+        # REVENUE PERCENTAGE METHOD
+        # Row layout is identical to days method; only cell content differs.
+        # ================================================================
 
-    # Base Year DSO/DIH/DPO (computed from actuals)
-    set_cell(ws_nwc, NWC_R_DSO, 3, f"=C{NWC_R_AR}/C{NWC_R_REV}*365",
-             font=BLACK_FONT, fmt=FMT_DAYS)
-    set_cell(ws_nwc, NWC_R_DIH, 3, f"=C{NWC_R_INV}/C{NWC_R_COGS}*365",
-             font=BLACK_FONT, fmt=FMT_DAYS)
-    set_cell(ws_nwc, NWC_R_DPO, 3, f"=C{NWC_R_AP}/C{NWC_R_COGS}*365",
-             font=BLACK_FONT, fmt=FMT_DAYS)
+        # ── Working Capital Drivers (% of Revenue) ──
+        c = section_title(ws_nwc, NWC_R_DSO - 1, 2, "Working Capital Drivers (% of Revenue)")
+        c.fill = LIGHT_FILL
+        for col_idx in range(3, 3 + proj_years + 1):
+            ws_nwc.cell(row=NWC_R_DSO - 1, column=col_idx).fill = LIGHT_FILL
 
-    # Projected DSO/DIH/DPO (CHOOSE from scenario matrix)
-    for yr in range(proj_years):
-        nwc_col = 4 + yr
-        cl = col_letter(nwc_col)
-        set_cell(ws_nwc, NWC_R_DSO, nwc_col,
-                 nwc_choose_formula(NWC_R_SCEN_BLK_DSO, cl),
-                 font=BLACK_FONT, fmt=FMT_DAYS)
-        set_cell(ws_nwc, NWC_R_DIH, nwc_col,
-                 nwc_choose_formula(NWC_R_SCEN_BLK_DIH, cl),
-                 font=BLACK_FONT, fmt=FMT_DAYS)
-        set_cell(ws_nwc, NWC_R_DPO, nwc_col,
-                 nwc_choose_formula(NWC_R_SCEN_BLK_DPO, cl),
-                 font=BLACK_FONT, fmt=FMT_DAYS)
+        set_cell(ws_nwc, NWC_R_DSO, 2, "NWC % of Revenue", font=BOLD_FONT)
+        set_cell(ws_nwc, NWC_R_DIH, 2, "\u2014", font=GREY_FONT)
+        set_cell(ws_nwc, NWC_R_DPO, 2, "\u2014", font=GREY_FONT)
 
-    # ── Revenue & COGS (linked from DCF Model) ──
-    c = section_title(ws_nwc, NWC_R_REV - 1, 2, "P&L Reference (JPY mn)")
-    c.fill = LIGHT_FILL
-    for col_idx in range(3, 3 + proj_years + 1):
-        ws_nwc.cell(row=NWC_R_REV - 1, column=col_idx).fill = LIGHT_FILL
+        # Base Year NWC%: =C18/C9
+        set_cell(ws_nwc, NWC_R_DSO, 3, f"=C{NWC_R_NWC}/C{NWC_R_REV}",
+                 font=BLACK_FONT, fmt=FMT_PCT)
+        set_cell(ws_nwc, NWC_R_DIH, 3, "\u2014", font=GREY_FONT)
+        set_cell(ws_nwc, NWC_R_DPO, 3, "\u2014", font=GREY_FONT)
 
-    set_cell(ws_nwc, NWC_R_REV, 2, "Revenue", font=BOLD_FONT)
-    set_cell(ws_nwc, NWC_R_COGS, 2, "COGS", font=BOLD_FONT)
+        # Projected NWC% (CHOOSE from scenario matrix at row 24)
+        for yr in range(proj_years):
+            nwc_col = 4 + yr
+            cl = col_letter(nwc_col)
+            set_cell(ws_nwc, NWC_R_DSO, nwc_col,
+                     nwc_choose_formula(NWC_R_SCEN_BLK_DSO, cl),
+                     font=BLACK_FONT, fmt=FMT_PCT)
+            set_cell(ws_nwc, NWC_R_DIH, nwc_col, "\u2014", font=GREY_FONT)
+            set_cell(ws_nwc, NWC_R_DPO, nwc_col, "\u2014", font=GREY_FONT)
 
-    # Base Year
-    set_cell(ws_nwc, NWC_R_REV, 3, C["base_year_revenue"], font=BLUE_FONT, fmt=FMT_YEN)
-    set_cell(ws_nwc, NWC_R_COGS, 3, C["base_year_cogs"], font=BLUE_FONT, fmt=FMT_YEN)
+        # ── Revenue & COGS ──
+        c = section_title(ws_nwc, NWC_R_REV - 1, 2, "P&L Reference (JPY mn)")
+        c.fill = LIGHT_FILL
+        for col_idx in range(3, 3 + proj_years + 1):
+            ws_nwc.cell(row=NWC_R_REV - 1, column=col_idx).fill = LIGHT_FILL
 
-    # Projected (linked to DCF Model; NWC col D = DCF col C, offset +1)
-    for yr in range(proj_years):
-        nwc_col = 4 + yr
-        dcf_col_letter = col_letter(3 + yr)
-        set_cell(ws_nwc, NWC_R_REV, nwc_col,
-                 f"='DCF Model'!{dcf_col_letter}{R_REVENUE}",
-                 font=BLACK_FONT, fmt=FMT_YEN)
-        set_cell(ws_nwc, NWC_R_COGS, nwc_col,
-                 f"='DCF Model'!{dcf_col_letter}{R_COGS}",
-                 font=BLACK_FONT, fmt=FMT_YEN)
+        set_cell(ws_nwc, NWC_R_REV, 2, "Revenue", font=BOLD_FONT)
+        set_cell(ws_nwc, NWC_R_COGS, 2, "\u2014", font=GREY_FONT)
 
-    # ── Working Capital Items ──
-    c = section_title(ws_nwc, NWC_R_AR - 1, 2, "Working Capital Items (JPY mn)")
-    c.fill = LIGHT_FILL
-    for col_idx in range(3, 3 + proj_years + 1):
-        ws_nwc.cell(row=NWC_R_AR - 1, column=col_idx).fill = LIGHT_FILL
+        # Base Year Revenue
+        set_cell(ws_nwc, NWC_R_REV, 3, C["base_year_revenue"], font=BLUE_FONT, fmt=FMT_YEN)
+        set_cell(ws_nwc, NWC_R_COGS, 3, "\u2014", font=GREY_FONT)
 
-    set_cell(ws_nwc, NWC_R_AR, 2, "Accounts Receivable", font=BOLD_FONT)
-    set_cell(ws_nwc, NWC_R_INV, 2, "Inventory", font=BOLD_FONT)
-    set_cell(ws_nwc, NWC_R_CA, 2, "Current Assets (AR + Inv)", font=BOLD_FONT)
-    set_cell(ws_nwc, NWC_R_AP, 2, "Accounts Payable", font=BOLD_FONT)
-    set_cell(ws_nwc, NWC_R_CL, 2, "Current Liabilities (AP)", font=BOLD_FONT)
+        # Projected Revenue (linked to DCF Model)
+        for yr in range(proj_years):
+            nwc_col = 4 + yr
+            dcf_col_letter = col_letter(3 + yr)
+            set_cell(ws_nwc, NWC_R_REV, nwc_col,
+                     f"='DCF Model'!{dcf_col_letter}{R_REVENUE}",
+                     font=BLACK_FONT, fmt=FMT_YEN)
+            set_cell(ws_nwc, NWC_R_COGS, nwc_col, "\u2014", font=GREY_FONT)
 
-    # Base Year actuals
-    set_cell(ws_nwc, NWC_R_AR, 3, C["base_year_ar"], font=BLUE_FONT, fmt=FMT_YEN)
-    set_cell(ws_nwc, NWC_R_INV, 3, C["base_year_inv"], font=BLUE_FONT, fmt=FMT_YEN)
-    set_cell(ws_nwc, NWC_R_CA, 3, f"=C{NWC_R_AR}+C{NWC_R_INV}", font=BLACK_FONT, fmt=FMT_YEN)
-    set_cell(ws_nwc, NWC_R_AP, 3, C["base_year_ap"], font=BLUE_FONT, fmt=FMT_YEN)
-    set_cell(ws_nwc, NWC_R_CL, 3, f"=C{NWC_R_AP}", font=BLACK_FONT, fmt=FMT_YEN)
+        # ── Working Capital Items: all show "—" ──
+        c = section_title(ws_nwc, NWC_R_AR - 1, 2, "Working Capital Items (JPY mn)")
+        c.fill = LIGHT_FILL
+        for col_idx in range(3, 3 + proj_years + 1):
+            ws_nwc.cell(row=NWC_R_AR - 1, column=col_idx).fill = LIGHT_FILL
 
-    # Projected WC items
-    for yr in range(proj_years):
-        nwc_col = 4 + yr
-        cl = col_letter(nwc_col)
-        set_cell(ws_nwc, NWC_R_AR, nwc_col,
-                 f"={cl}{NWC_R_REV}*{cl}{NWC_R_DSO}/365", font=BLACK_FONT, fmt=FMT_YEN)
-        set_cell(ws_nwc, NWC_R_INV, nwc_col,
-                 f"={cl}{NWC_R_COGS}*{cl}{NWC_R_DIH}/365", font=BLACK_FONT, fmt=FMT_YEN)
-        set_cell(ws_nwc, NWC_R_CA, nwc_col,
-                 f"={cl}{NWC_R_AR}+{cl}{NWC_R_INV}", font=BLACK_FONT, fmt=FMT_YEN)
-        set_cell(ws_nwc, NWC_R_AP, nwc_col,
-                 f"={cl}{NWC_R_COGS}*{cl}{NWC_R_DPO}/365", font=BLACK_FONT, fmt=FMT_YEN)
-        set_cell(ws_nwc, NWC_R_CL, nwc_col,
-                 f"={cl}{NWC_R_AP}", font=BLACK_FONT, fmt=FMT_YEN)
+        for _row in [NWC_R_AR, NWC_R_INV, NWC_R_CA, NWC_R_AP, NWC_R_CL]:
+            set_cell(ws_nwc, _row, 2, "\u2014", font=GREY_FONT)
+            for _ci in range(3, 3 + proj_years + 1):
+                set_cell(ws_nwc, _row, _ci, "\u2014", font=GREY_FONT)
 
-    # ── NWC Summary ──
-    c = section_title(ws_nwc, NWC_R_NWC - 1, 2, "Net Working Capital (JPY mn)")
-    c.fill = LIGHT_GREEN
-    for col_idx in range(3, 3 + proj_years + 1):
-        ws_nwc.cell(row=NWC_R_NWC - 1, column=col_idx).fill = LIGHT_GREEN
+        # ── NWC Summary ──
+        c = section_title(ws_nwc, NWC_R_NWC - 1, 2, "Net Working Capital (JPY mn)")
+        c.fill = LIGHT_GREEN
+        for col_idx in range(3, 3 + proj_years + 1):
+            ws_nwc.cell(row=NWC_R_NWC - 1, column=col_idx).fill = LIGHT_GREEN
 
-    set_cell(ws_nwc, NWC_R_NWC, 2, "Net Working Capital", font=BOLD_FONT)
-    set_cell(ws_nwc, NWC_R_CHG_NWC, 2, "Change in NWC", font=BOLD_FONT)
+        set_cell(ws_nwc, NWC_R_NWC, 2, "Net Working Capital", font=BOLD_FONT)
+        set_cell(ws_nwc, NWC_R_CHG_NWC, 2, "Change in NWC", font=BOLD_FONT)
 
-    # Base Year NWC
-    set_cell(ws_nwc, NWC_R_NWC, 3, f"=C{NWC_R_CA}-C{NWC_R_CL}",
-             font=BLACK_FONT, fmt=FMT_YEN, border=SUBTOTAL_BORDER, fill=SUBTOTAL_FILL)
-    set_cell(ws_nwc, NWC_R_CHG_NWC, 3, "n/a", font=BLACK_FONT)
+        # Base Year NWC: hardcoded from computed value
+        set_cell(ws_nwc, NWC_R_NWC, 3, C.get("base_year_nwc", 0),
+                 font=BLUE_FONT, fmt=FMT_YEN, border=SUBTOTAL_BORDER, fill=SUBTOTAL_FILL)
+        set_cell(ws_nwc, NWC_R_CHG_NWC, 3, "n/a", font=BLACK_FONT)
 
-    # Projected NWC & Change
-    for yr in range(proj_years):
-        nwc_col = 4 + yr
-        cl = col_letter(nwc_col)
-        prev_cl = col_letter(nwc_col - 1)
-        set_cell(ws_nwc, NWC_R_NWC, nwc_col,
-                 f"={cl}{NWC_R_CA}-{cl}{NWC_R_CL}",
-                 font=BLACK_FONT, fmt=FMT_YEN, border=SUBTOTAL_BORDER, fill=SUBTOTAL_FILL)
-        set_cell(ws_nwc, NWC_R_CHG_NWC, nwc_col,
-                 f"={cl}{NWC_R_NWC}-{prev_cl}{NWC_R_NWC}",
-                 font=BLACK_FONT, fmt=FMT_YEN, border=TOP_BOTTOM)
+        # Projected NWC = Revenue × NWC%, Change = ΔNWC
+        for yr in range(proj_years):
+            nwc_col = 4 + yr
+            cl = col_letter(nwc_col)
+            prev_cl = col_letter(nwc_col - 1)
+            set_cell(ws_nwc, NWC_R_NWC, nwc_col,
+                     f"={cl}{NWC_R_REV}*{cl}{NWC_R_DSO}",
+                     font=BLACK_FONT, fmt=FMT_YEN, border=SUBTOTAL_BORDER, fill=SUBTOTAL_FILL)
+            set_cell(ws_nwc, NWC_R_CHG_NWC, nwc_col,
+                     f"={cl}{NWC_R_NWC}-{prev_cl}{NWC_R_NWC}",
+                     font=BLACK_FONT, fmt=FMT_YEN, border=TOP_BOTTOM)
 
-    # ── Apply consistent borders to all NWC data rows ──
-    _nwc_data_rows = (
-        list(range(NWC_R_DSO, NWC_R_DPO + 1))       # Drivers: DSO, DIH, DPO
-        + list(range(NWC_R_REV, NWC_R_COGS + 1))     # P&L Reference: Revenue, COGS
-        + list(range(NWC_R_AR, NWC_R_CL + 1))         # WC Items: AR, Inv, CA, AP, CL
-        + [NWC_R_NWC, NWC_R_CHG_NWC]                  # NWC Summary
-    )
-    _nwc_col_end = 3 + proj_years  # last data column
-    for _r in _nwc_data_rows:
-        for _ci in range(2, _nwc_col_end + 1):
-            _cell = ws_nwc.cell(row=_r, column=_ci)
-            # Preserve existing meaningful borders (SUBTOTAL_BORDER, TOP_BOTTOM, etc.)
-            _has_border = (_cell.border and any([
-                getattr(_cell.border.top, 'style', None),
-                getattr(_cell.border.bottom, 'style', None),
-                getattr(_cell.border.left, 'style', None),
-                getattr(_cell.border.right, 'style', None),
-            ]))
-            if not _has_border:
-                _cell.border = NWC_DATA_BORDER
+        # ── Apply consistent borders ──
+        _nwc_data_rows = (
+            list(range(NWC_R_DSO, NWC_R_DPO + 1))
+            + list(range(NWC_R_REV, NWC_R_COGS + 1))
+            + list(range(NWC_R_AR, NWC_R_CL + 1))
+            + [NWC_R_NWC, NWC_R_CHG_NWC]
+        )
+        _nwc_col_end = 3 + proj_years
+        for _r in _nwc_data_rows:
+            for _ci in range(2, _nwc_col_end + 1):
+                _cell = ws_nwc.cell(row=_r, column=_ci)
+                _has_border = (_cell.border and any([
+                    getattr(_cell.border.top, 'style', None),
+                    getattr(_cell.border.bottom, 'style', None),
+                    getattr(_cell.border.left, 'style', None),
+                    getattr(_cell.border.right, 'style', None),
+                ]))
+                if not _has_border:
+                    _cell.border = NWC_DATA_BORDER
 
-    # ── Scenario Input Matrix (DSO, DIH, DPO) ──
-    c = section_title(ws_nwc, NWC_R_SCEN_SEC, 2, "Scenario Input Matrix (Working Capital Days)")
-    c.fill = LIGHT_GREEN
-    for col_idx in range(3, 3 + proj_years + 1):
-        ws_nwc.cell(row=NWC_R_SCEN_SEC, column=col_idx).fill = LIGHT_GREEN
+        # ── Scenario Input Matrix: 1 block (NWC % of Revenue) ──
+        c = section_title(ws_nwc, NWC_R_SCEN_SEC, 2, "Scenario Input Matrix (NWC % of Revenue)")
+        c.fill = LIGHT_GREEN
+        for col_idx in range(3, 3 + proj_years + 1):
+            ws_nwc.cell(row=NWC_R_SCEN_SEC, column=col_idx).fill = LIGHT_GREEN
 
-    for yr in range(proj_years):
-        _scen_yr_label = nwc_proj_labels[yr] if yr < len(nwc_proj_labels) else f"Year {yr + 1}"
-        set_cell(ws_nwc, NWC_R_SCEN_YEARS, 4 + yr, _scen_yr_label,
-                 font=HEADER_FONT, fill=HEADER_FILL,
-                 alignment=Alignment(horizontal="center"))
+        for yr in range(proj_years):
+            _scen_yr_label = nwc_proj_labels[yr] if yr < len(nwc_proj_labels) else f"Year {yr + 1}"
+            set_cell(ws_nwc, NWC_R_SCEN_YEARS, 4 + yr, _scen_yr_label,
+                     font=HEADER_FONT, fill=HEADER_FILL,
+                     alignment=Alignment(horizontal="center"))
 
-    nwc_driver_blocks = [
-        ("DSO (Days)", "dso_days", FMT_DAYS, NWC_R_SCEN_BLK_DSO),
-        ("DIH (Days)", "dih_days", FMT_DAYS, NWC_R_SCEN_BLK_DIH),
-        ("DPO (Days)", "dpo_days", FMT_DAYS, NWC_R_SCEN_BLK_DPO),
-    ]
-
-    for drv_label, drv_key, drv_fmt, blk_start in nwc_driver_blocks:
-        section_title(ws_nwc, blk_start, 2, drv_label)
+        # Single block: NWC % of Revenue at NWC_R_SCEN_BLK_DSO (row 24)
+        section_title(ws_nwc, NWC_R_SCEN_BLK_DSO, 2, "NWC % of Revenue")
         for s, scen_name in enumerate(SCENARIO_NAMES):
-            r = blk_start + 1 + s
+            r = NWC_R_SCEN_BLK_DSO + 1 + s
             set_cell(ws_nwc, r, 2, scen_name, font=BOLD_FONT)
-            scen_data = config["scenarios"][scen_name][drv_key]
+            scen_data = config["scenarios"][scen_name]["nwc_pct"]
             for yr in range(proj_years):
                 set_cell(ws_nwc, r, 4 + yr, scen_data[yr],
-                         font=BLUE_FONT, fmt=drv_fmt, border=INPUT_BORDER)
+                         font=BLUE_FONT, fmt=FMT_PCT, border=INPUT_BORDER)
+
+    else:
+        # ================================================================
+        # DAYS METHOD (default) — existing code, unchanged
+        # ================================================================
+
+        # ── Working Capital Drivers ──
+        c = section_title(ws_nwc, NWC_R_DSO - 1, 2, "Working Capital Drivers (Days)")
+        c.fill = LIGHT_FILL
+        for col_idx in range(3, 3 + proj_years + 1):
+            ws_nwc.cell(row=NWC_R_DSO - 1, column=col_idx).fill = LIGHT_FILL
+
+        set_cell(ws_nwc, NWC_R_DSO, 2, "DSO (Days Sales Outstanding)", font=BOLD_FONT)
+        set_cell(ws_nwc, NWC_R_DIH, 2, "DIH (Days Inventory Held)", font=BOLD_FONT)
+        set_cell(ws_nwc, NWC_R_DPO, 2, "DPO (Days Payable Outstanding)", font=BOLD_FONT)
+
+        # Base Year DSO/DIH/DPO (computed from actuals)
+        set_cell(ws_nwc, NWC_R_DSO, 3, f"=C{NWC_R_AR}/C{NWC_R_REV}*365",
+                 font=BLACK_FONT, fmt=FMT_DAYS)
+        set_cell(ws_nwc, NWC_R_DIH, 3, f"=C{NWC_R_INV}/C{NWC_R_COGS}*365",
+                 font=BLACK_FONT, fmt=FMT_DAYS)
+        set_cell(ws_nwc, NWC_R_DPO, 3, f"=C{NWC_R_AP}/C{NWC_R_COGS}*365",
+                 font=BLACK_FONT, fmt=FMT_DAYS)
+
+        # Projected DSO/DIH/DPO (CHOOSE from scenario matrix)
+        for yr in range(proj_years):
+            nwc_col = 4 + yr
+            cl = col_letter(nwc_col)
+            set_cell(ws_nwc, NWC_R_DSO, nwc_col,
+                     nwc_choose_formula(NWC_R_SCEN_BLK_DSO, cl),
+                     font=BLACK_FONT, fmt=FMT_DAYS)
+            set_cell(ws_nwc, NWC_R_DIH, nwc_col,
+                     nwc_choose_formula(NWC_R_SCEN_BLK_DIH, cl),
+                     font=BLACK_FONT, fmt=FMT_DAYS)
+            set_cell(ws_nwc, NWC_R_DPO, nwc_col,
+                     nwc_choose_formula(NWC_R_SCEN_BLK_DPO, cl),
+                     font=BLACK_FONT, fmt=FMT_DAYS)
+
+        # ── Revenue & COGS (linked from DCF Model) ──
+        c = section_title(ws_nwc, NWC_R_REV - 1, 2, "P&L Reference (JPY mn)")
+        c.fill = LIGHT_FILL
+        for col_idx in range(3, 3 + proj_years + 1):
+            ws_nwc.cell(row=NWC_R_REV - 1, column=col_idx).fill = LIGHT_FILL
+
+        set_cell(ws_nwc, NWC_R_REV, 2, "Revenue", font=BOLD_FONT)
+        set_cell(ws_nwc, NWC_R_COGS, 2, "COGS", font=BOLD_FONT)
+
+        # Base Year
+        set_cell(ws_nwc, NWC_R_REV, 3, C["base_year_revenue"], font=BLUE_FONT, fmt=FMT_YEN)
+        set_cell(ws_nwc, NWC_R_COGS, 3, C["base_year_cogs"], font=BLUE_FONT, fmt=FMT_YEN)
+
+        # Projected (linked to DCF Model; NWC col D = DCF col C, offset +1)
+        for yr in range(proj_years):
+            nwc_col = 4 + yr
+            dcf_col_letter = col_letter(3 + yr)
+            set_cell(ws_nwc, NWC_R_REV, nwc_col,
+                     f"='DCF Model'!{dcf_col_letter}{R_REVENUE}",
+                     font=BLACK_FONT, fmt=FMT_YEN)
+            set_cell(ws_nwc, NWC_R_COGS, nwc_col,
+                     f"='DCF Model'!{dcf_col_letter}{R_COGS}",
+                     font=BLACK_FONT, fmt=FMT_YEN)
+
+        # ── Working Capital Items ──
+        c = section_title(ws_nwc, NWC_R_AR - 1, 2, "Working Capital Items (JPY mn)")
+        c.fill = LIGHT_FILL
+        for col_idx in range(3, 3 + proj_years + 1):
+            ws_nwc.cell(row=NWC_R_AR - 1, column=col_idx).fill = LIGHT_FILL
+
+        set_cell(ws_nwc, NWC_R_AR, 2, "Accounts Receivable", font=BOLD_FONT)
+        set_cell(ws_nwc, NWC_R_INV, 2, "Inventory", font=BOLD_FONT)
+        set_cell(ws_nwc, NWC_R_CA, 2, "Current Assets (AR + Inv)", font=BOLD_FONT)
+        set_cell(ws_nwc, NWC_R_AP, 2, "Accounts Payable", font=BOLD_FONT)
+        set_cell(ws_nwc, NWC_R_CL, 2, "Current Liabilities (AP)", font=BOLD_FONT)
+
+        # Base Year actuals
+        set_cell(ws_nwc, NWC_R_AR, 3, C["base_year_ar"], font=BLUE_FONT, fmt=FMT_YEN)
+        set_cell(ws_nwc, NWC_R_INV, 3, C["base_year_inv"], font=BLUE_FONT, fmt=FMT_YEN)
+        set_cell(ws_nwc, NWC_R_CA, 3, f"=C{NWC_R_AR}+C{NWC_R_INV}", font=BLACK_FONT, fmt=FMT_YEN)
+        set_cell(ws_nwc, NWC_R_AP, 3, C["base_year_ap"], font=BLUE_FONT, fmt=FMT_YEN)
+        set_cell(ws_nwc, NWC_R_CL, 3, f"=C{NWC_R_AP}", font=BLACK_FONT, fmt=FMT_YEN)
+
+        # Projected WC items
+        for yr in range(proj_years):
+            nwc_col = 4 + yr
+            cl = col_letter(nwc_col)
+            set_cell(ws_nwc, NWC_R_AR, nwc_col,
+                     f"={cl}{NWC_R_REV}*{cl}{NWC_R_DSO}/365", font=BLACK_FONT, fmt=FMT_YEN)
+            set_cell(ws_nwc, NWC_R_INV, nwc_col,
+                     f"={cl}{NWC_R_COGS}*{cl}{NWC_R_DIH}/365", font=BLACK_FONT, fmt=FMT_YEN)
+            set_cell(ws_nwc, NWC_R_CA, nwc_col,
+                     f"={cl}{NWC_R_AR}+{cl}{NWC_R_INV}", font=BLACK_FONT, fmt=FMT_YEN)
+            set_cell(ws_nwc, NWC_R_AP, nwc_col,
+                     f"={cl}{NWC_R_COGS}*{cl}{NWC_R_DPO}/365", font=BLACK_FONT, fmt=FMT_YEN)
+            set_cell(ws_nwc, NWC_R_CL, nwc_col,
+                     f"={cl}{NWC_R_AP}", font=BLACK_FONT, fmt=FMT_YEN)
+
+        # ── NWC Summary ──
+        c = section_title(ws_nwc, NWC_R_NWC - 1, 2, "Net Working Capital (JPY mn)")
+        c.fill = LIGHT_GREEN
+        for col_idx in range(3, 3 + proj_years + 1):
+            ws_nwc.cell(row=NWC_R_NWC - 1, column=col_idx).fill = LIGHT_GREEN
+
+        set_cell(ws_nwc, NWC_R_NWC, 2, "Net Working Capital", font=BOLD_FONT)
+        set_cell(ws_nwc, NWC_R_CHG_NWC, 2, "Change in NWC", font=BOLD_FONT)
+
+        # Base Year NWC
+        set_cell(ws_nwc, NWC_R_NWC, 3, f"=C{NWC_R_CA}-C{NWC_R_CL}",
+                 font=BLACK_FONT, fmt=FMT_YEN, border=SUBTOTAL_BORDER, fill=SUBTOTAL_FILL)
+        set_cell(ws_nwc, NWC_R_CHG_NWC, 3, "n/a", font=BLACK_FONT)
+
+        # Projected NWC & Change
+        for yr in range(proj_years):
+            nwc_col = 4 + yr
+            cl = col_letter(nwc_col)
+            prev_cl = col_letter(nwc_col - 1)
+            set_cell(ws_nwc, NWC_R_NWC, nwc_col,
+                     f"={cl}{NWC_R_CA}-{cl}{NWC_R_CL}",
+                     font=BLACK_FONT, fmt=FMT_YEN, border=SUBTOTAL_BORDER, fill=SUBTOTAL_FILL)
+            set_cell(ws_nwc, NWC_R_CHG_NWC, nwc_col,
+                     f"={cl}{NWC_R_NWC}-{prev_cl}{NWC_R_NWC}",
+                     font=BLACK_FONT, fmt=FMT_YEN, border=TOP_BOTTOM)
+
+        # ── Apply consistent borders to all NWC data rows ──
+        _nwc_data_rows = (
+            list(range(NWC_R_DSO, NWC_R_DPO + 1))       # Drivers: DSO, DIH, DPO
+            + list(range(NWC_R_REV, NWC_R_COGS + 1))     # P&L Reference: Revenue, COGS
+            + list(range(NWC_R_AR, NWC_R_CL + 1))         # WC Items: AR, Inv, CA, AP, CL
+            + [NWC_R_NWC, NWC_R_CHG_NWC]                  # NWC Summary
+        )
+        _nwc_col_end = 3 + proj_years  # last data column
+        for _r in _nwc_data_rows:
+            for _ci in range(2, _nwc_col_end + 1):
+                _cell = ws_nwc.cell(row=_r, column=_ci)
+                # Preserve existing meaningful borders (SUBTOTAL_BORDER, TOP_BOTTOM, etc.)
+                _has_border = (_cell.border and any([
+                    getattr(_cell.border.top, 'style', None),
+                    getattr(_cell.border.bottom, 'style', None),
+                    getattr(_cell.border.left, 'style', None),
+                    getattr(_cell.border.right, 'style', None),
+                ]))
+                if not _has_border:
+                    _cell.border = NWC_DATA_BORDER
+
+        # ── Scenario Input Matrix (DSO, DIH, DPO) ──
+        c = section_title(ws_nwc, NWC_R_SCEN_SEC, 2, "Scenario Input Matrix (Working Capital Days)")
+        c.fill = LIGHT_GREEN
+        for col_idx in range(3, 3 + proj_years + 1):
+            ws_nwc.cell(row=NWC_R_SCEN_SEC, column=col_idx).fill = LIGHT_GREEN
+
+        for yr in range(proj_years):
+            _scen_yr_label = nwc_proj_labels[yr] if yr < len(nwc_proj_labels) else f"Year {yr + 1}"
+            set_cell(ws_nwc, NWC_R_SCEN_YEARS, 4 + yr, _scen_yr_label,
+                     font=HEADER_FONT, fill=HEADER_FILL,
+                     alignment=Alignment(horizontal="center"))
+
+        nwc_driver_blocks = [
+            ("DSO (Days)", "dso_days", FMT_DAYS, NWC_R_SCEN_BLK_DSO),
+            ("DIH (Days)", "dih_days", FMT_DAYS, NWC_R_SCEN_BLK_DIH),
+            ("DPO (Days)", "dpo_days", FMT_DAYS, NWC_R_SCEN_BLK_DPO),
+        ]
+
+        for drv_label, drv_key, drv_fmt, blk_start in nwc_driver_blocks:
+            section_title(ws_nwc, blk_start, 2, drv_label)
+            for s, scen_name in enumerate(SCENARIO_NAMES):
+                r = blk_start + 1 + s
+                set_cell(ws_nwc, r, 2, scen_name, font=BOLD_FONT)
+                scen_data = config["scenarios"][scen_name][drv_key]
+                for yr in range(proj_years):
+                    set_cell(ws_nwc, r, 4 + yr, scen_data[yr],
+                             font=BLUE_FONT, fmt=drv_fmt, border=INPUT_BORDER)
 
     # =====================================================================
     # SHEET 5: Comps Analysis
@@ -1281,6 +2119,23 @@ def generate_dcf_workbook(config, output_path=None):
              font=GREY_FONT)
     ws5.merge_cells(start_row=_note_row, start_column=2,
                     end_row=_note_row, end_column=9)
+
+    # =====================================================================
+    # SHEET 7 & 8: Segment / Driver Analysis (optional)
+    # =====================================================================
+    segments = C.get("segments")
+    if segments:
+        proj_years = C["projection_years"]
+        _year_labels = [f"Year {y}" for y in range(1, proj_years + 1)]
+        if C.get("projection_start_fy"):
+            import re as _re
+            _m = _re.search(r"FY(\d+)", C["projection_start_fy"])
+            if _m:
+                _base_fy = int(_m.group(1))
+                _year_labels = [f"FY{_base_fy + y}(E)" for y in range(proj_years)]
+
+        _create_segment_sheet(wb, C, segments, proj_years, _year_labels)
+        _create_driver_sheet(wb, C, segments, proj_years, _year_labels)
 
     # =====================================================================
     # SAVE & VERIFY
