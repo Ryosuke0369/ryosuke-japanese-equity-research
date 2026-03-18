@@ -186,6 +186,10 @@ def calc_dcf_pgm(rev_growth, gross_margin, wacc, tg, cfg):
     net_debt = cfg["net_debt"]
     shares = cfg["shares_outstanding"]
     sga_pct_list = cfg["sga_pct"]
+    _capex_method = cfg.get("capex_method", "revenue_pct")
+    _da_method = cfg.get("da_method", "revenue_pct")
+    _capex_direct = cfg.get("capex_direct", {}).get("projections", []) if _capex_method == "direct" else []
+    _da_direct = cfg.get("da_direct", {}).get("projections", []) if _da_method == "direct" else []
 
     revenues = []
     rev = cfg["base_year_revenue"]
@@ -201,8 +205,14 @@ def calc_dcf_pgm(rev_growth, gross_margin, wacc, tg, cfg):
         sga = rev * sga_pct_list[yr_idx]
         ebit = gp - sga
         nopat = ebit * (1 - tax) if ebit > 0 else ebit
-        da = rev * da_pct
-        capex = rev * capex_pct
+        if _da_method == "direct" and yr_idx < len(_da_direct) and _da_direct[yr_idx] is not None:
+            da = _da_direct[yr_idx]
+        else:
+            da = rev * da_pct
+        if _capex_method == "direct" and yr_idx < len(_capex_direct) and _capex_direct[yr_idx] is not None:
+            capex = _capex_direct[yr_idx]
+        else:
+            capex = rev * capex_pct
         fcf = nopat + da - capex
         df = 1 / (1 + wacc) ** (yr_idx + 1)
         sum_pv_fcf += fcf * df
@@ -224,6 +234,10 @@ def calc_dcf_exit(rev_growth, gross_margin, wacc, exit_mult, cfg):
     net_debt = cfg["net_debt"]
     shares = cfg["shares_outstanding"]
     sga_pct_list = cfg["sga_pct"]
+    _capex_method = cfg.get("capex_method", "revenue_pct")
+    _da_method = cfg.get("da_method", "revenue_pct")
+    _capex_direct = cfg.get("capex_direct", {}).get("projections", []) if _capex_method == "direct" else []
+    _da_direct = cfg.get("da_direct", {}).get("projections", []) if _da_method == "direct" else []
 
     revenues = []
     rev = cfg["base_year_revenue"]
@@ -239,14 +253,24 @@ def calc_dcf_exit(rev_growth, gross_margin, wacc, exit_mult, cfg):
         sga = rev * sga_pct_list[yr_idx]
         ebit = gp - sga
         nopat = ebit * (1 - tax) if ebit > 0 else ebit
-        da = rev * da_pct
-        capex = rev * capex_pct
+        if _da_method == "direct" and yr_idx < len(_da_direct) and _da_direct[yr_idx] is not None:
+            da = _da_direct[yr_idx]
+        else:
+            da = rev * da_pct
+        if _capex_method == "direct" and yr_idx < len(_capex_direct) and _capex_direct[yr_idx] is not None:
+            capex = _capex_direct[yr_idx]
+        else:
+            capex = rev * capex_pct
         fcf = nopat + da - capex
         df = 1 / (1 + wacc) ** (yr_idx + 1)
         sum_pv_fcf += fcf * df
         last_ebit = ebit
 
-    yr5_ebitda = last_ebit + revenues[-1] * da_pct
+    if _da_method == "direct" and len(_da_direct) >= n and _da_direct[n - 1] is not None:
+        yr5_da = _da_direct[n - 1]
+    else:
+        yr5_da = revenues[-1] * da_pct
+    yr5_ebitda = last_ebit + yr5_da
     tv = yr5_ebitda * exit_mult
     pv_tv = tv / (1 + wacc) ** n
     ev = sum_pv_fcf + pv_tv
