@@ -158,6 +158,38 @@ FINANCIAL_ITEMS = OrderedDict([
         ],
         "sum": "fallback",
     }),
+    ("trade_receivables_total", {
+        "label": "Trade Receivables Total (営業債権合計)",
+        "type": "instant",
+        "tags": [
+            # New revenue recognition standard aggregate (includes contract assets)
+            "NotesAndAccountsReceivableTradeAndContractAssets",
+            # Traditional aggregate tags
+            "NotesAndAccountsReceivableTrade",
+            "NotesAndOperatingAccountsReceivableTrade",
+            # Fallback: sum individual components (including contract assets)
+            "AccountsReceivableTrade",
+            "NotesReceivableTrade",
+            "ElectronicallyRecordedMonetaryClaimsOperatingCA",
+            "ElectronicallyRecordedMonetaryClaimsOperatingAccounts",
+            "ContractAssets",
+        ],
+        "sum": "fallback",
+    }),
+    ("trade_payables_total", {
+        "label": "Trade Payables Total (営業債務合計)",
+        "type": "instant",
+        "tags": [
+            "NotesAndAccountsPayableTrade",
+            "NotesAndOperatingAccountsPayableTrade",
+            # Fallback: sum individual components (including electronically recorded obligations)
+            "AccountsPayableTrade",
+            "NotesPayableTrade",
+            "ElectronicallyRecordedObligationsOperating",
+            "ElectronicallyRecordedObligations",
+        ],
+        "sum": "fallback",
+    }),
     ("short_term_debt", {
         "label": "Short-term Debt (短期借入金)",
         "type": "instant",
@@ -283,6 +315,19 @@ _SUM_COMPONENTS = {
     "accounts_payable": [
         "AccountsPayableTrade",
         "NotesPayableTrade",
+    ],
+    "trade_receivables_total": [
+        "AccountsReceivableTrade",
+        "NotesReceivableTrade",
+        "ElectronicallyRecordedMonetaryClaimsOperatingCA",
+        "ElectronicallyRecordedMonetaryClaimsOperatingAccounts",
+        "ContractAssets",
+    ],
+    "trade_payables_total": [
+        "AccountsPayableTrade",
+        "NotesPayableTrade",
+        "ElectronicallyRecordedObligationsOperating",
+        "ElectronicallyRecordedObligations",
     ],
 }
 

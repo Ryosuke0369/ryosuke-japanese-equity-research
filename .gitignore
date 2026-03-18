@@ -3,50 +3,33 @@ __pycache__/
 *.pyc
 *.pyo
 *.egg-info/
-dist/
-build/
-.eggs/
-*.egg
+
+# Auto-generated output (re-generable)
+models/
+*.tmp
+
+# Manual/final models (personal final versions, not for GitHub)
+reports/
 
 # OS
 .DS_Store
 Thumbs.db
-Desktop.ini
 
-# IDE / Editor
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# Temp / Cache
-*.tmp
-*.log
-
-# Output (generated models are regenerable)
-output/
-
-# EDINET downloaded data (regenerable via API)
+# EDINET downloads (large XBRL, re-fetchable via API)
+edinet_data/
 tmp/
 
-# Examples: backup files and debug/test scripts
-examples/**/*_backup.xlsx
-examples/**/debug_*.py
-examples/**/test_*.py
-examples/**/output_*.txt
-examples/**/tasks/
-
-# Windows shortcuts
-*.lnk
-
-# Override JSONs contain analyst assumptions (optional: remove if you want public)
-# data/overrides/
-
-# Tasks (development notes)
-tasks/
+# Editor
+.vscode/
+*.swp
 
 # Environment
 .env
 .venv/
 venv/
+
+# Output (legacy)
+output/
+
+# Tasks (development notes)
+tasks/

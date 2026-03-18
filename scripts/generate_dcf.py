@@ -113,6 +113,31 @@ def merged_data_to_config(company_info, merged_data, forecast_data=None):
         base_year_ar = _val(base_data, "accounts_receivable")
         base_year_inv = _val(base_data, "inventories")
         base_year_ap = _val(base_data, "accounts_payable")
+    # ── Trade Receivables/Payables Total (for revenue_pct NWC method) ──
+    if latest_annual_key:
+        latest_annual_trt = _val(merged_data[latest_annual_key], "trade_receivables_total")
+        latest_annual_tpt = _val(merged_data[latest_annual_key], "trade_payables_total")
+    else:
+        latest_annual_trt = 0
+        latest_annual_tpt = 0
+    # Fallback: if trade_receivables_total not available, use accounts_receivable
+    base_year_trade_receivables = latest_annual_trt if latest_annual_trt else base_year_ar
+    base_year_trade_payables = latest_annual_tpt if latest_annual_tpt else base_year_ap
+    base_year_nwc = base_year_trade_receivables + base_year_inv - base_year_trade_payables
+
+    # Historical NWC % of Revenue (for revenue_pct method)
+    hist_nwc_pct = []
+    for k in fy_keys_oldest_first:
+        rev_k = _val(merged_data[k], "revenue")
+        if rev_k > 0:
+            trt_k = _val(merged_data[k], "trade_receivables_total") or _val(merged_data[k], "accounts_receivable")
+            inv_k = _val(merged_data[k], "inventories")
+            tpt_k = _val(merged_data[k], "trade_payables_total") or _val(merged_data[k], "accounts_payable")
+            nwc_k = trt_k + inv_k - tpt_k
+            hist_nwc_pct.append(round(nwc_k / rev_k, 4))
+        else:
+            hist_nwc_pct.append(0)
+
     net_debt = _val(base_data, "net_debt")
 
     # Auto-calculate DCF assumptions: average da_pct/capex_pct across all FY years
@@ -173,6 +198,14 @@ def merged_data_to_config(company_info, merged_data, forecast_data=None):
     base_dih = [dih_days] * 5
     base_dpo = [dpo_days] * 5
 
+    # NWC % of Revenue for revenue_pct method
+    latest_nwc_pct = hist_nwc_pct[-1] if hist_nwc_pct else 0.50
+    base_nwc_pct = [round(latest_nwc_pct, 4)] * 5
+    upside_nwc_pct = [round(latest_nwc_pct * 0.90, 4)] * 5
+    mgmt_nwc_pct = [round(latest_nwc_pct, 4)] * 5
+    ds1_nwc_pct = [round(latest_nwc_pct * 1.10, 4)] * 5
+    ds2_nwc_pct = [round(latest_nwc_pct * 1.20, 4)] * 5
+
     scenarios = {
         "Base": {
             "revenue_growth": base_growth,
@@ -181,6 +214,7 @@ def merged_data_to_config(company_info, merged_data, forecast_data=None):
             "dso_days": base_dso,
             "dih_days": base_dih,
             "dpo_days": base_dpo,
+            "nwc_pct": base_nwc_pct,
         },
         "Upside": {
             "revenue_growth": [round(cagr_3yr * 1.5, 4)] * 5,
@@ -189,6 +223,7 @@ def merged_data_to_config(company_info, merged_data, forecast_data=None):
             "dso_days": [max(10, dso_days - 5)] * 5,
             "dih_days": [max(0, dih_days - 2)] * 5,
             "dpo_days": [dpo_days + 3] * 5,
+            "nwc_pct": upside_nwc_pct,
         },
         "Management": {
             "revenue_growth": [round(cagr_3yr * 1.2, 4)] * 5,
@@ -197,6 +232,7 @@ def merged_data_to_config(company_info, merged_data, forecast_data=None):
             "dso_days": base_dso,
             "dih_days": base_dih,
             "dpo_days": base_dpo,
+            "nwc_pct": mgmt_nwc_pct,
         },
         "Downside 1": {
             "revenue_growth": [round(max(cagr_3yr * 0.5, 0.0), 4)] * 5,
@@ -205,6 +241,7 @@ def merged_data_to_config(company_info, merged_data, forecast_data=None):
             "dso_days": [dso_days + 5] * 5,
             "dih_days": [dih_days + 3] * 5,
             "dpo_days": [max(10, dpo_days - 3)] * 5,
+            "nwc_pct": ds1_nwc_pct,
         },
         "Downside 2": {
             "revenue_growth": [0.0] * 5,
@@ -213,6 +250,7 @@ def merged_data_to_config(company_info, merged_data, forecast_data=None):
             "dso_days": [dso_days + 10] * 5,
             "dih_days": [dih_days + 5] * 5,
             "dpo_days": [max(10, dpo_days - 5)] * 5,
+            "nwc_pct": ds2_nwc_pct,
         },
     }
 
@@ -336,6 +374,11 @@ def merged_data_to_config(company_info, merged_data, forecast_data=None):
         "base_year_ar": base_year_ar,
         "base_year_inv": base_year_inv,
         "base_year_ap": base_year_ap,
+        "base_year_trade_receivables": base_year_trade_receivables,
+        "base_year_trade_payables": base_year_trade_payables,
+        "base_year_nwc": base_year_nwc,
+        "hist_nwc_pct": hist_nwc_pct,
+        "nwc_method": "days",  # default; overridden to "revenue_pct" via overrides
 
         # Comps (empty by default — can be populated separately)
         "comps": [],
@@ -377,6 +420,8 @@ def main():
     parser.add_argument("--comps-csv", default=None, help="Path to comps CSV (default: data/comps/<ticker>_comps.csv)")
     parser.add_argument("--overrides", default=None,
                         help="Path to JSON override file (e.g. data/overrides/2359_overrides.json)")
+    parser.add_argument("--force", action="store_true",
+                        help="Overwrite existing output file without warning")
     args = parser.parse_args()
 
     ticker_code = args.ticker.strip()
@@ -490,6 +535,9 @@ def main():
         config["_override_keys"] = set(override_keys)
         print(f"  Applied {len(override_keys)} override fields: {', '.join(override_keys[:10])}")
 
+        if config.get("nwc_method") == "revenue_pct":
+            print(f"  NWC Method: revenue_pct (NWC % of Revenue) - DSO/DIH/DPO will not be used")
+
     # Step 5: Fetch live market data via yfinance (price, shares, beta)
     print(f"\n[Step 5/7] Fetching market data...")
     ticker_str = config["ticker"]
@@ -547,6 +595,12 @@ def main():
     os.makedirs(args.output_dir, exist_ok=True)
     date_str = datetime.now().strftime("%Y%m%d")
     output_path = os.path.join(args.output_dir, f"{ticker_code}_DCF_Model_{date_str}.xlsx")
+
+    if os.path.exists(output_path) and not args.force:
+        print(f"\n  WARNING: {output_path} already exists.")
+        print(f"   Use --force to overwrite, or rename/move the existing file.")
+        print(f"   Tip: Move finalized models to reports/ directory to protect them.")
+        sys.exit(1)
 
     saved_path = generate_dcf_workbook(config, output_path)
 
