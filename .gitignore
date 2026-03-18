@@ -4,8 +4,7 @@ __pycache__/
 *.pyo
 *.egg-info/
 
-# Auto-generated output (re-generable)
-models/
+# Temp files
 *.tmp
 
 # Manual/final models (personal final versions, not for GitHub)
