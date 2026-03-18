@@ -68,5 +68,53 @@
         "1. Defense contracts still in R&D/validation phase — mass production orders unconfirmed",
         "2. Key person risk in specialized GNSS/space technology division",
         "3. Revenue concentration in Japanese domestic IT services market"
+    ],
+
+    "segments": [
+        {
+            "name": "Future Society Solutions",
+            "name_jp": "未来社会ソリューション",
+            "driver_type": "manual",
+            "historical": {
+                "revenue": [null, 4771, 4570],
+                "op": [null, 675, 461]
+            },
+            "projections": {
+                "revenue": [5050, 5700, 6200, 6700],
+                "op_margin": [0.149, 0.140, 0.145, 0.150]
+            }
+        },
+        {
+            "name": "Industrial Technology Solutions",
+            "name_jp": "産業技術ソリューション",
+            "driver_type": "manmonth",
+            "historical": {
+                "revenue": [null, 10546, 12035],
+                "op": [null, 1641, 1884],
+                "headcount": [null, null, null],
+                "layer1_revenue": [null, null, null],
+                "layer2_revenue": [null, null, 6058]
+            },
+            "projections": {
+                "headcount": [820, 850, 880, 910],
+                "utilization": [0.92, 0.93, 0.93, 0.94],
+                "unit_price_monthly": [0.70, 0.72, 0.74, 0.76],
+                "layer2_revenue": [7400, 9238, 11000, 13000],
+                "op_margin": [0.172, 0.165, 0.170, 0.175]
+            }
+        },
+        {
+            "name": "Customer Business Integration",
+            "name_jp": "顧客業務インテグレーション",
+            "driver_type": "manual",
+            "historical": {
+                "revenue": [null, 8680, 7993],
+                "op": [null, 823, 829]
+            },
+            "projections": {
+                "revenue": [8000, 8100, 8200, 8300],
+                "op_margin": [0.1125, 0.108, 0.110, 0.112]
+            }
+        }
     ]
 }
