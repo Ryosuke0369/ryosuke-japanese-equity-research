@@ -714,7 +714,7 @@ def _driver_backlog(ws, seg, hist, proj, n_hist, proj_years, cur_row):
 
     # Row: = Ending Backlog (formula: BB + Orders - Revenue)
     eb_row = cur_row
-    set_cell(ws, eb_row, 2, "= Ending Backlog", font=BOLD_FONT)
+    set_cell(ws, eb_row, 2, "Ending Backlog", font=BOLD_FONT)
     for i in range(n_hist):
         col = 3 + i
         val = hist_backlog[i]
@@ -811,7 +811,7 @@ def _driver_manmonth(ws, seg, hist, proj, n_hist, proj_years, cur_row):
 
     # Layer 1 Revenue = HC × Util × Price × 12
     l1_row = cur_row
-    set_cell(ws, l1_row, 2, "= Layer 1 Revenue", font=BOLD_FONT)
+    set_cell(ws, l1_row, 2, "Layer 1 Revenue", font=BOLD_FONT)
     for i in range(n_hist):
         set_cell(ws, l1_row, 3 + i, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
     for yr in range(proj_years):
@@ -846,7 +846,7 @@ def _driver_manmonth(ws, seg, hist, proj, n_hist, proj_years, cur_row):
 
     # Segment Revenue = L1 + L2
     seg_rev_row = cur_row
-    set_cell(ws, seg_rev_row, 2, "= Segment Revenue", font=BOLD_FONT)
+    set_cell(ws, seg_rev_row, 2, "Segment Revenue", font=BOLD_FONT)
     for i in range(n_hist):
         col = 3 + i
         val = hist_rev[i]

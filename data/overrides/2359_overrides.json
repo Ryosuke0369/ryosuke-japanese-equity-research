@@ -96,6 +96,7 @@
                 "layer2_revenue": [null, null, 6058]
             },
             "projections": {
+                "revenue": [13950, 16000, 18000, 20000],
                 "headcount": [820, 850, 880, 910],
                 "utilization": [0.92, 0.93, 0.93, 0.94],
                 "unit_price_monthly": [0.70, 0.72, 0.74, 0.76],
