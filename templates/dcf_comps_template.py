@@ -1248,9 +1248,23 @@ def generate_dcf_workbook(config, output_path=None):
     for col_idx in range(3, 8):
         ws3.cell(row=4, column=col_idx).fill = LIGHT_FILL
 
+    # Determine effective Capex/D&A assumption values for display
+    _capex_method = C.get("capex_method", "revenue_pct")
+    _da_method = C.get("da_method", "revenue_pct")
+    _capex_pct_display = C["capex_pct"]
+    _da_pct_display = C["da_pct"]
+    if _capex_method == "direct":
+        _cp = C.get("capex_direct", {}).get("projections", [])
+        if _cp:
+            _capex_pct_display = sum(c for c in _cp if c is not None) / len(_cp) / C["base_year_revenue"] if C["base_year_revenue"] else 0
+    if _da_method == "direct":
+        _dp = C.get("da_direct", {}).get("projections", [])
+        if _dp:
+            _da_pct_display = sum(d for d in _dp if d is not None) / len(_dp) / C["base_year_revenue"] if C["base_year_revenue"] else 0
+
     assumptions = [
         # Revenue Growth Rate and COGS % removed — now in per-year driver rows
-        ("Capex / Revenue",            C["capex_pct"],            FMT_PCT),      # C5
+        ("Capex / Revenue",            _capex_pct_display,        FMT_PCT),      # C5
         ("Effective Tax Rate",         C["tax_rate"],             FMT_PCT),      # C6
         ("Risk-Free Rate",             C["risk_free"],            FMT_PCT),      # C7
         ("Beta",                       C["beta"],                 "0.00"),       # C8
@@ -1263,7 +1277,7 @@ def generate_dcf_workbook(config, output_path=None):
         ("Fully Diluted Shares",       C["shares_outstanding"],   FMT_INT),      # C15
         ("Net Debt (JPY mn)",          C["net_debt"],             FMT_YEN),      # C16
         ("Base Year Revenue (JPY mn)", C["base_year_revenue"],    FMT_YEN),      # C17
-        ("D&A / Revenue",              C["da_pct"],               FMT_PCT),      # C18
+        ("D&A / Revenue",              _da_pct_display,           FMT_PCT),      # C18
         ("Stub Fraction (yr remaining)", C.get("stub_fraction", 1.0), "0.00"),  # C19
         ("LTM Revenue (JPY mn)",         C.get("ltm_revenue", C["base_year_revenue"]), FMT_YEN),  # C20
     ]
@@ -1404,9 +1418,25 @@ def generate_dcf_workbook(config, output_path=None):
         set_cell(ws3, R_NOPAT, col, f"={cl}{R_EBIT}-{cl}{R_TAX}", font=BLACK_FONT, fmt=FMT_YEN,
                  border=SUBTOTAL_BORDER)
         # D&A
-        set_cell(ws3, R_DA, col, f"={cl}{R_REVENUE}*C18", font=BLACK_FONT, fmt=FMT_YEN)
+        if _da_method == "direct":
+            _da_arr = C.get("da_direct", {}).get("projections", [])
+            _da_val = _da_arr[yr] if yr < len(_da_arr) and _da_arr[yr] is not None else None
+            if _da_val is not None:
+                set_cell(ws3, R_DA, col, _da_val, font=BLUE_FONT, fmt=FMT_YEN)
+            else:
+                set_cell(ws3, R_DA, col, f"={cl}{R_REVENUE}*C18", font=BLACK_FONT, fmt=FMT_YEN)
+        else:
+            set_cell(ws3, R_DA, col, f"={cl}{R_REVENUE}*C18", font=BLACK_FONT, fmt=FMT_YEN)
         # Capex
-        set_cell(ws3, R_CAPEX, col, f"={cl}{R_REVENUE}*C5", font=BLACK_FONT, fmt=FMT_YEN)
+        if _capex_method == "direct":
+            _cx_arr = C.get("capex_direct", {}).get("projections", [])
+            _cx_val = _cx_arr[yr] if yr < len(_cx_arr) and _cx_arr[yr] is not None else None
+            if _cx_val is not None:
+                set_cell(ws3, R_CAPEX, col, _cx_val, font=BLUE_FONT, fmt=FMT_YEN)
+            else:
+                set_cell(ws3, R_CAPEX, col, f"={cl}{R_REVENUE}*C5", font=BLACK_FONT, fmt=FMT_YEN)
+        else:
+            set_cell(ws3, R_CAPEX, col, f"={cl}{R_REVENUE}*C5", font=BLACK_FONT, fmt=FMT_YEN)
         # Change in NWC (linked from NWC Schedule; NWC col = DCF col + 1)
         nwc_col_letter = col_letter(col + 1)
         set_cell(ws3, R_CHG_NWC, col,
