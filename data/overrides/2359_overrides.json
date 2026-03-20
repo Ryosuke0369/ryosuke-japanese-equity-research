@@ -13,7 +13,7 @@
         "projections": [210, 210, 210, 215]
     },
     "tax_rate": 0.305,
-    "risk_free": 0.012,
+    "risk_free": 0.022,
     "cost_of_debt_at": 0.005,
     "terminal_growth": 0.015,
     "exit_multiple": 10.0,
