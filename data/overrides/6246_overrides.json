@@ -6,7 +6,7 @@
 
   "investment_thesis": [
     "1. LiB electrode coating equipment with ~20% global market share (duopoly with Hirano Tecseed)",
-    "2. Dual revenue pillars (optical display + battery) provide counter-cyclical stability, sustaining 16% OPM",
+    "2. Dual revenue pillars (optical display + battery) provide counter-cyclical stability, sustaining ~15% OPM",
     "3. Structural tailwind: electricity demand acceleration (AI/DC + EV + grid storage) drives battery capex cycle",
     "4. Effissimo Capital (activist) as major shareholder - catalyst for capital efficiency improvement and enhanced returns"
   ],
@@ -38,32 +38,32 @@
 
   "scenarios": {
     "Base": {
-      "revenue_growth": [0.05, 0.12, 0.08, 0.06, 0.05],
-      "cogs_pct": [0.77, 0.77, 0.765, 0.765, 0.76],
+      "revenue_growth": [0.04, 0.08, 0.06, 0.05, 0.04],
+      "cogs_pct": [0.79, 0.785, 0.78, 0.775, 0.77],
       "sga_pct": [0.06, 0.06, 0.06, 0.06, 0.06],
       "nwc_pct": [-0.07, -0.07, -0.07, -0.07, -0.07]
     },
     "Upside": {
       "revenue_growth": [0.10, 0.18, 0.15, 0.12, 0.10],
-      "cogs_pct": [0.76, 0.76, 0.76, 0.75, 0.75],
-      "sga_pct": [0.05, 0.05, 0.05, 0.05, 0.05],
+      "cogs_pct": [0.77, 0.77, 0.765, 0.76, 0.755],
+      "sga_pct": [0.06, 0.06, 0.06, 0.06, 0.06],
       "nwc_pct": [-0.07, -0.07, -0.07, -0.07, -0.07]
     },
     "Management": {
       "revenue_growth": [-0.073, 0.08, 0.06, 0.05, 0.04],
-      "cogs_pct": [0.77, 0.77, 0.77, 0.77, 0.77],
+      "cogs_pct": [0.79, 0.79, 0.79, 0.79, 0.79],
       "sga_pct": [0.06, 0.06, 0.06, 0.06, 0.06],
       "nwc_pct": [-0.07, -0.07, -0.07, -0.07, -0.07]
     },
     "Downside 1": {
       "revenue_growth": [-0.10, 0.02, 0.02, 0.02, 0.02],
-      "cogs_pct": [0.78, 0.78, 0.78, 0.78, 0.78],
+      "cogs_pct": [0.80, 0.80, 0.80, 0.80, 0.80],
       "sga_pct": [0.07, 0.07, 0.07, 0.07, 0.07],
       "nwc_pct": [-0.07, -0.07, -0.07, -0.07, -0.07]
     },
     "Downside 2": {
       "revenue_growth": [-0.20, -0.03, 0.00, 0.02, 0.02],
-      "cogs_pct": [0.79, 0.79, 0.79, 0.79, 0.79],
+      "cogs_pct": [0.81, 0.81, 0.81, 0.81, 0.81],
       "sga_pct": [0.08, 0.08, 0.08, 0.08, 0.08],
       "nwc_pct": [-0.07, -0.07, -0.07, -0.07, -0.07]
     }
@@ -78,12 +78,15 @@
         "revenue": [7464, 6349, 9843],
         "op": [null, null, null],
         "orders": [null, 14662, 6594],
-        "backlog_end": [null, 15343, 12094]
+        "backlog_end": [null, 15343, 12094],
+        "fy26_q3_orders_ytd": 6641,
+        "fy26_q3_revenue_ytd": 8065,
+        "fy26_q3_backlog": 10670
       },
       "projections": {
         "revenue": [11000, 12500, 13500, 14000],
         "orders": [10000, 11500, 12500, 13000],
-        "op_margin": [0.18, 0.19, 0.21, 0.22]
+        "op_margin": [0.16, 0.17, 0.18, 0.19]
       }
     },
     {
@@ -94,12 +97,15 @@
         "revenue": [null, 4388, 5164],
         "op": [null, null, null],
         "orders": [null, 1835, 3349],
-        "backlog_end": [null, 7093, 5279]
+        "backlog_end": [null, 7093, 5279],
+        "fy26_q3_orders_ytd": 5855,
+        "fy26_q3_revenue_ytd": 4006,
+        "fy26_q3_backlog": 7128
       },
       "projections": {
-        "revenue": [6000, 7000, 8000, 9000],
-        "orders": [5500, 7500, 8500, 9500],
-        "op_margin": [0.14, 0.15, 0.16, 0.17]
+        "revenue": [6500, 7500, 8500, 9500],
+        "orders": [7000, 8000, 9000, 9500],
+        "op_margin": [0.15, 0.16, 0.17, 0.18]
       }
     },
     {
@@ -110,12 +116,15 @@
         "revenue": [null, 5206, 5193],
         "op": [null, null, null],
         "orders": [null, 5963, 3025],
-        "backlog_end": [null, 7883, 5715]
+        "backlog_end": [null, 7883, 5715],
+        "fy26_q3_orders_ytd": 788,
+        "fy26_q3_revenue_ytd": 3203,
+        "fy26_q3_backlog": 3299
       },
       "projections": {
-        "revenue": [5500, 6000, 6500, 7500],
-        "orders": [5000, 6500, 7000, 8000],
-        "op_margin": [0.12, 0.13, 0.14, 0.15]
+        "revenue": [3800, 3500, 3500, 4000],
+        "orders": [1500, 2500, 3500, 4500],
+        "op_margin": [0.10, 0.10, 0.11, 0.12]
       }
     },
     {
@@ -124,7 +133,8 @@
       "driver_type": "manual",
       "historical": {
         "revenue": [null, 1999, 389],
-        "op": [null, null, null]
+        "op": [null, null, null],
+        "note": "Electronic Components and Other combined in quarterly reporting"
       },
       "projections": {
         "revenue": [500, 600, 700, 800],
@@ -137,7 +147,10 @@
       "driver_type": "manual",
       "historical": {
         "revenue": [null, 1301, 990],
-        "op": [null, null, null]
+        "op": [null, null, null],
+        "fy26_q3_orders_ytd": 1131,
+        "fy26_q3_revenue_ytd": 864,
+        "fy26_q3_backlog": 1464
       },
       "projections": {
         "revenue": [700, 700, 700, 700],
