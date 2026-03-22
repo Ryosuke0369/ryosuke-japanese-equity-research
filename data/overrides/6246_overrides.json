@@ -3,7 +3,6 @@
   "ticker": "6246.T",
   "exchange": "TSE Standard",
   "sector": "Machinery",
-
   "investment_thesis": [
     "1. LiB electrode coating equipment with ~20% global market share (duopoly with Hirano Tecseed)",
     "2. Dual revenue pillars (optical display + battery) provide counter-cyclical stability, sustaining ~15% OPM",
@@ -16,77 +15,257 @@
     "3. Competitive pressure from Hirano Tecseed (6245) in core LiB coating market",
     "4. Low daily trading volume (JPY 5-10mn) creates liquidity risk for institutional investors"
   ],
-
   "risk_free": 0.022,
   "erp": 0.065,
-  "beta": 0.90,
+  "beta": 0.9,
   "size_premium": 0.04,
   "cost_of_debt_at": 0.005,
   "terminal_growth": 0.015,
   "exit_multiple": 8.0,
-  "tax_rate": 0.30,
+  "tax_rate": 0.3,
   "primary_multiple": "EV/EBITDA",
-
   "nwc_method": "revenue_pct",
-
   "base_year_ar": 4030,
   "base_year_inv": 519,
   "base_year_ap": 6080,
   "base_year_trade_receivables": 4030,
   "base_year_trade_payables": 6080,
   "base_year_nwc": -1531,
-
   "scenarios": {
     "Base": {
-      "revenue_growth": [0.04, 0.08, 0.06, 0.05, 0.04],
-      "cogs_pct": [0.79, 0.785, 0.78, 0.775, 0.77],
-      "sga_pct": [0.06, 0.06, 0.06, 0.06, 0.06],
-      "nwc_pct": [-0.07, -0.07, -0.07, -0.07, -0.07]
+      "sga_pct": [
+        0.06,
+        0.06,
+        0.06,
+        0.06,
+        0.06
+      ],
+      "nwc_pct": [
+        -0.07,
+        -0.07,
+        -0.07,
+        -0.07,
+        -0.07
+      ]
     },
     "Upside": {
-      "revenue_growth": [0.10, 0.18, 0.15, 0.12, 0.10],
-      "cogs_pct": [0.77, 0.77, 0.765, 0.76, 0.755],
-      "sga_pct": [0.06, 0.06, 0.06, 0.06, 0.06],
-      "nwc_pct": [-0.07, -0.07, -0.07, -0.07, -0.07]
+      "sga_pct": [
+        0.06,
+        0.06,
+        0.06,
+        0.06,
+        0.06
+      ],
+      "nwc_pct": [
+        -0.07,
+        -0.07,
+        -0.07,
+        -0.07,
+        -0.07
+      ]
     },
     "Management": {
-      "revenue_growth": [-0.073, 0.08, 0.06, 0.05, 0.04],
-      "cogs_pct": [0.79, 0.79, 0.79, 0.79, 0.79],
-      "sga_pct": [0.06, 0.06, 0.06, 0.06, 0.06],
-      "nwc_pct": [-0.07, -0.07, -0.07, -0.07, -0.07]
+      "sga_pct": [
+        0.06,
+        0.06,
+        0.06,
+        0.06,
+        0.06
+      ],
+      "nwc_pct": [
+        -0.07,
+        -0.07,
+        -0.07,
+        -0.07,
+        -0.07
+      ]
     },
     "Downside 1": {
-      "revenue_growth": [-0.10, 0.02, 0.02, 0.02, 0.02],
-      "cogs_pct": [0.80, 0.80, 0.80, 0.80, 0.80],
-      "sga_pct": [0.07, 0.07, 0.07, 0.07, 0.07],
-      "nwc_pct": [-0.07, -0.07, -0.07, -0.07, -0.07]
+      "sga_pct": [
+        0.07,
+        0.07,
+        0.07,
+        0.07,
+        0.07
+      ],
+      "nwc_pct": [
+        -0.07,
+        -0.07,
+        -0.07,
+        -0.07,
+        -0.07
+      ]
     },
     "Downside 2": {
-      "revenue_growth": [-0.20, -0.03, 0.00, 0.02, 0.02],
-      "cogs_pct": [0.81, 0.81, 0.81, 0.81, 0.81],
-      "sga_pct": [0.08, 0.08, 0.08, 0.08, 0.08],
-      "nwc_pct": [-0.07, -0.07, -0.07, -0.07, -0.07]
+      "sga_pct": [
+        0.08,
+        0.08,
+        0.08,
+        0.08,
+        0.08
+      ],
+      "nwc_pct": [
+        -0.07,
+        -0.07,
+        -0.07,
+        -0.07,
+        -0.07
+      ]
     }
   },
-
   "segments": [
     {
       "name": "Display Components",
       "name_jp": "ディスプレイ部品関連",
       "driver_type": "backlog",
       "historical": {
-        "revenue": [7464, 6349, 9843],
-        "op": [null, null, null],
-        "orders": [null, 14662, 6594],
-        "backlog_end": [null, 15343, 12094],
+        "revenue": [
+          7464,
+          6349,
+          9843
+        ],
+        "op": [
+          null,
+          null,
+          null
+        ],
+        "orders": [
+          null,
+          14662,
+          6594
+        ],
+        "backlog_end": [
+          null,
+          15343,
+          12094
+        ],
         "fy26_q3_orders_ytd": 6641,
         "fy26_q3_revenue_ytd": 8065,
         "fy26_q3_backlog": 10670
       },
       "projections": {
-        "revenue": [11000, 12500, 13500, 14000],
-        "orders": [10000, 11500, 12500, 13000],
-        "op_margin": [0.16, 0.17, 0.18, 0.19]
+        "revenue": [
+          11000,
+          12500,
+          13500,
+          14000,
+          14500
+        ],
+        "orders": [
+          10000,
+          11500,
+          12500,
+          13000,
+          13500
+        ],
+        "op_margin": [
+          0.16,
+          0.17,
+          0.18,
+          0.19,
+          0.19
+        ],
+        "revenue_growth": [
+          0.1175,
+          0.1364,
+          0.08,
+          0.037,
+          0.0357
+        ]
+      },
+      "scenario_projections": {
+        "Upside": {
+          "revenue": [
+            12500,
+            15000,
+            17000,
+            18500,
+            19500
+          ],
+          "op_margin": [
+            0.17,
+            0.18,
+            0.19,
+            0.2,
+            0.2
+          ],
+          "revenue_growth": [
+            0.2699,
+            0.2,
+            0.1333,
+            0.0882,
+            0.0541
+          ]
+        },
+        "Management": {
+          "revenue": [
+            10200,
+            11000,
+            11700,
+            12200,
+            12700
+          ],
+          "op_margin": [
+            0.15,
+            0.16,
+            0.16,
+            0.17,
+            0.17
+          ],
+          "revenue_growth": [
+            0.0363,
+            0.0784,
+            0.0636,
+            0.0427,
+            0.041
+          ]
+        },
+        "Downside 1": {
+          "revenue": [
+            8000,
+            8500,
+            9000,
+            9500,
+            9700
+          ],
+          "op_margin": [
+            0.13,
+            0.13,
+            0.14,
+            0.14,
+            0.14
+          ],
+          "revenue_growth": [
+            -0.1872,
+            0.0625,
+            0.0588,
+            0.0556,
+            0.0211
+          ]
+        },
+        "Downside 2": {
+          "revenue": [
+            6500,
+            6500,
+            7000,
+            7000,
+            7200
+          ],
+          "op_margin": [
+            0.1,
+            0.1,
+            0.11,
+            0.11,
+            0.11
+          ],
+          "revenue_growth": [
+            -0.3396,
+            0.0,
+            0.0769,
+            0.0,
+            0.0286
+          ]
+        }
       }
     },
     {
@@ -94,18 +273,153 @@
       "name_jp": "機能性フィルム関連",
       "driver_type": "backlog",
       "historical": {
-        "revenue": [null, 4388, 5164],
-        "op": [null, null, null],
-        "orders": [null, 1835, 3349],
-        "backlog_end": [null, 7093, 5279],
+        "revenue": [
+          null,
+          4388,
+          5164
+        ],
+        "op": [
+          null,
+          null,
+          null
+        ],
+        "orders": [
+          null,
+          1835,
+          3349
+        ],
+        "backlog_end": [
+          null,
+          7093,
+          5279
+        ],
         "fy26_q3_orders_ytd": 5855,
         "fy26_q3_revenue_ytd": 4006,
         "fy26_q3_backlog": 7128
       },
       "projections": {
-        "revenue": [6500, 7500, 8500, 9500],
-        "orders": [7000, 8000, 9000, 9500],
-        "op_margin": [0.15, 0.16, 0.17, 0.18]
+        "revenue": [
+          6500,
+          7500,
+          8500,
+          9500,
+          10000
+        ],
+        "orders": [
+          7000,
+          8000,
+          9000,
+          9500,
+          10000
+        ],
+        "op_margin": [
+          0.15,
+          0.16,
+          0.17,
+          0.18,
+          0.18
+        ],
+        "revenue_growth": [
+          0.2587,
+          0.1538,
+          0.1333,
+          0.1176,
+          0.0526
+        ]
+      },
+      "scenario_projections": {
+        "Upside": {
+          "revenue": [
+            7500,
+            9000,
+            10500,
+            12000,
+            13000
+          ],
+          "op_margin": [
+            0.16,
+            0.17,
+            0.18,
+            0.19,
+            0.19
+          ],
+          "revenue_growth": [
+            0.4524,
+            0.2,
+            0.1667,
+            0.1429,
+            0.0833
+          ]
+        },
+        "Management": {
+          "revenue": [
+            6000,
+            6500,
+            7000,
+            7500,
+            7800
+          ],
+          "op_margin": [
+            0.14,
+            0.15,
+            0.15,
+            0.16,
+            0.16
+          ],
+          "revenue_growth": [
+            0.1619,
+            0.0833,
+            0.0769,
+            0.0714,
+            0.04
+          ]
+        },
+        "Downside 1": {
+          "revenue": [
+            5000,
+            5000,
+            5200,
+            5500,
+            5600
+          ],
+          "op_margin": [
+            0.12,
+            0.12,
+            0.13,
+            0.13,
+            0.13
+          ],
+          "revenue_growth": [
+            -0.0318,
+            0.0,
+            0.04,
+            0.0577,
+            0.0182
+          ]
+        },
+        "Downside 2": {
+          "revenue": [
+            4200,
+            4000,
+            4000,
+            4200,
+            4300
+          ],
+          "op_margin": [
+            0.1,
+            0.1,
+            0.1,
+            0.11,
+            0.11
+          ],
+          "revenue_growth": [
+            -0.1867,
+            -0.0476,
+            0.0,
+            0.05,
+            0.0238
+          ]
+        }
       }
     },
     {
@@ -113,18 +427,153 @@
       "name_jp": "エネルギー関連",
       "driver_type": "backlog",
       "historical": {
-        "revenue": [null, 5206, 5193],
-        "op": [null, null, null],
-        "orders": [null, 5963, 3025],
-        "backlog_end": [null, 7883, 5715],
+        "revenue": [
+          null,
+          5206,
+          5193
+        ],
+        "op": [
+          null,
+          null,
+          null
+        ],
+        "orders": [
+          null,
+          5963,
+          3025
+        ],
+        "backlog_end": [
+          null,
+          7883,
+          5715
+        ],
         "fy26_q3_orders_ytd": 788,
         "fy26_q3_revenue_ytd": 3203,
         "fy26_q3_backlog": 3299
       },
       "projections": {
-        "revenue": [3800, 3500, 3500, 4000],
-        "orders": [1500, 2500, 3500, 4500],
-        "op_margin": [0.10, 0.10, 0.11, 0.12]
+        "revenue": [
+          3800,
+          3500,
+          3500,
+          4000,
+          4500
+        ],
+        "orders": [
+          1500,
+          2500,
+          3500,
+          4500,
+          5000
+        ],
+        "op_margin": [
+          0.1,
+          0.1,
+          0.11,
+          0.12,
+          0.13
+        ],
+        "revenue_growth": [
+          -0.2682,
+          -0.0789,
+          0.0,
+          0.1429,
+          0.125
+        ]
+      },
+      "scenario_projections": {
+        "Upside": {
+          "revenue": [
+            5000,
+            5500,
+            6500,
+            7500,
+            8500
+          ],
+          "op_margin": [
+            0.12,
+            0.13,
+            0.14,
+            0.15,
+            0.16
+          ],
+          "revenue_growth": [
+            -0.0372,
+            0.1,
+            0.1818,
+            0.1538,
+            0.1333
+          ]
+        },
+        "Management": {
+          "revenue": [
+            3500,
+            3200,
+            3200,
+            3500,
+            3800
+          ],
+          "op_margin": [
+            0.09,
+            0.09,
+            0.1,
+            0.1,
+            0.11
+          ],
+          "revenue_growth": [
+            -0.326,
+            -0.0857,
+            0.0,
+            0.0938,
+            0.0857
+          ]
+        },
+        "Downside 1": {
+          "revenue": [
+            2500,
+            2000,
+            2000,
+            2200,
+            2300
+          ],
+          "op_margin": [
+            0.06,
+            0.05,
+            0.05,
+            0.06,
+            0.06
+          ],
+          "revenue_growth": [
+            -0.5186,
+            -0.2,
+            0.0,
+            0.1,
+            0.0455
+          ]
+        },
+        "Downside 2": {
+          "revenue": [
+            1800,
+            1500,
+            1500,
+            1800,
+            1900
+          ],
+          "op_margin": [
+            0.03,
+            0.02,
+            0.02,
+            0.03,
+            0.03
+          ],
+          "revenue_growth": [
+            -0.6534,
+            -0.1667,
+            0.0,
+            0.2,
+            0.0556
+          ]
+        }
       }
     },
     {
@@ -132,13 +581,134 @@
       "name_jp": "電子部品関連",
       "driver_type": "manual",
       "historical": {
-        "revenue": [null, 1999, 389],
-        "op": [null, null, null],
+        "revenue": [
+          null,
+          1999,
+          389
+        ],
+        "op": [
+          null,
+          null,
+          null
+        ],
         "note": "Electronic Components and Other combined in quarterly reporting"
       },
       "projections": {
-        "revenue": [500, 600, 700, 800],
-        "op_margin": [0.08, 0.09, 0.09, 0.10]
+        "revenue": [
+          500,
+          600,
+          700,
+          800,
+          850
+        ],
+        "op_margin": [
+          0.08,
+          0.09,
+          0.09,
+          0.1,
+          0.1
+        ],
+        "revenue_growth": [
+          0.2853,
+          0.2,
+          0.1667,
+          0.1429,
+          0.0625
+        ]
+      },
+      "scenario_projections": {
+        "Upside": {
+          "revenue": [
+            600,
+            750,
+            900,
+            1000,
+            1100
+          ],
+          "op_margin": [
+            0.09,
+            0.1,
+            0.1,
+            0.11,
+            0.11
+          ],
+          "revenue_growth": [
+            0.5424,
+            0.25,
+            0.2,
+            0.1111,
+            0.1
+          ]
+        },
+        "Management": {
+          "revenue": [
+            450,
+            550,
+            600,
+            650,
+            700
+          ],
+          "op_margin": [
+            0.07,
+            0.08,
+            0.08,
+            0.09,
+            0.09
+          ],
+          "revenue_growth": [
+            0.1568,
+            0.2222,
+            0.0909,
+            0.0833,
+            0.0769
+          ]
+        },
+        "Downside 1": {
+          "revenue": [
+            400,
+            400,
+            450,
+            500,
+            520
+          ],
+          "op_margin": [
+            0.06,
+            0.06,
+            0.07,
+            0.07,
+            0.07
+          ],
+          "revenue_growth": [
+            0.0283,
+            0.0,
+            0.125,
+            0.1111,
+            0.04
+          ]
+        },
+        "Downside 2": {
+          "revenue": [
+            350,
+            350,
+            350,
+            400,
+            410
+          ],
+          "op_margin": [
+            0.04,
+            0.04,
+            0.04,
+            0.05,
+            0.05
+          ],
+          "revenue_growth": [
+            -0.1003,
+            0.0,
+            0.0,
+            0.1429,
+            0.025
+          ]
+        }
       }
     },
     {
@@ -146,15 +716,136 @@
       "name_jp": "その他・化工",
       "driver_type": "manual",
       "historical": {
-        "revenue": [null, 1301, 990],
-        "op": [null, null, null],
+        "revenue": [
+          null,
+          1301,
+          990
+        ],
+        "op": [
+          null,
+          null,
+          null
+        ],
         "fy26_q3_orders_ytd": 1131,
         "fy26_q3_revenue_ytd": 864,
         "fy26_q3_backlog": 1464
       },
       "projections": {
-        "revenue": [700, 700, 700, 700],
-        "op_margin": [0.05, 0.05, 0.05, 0.05]
+        "revenue": [
+          700,
+          700,
+          700,
+          700,
+          700
+        ],
+        "op_margin": [
+          0.05,
+          0.05,
+          0.05,
+          0.05,
+          0.05
+        ],
+        "revenue_growth": [
+          -0.2929,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "scenario_projections": {
+        "Upside": {
+          "revenue": [
+            750,
+            800,
+            850,
+            900,
+            950
+          ],
+          "op_margin": [
+            0.06,
+            0.06,
+            0.06,
+            0.07,
+            0.07
+          ],
+          "revenue_growth": [
+            -0.2424,
+            0.0667,
+            0.0625,
+            0.0588,
+            0.0556
+          ]
+        },
+        "Management": {
+          "revenue": [
+            650,
+            650,
+            650,
+            650,
+            650
+          ],
+          "op_margin": [
+            0.04,
+            0.04,
+            0.04,
+            0.04,
+            0.04
+          ],
+          "revenue_growth": [
+            -0.3434,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "Downside 1": {
+          "revenue": [
+            600,
+            550,
+            550,
+            550,
+            560
+          ],
+          "op_margin": [
+            0.03,
+            0.03,
+            0.03,
+            0.03,
+            0.03
+          ],
+          "revenue_growth": [
+            -0.3939,
+            -0.0833,
+            0.0,
+            0.0,
+            0.0182
+          ]
+        },
+        "Downside 2": {
+          "revenue": [
+            500,
+            450,
+            450,
+            450,
+            460
+          ],
+          "op_margin": [
+            0.02,
+            0.02,
+            0.02,
+            0.02,
+            0.02
+          ],
+          "revenue_growth": [
+            -0.4949,
+            -0.1,
+            0.0,
+            0.0,
+            0.0222
+          ]
+        }
       }
     }
   ]

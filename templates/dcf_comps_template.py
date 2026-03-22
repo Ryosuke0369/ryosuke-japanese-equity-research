@@ -172,6 +172,18 @@ def nwc_choose_formula(block_start, cl):
     refs = [f"{cl}{block_start + 1 + s}" for s in range(NUM_SCENARIOS)]
     return f"=CHOOSE('DCF Model'!$D$27,{','.join(refs)})"
 
+def seg_choose_formula(scenario_rows, cl):
+    """Generate CHOOSE formula for Segment Analysis referencing DCF Model scenario index.
+
+    Args:
+        scenario_rows: list of 5 row numbers (one per scenario: Base, Upside, Mgmt, DS1, DS2)
+        cl: column letter
+    Returns:
+        Excel CHOOSE formula string
+    """
+    refs = [f"{cl}{r}" for r in scenario_rows]
+    return f"=CHOOSE('DCF Model'!$D$27,{','.join(refs)})"
+
 # =====================================================================
 # SENSITIVITY ANALYSIS HELPERS (V3: full waterfall)
 # =====================================================================
@@ -323,11 +335,13 @@ def get_live_market_data(ticker_str, fallback_price, fallback_shares):
 def _create_segment_sheet(wb, C, segments, proj_years, year_labels):
     """Generate Segment Analysis sheet from overrides JSON segments data.
 
-    Layout:
-      Row 2: Title
-      Row 4: Header row (Historical years + Projection years)
-      Row 5+: Per-segment blocks (Revenue, OP, OPM, blank)
-      After all segments: Total block + Reconciliation check
+    v2: Revenue uses YoY growth rates (not absolute values).
+    Revenue display = Base Year × (1+growth) chain via CHOOSE formulas.
+    Includes Consolidated Inputs section (SGA%, NWC%) after segment blocks.
+
+    Returns:
+        dict with total_rev_row, total_op_row, n_hist,
+              sga_scenario_rows, nwc_scenario_rows for cross-sheet references.
     """
     ws = wb.create_sheet("Segment Analysis")
     ws.sheet_properties.tabColor = "8B0000"  # Dark red
@@ -345,6 +359,22 @@ def _create_segment_sheet(wb, C, segments, proj_years, year_labels):
     n_data_cols = n_hist + proj_years
     for ci in range(n_data_cols):
         ws.column_dimensions[col_letter(3 + ci)].width = 16
+
+    # Check if segments have revenue_growth (v2) or revenue only (v1 fallback)
+    _has_growth = any(
+        seg.get("projections", {}).get("revenue_growth")
+        for seg in segments
+    )
+    if not _has_growth:
+        print("WARNING: segments use absolute 'revenue' without 'revenue_growth'. "
+              "Falling back to v1 absolute revenue mode.")
+
+    # Check for consolidated-level scenario data
+    _scenarios = C.get("scenarios", {})
+    _has_nwc_pct = (
+        C.get("nwc_method") == "revenue_pct"
+        and all("nwc_pct" in _scenarios[sn] for sn in SCENARIO_NAMES if sn in _scenarios)
+    )
 
     # Title
     set_cell(ws, 2, 2, f'Segment Analysis - {C["company_name"]}', font=TITLE_FONT)
@@ -369,6 +399,57 @@ def _create_segment_sheet(wb, C, segments, proj_years, year_labels):
     all_headers = hist_labels + year_labels
     header_row(ws, 4, 3, 3 + len(all_headers) - 1, all_headers)
 
+    # ─────────────────────────────────────────────────────────────────
+    # FIRST PASS: Build Segment Scenario Input Matrix to know row numbers
+    # before writing display area (display area CHOOSE formulas need them).
+    # ─────────────────────────────────────────────────────────────────
+
+    # Pre-calculate display area row count to determine matrix start row.
+    # Per segment: 1 header + 1 rev + 1 op + 1 opm + 1 blank = 5 rows
+    # Total block: 1 header + 1 rev + 1 op + 1 opm + 1 blank = 5 rows
+    # Reconciliation: 1 header + 3 rows + 1 blank = 5 rows
+    display_rows = len(segments) * 5 + 5 + 5
+    matrix_start = 5 + display_rows + 1  # +1 for extra gap
+
+    # Build scenario input matrix row map
+    # v2: Revenue Growth (%) + OP Margin blocks per segment
+    # Each segment block: header(1) + 5 scenario rows + blank(1) = 7 rows for Revenue Growth
+    #                     header(1) + 5 scenario rows + blank(1) = 7 rows for OPM
+    # Total per segment: 14 rows
+    seg_matrix_info = []
+    matrix_cur = matrix_start + 2  # +2 for section header + year headers
+
+    for seg_idx, seg in enumerate(segments):
+        # Revenue Growth block (v2)
+        rev_sub_header = matrix_cur
+        rev_scenario_rows = [matrix_cur + 1 + s for s in range(NUM_SCENARIOS)]
+        matrix_cur += 1 + NUM_SCENARIOS + 1  # sub-header + 5 rows + blank
+
+        # OP Margin block
+        opm_sub_header = matrix_cur
+        opm_scenario_rows = [matrix_cur + 1 + s for s in range(NUM_SCENARIOS)]
+        matrix_cur += 1 + NUM_SCENARIOS + 1  # sub-header + 5 rows + blank
+
+        seg_matrix_info.append({
+            "rev_sub_header": rev_sub_header,
+            "rev_scenario_rows": rev_scenario_rows,
+            "opm_sub_header": opm_sub_header,
+            "opm_scenario_rows": opm_scenario_rows,
+        })
+
+    # ── Consolidated Inputs section (SGA%, NWC%) after segment blocks ──
+    consolidated_start = matrix_cur + 1  # gap row
+    # SGA% block: header(1) + year header(1) + sub-header(1) + 5 rows + blank(1) = 9 rows
+    sga_sub_header_row = consolidated_start + 2  # after section header + year headers
+    sga_scenario_rows = [sga_sub_header_row + 1 + s for s in range(NUM_SCENARIOS)]
+    nwc_scenario_rows = None
+    if _has_nwc_pct:
+        nwc_sub_header_row = sga_sub_header_row + 1 + NUM_SCENARIOS + 1  # after SGA block + blank
+        nwc_scenario_rows = [nwc_sub_header_row + 1 + s for s in range(NUM_SCENARIOS)]
+
+    # ─────────────────────────────────────────────────────────────────
+    # DISPLAY AREA: Per-segment blocks with CHOOSE formulas
+    # ─────────────────────────────────────────────────────────────────
     cur_row = 5  # Start of segment blocks
 
     seg_rev_rows = []   # Track revenue row for each segment (for Total SUM)
@@ -380,17 +461,16 @@ def _create_segment_sheet(wb, C, segments, proj_years, year_labels):
         display_name = f"{seg_name}" + (f" ({seg_name_jp})" if seg_name_jp else "")
 
         hist = seg.get("historical", {})
-        proj = seg.get("projections", {})
         hist_rev = hist.get("revenue", [None] * n_hist)
         hist_op = hist.get("op", [None] * n_hist)
-        proj_rev = proj.get("revenue", [None] * proj_years)
-        proj_op_margin = proj.get("op_margin", [None] * proj_years)
 
         # Pad historical arrays to n_hist
         while len(hist_rev) < n_hist:
             hist_rev.insert(0, None)
         while len(hist_op) < n_hist:
             hist_op.insert(0, None)
+
+        mi = seg_matrix_info[seg_idx]
 
         # ── Segment header ──
         c = section_title(ws, cur_row, 2, display_name)
@@ -414,15 +494,32 @@ def _create_segment_sheet(wb, C, segments, proj_years, year_labels):
             else:
                 set_cell(ws, rev_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
 
-        # Projected revenue (from JSON — analyst input)
-        for yr in range(proj_years):
-            col = 3 + n_hist + yr
-            val = proj_rev[yr] if yr < len(proj_rev) else None
-            if val is not None:
-                set_cell(ws, rev_row, col, val, font=BLUE_FONT, fmt=FMT_YEN,
-                         border=INPUT_BORDER)
-            else:
-                set_cell(ws, rev_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+        # Projected revenue — v2: Base Year × (1+growth) chain via CHOOSE
+        if _has_growth:
+            base_year_col = col_letter(3 + n_hist - 1)  # last historical column
+            for yr in range(proj_years):
+                col = 3 + n_hist + yr
+                cl = col_letter(col)
+                # Growth rate CHOOSE references from scenario matrix
+                growth_refs = [f"{cl}{r}" for r in mi["rev_scenario_rows"]]
+                growth_choose = f"CHOOSE('DCF Model'!$D$27,{','.join(growth_refs)})"
+                if yr == 0:
+                    # Y1: =BaseYearRev × (1 + CHOOSE(growth))
+                    formula = f"={base_year_col}{rev_row}*(1+{growth_choose})"
+                else:
+                    prev_cl = col_letter(col - 1)
+                    # Y2+: =PrevYearRev × (1 + CHOOSE(growth))
+                    formula = f"={prev_cl}{rev_row}*(1+{growth_choose})"
+                set_cell(ws, rev_row, col, formula, font=BLACK_FONT, fmt=FMT_YEN,
+                         border=NWC_DATA_BORDER)
+        else:
+            # v1 fallback: absolute revenue CHOOSE
+            for yr in range(proj_years):
+                col = 3 + n_hist + yr
+                cl = col_letter(col)
+                formula = seg_choose_formula(mi["rev_scenario_rows"], cl)
+                set_cell(ws, rev_row, col, formula, font=BLACK_FONT, fmt=FMT_YEN,
+                         border=NWC_DATA_BORDER)
         cur_row += 1
 
         # ── Operating Profit row ──
@@ -440,18 +537,15 @@ def _create_segment_sheet(wb, C, segments, proj_years, year_labels):
             else:
                 set_cell(ws, op_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
 
-        # Projected OP = Revenue × OP Margin (Excel formula)
+        # Projected OP = Revenue × CHOOSE(OP Margin from scenario matrix)
         for yr in range(proj_years):
             col = 3 + n_hist + yr
             cl = col_letter(col)
-            margin_val = proj_op_margin[yr] if yr < len(proj_op_margin) else None
-            if margin_val is not None:
-                # OP = Revenue × Margin (formula)
-                set_cell(ws, op_row, col,
-                         f"={cl}{rev_row}*{margin_val}",
-                         font=BLACK_FONT, fmt=FMT_YEN, border=NWC_DATA_BORDER)
-            else:
-                set_cell(ws, op_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+            opm_refs = [f"{cl}{r}" for r in mi["opm_scenario_rows"]]
+            margin_choose = f"CHOOSE('DCF Model'!$D$27,{','.join(opm_refs)})"
+            set_cell(ws, op_row, col,
+                     f"={cl}{rev_row}*{margin_choose}",
+                     font=BLACK_FONT, fmt=FMT_YEN, border=NWC_DATA_BORDER)
         cur_row += 1
 
         # ── OP Margin row ──
@@ -462,18 +556,18 @@ def _create_segment_sheet(wb, C, segments, proj_years, year_labels):
         for i in range(n_hist):
             col = 3 + i
             cl = col_letter(col)
-            # Only show margin if both revenue and OP are available
             if hist_rev[i] is not None and hist_op[i] is not None:
                 set_cell(ws, opm_row, col, f"={cl}{op_row}/{cl}{rev_row}",
                          font=BLACK_FONT, fmt=FMT_PCT, border=NWC_DATA_BORDER)
             else:
                 set_cell(ws, opm_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
 
+        # Projected OPM — CHOOSE from scenario matrix (display only)
         for yr in range(proj_years):
             col = 3 + n_hist + yr
             cl = col_letter(col)
-            set_cell(ws, opm_row, col,
-                     f"=IFERROR({cl}{op_row}/{cl}{rev_row},\"—\")",
+            formula = seg_choose_formula(mi["opm_scenario_rows"], cl)
+            set_cell(ws, opm_row, col, formula,
                      font=BLACK_FONT, fmt=FMT_PCT, border=NWC_DATA_BORDER)
         cur_row += 2  # blank row between segments
 
@@ -557,9 +651,155 @@ def _create_segment_sheet(wb, C, segments, proj_years, year_labels):
         set_cell(ws, recon_diff_row, col,
                  f"={cl}{cur_row - 1}-{cl}{cur_row - 2}",
                  font=BLACK_FONT, fmt=FMT_YEN, border=TOP_BOTTOM)
+    cur_row += 2
+
+    # ═══════════════════════════════════════════════════════════════
+    # SEGMENT SCENARIO INPUT MATRIX
+    # ═══════════════════════════════════════════════════════════════
+    # Section header
+    c = section_title(ws, matrix_start, 2, "Segment Scenario Input Matrix")
+    c.fill = PatternFill(start_color="E6CCE6", end_color="E6CCE6", fill_type="solid")
+    for ci in range(3, 3 + n_data_cols):
+        ws.cell(row=matrix_start, column=ci).fill = PatternFill(
+            start_color="E6CCE6", end_color="E6CCE6", fill_type="solid")
+
+    # Year headers (projection columns only)
+    for yr in range(proj_years):
+        col = 3 + n_hist + yr
+        set_cell(ws, matrix_start + 1, col, year_labels[yr],
+                 font=HEADER_FONT, fill=HEADER_FILL,
+                 alignment=Alignment(horizontal="center"))
+
+    # Per-segment scenario blocks
+    for seg_idx, seg in enumerate(segments):
+        seg_name = seg.get("name", f"Segment {seg_idx + 1}")
+        proj = seg.get("projections", {})
+        scenario_proj = seg.get("scenario_projections", {})
+
+        mi = seg_matrix_info[seg_idx]
+
+        # ── Revenue Growth block (v2) or Revenue absolute block (v1 fallback) ──
+        if _has_growth:
+            section_title(ws, mi["rev_sub_header"], 2,
+                          f"{seg_name} - Revenue Growth (YoY)")
+            for s, scen_name in enumerate(SCENARIO_NAMES):
+                r = mi["rev_scenario_rows"][s]
+                set_cell(ws, r, 2, scen_name, font=BOLD_FONT)
+
+                # Get scenario-specific revenue_growth; fallback to Base projections
+                if (scen_name in scenario_proj
+                        and "revenue_growth" in scenario_proj[scen_name]):
+                    scen_data = scenario_proj[scen_name]["revenue_growth"]
+                else:
+                    scen_data = proj.get("revenue_growth", [])
+
+                for yr in range(proj_years):
+                    col = 3 + n_hist + yr
+                    val = scen_data[yr] if yr < len(scen_data) else None
+                    if val is not None:
+                        set_cell(ws, r, col, val, font=BLUE_FONT, fmt=FMT_PCT,
+                                 border=INPUT_BORDER)
+                    else:
+                        set_cell(ws, r, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+        else:
+            # v1 fallback: absolute revenue
+            section_title(ws, mi["rev_sub_header"], 2, f"{seg_name} - Revenue")
+            for s, scen_name in enumerate(SCENARIO_NAMES):
+                r = mi["rev_scenario_rows"][s]
+                set_cell(ws, r, 2, scen_name, font=BOLD_FONT)
+
+                if scen_name in scenario_proj and "revenue" in scenario_proj[scen_name]:
+                    scen_rev = scenario_proj[scen_name]["revenue"]
+                else:
+                    scen_rev = proj.get("revenue", [])
+
+                for yr in range(proj_years):
+                    col = 3 + n_hist + yr
+                    val = scen_rev[yr] if yr < len(scen_rev) else None
+                    if val is not None:
+                        set_cell(ws, r, col, val, font=BLUE_FONT, fmt=FMT_YEN,
+                                 border=INPUT_BORDER)
+                    else:
+                        set_cell(ws, r, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+
+        # ── OP Margin block (unchanged) ──
+        section_title(ws, mi["opm_sub_header"], 2, f"{seg_name} - OP Margin")
+        for s, scen_name in enumerate(SCENARIO_NAMES):
+            r = mi["opm_scenario_rows"][s]
+            set_cell(ws, r, 2, scen_name, font=BOLD_FONT)
+
+            if scen_name in scenario_proj and "op_margin" in scenario_proj[scen_name]:
+                scen_opm = scenario_proj[scen_name]["op_margin"]
+            else:
+                scen_opm = proj.get("op_margin", [])
+
+            for yr in range(proj_years):
+                col = 3 + n_hist + yr
+                val = scen_opm[yr] if yr < len(scen_opm) else None
+                if val is not None:
+                    set_cell(ws, r, col, val, font=BLUE_FONT, fmt=FMT_PCT,
+                             border=INPUT_BORDER)
+                else:
+                    set_cell(ws, r, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+
+    # ═══════════════════════════════════════════════════════════════
+    # CONSOLIDATED INPUTS (SGA%, NWC%) — v2 addition
+    # ═══════════════════════════════════════════════════════════════
+    CONSOL_FILL = PatternFill(start_color="D9E2F3", end_color="D9E2F3", fill_type="solid")
+
+    c = section_title(ws, consolidated_start, 2, "Consolidated Inputs (連結レベル)")
+    c.fill = CONSOL_FILL
+    for ci in range(3, 3 + n_data_cols):
+        ws.cell(row=consolidated_start, column=ci).fill = CONSOL_FILL
+
+    # Year headers
+    for yr in range(proj_years):
+        col = 3 + n_hist + yr
+        set_cell(ws, consolidated_start + 1, col, year_labels[yr],
+                 font=HEADER_FONT, fill=HEADER_FILL,
+                 alignment=Alignment(horizontal="center"))
+
+    # ── SGA % of Revenue ──
+    section_title(ws, sga_sub_header_row, 2, "SGA % of Revenue")
+    for s, scen_name in enumerate(SCENARIO_NAMES):
+        r = sga_scenario_rows[s]
+        set_cell(ws, r, 2, scen_name, font=BOLD_FONT)
+        scen_data = _scenarios.get(scen_name, {}).get("sga_pct", [])
+        for yr in range(proj_years):
+            col = 3 + n_hist + yr
+            val = scen_data[yr] if yr < len(scen_data) else None
+            if val is not None:
+                set_cell(ws, r, col, val, font=BLUE_FONT, fmt=FMT_PCT,
+                         border=INPUT_BORDER)
+            else:
+                set_cell(ws, r, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+
+    # ── NWC % of Revenue (only when nwc_pct exists in scenarios) ──
+    if _has_nwc_pct and nwc_scenario_rows is not None:
+        section_title(ws, nwc_sub_header_row, 2, "NWC % of Revenue")
+        for s, scen_name in enumerate(SCENARIO_NAMES):
+            r = nwc_scenario_rows[s]
+            set_cell(ws, r, 2, scen_name, font=BOLD_FONT)
+            scen_data = _scenarios.get(scen_name, {}).get("nwc_pct", [])
+            for yr in range(proj_years):
+                col = 3 + n_hist + yr
+                val = scen_data[yr] if yr < len(scen_data) else None
+                if val is not None:
+                    set_cell(ws, r, col, val, font=BLUE_FONT, fmt=FMT_PCT,
+                             border=INPUT_BORDER)
+                else:
+                    set_cell(ws, r, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
 
     # Freeze pane
     ws.freeze_panes = "C5"
+
+    return {
+        "total_rev_row": total_rev_row,
+        "total_op_row": total_op_row,
+        "n_hist": n_hist,
+        "sga_scenario_rows": sga_scenario_rows,
+        "nwc_scenario_rows": nwc_scenario_rows,
+    }
 
 
 # =====================================================================
@@ -1049,11 +1289,100 @@ def generate_dcf_workbook(config, output_path=None):
 
     # Restore flat arrays from Base scenario
     _base = C["scenarios"]["Base"]
-    C["revenue_growth"] = _base["revenue_growth"]
-    C["cogs_pct"] = _base["cogs_pct"]
+    if "revenue_growth" in _base:
+        C["revenue_growth"] = _base["revenue_growth"]
+    if "cogs_pct" in _base:
+        C["cogs_pct"] = _base["cogs_pct"]
     C["sga_pct"] = _base["sga_pct"]
 
+    # When segments exist without scenario-level revenue_growth/cogs_pct,
+    # compute implied values from segment data for potential downstream use
+    if C.get("segments") and "revenue_growth" not in C:
+        _segs = C["segments"]
+        _n_proj = C.get("projection_years", 5)
+        _base_revs = []
+        for yr in range(_n_proj):
+            total = 0
+            for seg in _segs:
+                hist_rev = seg.get("historical", {}).get("revenue", [])
+                base_rev = ([v for v in hist_rev if v is not None] or [0])[-1]
+                growths = seg.get("projections", {}).get("revenue_growth", [])
+                r = base_rev
+                for y in range(yr + 1):
+                    g = growths[y] if y < len(growths) else 0
+                    r = r * (1 + g)
+                total += r
+            _base_revs.append(total)
+        _by_rev = C.get("base_year_revenue", 1)
+        C["revenue_growth"] = [(_base_revs[0] / _by_rev) - 1 if _by_rev else 0]
+        for i in range(1, len(_base_revs)):
+            C["revenue_growth"].append(
+                (_base_revs[i] / _base_revs[i - 1]) - 1 if _base_revs[i - 1] else 0
+            )
+    if C.get("segments") and "cogs_pct" not in C:
+        # Derive implied COGS% from segment OP margins and SGA%
+        C["cogs_pct"] = [0.78] * C.get("projection_years", 5)  # reasonable default
+
     USE_EV_SALES = (C.get("primary_multiple", "EV/EBITDA") == "EV/Sales")
+
+    # ── Pre-calculate Segment Analysis row numbers (needed by DCF Model) ──
+    has_segments = bool(C.get("segments"))
+    # Check that segments use revenue_growth (v2 format)
+    if has_segments:
+        _has_seg_growth = any(
+            s.get("projections", {}).get("revenue_growth")
+            for s in C["segments"]
+        )
+        if not _has_seg_growth:
+            print("WARNING: segments lack 'revenue_growth' — falling back to legacy mode")
+            has_segments = False  # disable segment-linked mode
+
+    seg_info = None
+    if has_segments:
+        _segments = C["segments"]
+        _n_hist_seg = 0
+        for _seg in _segments:
+            _hr = _seg.get("historical", {}).get("revenue", [])
+            if len(_hr) > _n_hist_seg:
+                _n_hist_seg = len(_hr)
+        # Display area: per segment 5 rows (header+rev+op+opm+blank)
+        # Total block: header(1) + rev(1) + op(1) + opm(1) + blank(1) = 5
+        _seg_display_rows = len(_segments) * 5
+        # total_rev_row = 5 + seg_display_rows + 1 (header) → first data row
+        _total_rev_row = 5 + _seg_display_rows + 1
+        _total_op_row = _total_rev_row + 1
+
+        # Pre-calculate Consolidated Inputs row positions (SGA%, NWC%)
+        # Matrix layout: section header(1) + year headers(1)
+        #   per segment: rev_growth block(7) + opm block(7) = 14 rows
+        _matrix_start = 5 + _seg_display_rows + 5 + 5 + 1  # display+total+recon+gap
+        _matrix_cur = _matrix_start + 2  # +2 for section header + year headers
+        _matrix_cur += len(_segments) * 14  # 14 rows per segment
+
+        _consolidated_start = _matrix_cur + 1  # gap
+        _sga_sub_header = _consolidated_start + 2  # after section header + year headers
+        _sga_scenario_rows = [_sga_sub_header + 1 + s for s in range(NUM_SCENARIOS)]
+
+        _scenarios_dict = C.get("scenarios", {})
+        _has_nwc_pct = (
+            C.get("nwc_method") == "revenue_pct"
+            and all(
+                "nwc_pct" in _scenarios_dict[sn]
+                for sn in SCENARIO_NAMES if sn in _scenarios_dict
+            )
+        )
+        _nwc_scenario_rows = None
+        if _has_nwc_pct:
+            _nwc_sub_header = _sga_sub_header + 1 + NUM_SCENARIOS + 1
+            _nwc_scenario_rows = [_nwc_sub_header + 1 + s for s in range(NUM_SCENARIOS)]
+
+        seg_info = {
+            "total_rev_row": _total_rev_row,
+            "total_op_row": _total_op_row,
+            "n_hist": _n_hist_seg,
+            "sga_scenario_rows": _sga_scenario_rows,
+            "nwc_scenario_rows": _nwc_scenario_rows,
+        }
 
     wb = openpyxl.Workbook()
 
@@ -1328,13 +1657,19 @@ def generate_dcf_workbook(config, output_path=None):
     set_cell(ws3, 26, 2, "WACC", font=BOLD_FONT)
     set_cell(ws3, 26, 3, "=C23*C24+C11*C25", font=BLACK_FONT, fmt=FMT_PCT2)
 
-    # ── Active Scenario Selector (Row 25) ──
+    # ── Active Scenario Selector (Row 27) ──
     set_cell(ws3, 27, 2, "Active Scenario", font=BOLD_FONT)
     set_cell(ws3, 27, 3, "Base", font=BLUE_FONT, border=INPUT_BORDER)
-    # D25 = MATCH index (1-5) for CHOOSE formula
-    set_cell(ws3, 27, 4,
-             f"=MATCH(C27,B{R_SCEN_BLK_GROWTH + 1}:B{R_SCEN_BLK_GROWTH + NUM_SCENARIOS},0)",
-             font=BLACK_FONT)
+    # D27 = MATCH index (1-5) for CHOOSE formula
+    if has_segments:
+        # No local matrix — match against array constant
+        set_cell(ws3, 27, 4,
+                 '=MATCH(C27,{"Base","Upside","Management","Downside 1","Downside 2"},0)',
+                 font=BLACK_FONT)
+    else:
+        set_cell(ws3, 27, 4,
+                 f"=MATCH(C27,B{R_SCEN_BLK_GROWTH + 1}:B{R_SCEN_BLK_GROWTH + NUM_SCENARIOS},0)",
+                 font=BLACK_FONT)
 
     dv_scenario = DataValidation(
         type="list",
@@ -1398,42 +1733,95 @@ def generate_dcf_workbook(config, output_path=None):
         cl = col_letter(col)
         prev_cl = col_letter(col - 1) if yr > 0 else None
 
-        # ── Driver rows (CHOOSE formulas referencing scenario matrix) ──
-        set_cell(ws3, R_DRV_GROWTH, col, choose_formula(R_SCEN_BLK_GROWTH, cl),
-                 font=BLACK_FONT, fmt=FMT_PCT, fill=LIGHT_FILL)
-        set_cell(ws3, R_DRV_COGS, col, choose_formula(R_SCEN_BLK_COGS, cl),
-                 font=BLACK_FONT, fmt=FMT_PCT, fill=LIGHT_FILL)
-        set_cell(ws3, R_DRV_SGA, col, choose_formula(R_SCEN_BLK_SGA, cl),
-                 font=BLACK_FONT, fmt=FMT_PCT, fill=LIGHT_FILL)
+        if has_segments:
+            # ── Segment-linked mode: Revenue & EBIT from Segment Analysis ──
+            seg_cl = col_letter(3 + seg_info["n_hist"] + yr)  # Segment sheet column
 
-        # Revenue — Year 1 grows from Base Year Revenue (latest FY actual, C17)
-        # NOT from LTM Revenue (C20), which would create a visible gap vs historicals
-        if yr == 0:
-            set_cell(ws3, R_REVENUE, col, f"=C17*(1+{cl}{R_DRV_GROWTH})", font=BLACK_FONT, fmt=FMT_YEN)
+            # Revenue Growth — back-calculated display
+            if yr == 0:
+                set_cell(ws3, R_DRV_GROWTH, col, f"=({cl}{R_REVENUE}/C17)-1",
+                         font=BLACK_FONT, fmt=FMT_PCT, fill=LIGHT_FILL)
+            else:
+                set_cell(ws3, R_DRV_GROWTH, col, f"=({cl}{R_REVENUE}/{prev_cl}{R_REVENUE})-1",
+                         font=BLACK_FONT, fmt=FMT_PCT, fill=LIGHT_FILL)
+
+            # COGS% — back-calculated display
+            set_cell(ws3, R_DRV_COGS, col, f"=IFERROR({cl}{R_COGS}/{cl}{R_REVENUE},0)",
+                     font=BLACK_FONT, fmt=FMT_PCT, fill=LIGHT_FILL)
+
+            # SGA% — CHOOSE from Segment Analysis Consolidated Inputs
+            sga_refs = [f"'Segment Analysis'!{seg_cl}{r}" for r in seg_info["sga_scenario_rows"]]
+            set_cell(ws3, R_DRV_SGA, col,
+                     f"=CHOOSE($D$27,{','.join(sga_refs)})",
+                     font=BLACK_FONT, fmt=FMT_PCT, fill=LIGHT_FILL)
+
+            # Revenue — from Segment Analysis total
+            set_cell(ws3, R_REVENUE, col,
+                     f"='Segment Analysis'!{seg_cl}{seg_info['total_rev_row']}",
+                     font=BLACK_FONT, fmt=FMT_YEN)
+
+            # EBIT — from Segment Analysis total OP
+            set_cell(ws3, R_EBIT, col,
+                     f"='Segment Analysis'!{seg_cl}{seg_info['total_op_row']}",
+                     font=BLACK_FONT, fmt=FMT_YEN, border=SUBTOTAL_BORDER)
+
+            # SGA Expense = Revenue * SGA% driver
+            set_cell(ws3, R_SGA, col, f"={cl}{R_REVENUE}*{cl}{R_DRV_SGA}", font=BLACK_FONT, fmt=FMT_YEN)
+
+            # COGS — back-calculated: Revenue - SGA - EBIT
+            set_cell(ws3, R_COGS, col, f"={cl}{R_REVENUE}-{cl}{R_SGA}-{cl}{R_EBIT}",
+                     font=BLACK_FONT, fmt=FMT_YEN)
+
+            # Gross Profit = Revenue - COGS (unchanged formula, COGS is just derived differently)
+            set_cell(ws3, R_GROSS_PROFIT, col, f"={cl}{R_REVENUE}-{cl}{R_COGS}", font=BLACK_FONT, fmt=FMT_YEN,
+                     border=SUBTOTAL_BORDER)
+
+            # Gross Margin = GP / Revenue
+            set_cell(ws3, R_GROSS_MARGIN, col, f"={cl}{R_GROSS_PROFIT}/{cl}{R_REVENUE}", font=BLACK_FONT, fmt=FMT_PCT)
+
+            # Implied Operating Margin = (GP - SGA) / Revenue
+            set_cell(ws3, R_OP_M_IMPL, col,
+                     f"=({cl}{R_GROSS_PROFIT}-{cl}{R_SGA})/{cl}{R_REVENUE}",
+                     font=BLACK_FONT, fmt=FMT_PCT)
+
         else:
-            set_cell(ws3, R_REVENUE, col, f"={prev_cl}{R_REVENUE}*(1+{cl}{R_DRV_GROWTH})", font=BLACK_FONT, fmt=FMT_YEN)
+            # ── Legacy mode: top-down Revenue Growth × Base Year ──
 
-        # COGS = Revenue * COGS% driver
-        set_cell(ws3, R_COGS, col, f"={cl}{R_REVENUE}*{cl}{R_DRV_COGS}", font=BLACK_FONT, fmt=FMT_YEN)
+            # Driver rows (CHOOSE formulas referencing scenario matrix)
+            set_cell(ws3, R_DRV_GROWTH, col, choose_formula(R_SCEN_BLK_GROWTH, cl),
+                     font=BLACK_FONT, fmt=FMT_PCT, fill=LIGHT_FILL)
+            set_cell(ws3, R_DRV_COGS, col, choose_formula(R_SCEN_BLK_COGS, cl),
+                     font=BLACK_FONT, fmt=FMT_PCT, fill=LIGHT_FILL)
+            set_cell(ws3, R_DRV_SGA, col, choose_formula(R_SCEN_BLK_SGA, cl),
+                     font=BLACK_FONT, fmt=FMT_PCT, fill=LIGHT_FILL)
 
-        # Gross Profit = Revenue - COGS
-        set_cell(ws3, R_GROSS_PROFIT, col, f"={cl}{R_REVENUE}-{cl}{R_COGS}", font=BLACK_FONT, fmt=FMT_YEN,
-                 border=SUBTOTAL_BORDER)
+            # Revenue — Year 1 grows from Base Year Revenue (latest FY actual, C17)
+            if yr == 0:
+                set_cell(ws3, R_REVENUE, col, f"=C17*(1+{cl}{R_DRV_GROWTH})", font=BLACK_FONT, fmt=FMT_YEN)
+            else:
+                set_cell(ws3, R_REVENUE, col, f"={prev_cl}{R_REVENUE}*(1+{cl}{R_DRV_GROWTH})", font=BLACK_FONT, fmt=FMT_YEN)
 
-        # Gross Margin = GP / Revenue
-        set_cell(ws3, R_GROSS_MARGIN, col, f"={cl}{R_GROSS_PROFIT}/{cl}{R_REVENUE}", font=BLACK_FONT, fmt=FMT_PCT)
+            # COGS = Revenue * COGS% driver
+            set_cell(ws3, R_COGS, col, f"={cl}{R_REVENUE}*{cl}{R_DRV_COGS}", font=BLACK_FONT, fmt=FMT_YEN)
 
-        # SGA Expense = Revenue * SGA% driver
-        set_cell(ws3, R_SGA, col, f"={cl}{R_REVENUE}*{cl}{R_DRV_SGA}", font=BLACK_FONT, fmt=FMT_YEN)
+            # Gross Profit = Revenue - COGS
+            set_cell(ws3, R_GROSS_PROFIT, col, f"={cl}{R_REVENUE}-{cl}{R_COGS}", font=BLACK_FONT, fmt=FMT_YEN,
+                     border=SUBTOTAL_BORDER)
 
-        # Implied Operating Margin = (GP - SGA) / Revenue
-        set_cell(ws3, R_OP_M_IMPL, col,
-                 f"=({cl}{R_GROSS_PROFIT}-{cl}{R_SGA})/{cl}{R_REVENUE}",
-                 font=BLACK_FONT, fmt=FMT_PCT)
+            # Gross Margin = GP / Revenue
+            set_cell(ws3, R_GROSS_MARGIN, col, f"={cl}{R_GROSS_PROFIT}/{cl}{R_REVENUE}", font=BLACK_FONT, fmt=FMT_PCT)
 
-        # EBIT = Gross Profit - SGA
-        set_cell(ws3, R_EBIT, col, f"={cl}{R_GROSS_PROFIT}-{cl}{R_SGA}", font=BLACK_FONT, fmt=FMT_YEN,
-                 border=SUBTOTAL_BORDER)
+            # SGA Expense = Revenue * SGA% driver
+            set_cell(ws3, R_SGA, col, f"={cl}{R_REVENUE}*{cl}{R_DRV_SGA}", font=BLACK_FONT, fmt=FMT_YEN)
+
+            # Implied Operating Margin = (GP - SGA) / Revenue
+            set_cell(ws3, R_OP_M_IMPL, col,
+                     f"=({cl}{R_GROSS_PROFIT}-{cl}{R_SGA})/{cl}{R_REVENUE}",
+                     font=BLACK_FONT, fmt=FMT_PCT)
+
+            # EBIT = Gross Profit - SGA
+            set_cell(ws3, R_EBIT, col, f"={cl}{R_GROSS_PROFIT}-{cl}{R_SGA}", font=BLACK_FONT, fmt=FMT_YEN,
+                     border=SUBTOTAL_BORDER)
 
         # Tax with NOPAT floor (no tax benefit when EBIT < 0)
         set_cell(ws3, R_TAX, col, f"=MAX(0,{cl}{R_EBIT}*C6)", font=BLACK_FONT, fmt=FMT_YEN)
@@ -1532,34 +1920,40 @@ def generate_dcf_workbook(config, output_path=None):
              border=TOP_BOTTOM)
 
     # ── Scenario Input Matrix ──
-    c = section_title(ws3, R_SCEN_SEC, 2, "Scenario Input Matrix")
-    c.fill = LIGHT_GREEN
-    for col_idx in range(3, 8):
-        ws3.cell(row=R_SCEN_SEC, column=col_idx).fill = LIGHT_GREEN
+    if has_segments:
+        # All scenario inputs are in Segment Analysis sheet — show note only
+        c = section_title(ws3, R_SCEN_SEC, 2,
+                          "All scenario inputs are in Segment Analysis sheet.")
+        c.font = GREY_FONT
+    else:
+        c = section_title(ws3, R_SCEN_SEC, 2, "Scenario Input Matrix")
+        c.fill = LIGHT_GREEN
+        for col_idx in range(3, 8):
+            ws3.cell(row=R_SCEN_SEC, column=col_idx).fill = LIGHT_GREEN
 
-    # Year headers for scenario matrix
-    for yr in range(proj_years):
-        set_cell(ws3, R_SCEN_YEARS, 3 + yr, f"Year {yr + 1}",
-                 font=HEADER_FONT, fill=HEADER_FILL,
-                 alignment=Alignment(horizontal="center"))
+        # Year headers for scenario matrix
+        for yr in range(proj_years):
+            set_cell(ws3, R_SCEN_YEARS, 3 + yr, f"Year {yr + 1}",
+                     font=HEADER_FONT, fill=HEADER_FILL,
+                     alignment=Alignment(horizontal="center"))
 
-    driver_blocks = [
-        ("Revenue Growth (YoY)", "revenue_growth",    FMT_PCT, R_SCEN_BLK_GROWTH),
-        ("COGS % of Revenue",    "cogs_pct",          FMT_PCT, R_SCEN_BLK_COGS),
-        ("SGA % of Revenue",     "sga_pct",           FMT_PCT, R_SCEN_BLK_SGA),
-    ]
+        driver_blocks = [
+            ("Revenue Growth (YoY)", "revenue_growth",    FMT_PCT, R_SCEN_BLK_GROWTH),
+            ("COGS % of Revenue",    "cogs_pct",          FMT_PCT, R_SCEN_BLK_COGS),
+            ("SGA % of Revenue",     "sga_pct",           FMT_PCT, R_SCEN_BLK_SGA),
+        ]
 
-    for drv_label, drv_key, drv_fmt, blk_start in driver_blocks:
-        # Sub-header row
-        section_title(ws3, blk_start, 2, drv_label)
-        # 5 scenario rows
-        for s, scen_name in enumerate(SCENARIO_NAMES):
-            r = blk_start + 1 + s
-            set_cell(ws3, r, 2, scen_name, font=BOLD_FONT)
-            scen_data = config["scenarios"][scen_name][drv_key]
-            for yr in range(proj_years):
-                set_cell(ws3, r, 3 + yr, scen_data[yr],
-                         font=BLUE_FONT, fmt=drv_fmt, border=INPUT_BORDER)
+        for drv_label, drv_key, drv_fmt, blk_start in driver_blocks:
+            # Sub-header row
+            section_title(ws3, blk_start, 2, drv_label)
+            # 5 scenario rows
+            for s, scen_name in enumerate(SCENARIO_NAMES):
+                r = blk_start + 1 + s
+                set_cell(ws3, r, 2, scen_name, font=BOLD_FONT)
+                scen_data = config["scenarios"][scen_name][drv_key]
+                for yr in range(proj_years):
+                    set_cell(ws3, r, 3 + yr, scen_data[yr],
+                             font=BLUE_FONT, fmt=drv_fmt, border=INPUT_BORDER)
 
     # =====================================================================
     # SHEET 4: NWC Schedule (DSO/DIH/DPO)
@@ -1611,13 +2005,22 @@ def generate_dcf_workbook(config, output_path=None):
         set_cell(ws_nwc, NWC_R_DIH, 3, "\u2014", font=GREY_FONT)
         set_cell(ws_nwc, NWC_R_DPO, 3, "\u2014", font=GREY_FONT)
 
-        # Projected NWC% (CHOOSE from scenario matrix at row 24)
+        # Projected NWC%
         for yr in range(proj_years):
             nwc_col = 4 + yr
             cl = col_letter(nwc_col)
-            set_cell(ws_nwc, NWC_R_DSO, nwc_col,
-                     nwc_choose_formula(NWC_R_SCEN_BLK_DSO, cl),
-                     font=BLACK_FONT, fmt=FMT_PCT)
+            if has_segments and seg_info and seg_info.get("nwc_scenario_rows"):
+                # Reference Segment Analysis Consolidated Inputs NWC% rows
+                nwc_seg_cl = col_letter(3 + seg_info["n_hist"] + yr)
+                nwc_refs = [f"'Segment Analysis'!{nwc_seg_cl}{r}"
+                            for r in seg_info["nwc_scenario_rows"]]
+                set_cell(ws_nwc, NWC_R_DSO, nwc_col,
+                         f"=CHOOSE('DCF Model'!$D$27,{','.join(nwc_refs)})",
+                         font=BLACK_FONT, fmt=FMT_PCT)
+            else:
+                set_cell(ws_nwc, NWC_R_DSO, nwc_col,
+                         nwc_choose_formula(NWC_R_SCEN_BLK_DSO, cl),
+                         font=BLACK_FONT, fmt=FMT_PCT)
             set_cell(ws_nwc, NWC_R_DIH, nwc_col, "\u2014", font=GREY_FONT)
             set_cell(ws_nwc, NWC_R_DPO, nwc_col, "\u2014", font=GREY_FONT)
 
@@ -1700,27 +2103,34 @@ def generate_dcf_workbook(config, output_path=None):
                 if not _has_border:
                     _cell.border = NWC_DATA_BORDER
 
-        # ── Scenario Input Matrix: 1 block (NWC % of Revenue) ──
-        c = section_title(ws_nwc, NWC_R_SCEN_SEC, 2, "Scenario Input Matrix (NWC % of Revenue)")
-        c.fill = LIGHT_GREEN
-        for col_idx in range(3, 3 + proj_years + 1):
-            ws_nwc.cell(row=NWC_R_SCEN_SEC, column=col_idx).fill = LIGHT_GREEN
+        # ── Scenario Input Matrix: NWC % of Revenue ──
+        if has_segments and seg_info and seg_info.get("nwc_scenario_rows"):
+            # NWC inputs are in Segment Analysis Consolidated Inputs
+            c = section_title(ws_nwc, NWC_R_SCEN_SEC, 2,
+                              "NWC inputs are in Segment Analysis sheet.")
+            c.font = GREY_FONT
+        else:
+            c = section_title(ws_nwc, NWC_R_SCEN_SEC, 2,
+                              "Scenario Input Matrix (NWC % of Revenue)")
+            c.fill = LIGHT_GREEN
+            for col_idx in range(3, 3 + proj_years + 1):
+                ws_nwc.cell(row=NWC_R_SCEN_SEC, column=col_idx).fill = LIGHT_GREEN
 
-        for yr in range(proj_years):
-            _scen_yr_label = nwc_proj_labels[yr] if yr < len(nwc_proj_labels) else f"Year {yr + 1}"
-            set_cell(ws_nwc, NWC_R_SCEN_YEARS, 4 + yr, _scen_yr_label,
-                     font=HEADER_FONT, fill=HEADER_FILL,
-                     alignment=Alignment(horizontal="center"))
-
-        # Single block: NWC % of Revenue at NWC_R_SCEN_BLK_DSO (row 24)
-        section_title(ws_nwc, NWC_R_SCEN_BLK_DSO, 2, "NWC % of Revenue")
-        for s, scen_name in enumerate(SCENARIO_NAMES):
-            r = NWC_R_SCEN_BLK_DSO + 1 + s
-            set_cell(ws_nwc, r, 2, scen_name, font=BOLD_FONT)
-            scen_data = config["scenarios"][scen_name]["nwc_pct"]
             for yr in range(proj_years):
-                set_cell(ws_nwc, r, 4 + yr, scen_data[yr],
-                         font=BLUE_FONT, fmt=FMT_PCT, border=INPUT_BORDER)
+                _scen_yr_label = nwc_proj_labels[yr] if yr < len(nwc_proj_labels) else f"Year {yr + 1}"
+                set_cell(ws_nwc, NWC_R_SCEN_YEARS, 4 + yr, _scen_yr_label,
+                         font=HEADER_FONT, fill=HEADER_FILL,
+                         alignment=Alignment(horizontal="center"))
+
+            # Single block: NWC % of Revenue at NWC_R_SCEN_BLK_DSO (row 24)
+            section_title(ws_nwc, NWC_R_SCEN_BLK_DSO, 2, "NWC % of Revenue")
+            for s, scen_name in enumerate(SCENARIO_NAMES):
+                r = NWC_R_SCEN_BLK_DSO + 1 + s
+                set_cell(ws_nwc, r, 2, scen_name, font=BOLD_FONT)
+                scen_data = config["scenarios"][scen_name]["nwc_pct"]
+                for yr in range(proj_years):
+                    set_cell(ws_nwc, r, 4 + yr, scen_data[yr],
+                             font=BLUE_FONT, fmt=FMT_PCT, border=INPUT_BORDER)
 
     else:
         # ================================================================

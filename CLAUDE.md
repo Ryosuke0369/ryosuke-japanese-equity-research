@@ -36,9 +36,34 @@ Two methods for projecting Net Working Capital, toggled via `nwc_method` in over
   - `manmonth`: 人月 × 稼働率 × 単価 + ソリューション売上（ITサービス向け）
   - `growth_rate`: 前年比成長率ベース（汎用）
   - `manual`: 売上・OPを直接入力
-- Segment Analysis の Total Revenue は DCF Model の Revenue と一致する必要がある（Reconciliation行で差異表示）
+- Segment Analysis は DCF Model の Revenue/EBIT の single source of truth（方式A: Segment→DCF完全リンク）
+- DCF Model の Revenue/EBIT は `='Segment Analysis'!{col}{total_rev/op_row}` で直接参照
+- COGS は `=Revenue - SGA - EBIT` で逆算（バックカルキュレーション）、COGS%/Revenue Growth%も逆算表示
+- SGA%のみ従来通りDCF Model側のシナリオ入力マトリクスからCHOOSE参照
+- Segment Analysis 内の Revenue/OP Margin は `=CHOOSE('DCF Model'!$D$27, ...)` でシナリオ切替
+- NWC% consolidated inputs（Segment Analysis下部）は `nwc_method == "revenue_pct"` の場合のみ表示（days方式では非表示）
+- Segment Scenario Input Matrix（シート下部）に5シナリオ×セグメント別の Revenue/OP Margin を入力
+- `scenario_projections` キーで Base 以外のシナリオ値を定義（未定義時は `projections` の値を全シナリオで使用）
+- `segments` が未定義の場合、従来の Revenue Growth × Base Year 方式にフォールバック（後方互換）
 - Driver Analysis から Segment Analysis への数式リンクはなし（両シート独立、値はJSON入力で共有）
 - projection 配列の長さは --years オプションと一致させること
+
+### scenario_projections 構造
+```json
+{
+  "segments": [{
+    "projections": { "revenue": [...], "op_margin": [...] },
+    "scenario_projections": {
+      "Upside": { "revenue": [...], "op_margin": [...] },
+      "Management": { "revenue": [...], "op_margin": [...] },
+      "Downside 1": { "revenue": [...], "op_margin": [...] },
+      "Downside 2": { "revenue": [...], "op_margin": [...] }
+    }
+  }]
+}
+```
+- Base シナリオは `projections` の値を使用（scenario_projections に "Base" キーは不要）
+- 未定義のシナリオは `projections` にフォールバック
 
 ### Capex/D&A方式切替
 - `capex_method`: "revenue_pct"（デフォルト）または "direct"
