@@ -6,6 +6,7 @@ from yfinance. Returns a list of dicts compatible with config["comps"].
 """
 
 import csv
+import io
 import logging
 
 logger = logging.getLogger(__name__)
@@ -62,12 +63,17 @@ def get_comps_data(csv_path):
     """
     comps = []
 
-    with open(csv_path, encoding="utf-8", newline="") as f:
+    with open(csv_path, encoding="utf-8") as f:
+        # Sanitize: strip trailing whitespace from each line before parsing.
+        # Trailing tabs corrupt delimiter auto-detection and DictReader fields.
+        clean_lines = [line.rstrip() for line in f]
+
+    clean_content = "\n".join(clean_lines)
+    with io.StringIO(clean_content) as f_clean:
         # Auto-detect delimiter (handles both comma and tab-separated files)
-        sample = f.readline()
-        f.seek(0)
+        sample = clean_lines[0] if clean_lines else ""
         delimiter = "\t" if "\t" in sample else ","
-        reader = csv.DictReader(f, delimiter=delimiter)
+        reader = csv.DictReader(f_clean, delimiter=delimiter)
         for row in reader:
             ticker = row["Ticker"].strip()
             name = row["Name"].strip()
