@@ -5,7 +5,7 @@ Config-driven Python platform that generates institutional-grade Excel workbooks
 ## How It Works
 
 ```
-JSON config → generate_dcf.py → 8-sheet Excel (500+ formulas, zero errors)
+JSON config → generate_dcf.py → 8-sheet Excel (500+ formulas, segment-linked DCF)
 ```
 
 **Pipeline:**
@@ -20,25 +20,48 @@ JSON config → generate_dcf.py → 8-sheet Excel (500+ formulas, zero errors)
 |---|-------|---------|
 | 1 | Executive Summary | Investment thesis, target price, BUY/HOLD/SELL |
 | 2 | Financial Statements | Historical IS / CF / BS |
-| 3 | DCF Model | WACC, 5-scenario FCF projection, PGM + Exit valuation |
+| 3 | DCF Model | Revenue/EBIT auto-linked from Segment Analysis, 5-scenario valuation |
 | 4 | NWC Schedule | Days method (DSO/DIH/DPO) or Revenue % method |
 | 5 | Comps Analysis | Peer comparison with implied valuation |
 | 6 | Sensitivity Analysis | WACC × TG and WACC × Exit Multiple (7×7 tables) |
-| 7 | Segment Analysis | Revenue / OP / OPM by segment + reconciliation |
+| 7 | Segment Analysis | Bottom-up forecast engine: Revenue Growth% + OPM per segment × 5 scenarios |
 | 8 | Driver Analysis | Per-segment revenue decomposition |
 
 ## Key Design Features
+
+**Bottom-up segment-linked DCF** — all forecast inputs live in Segment Analysis:
+- Per-segment Revenue Growth (YoY%) and Operating Margin across 5 scenarios
+- Segment totals flow directly to DCF Model via cell references
+- COGS% is back-calculated from segment mix — not a manual input
+- Consolidated SGA% and NWC% input at group level
+- Switch one dropdown → every segment, Revenue, EBIT, FCF, and valuation update instantly
+
+**Data flow:**
+```
+Segment Input Matrix (Growth% + OPM × 5 scenarios)
+  → CHOOSE(scenario) → Segment Revenue / OP
+    → Total Revenue / Total OP
+      → DCF Model (Revenue, EBIT, FCF, Valuation)
+        → Sensitivity Analysis (auto-updated)
+```
 
 **Config-driven flexibility** — change one JSON file, regenerate the entire model for any company:
 - Capex & D&A: revenue % or direct input (company-dependent)
 - NWC: DSO/DIH/DPO days method or simple revenue % method
 - 5 scenario framework: Base / Upside / Management / Downside 1 / Downside 2
 
-**Segment & Driver Analysis** — each segment gets its own revenue driver model:
+**Segment driver types** — each segment gets its own revenue driver model:
 - `backlog` — orders → backlog → revenue (equipment manufacturers)
 - `manmonth` — headcount × utilization × rate (IT services)
 - `growth_rate` — YoY growth driven (general purpose)
 - `manual` — direct revenue input
+
+**Overrides JSON format** — per-company configuration:
+- `segments[].projections.revenue_growth`: YoY% array (Base case)
+- `segments[].projections.op_margin`: OPM% array (Base case)
+- `segments[].scenario_projections`: other 4 scenarios (optional, falls back to Base)
+- `scenarios.sga_pct` / `scenarios.nwc_pct`: consolidated-level inputs per scenario
+- Backward compatible: tickers without `segments` use legacy top-down growth rate method
 
 ## Repository Structure
 
@@ -61,6 +84,8 @@ JSON config → generate_dcf.py → 8-sheet Excel (500+ formulas, zero errors)
 │   └── comps/                # Comparable company CSVs
 │
 ├── models/                   # Generated Excel outputs
+├── reports/                  # Finalized equity research outputs
+│   └── TechnoSmart_6246_Equity_Research.pdf
 └── CLAUDE.md                 # AI-assisted development config
 ```
 
@@ -73,8 +98,9 @@ JSON config → generate_dcf.py → 8-sheet Excel (500+ formulas, zero errors)
 
 **TechnoSmart (6246.T)** — Machinery / Equipment
 - 5 product lines: backlog + manual driver types
-- Revenue % Capex/D&A method
+- Segment-linked DCF: per-segment Revenue Growth% + OPM × 5 scenarios
 - NWC via revenue % method (equipment maker with large contract liabilities)
+- Full equity research PDF report available (7 pages, English)
 
 ## Quick Start
 
