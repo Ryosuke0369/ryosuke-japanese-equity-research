@@ -538,6 +538,14 @@ def main():
         if config.get("nwc_method") == "revenue_pct":
             print(f"  NWC Method: revenue_pct (NWC % of Revenue) - DSO/DIH/DPO will not be used")
 
+    # Guard: re-calculate core_ebitda if overrides set it to None
+    if config.get("core_ebitda") is None:
+        _oi = config.get("hist_operating_income", [])
+        _da = config.get("hist_depreciation", [])
+        if _oi and _da and _oi[-1] is not None and _da[-1] is not None:
+            config["core_ebitda"] = _oi[-1] + _da[-1]
+            print(f"  [Auto] core_ebitda = {_oi[-1]:,.0f} (OI) + {_da[-1]:,.0f} (D&A) = {config['core_ebitda']:,.0f}")
+
     # Step 5: Fetch live market data via yfinance (price, shares, beta)
     print(f"\n[Step 5/7] Fetching market data...")
     ticker_str = config["ticker"]

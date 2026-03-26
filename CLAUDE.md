@@ -2,6 +2,7 @@
 
 - Small-cap companies (especially TSE Standard/Growth) may use NonConsolidatedMember context instead of ConsolidatedMember
 - Manufacturing companies use CostOfProductsManufactured instead of CostOfSales for COGS
+- IFRS filers (e.g., IHI 7013, Sony, etc.) use IFRS-suffixed XBRL tags (RevenueIFRS, CostOfSalesIFRS, OperatingProfitLossIFRS, etc.) — edinet_parser.py now supports these tags with priority over J-GAAP equivalents
 - Always run data verification (revenue/cogs/oi check) before generating DCF model for a new ticker
 - NWC Base Year uses latest annual (FY-end) BS values, not LTM snapshot, to avoid seasonal distortions in AR/Inv/AP
 - This is especially important for order-driven businesses (equipment makers, construction) where receivables fluctuate significantly by quarter
@@ -36,6 +37,19 @@ Two methods for projecting Net Working Capital, toggled via `nwc_method` in over
   - `manmonth`: 人月 × 稼働率 × 単価 + ソリューション売上（ITサービス向け）
   - `growth_rate`: 前年比成長率ベース（汎用）
   - `manual`: 売上・OPを直接入力
+  - `retail`: 店舗数ロールフォワード + SSSG + 新規店寄与（小売・外食向け）
+    - historical: revenue, op, store_count（期末）
+    - projections: new_stores, closures, sssg, new_store_months（デフォルト6）
+    - 売上 = 既存店売上(前期Rev×(1+SSSG)) + 新規店売上(出店数×avg_rev×寄与月/12)
+    - avg_store_rev = 前期Segment Revenue ÷ 前期末店舗数（自動算出）
+    - KPI行: Avg Store Count = (期首+期末)/2
+  - `subscription`: ARRブリッジ（チャーン/拡大/新規分離）+ NRRフォールバック（SaaS向け）
+    - historical: revenue, op, arr_end
+    - projections: nrr, churn_rate（任意）, new_arr
+    - churn_rate未入力時: churn=0, expansion=NRR-1 で自動フォールバック
+    - churn_rate入力時: expansion = NRR-(1-churn) で自動逆算
+    - Revenue = (期首ARR + 期末ARR) / 2
+    - KPI行: NRR%, Gross Churn%, ARR YoY Growth
 - Segment Analysis は DCF Model の Revenue/EBIT の single source of truth（方式A: Segment→DCF完全リンク）
 - DCF Model の Revenue/EBIT は `='Segment Analysis'!{col}{total_rev/op_row}` で直接参照
 - COGS は `=Revenue - SGA - EBIT` で逆算（バックカルキュレーション）、COGS%/Revenue Growth%も逆算表示

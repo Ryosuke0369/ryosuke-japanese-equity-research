@@ -1,0 +1,192 @@
+{
+  "sector": "Heavy Industry / Machinery",
+  "primary_multiple": "EV/EBITDA",
+  "tax_rate": 0.305,
+  "risk_free": 0.022,
+  "cost_of_debt_at": 0.008,
+  "terminal_growth": 0.015,
+  "exit_multiple": 12.0,
+  "beta": 1.2,
+  "size_premium": 0.0,
+  "nwc_method": "revenue_pct",
+  "scenarios": {
+    "Base": {
+      "sga_pct": [0.137, 0.135, 0.133, 0.131, 0.130],
+      "nwc_pct": [0.40, 0.39, 0.38, 0.37, 0.36]
+    },
+    "Upside": {
+      "sga_pct": [0.132, 0.128, 0.125, 0.122, 0.120],
+      "nwc_pct": [0.38, 0.36, 0.34, 0.33, 0.32]
+    },
+    "Management": {
+      "sga_pct": [0.137, 0.136, 0.135, 0.134, 0.133],
+      "nwc_pct": [0.41, 0.40, 0.39, 0.38, 0.37]
+    },
+    "Downside 1": {
+      "sga_pct": [0.142, 0.144, 0.145, 0.146, 0.146],
+      "nwc_pct": [0.43, 0.44, 0.45, 0.45, 0.45]
+    },
+    "Downside 2": {
+      "sga_pct": [0.148, 0.150, 0.152, 0.154, 0.155],
+      "nwc_pct": [0.46, 0.47, 0.48, 0.48, 0.48]
+    }
+  },
+  "investment_thesis": [
+    "1. Aero Engine: V2500/PW1100G aftermarket revenue accelerating; installed base of 5,000+ engines drives recurring high-margin MRO demand",
+    "2. Defense upside: Japan defense budget doubling (1%→2% GDP by FY2027); IHI is sole supplier of F110/F135 engine MRO for JASDF F-15/F-35 fleet",
+    "3. Margin recovery: FY2025 OPM 8.8% recovering from FY2024 trough (-9.2%); structural improvement from aero engine mix shift and turbocharger restructuring"
+  ],
+  "key_risks": [
+    "1. Aero engine concentration: 70%+ of OP from single segment; Boeing/Airbus delivery delays reduce new engine shipments",
+    "2. Civil aero engine PBH contracts: long-term risk-sharing partnerships expose IHI to OEM production cycle downturns",
+    "3. Legacy segments (Social Infrastructure, Industrial Systems) remain low-margin; turnaround execution risk"
+  ],
+  "segments": [
+    {
+      "name": "Resources, Energy & Environment",
+      "name_jp": "資源・エネルギー・環境",
+      "driver_type": "manual",
+      "historical": {
+        "revenue": [369721, 402503, 408301],
+        "op": [26264, 17715, 16136]
+      },
+      "projections": {
+        "revenue": [420000, 430000, 440000, 450000, 460000],
+        "op_margin": [0.050, 0.055, 0.060, 0.065, 0.070],
+        "revenue_growth": [0.029, 0.024, 0.023, 0.023, 0.022]
+      },
+      "scenario_projections": {
+        "Upside": {
+          "revenue": [440000, 460000, 480000, 500000, 520000],
+          "op_margin": [0.060, 0.070, 0.080, 0.085, 0.090],
+          "revenue_growth": [0.078, 0.045, 0.043, 0.042, 0.040]
+        },
+        "Management": {
+          "revenue": [425000, 435000, 445000, 455000, 465000],
+          "op_margin": [0.050, 0.055, 0.060, 0.065, 0.070],
+          "revenue_growth": [0.041, 0.024, 0.023, 0.022, 0.022]
+        },
+        "Downside 1": {
+          "revenue": [400000, 395000, 390000, 390000, 390000],
+          "op_margin": [0.035, 0.030, 0.030, 0.030, 0.030],
+          "revenue_growth": [-0.020, -0.013, -0.013, 0.000, 0.000]
+        },
+        "Downside 2": {
+          "revenue": [380000, 370000, 360000, 350000, 345000],
+          "op_margin": [0.020, 0.015, 0.010, 0.010, 0.010],
+          "revenue_growth": [-0.069, -0.026, -0.027, -0.028, -0.014]
+        }
+      }
+    },
+    {
+      "name": "Social Infrastructure",
+      "name_jp": "社会基盤",
+      "driver_type": "manual",
+      "historical": {
+        "revenue": [166155, 165394, 155910],
+        "op": [17089, 15066, 9442]
+      },
+      "projections": {
+        "revenue": [150000, 145000, 140000, 135000, 130000],
+        "op_margin": [0.030, 0.020, 0.010, 0.010, 0.010],
+        "revenue_growth": [-0.038, -0.033, -0.034, -0.036, -0.037]
+      },
+      "scenario_projections": {
+        "Upside": {
+          "revenue": [155000, 152000, 150000, 148000, 146000],
+          "op_margin": [0.050, 0.045, 0.040, 0.040, 0.040],
+          "revenue_growth": [-0.006, -0.019, -0.013, -0.013, -0.014]
+        },
+        "Management": {
+          "revenue": [152000, 148000, 144000, 140000, 136000],
+          "op_margin": [0.035, 0.025, 0.015, 0.010, 0.010],
+          "revenue_growth": [-0.025, -0.026, -0.027, -0.028, -0.029]
+        },
+        "Downside 1": {
+          "revenue": [145000, 138000, 130000, 125000, 120000],
+          "op_margin": [0.010, 0.000, -0.010, -0.010, -0.010],
+          "revenue_growth": [-0.070, -0.048, -0.058, -0.038, -0.040]
+        },
+        "Downside 2": {
+          "revenue": [140000, 130000, 120000, 110000, 100000],
+          "op_margin": [0.000, -0.015, -0.025, -0.025, -0.025],
+          "revenue_growth": [-0.102, -0.071, -0.077, -0.083, -0.091]
+        }
+      }
+    },
+    {
+      "name": "Industrial Systems & General-Purpose Machinery",
+      "name_jp": "産業システム・汎用機械",
+      "driver_type": "growth_rate",
+      "historical": {
+        "revenue": [428195, 457132, 475644]
+      },
+      "projections": {
+        "revenue_growth": [0.030, 0.030, 0.020, 0.020, 0.020],
+        "op_margin": [0.030, 0.035, 0.040, 0.045, 0.050]
+      },
+      "scenario_projections": {
+        "Upside": {
+          "revenue_growth": [0.050, 0.050, 0.040, 0.040, 0.030],
+          "op_margin": [0.045, 0.050, 0.055, 0.060, 0.065]
+        },
+        "Management": {
+          "revenue_growth": [0.035, 0.030, 0.025, 0.020, 0.020],
+          "op_margin": [0.030, 0.035, 0.040, 0.045, 0.050]
+        },
+        "Downside 1": {
+          "revenue_growth": [0.010, 0.005, 0.000, 0.000, -0.005],
+          "op_margin": [0.020, 0.018, 0.015, 0.015, 0.015]
+        },
+        "Downside 2": {
+          "revenue_growth": [-0.010, -0.020, -0.020, -0.015, -0.015],
+          "op_margin": [0.010, 0.005, 0.000, 0.000, 0.000]
+        }
+      }
+    },
+    {
+      "name": "Aero Engine, Space & Defense",
+      "name_jp": "航空・宇宙・防衛",
+      "driver_type": "manual",
+      "historical": {
+        "revenue": [360272, 266896, 552700],
+        "op": [36171, -102897, 122791]
+      },
+      "projections": {
+        "revenue": [580000, 620000, 660000, 700000, 730000],
+        "op_margin": [0.200, 0.210, 0.220, 0.220, 0.230],
+        "revenue_growth": [0.049, 0.069, 0.065, 0.061, 0.043]
+      },
+      "scenario_projections": {
+        "Upside": {
+          "revenue": [620000, 680000, 740000, 800000, 850000],
+          "op_margin": [0.230, 0.240, 0.250, 0.260, 0.270],
+          "revenue_growth": [0.122, 0.097, 0.088, 0.081, 0.063]
+        },
+        "Management": {
+          "revenue": [590000, 630000, 670000, 710000, 745000],
+          "op_margin": [0.210, 0.215, 0.220, 0.225, 0.230],
+          "revenue_growth": [0.067, 0.068, 0.063, 0.060, 0.049]
+        },
+        "Downside 1": {
+          "revenue": [540000, 560000, 580000, 600000, 610000],
+          "op_margin": [0.150, 0.155, 0.160, 0.165, 0.170],
+          "revenue_growth": [-0.023, 0.037, 0.036, 0.034, 0.017]
+        },
+        "Downside 2": {
+          "revenue": [500000, 500000, 510000, 520000, 520000],
+          "op_margin": [0.100, 0.100, 0.110, 0.120, 0.120],
+          "revenue_growth": [-0.095, 0.000, 0.020, 0.020, 0.000]
+        }
+      }
+    }
+  ],
+  "_notes": {
+    "stock_split": "2025年10月 1:7分割済み。shares_outstandingはyfinanceから自動取得（分割後）",
+    "ifrs": "IHIはIFRS適用企業。EDINET XBRLタグはIFRS taxonomyを使用",
+    "pw1100g": "PW1100G-JM追加検査プログラムの為替影響を含むノイズあり。正規化はFY26通期確定後に実施",
+    "comps_csv": "data/comps/7013_comps.csv に4社配置済み（自動検出される）",
+    "historical_source": "Segment historical data extracted from EDINET XBRL (FY2023-FY2025 actual)",
+    "backlog_upgrade": "Order/backlog data not in XBRL. Upgrade to backlog driver_type after sourcing IR materials"
+  }
+}

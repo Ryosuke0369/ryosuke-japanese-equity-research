@@ -880,6 +880,12 @@ def _create_driver_sheet(wb, C, segments, proj_years, year_labels):
         elif driver_type == "growth_rate":
             cur_row = _driver_growth_rate(ws, seg, hist, proj, n_hist, proj_years, cur_row)
 
+        elif driver_type == "retail":
+            cur_row = _driver_retail(ws, seg, hist, proj, n_hist, proj_years, cur_row)
+
+        elif driver_type == "subscription":
+            cur_row = _driver_subscription(ws, seg, hist, proj, n_hist, proj_years, cur_row)
+
         else:  # "manual" or unknown
             cur_row = _driver_manual(ws, seg, hist, proj, n_hist, proj_years, cur_row)
 
@@ -1248,6 +1254,379 @@ def _driver_manual(ws, seg, hist, proj, n_hist, proj_years, cur_row):
             prev_cl = col_letter(col - 1)
             set_cell(ws, g_row, col,
                      f"=IFERROR(({cl}{rev_row}-{prev_cl}{rev_row})/{prev_cl}{rev_row},\"—\")",
+                     font=BLACK_FONT, fmt=FMT_PCT, border=NWC_DATA_BORDER)
+    cur_row += 1
+
+    return cur_row
+
+
+def _driver_retail(ws, seg, hist, proj, n_hist, proj_years, cur_row):
+    """Retail driver: Store count rollforward + SSSG + new store contribution."""
+
+    hist_rev = hist.get("revenue", [None] * n_hist)
+    hist_store = hist.get("store_count", [None] * n_hist)
+    proj_new_stores = proj.get("new_stores", [None] * proj_years)
+    proj_closures = proj.get("closures", [None] * proj_years)
+    proj_sssg = proj.get("sssg", [None] * proj_years)
+    new_store_months = proj.get("new_store_months", 6)
+
+    while len(hist_rev) < n_hist:
+        hist_rev.insert(0, None)
+    while len(hist_store) < n_hist:
+        hist_store.insert(0, None)
+
+    n_data_cols = n_hist + proj_years
+
+    # R1: Beginning Store Count
+    beg_row = cur_row
+    set_cell(ws, beg_row, 2, "Beginning Store Count", font=BOLD_FONT)
+    for i in range(n_hist):
+        col = 3 + i
+        if i > 0 and hist_store[i - 1] is not None:
+            set_cell(ws, beg_row, col, hist_store[i - 1], font=BLUE_FONT,
+                     fmt=FMT_INT, border=NWC_DATA_BORDER)
+        else:
+            set_cell(ws, beg_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    for yr in range(proj_years):
+        col = 3 + n_hist + yr
+        cl = col_letter(col)
+        prev_cl = col_letter(col - 1)
+        end_row = beg_row + 3  # Ending Store Count row
+        if yr == 0 and hist_store[-1] is not None:
+            set_cell(ws, beg_row, col, hist_store[-1], font=BLUE_FONT,
+                     fmt=FMT_INT, border=NWC_DATA_BORDER)
+        else:
+            set_cell(ws, beg_row, col, f"={prev_cl}{end_row}",
+                     font=BLACK_FONT, fmt=FMT_INT, border=NWC_DATA_BORDER)
+    cur_row += 1
+
+    # R2: + New Stores
+    new_row = cur_row
+    set_cell(ws, new_row, 2, "+ New Stores", font=BOLD_FONT)
+    for i in range(n_hist):
+        set_cell(ws, new_row, 3 + i, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    for yr in range(proj_years):
+        col = 3 + n_hist + yr
+        val = proj_new_stores[yr] if yr < len(proj_new_stores) else None
+        if val is not None:
+            set_cell(ws, new_row, col, val, font=BLUE_FONT, fmt=FMT_INT,
+                     border=INPUT_BORDER)
+        else:
+            set_cell(ws, new_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    cur_row += 1
+
+    # R3: - Closures
+    close_row = cur_row
+    set_cell(ws, close_row, 2, "- Closures", font=BOLD_FONT)
+    for i in range(n_hist):
+        set_cell(ws, close_row, 3 + i, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    for yr in range(proj_years):
+        col = 3 + n_hist + yr
+        val = proj_closures[yr] if yr < len(proj_closures) else None
+        if val is not None:
+            set_cell(ws, close_row, col, val, font=BLUE_FONT, fmt=FMT_INT,
+                     border=INPUT_BORDER)
+        else:
+            set_cell(ws, close_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    cur_row += 1
+
+    # R4: Ending Store Count = Beginning + New - Closures
+    end_sc_row = cur_row
+    set_cell(ws, end_sc_row, 2, "Ending Store Count", font=BOLD_FONT)
+    for i in range(n_hist):
+        col = 3 + i
+        val = hist_store[i]
+        if val is not None:
+            set_cell(ws, end_sc_row, col, val, font=BLUE_FONT, fmt=FMT_INT,
+                     border=SUBTOTAL_BORDER, fill=SUBTOTAL_FILL)
+        else:
+            set_cell(ws, end_sc_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    for yr in range(proj_years):
+        col = 3 + n_hist + yr
+        cl = col_letter(col)
+        set_cell(ws, end_sc_row, col,
+                 f"={cl}{beg_row}+{cl}{new_row}-{cl}{close_row}",
+                 font=BLACK_FONT, fmt=FMT_INT,
+                 border=SUBTOTAL_BORDER, fill=SUBTOTAL_FILL)
+    cur_row += 1
+
+    # R5: SSSG
+    sssg_row = cur_row
+    set_cell(ws, sssg_row, 2, "SSSG", font=BOLD_FONT)
+    # Historical: reverse-calc from per-store revenue YoY
+    avg_row = beg_row + 8  # Avg Store Count row (R9)
+    seg_rev_row = beg_row + 7  # Segment Revenue row (R8)
+    for i in range(n_hist):
+        col = 3 + i
+        cl = col_letter(col)
+        prev_cl = col_letter(col - 1)
+        if i == 0:
+            set_cell(ws, sssg_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+        else:
+            set_cell(ws, sssg_row, col,
+                     f"=IFERROR(({cl}{seg_rev_row}/{cl}{avg_row})/({prev_cl}{seg_rev_row}/{prev_cl}{avg_row})-1,\"—\")",
+                     font=BLACK_FONT, fmt=FMT_PCT, border=NWC_DATA_BORDER)
+    for yr in range(proj_years):
+        col = 3 + n_hist + yr
+        val = proj_sssg[yr] if yr < len(proj_sssg) else None
+        if val is not None:
+            set_cell(ws, sssg_row, col, val, font=BLUE_FONT, fmt=FMT_PCT,
+                     border=INPUT_BORDER)
+        else:
+            set_cell(ws, sssg_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    cur_row += 1
+
+    # R6: Existing Store Revenue = Prior Segment Revenue × (1 + SSSG)
+    exist_row = cur_row
+    set_cell(ws, exist_row, 2, "Existing Store Revenue", font=BOLD_FONT)
+    for i in range(n_hist):
+        set_cell(ws, exist_row, 3 + i, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    for yr in range(proj_years):
+        col = 3 + n_hist + yr
+        cl = col_letter(col)
+        prev_cl = col_letter(col - 1)
+        set_cell(ws, exist_row, col,
+                 f"={prev_cl}{seg_rev_row}*(1+{cl}{sssg_row})",
+                 font=BLACK_FONT, fmt=FMT_YEN, border=NWC_DATA_BORDER)
+    cur_row += 1
+
+    # R7: + New Store Revenue = New Stores × (Prior Rev / Prior Ending SC) × (months/12)
+    new_rev_row = cur_row
+    set_cell(ws, new_rev_row, 2, "+ New Store Revenue", font=BOLD_FONT)
+    for i in range(n_hist):
+        set_cell(ws, new_rev_row, 3 + i, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    month_frac = round(new_store_months / 12, 6)
+    for yr in range(proj_years):
+        col = 3 + n_hist + yr
+        cl = col_letter(col)
+        prev_cl = col_letter(col - 1)
+        set_cell(ws, new_rev_row, col,
+                 f"={cl}{new_row}*({prev_cl}{seg_rev_row}/{prev_cl}{end_sc_row})*{month_frac}",
+                 font=BLACK_FONT, fmt=FMT_YEN, border=NWC_DATA_BORDER)
+    cur_row += 1
+
+    # R8: Segment Revenue
+    seg_rev_row_actual = cur_row
+    assert seg_rev_row_actual == seg_rev_row, "Row layout mismatch for Segment Revenue"
+    set_cell(ws, seg_rev_row, 2, "Segment Revenue", font=BOLD_FONT)
+    for i in range(n_hist):
+        col = 3 + i
+        val = hist_rev[i]
+        if val is not None:
+            set_cell(ws, seg_rev_row, col, val, font=BLUE_FONT, fmt=FMT_YEN,
+                     border=SUBTOTAL_BORDER, fill=SUBTOTAL_FILL)
+        else:
+            set_cell(ws, seg_rev_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    for yr in range(proj_years):
+        col = 3 + n_hist + yr
+        cl = col_letter(col)
+        set_cell(ws, seg_rev_row, col,
+                 f"={cl}{exist_row}+{cl}{new_rev_row}",
+                 font=BLACK_FONT, fmt=FMT_YEN,
+                 border=SUBTOTAL_BORDER, fill=SUBTOTAL_FILL)
+    cur_row += 1
+
+    # R9: Avg Store Count (KPI)
+    avg_row_actual = cur_row
+    assert avg_row_actual == avg_row, "Row layout mismatch for Avg Store Count"
+    set_cell(ws, avg_row, 2, "Avg Store Count",
+             font=Font(name="Arial", size=10, italic=True, color="808080"))
+    for ci in range(n_data_cols):
+        col = 3 + ci
+        cl = col_letter(col)
+        set_cell(ws, avg_row, col,
+                 f"=IFERROR(({cl}{beg_row}+{cl}{end_sc_row})/2,\"—\")",
+                 font=BLACK_FONT, fmt=FMT_INT, border=NWC_DATA_BORDER)
+    cur_row += 1
+
+    return cur_row
+
+
+def _driver_subscription(ws, seg, hist, proj, n_hist, proj_years, cur_row):
+    """Subscription driver: ARR bridge (churn/expansion/new) with NRR fallback."""
+
+    hist_rev = hist.get("revenue", [None] * n_hist)
+    hist_arr = hist.get("arr_end", [None] * n_hist)
+    proj_nrr = proj.get("nrr", [None] * proj_years)
+    proj_churn_rate = proj.get("churn_rate", None)
+    proj_new_arr = proj.get("new_arr", [None] * proj_years)
+
+    while len(hist_rev) < n_hist:
+        hist_rev.insert(0, None)
+    while len(hist_arr) < n_hist:
+        hist_arr.insert(0, None)
+
+    n_data_cols = n_hist + proj_years
+
+    # ── NRR fallback: pre-compute churn/expansion values ──
+    proj_beg_arr = []
+    proj_churned = []
+    proj_expansion = []
+    proj_end_arr = []
+
+    for yr in range(proj_years):
+        if yr == 0:
+            beg = ([v for v in hist_arr if v is not None] or [0])[-1]
+        else:
+            beg = proj_end_arr[yr - 1]
+        proj_beg_arr.append(beg)
+
+        nrr = proj_nrr[yr] if yr < len(proj_nrr) and proj_nrr[yr] is not None else 1.0
+        if proj_churn_rate and yr < len(proj_churn_rate) and proj_churn_rate[yr] is not None:
+            churn_r = proj_churn_rate[yr]
+        else:
+            churn_r = 0.0
+        expansion_r = nrr - (1 - churn_r)
+
+        churned = beg * churn_r
+        expansion = beg * expansion_r
+        new_arr_val = proj_new_arr[yr] if yr < len(proj_new_arr) and proj_new_arr[yr] is not None else 0
+
+        proj_churned.append(churned)
+        proj_expansion.append(expansion)
+        proj_end_arr.append(beg - churned + expansion + new_arr_val)
+
+    # S1: Beginning ARR
+    beg_arr_row = cur_row
+    set_cell(ws, beg_arr_row, 2, "Beginning ARR", font=BOLD_FONT)
+    for i in range(n_hist):
+        col = 3 + i
+        if i > 0 and hist_arr[i - 1] is not None:
+            set_cell(ws, beg_arr_row, col, hist_arr[i - 1], font=BLUE_FONT,
+                     fmt=FMT_YEN, border=NWC_DATA_BORDER)
+        else:
+            set_cell(ws, beg_arr_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    end_arr_row = beg_arr_row + 4  # S5: Ending ARR
+    for yr in range(proj_years):
+        col = 3 + n_hist + yr
+        prev_cl = col_letter(col - 1)
+        if yr == 0 and hist_arr[-1] is not None:
+            set_cell(ws, beg_arr_row, col, hist_arr[-1], font=BLUE_FONT,
+                     fmt=FMT_YEN, border=NWC_DATA_BORDER)
+        else:
+            set_cell(ws, beg_arr_row, col, f"={prev_cl}{end_arr_row}",
+                     font=BLACK_FONT, fmt=FMT_YEN, border=NWC_DATA_BORDER)
+    cur_row += 1
+
+    # S2: - Churned ARR (positive value, subtracted in S5 formula)
+    churn_row = cur_row
+    set_cell(ws, churn_row, 2, "- Churned ARR", font=BOLD_FONT)
+    for i in range(n_hist):
+        set_cell(ws, churn_row, 3 + i, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    for yr in range(proj_years):
+        col = 3 + n_hist + yr
+        set_cell(ws, churn_row, col, proj_churned[yr], font=BLUE_FONT, fmt=FMT_YEN,
+                 border=INPUT_BORDER)
+    cur_row += 1
+
+    # S3: + Expansion ARR
+    exp_row = cur_row
+    set_cell(ws, exp_row, 2, "+ Expansion ARR", font=BOLD_FONT)
+    for i in range(n_hist):
+        set_cell(ws, exp_row, 3 + i, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    for yr in range(proj_years):
+        col = 3 + n_hist + yr
+        set_cell(ws, exp_row, col, proj_expansion[yr], font=BLUE_FONT, fmt=FMT_YEN,
+                 border=INPUT_BORDER)
+    cur_row += 1
+
+    # S4: + New ARR
+    new_arr_row = cur_row
+    set_cell(ws, new_arr_row, 2, "+ New ARR", font=BOLD_FONT)
+    for i in range(n_hist):
+        set_cell(ws, new_arr_row, 3 + i, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    for yr in range(proj_years):
+        col = 3 + n_hist + yr
+        val = proj_new_arr[yr] if yr < len(proj_new_arr) and proj_new_arr[yr] is not None else None
+        if val is not None:
+            set_cell(ws, new_arr_row, col, val, font=BLUE_FONT, fmt=FMT_YEN,
+                     border=INPUT_BORDER)
+        else:
+            set_cell(ws, new_arr_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    cur_row += 1
+
+    # S5: Ending ARR = Beginning - Churned + Expansion + New
+    end_arr_row_actual = cur_row
+    assert end_arr_row_actual == end_arr_row, "Row layout mismatch for Ending ARR"
+    set_cell(ws, end_arr_row, 2, "Ending ARR", font=BOLD_FONT)
+    for i in range(n_hist):
+        col = 3 + i
+        val = hist_arr[i]
+        if val is not None:
+            set_cell(ws, end_arr_row, col, val, font=BLUE_FONT, fmt=FMT_YEN,
+                     border=SUBTOTAL_BORDER, fill=SUBTOTAL_FILL)
+        else:
+            set_cell(ws, end_arr_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    for yr in range(proj_years):
+        col = 3 + n_hist + yr
+        cl = col_letter(col)
+        set_cell(ws, end_arr_row, col,
+                 f"={cl}{beg_arr_row}-{cl}{churn_row}+{cl}{exp_row}+{cl}{new_arr_row}",
+                 font=BLACK_FONT, fmt=FMT_YEN,
+                 border=SUBTOTAL_BORDER, fill=SUBTOTAL_FILL)
+    cur_row += 1
+
+    # S6: Revenue = (Beginning ARR + Ending ARR) / 2
+    rev_row = cur_row
+    set_cell(ws, rev_row, 2, "Revenue", font=BOLD_FONT)
+    for i in range(n_hist):
+        col = 3 + i
+        val = hist_rev[i]
+        if val is not None:
+            set_cell(ws, rev_row, col, val, font=BLUE_FONT, fmt=FMT_YEN,
+                     border=SUBTOTAL_BORDER, fill=SUBTOTAL_FILL)
+        else:
+            set_cell(ws, rev_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    for yr in range(proj_years):
+        col = 3 + n_hist + yr
+        cl = col_letter(col)
+        set_cell(ws, rev_row, col,
+                 f"=({cl}{beg_arr_row}+{cl}{end_arr_row})/2",
+                 font=BLACK_FONT, fmt=FMT_YEN,
+                 border=SUBTOTAL_BORDER, fill=SUBTOTAL_FILL)
+    cur_row += 1
+
+    # S7: NRR % (KPI)
+    nrr_row = cur_row
+    set_cell(ws, nrr_row, 2, "NRR %",
+             font=Font(name="Arial", size=10, italic=True, color="808080"))
+    for i in range(n_hist):
+        set_cell(ws, nrr_row, 3 + i, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    for yr in range(proj_years):
+        col = 3 + n_hist + yr
+        cl = col_letter(col)
+        set_cell(ws, nrr_row, col,
+                 f"=IFERROR(({cl}{end_arr_row}-{cl}{new_arr_row})/{cl}{beg_arr_row},\"—\")",
+                 font=BLACK_FONT, fmt=FMT_PCT, border=NWC_DATA_BORDER)
+    cur_row += 1
+
+    # S8: Gross Churn % (KPI)
+    gc_row = cur_row
+    set_cell(ws, gc_row, 2, "Gross Churn %",
+             font=Font(name="Arial", size=10, italic=True, color="808080"))
+    for i in range(n_hist):
+        set_cell(ws, gc_row, 3 + i, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+    for yr in range(proj_years):
+        col = 3 + n_hist + yr
+        cl = col_letter(col)
+        set_cell(ws, gc_row, col,
+                 f"=IFERROR({cl}{churn_row}/{cl}{beg_arr_row},\"—\")",
+                 font=BLACK_FONT, fmt=FMT_PCT, border=NWC_DATA_BORDER)
+    cur_row += 1
+
+    # S9: ARR YoY Growth (KPI)
+    yoy_row = cur_row
+    set_cell(ws, yoy_row, 2, "ARR YoY Growth",
+             font=Font(name="Arial", size=10, italic=True, color="808080"))
+    for ci in range(n_data_cols):
+        col = 3 + ci
+        cl = col_letter(col)
+        if ci == 0:
+            set_cell(ws, yoy_row, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+        else:
+            prev_cl = col_letter(col - 1)
+            set_cell(ws, yoy_row, col,
+                     f"=IFERROR({cl}{end_arr_row}/{prev_cl}{end_arr_row}-1,\"—\")",
                      font=BLACK_FONT, fmt=FMT_PCT, border=NWC_DATA_BORDER)
     cur_row += 1
 

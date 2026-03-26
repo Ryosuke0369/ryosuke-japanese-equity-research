@@ -56,6 +56,10 @@ FINANCIAL_ITEMS = OrderedDict([
         "label": "Revenue (売上高)",
         "type": "duration",
         "tags": [
+            # IFRS Taxonomy (must be before J-GAAP for IFRS filers)
+            "RevenueIFRS",
+            "RevenueIFRSSummaryOfBusinessResults",
+            # J-GAAP standard
             "NetSales",
             "OperatingRevenue1",
             "Revenue",
@@ -69,6 +73,7 @@ FINANCIAL_ITEMS = OrderedDict([
         "label": "Cost of Sales (売上原価)",
         "type": "duration",
         "tags": [
+            "CostOfSalesIFRS",
             "CostOfSales",
             "CostOfProductsManufactured",
             "CostOfSalesOfCompletedConstructionContracts",
@@ -80,6 +85,7 @@ FINANCIAL_ITEMS = OrderedDict([
         "label": "SGA Expenses (販管費)",
         "type": "duration",
         "tags": [
+            "SellingGeneralAndAdministrativeExpensesIFRS",
             "SellingGeneralAndAdministrativeExpenses",
         ],
         "sum": False,
@@ -88,6 +94,7 @@ FINANCIAL_ITEMS = OrderedDict([
         "label": "Operating Income (営業利益)",
         "type": "duration",
         "tags": [
+            "OperatingProfitLossIFRS",
             "OperatingIncome",
             "OperatingProfit",
         ],
@@ -97,6 +104,8 @@ FINANCIAL_ITEMS = OrderedDict([
         "label": "Net Income (当期純利益)",
         "type": "duration",
         "tags": [
+            "ProfitLossAttributableToOwnersOfParentIFRS",
+            "ProfitLossAttributableToOwnersOfParentIFRSSummaryOfBusinessResults",
             "ProfitLossAttributableToOwnersOfParent",
             "ProfitLoss",
             "NetIncome",
@@ -109,6 +118,7 @@ FINANCIAL_ITEMS = OrderedDict([
         "label": "Cash & Deposits (現金及び預金)",
         "type": "instant",
         "tags": [
+            "CashAndCashEquivalentsIFRS",
             "CashAndDeposits",
             "CashAndCashEquivalents",
         ],
@@ -118,6 +128,8 @@ FINANCIAL_ITEMS = OrderedDict([
         "label": "Accounts Receivable (売上債権)",
         "type": "instant",
         "tags": [
+            # IFRS aggregate (includes trade and other receivables)
+            "TradeAndOtherReceivablesCAIFRS",
             # Aggregate tags (excluding contract assets for cleaner DSO)
             "NotesAndAccountsReceivableTrade",
             "NotesAndOperatingAccountsReceivableTrade",
@@ -134,6 +146,7 @@ FINANCIAL_ITEMS = OrderedDict([
         "label": "Inventories (棚卸資産)",
         "type": "instant",
         "tags": [
+            "InventoriesCAIFRS",
             "Inventories",
             "Inventory",
             # Fallback: sum individual components
@@ -151,6 +164,7 @@ FINANCIAL_ITEMS = OrderedDict([
         "label": "Accounts Payable (買掛金)",
         "type": "instant",
         "tags": [
+            "TradeAndOtherPayablesCLIFRS",
             "NotesAndAccountsPayableTrade",
             "NotesAndOperatingAccountsPayableTrade",
             "AccountsPayableTrade",
@@ -162,6 +176,8 @@ FINANCIAL_ITEMS = OrderedDict([
         "label": "Trade Receivables Total (営業債権合計)",
         "type": "instant",
         "tags": [
+            # IFRS aggregate
+            "TradeAndOtherReceivablesCAIFRS",
             # New revenue recognition standard aggregate (includes contract assets)
             "NotesAndAccountsReceivableTradeAndContractAssets",
             # Traditional aggregate tags
@@ -180,6 +196,7 @@ FINANCIAL_ITEMS = OrderedDict([
         "label": "Trade Payables Total (営業債務合計)",
         "type": "instant",
         "tags": [
+            "TradeAndOtherPayablesCLIFRS",
             "NotesAndAccountsPayableTrade",
             "NotesAndOperatingAccountsPayableTrade",
             # Fallback: sum individual components (including electronically recorded obligations)
@@ -194,6 +211,7 @@ FINANCIAL_ITEMS = OrderedDict([
         "label": "Short-term Debt (短期借入金)",
         "type": "instant",
         "tags": [
+            "BondsAndBorrowingsCLIFRS",
             "ShortTermLoansPayable",
             "ShortTermBorrowings",
             "CurrentPortionOfLongTermLoansPayable",
@@ -204,6 +222,7 @@ FINANCIAL_ITEMS = OrderedDict([
         "label": "Long-term Debt (長期借入金)",
         "type": "instant",
         "tags": [
+            "BondsAndBorrowingsNCLIFRS",
             "LongTermLoansPayable",
             "LongTermDebt",
             "BondsPayable",
@@ -216,11 +235,13 @@ FINANCIAL_ITEMS = OrderedDict([
         "label": "Depreciation & Amortization (減価償却費)",
         "type": "duration",
         "tags": [
+            # IFRS Taxonomy — pure D&A (preferred, excludes impairment)
+            "DepreciationAndAmortizationOperatingExpensesIFRS",
             # J-GAAP standard
             "DepreciationAndAmortizationOpeCF",
             "DepreciationAndAmortization",
             "DepreciationSGA",
-            # IFRS Taxonomy
+            # IFRS Taxonomy — with impairment (fallback)
             "DepreciationAmortisationAndImpairmentLossReversalOfImpairmentLossRecognisedInProfitOrLoss",
             "DepreciationAndAmortisationExpense",
             "DepreciationExpense",
@@ -237,6 +258,7 @@ FINANCIAL_ITEMS = OrderedDict([
         "type": "duration",
         "tags": [
             "NetCashProvidedByUsedInOperatingActivities",
+            "NetCashProvidedByUsedInOperatingActivitiesIFRS",
         ],
         "sum": False,
     }),
@@ -252,6 +274,7 @@ FINANCIAL_ITEMS = OrderedDict([
             # IFRS Taxonomy
             "PurchaseOfPropertyPlantAndEquipmentClassifiedAsInvestingActivities",
             "AcquisitionsOfPropertyPlantAndEquipment",
+            "PurchaseOfPropertyPlantAndEquipmentAndIntangibleAssetsAndInvestmentPropertyInvCFIFRS",
             # Additional J-GAAP variants
             "PurchaseOfPropertyPlantAndEquipmentAndOtherAssets",
             "PaymentsForPurchaseOfPropertyPlantAndEquipment",
