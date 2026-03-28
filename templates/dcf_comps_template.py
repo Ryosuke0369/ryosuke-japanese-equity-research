@@ -437,10 +437,22 @@ def _create_segment_sheet(wb, C, segments, proj_years, year_labels):
             "opm_scenario_rows": opm_scenario_rows,
         })
 
-    # ── Consolidated Inputs section (SGA%, NWC%) after segment blocks ──
+    # ── Consolidated Inputs section (COGS%, SGA%, NWC%) after segment blocks ──
     consolidated_start = matrix_cur + 1  # gap row
-    # SGA% block: header(1) + year header(1) + sub-header(1) + 5 rows + blank(1) = 9 rows
-    sga_sub_header_row = consolidated_start + 2  # after section header + year headers
+
+    # Check if cogs_pct exists in scenarios
+    _has_cogs_pct = any("cogs_pct" in _scenarios.get(sn, {}) for sn in SCENARIO_NAMES)
+
+    # COGS% block (if present): sub-header(1) + 5 rows + blank(1) = 7 rows
+    if _has_cogs_pct:
+        cogs_sub_header_row = consolidated_start + 2  # after section header + year headers
+        cogs_scenario_rows = [cogs_sub_header_row + 1 + s for s in range(NUM_SCENARIOS)]
+        sga_sub_header_row = cogs_sub_header_row + 1 + NUM_SCENARIOS + 1  # after COGS block + blank
+    else:
+        cogs_sub_header_row = None
+        cogs_scenario_rows = None
+        sga_sub_header_row = consolidated_start + 2  # original position
+
     sga_scenario_rows = [sga_sub_header_row + 1 + s for s in range(NUM_SCENARIOS)]
     nwc_scenario_rows = None
     if _has_nwc_pct:
@@ -759,6 +771,22 @@ def _create_segment_sheet(wb, C, segments, proj_years, year_labels):
                  font=HEADER_FONT, fill=HEADER_FILL,
                  alignment=Alignment(horizontal="center"))
 
+    # ── COGS % of Revenue (only when cogs_pct exists in scenarios) ──
+    if _has_cogs_pct and cogs_scenario_rows is not None:
+        section_title(ws, cogs_sub_header_row, 2, "COGS % of Revenue")
+        for s, scen_name in enumerate(SCENARIO_NAMES):
+            r = cogs_scenario_rows[s]
+            set_cell(ws, r, 2, scen_name, font=BOLD_FONT)
+            scen_data = _scenarios.get(scen_name, {}).get("cogs_pct", [])
+            for yr in range(proj_years):
+                col = 3 + n_hist + yr
+                val = scen_data[yr] if yr < len(scen_data) else None
+                if val is not None:
+                    set_cell(ws, r, col, val, font=BLUE_FONT, fmt=FMT_PCT,
+                             border=INPUT_BORDER)
+                else:
+                    set_cell(ws, r, col, "—", font=GREY_FONT, border=NWC_DATA_BORDER)
+
     # ── SGA % of Revenue ──
     section_title(ws, sga_sub_header_row, 2, "SGA % of Revenue")
     for s, scen_name in enumerate(SCENARIO_NAMES):
@@ -797,6 +825,7 @@ def _create_segment_sheet(wb, C, segments, proj_years, year_labels):
         "total_rev_row": total_rev_row,
         "total_op_row": total_op_row,
         "n_hist": n_hist,
+        "cogs_scenario_rows": cogs_scenario_rows,
         "sga_scenario_rows": sga_scenario_rows,
         "nwc_scenario_rows": nwc_scenario_rows,
     }
@@ -1739,10 +1768,17 @@ def generate_dcf_workbook(config, output_path=None):
         _matrix_cur += len(_segments) * 14  # 14 rows per segment
 
         _consolidated_start = _matrix_cur + 1  # gap
-        _sga_sub_header = _consolidated_start + 2  # after section header + year headers
-        _sga_scenario_rows = [_sga_sub_header + 1 + s for s in range(NUM_SCENARIOS)]
-
         _scenarios_dict = C.get("scenarios", {})
+
+        _has_cogs_pct = any("cogs_pct" in _scenarios_dict.get(sn, {}) for sn in SCENARIO_NAMES)
+        if _has_cogs_pct:
+            _cogs_sub_header = _consolidated_start + 2
+            _cogs_scenario_rows = [_cogs_sub_header + 1 + s for s in range(NUM_SCENARIOS)]
+            _sga_sub_header = _cogs_sub_header + 1 + NUM_SCENARIOS + 1
+        else:
+            _cogs_scenario_rows = None
+            _sga_sub_header = _consolidated_start + 2
+        _sga_scenario_rows = [_sga_sub_header + 1 + s for s in range(NUM_SCENARIOS)]
         _has_nwc_pct = (
             C.get("nwc_method") == "revenue_pct"
             and all(
@@ -1759,6 +1795,7 @@ def generate_dcf_workbook(config, output_path=None):
             "total_rev_row": _total_rev_row,
             "total_op_row": _total_op_row,
             "n_hist": _n_hist_seg,
+            "cogs_scenario_rows": _cogs_scenario_rows,
             "sga_scenario_rows": _sga_scenario_rows,
             "nwc_scenario_rows": _nwc_scenario_rows,
         }
@@ -2124,9 +2161,15 @@ def generate_dcf_workbook(config, output_path=None):
                 set_cell(ws3, R_DRV_GROWTH, col, f"=({cl}{R_REVENUE}/{prev_cl}{R_REVENUE})-1",
                          font=BLACK_FONT, fmt=FMT_PCT, fill=LIGHT_FILL)
 
-            # COGS% — back-calculated display
-            set_cell(ws3, R_DRV_COGS, col, f"=IFERROR({cl}{R_COGS}/{cl}{R_REVENUE},0)",
-                     font=BLACK_FONT, fmt=FMT_PCT, fill=LIGHT_FILL)
+            # COGS% — CHOOSE from Segment Analysis Consolidated Inputs (or back-calc if no cogs override)
+            if seg_info.get("cogs_scenario_rows"):
+                cogs_refs = [f"'Segment Analysis'!{seg_cl}{r}" for r in seg_info["cogs_scenario_rows"]]
+                set_cell(ws3, R_DRV_COGS, col,
+                         f"=CHOOSE($D$27,{','.join(cogs_refs)})",
+                         font=BLACK_FONT, fmt=FMT_PCT, fill=LIGHT_FILL)
+            else:
+                set_cell(ws3, R_DRV_COGS, col, f"=IFERROR({cl}{R_COGS}/{cl}{R_REVENUE},0)",
+                         font=BLACK_FONT, fmt=FMT_PCT, fill=LIGHT_FILL)
 
             # SGA% — CHOOSE from Segment Analysis Consolidated Inputs
             sga_refs = [f"'Segment Analysis'!{seg_cl}{r}" for r in seg_info["sga_scenario_rows"]]
@@ -2139,28 +2182,38 @@ def generate_dcf_workbook(config, output_path=None):
                      f"='Segment Analysis'!{seg_cl}{seg_info['total_rev_row']}",
                      font=BLACK_FONT, fmt=FMT_YEN)
 
-            # EBIT — from Segment Analysis total OP
-            set_cell(ws3, R_EBIT, col,
-                     f"='Segment Analysis'!{seg_cl}{seg_info['total_op_row']}",
-                     font=BLACK_FONT, fmt=FMT_YEN, border=SUBTOTAL_BORDER)
+            # COGS — from COGS% driver when override exists, otherwise back-calc
+            if seg_info.get("cogs_scenario_rows"):
+                set_cell(ws3, R_COGS, col, f"={cl}{R_REVENUE}*{cl}{R_DRV_COGS}",
+                         font=BLACK_FONT, fmt=FMT_YEN)
+            else:
+                set_cell(ws3, R_COGS, col, f"={cl}{R_REVENUE}-{cl}{R_SGA}-{cl}{R_EBIT}",
+                         font=BLACK_FONT, fmt=FMT_YEN)
 
-            # SGA Expense = Revenue * SGA% driver
-            set_cell(ws3, R_SGA, col, f"={cl}{R_REVENUE}*{cl}{R_DRV_SGA}", font=BLACK_FONT, fmt=FMT_YEN)
-
-            # COGS — back-calculated: Revenue - SGA - EBIT
-            set_cell(ws3, R_COGS, col, f"={cl}{R_REVENUE}-{cl}{R_SGA}-{cl}{R_EBIT}",
-                     font=BLACK_FONT, fmt=FMT_YEN)
-
-            # Gross Profit = Revenue - COGS (unchanged formula, COGS is just derived differently)
+            # Gross Profit = Revenue - COGS
             set_cell(ws3, R_GROSS_PROFIT, col, f"={cl}{R_REVENUE}-{cl}{R_COGS}", font=BLACK_FONT, fmt=FMT_YEN,
                      border=SUBTOTAL_BORDER)
 
             # Gross Margin = GP / Revenue
             set_cell(ws3, R_GROSS_MARGIN, col, f"={cl}{R_GROSS_PROFIT}/{cl}{R_REVENUE}", font=BLACK_FONT, fmt=FMT_PCT)
 
-            # Implied Operating Margin = (GP - SGA) / Revenue
+            # SGA Expense = Revenue * SGA% driver
+            set_cell(ws3, R_SGA, col, f"={cl}{R_REVENUE}*{cl}{R_DRV_SGA}", font=BLACK_FONT, fmt=FMT_YEN)
+
+            # EBIT — derived from COGS/SGA overrides when cogs_scenario_rows exists,
+            # otherwise linked from Segment Analysis total OP
+            if seg_info.get("cogs_scenario_rows"):
+                set_cell(ws3, R_EBIT, col,
+                         f"={cl}{R_GROSS_PROFIT}-{cl}{R_SGA}",
+                         font=BLACK_FONT, fmt=FMT_YEN, border=SUBTOTAL_BORDER)
+            else:
+                set_cell(ws3, R_EBIT, col,
+                         f"='Segment Analysis'!{seg_cl}{seg_info['total_op_row']}",
+                         font=BLACK_FONT, fmt=FMT_YEN, border=SUBTOTAL_BORDER)
+
+            # Implied Operating Margin = EBIT / Revenue
             set_cell(ws3, R_OP_M_IMPL, col,
-                     f"=({cl}{R_GROSS_PROFIT}-{cl}{R_SGA})/{cl}{R_REVENUE}",
+                     f"={cl}{R_EBIT}/{cl}{R_REVENUE}",
                      font=BLACK_FONT, fmt=FMT_PCT)
 
         else:
