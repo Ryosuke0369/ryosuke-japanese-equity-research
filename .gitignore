@@ -7,9 +7,6 @@ __pycache__/
 # Temp files
 *.tmp
 
-# Manual/final models (personal final versions, not for GitHub)
-reports/
-
 # OS
 .DS_Store
 Thumbs.db
@@ -27,8 +24,3 @@ tmp/
 .venv/
 venv/
 
-# Output (legacy)
-output/
-
-# Tasks (development notes)
-tasks/
