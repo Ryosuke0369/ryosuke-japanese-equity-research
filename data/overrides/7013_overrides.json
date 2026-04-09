@@ -649,6 +649,108 @@
       }
     }
   ],
+  "sotp": {
+    "thesis": "IHI's consolidated valuation obscures value concentration in Aero segment. 76% of EV from Aerospace & Defense.",
+    "valuation_date": "April 2026",
+    "stock_split_ratio": 7,
+
+    "consolidated": {
+      "da_total": 70000,
+      "net_debt": 360000,
+      "minority_interest": 27000,
+      "equity_method_op": 6200,
+      "equity_method_multiple": 10.0,
+      "shares_outstanding": 151364
+    },
+
+    "segments": [
+      {
+        "key": "aero",
+        "label": "Aero, Space & Defense",
+        "label_jp": "航空・宇宙・防衛",
+        "revenue": [270400, 555700, 620000],
+        "op": [-102800, 122700, 130000],
+        "fiscal_years": ["FY23", "FY24", "FY25E"],
+        "da_allocation_pct": 0.31,
+        "selected_multiple": 18.0,
+        "multiple_source": "Median of Safran/MTU/Rolls-Royce (excl. TransDigm)",
+        "peers": [
+          {"name": "Safran", "ticker": "SAF.PA", "ev_ebitda": 20.5, "opm": 0.166, "market_cap_usd_b": 130, "note": "CFM LEAP, MRO, Defense", "excluded": false},
+          {"name": "MTU Aero Engines", "ticker": "MTX.DE", "ev_ebitda": 11.9, "opm": 0.199, "market_cap_usd_b": 24, "note": "V2500/PW1100G partner", "excluded": false},
+          {"name": "Rolls-Royce", "ticker": "RR.L", "ev_ebitda": 18.0, "opm": 0.15, "market_cap_usd_b": 65, "note": "Large engine, V-shape recovery", "excluded": false},
+          {"name": "TransDigm", "ticker": "TDG", "ev_ebitda": 25.0, "opm": 0.54, "market_cap_usd_b": 75, "note": "Aftermarket monopoly — EXCLUDED", "excluded": true}
+        ]
+      },
+      {
+        "key": "energy",
+        "label": "Resources, Energy & Environment",
+        "label_jp": "資源・エネルギー・環境",
+        "revenue": [404900, 411400, 370000],
+        "op": [17700, 16100, 24000],
+        "fiscal_years": ["FY23", "FY24", "FY25E"],
+        "da_allocation_pct": 0.30,
+        "selected_multiple": 8.0,
+        "multiple_source": "Energy equipment peers",
+        "peers": [
+          {"name": "Siemens Energy", "ticker": "ENR.DE", "ev_ebitda": 12.0, "opm": 0.06, "market_cap_usd_b": 50, "note": "Gas turbine, grid", "excluded": false},
+          {"name": "MHI (Energy seg.)", "ticker": "7011.T", "ev_ebitda": 8.0, "opm": 0.05, "market_cap_usd_b": 0, "note": "Comparable segment estimate", "excluded": false}
+        ]
+      },
+      {
+        "key": "industrial",
+        "label": "Industrial Systems & General Machinery",
+        "label_jp": "産業システム・汎用機械",
+        "revenue": [466100, 484800, 440000],
+        "op": [12700, 10800, 25000],
+        "fiscal_years": ["FY23", "FY24", "FY25E"],
+        "da_allocation_pct": 0.27,
+        "selected_multiple": 10.0,
+        "multiple_source": "Turbocharger/machinery blend",
+        "peers": [
+          {"name": "BorgWarner", "ticker": "BWA", "ev_ebitda": 6.5, "opm": 0.10, "market_cap_usd_b": 7, "note": "Turbocharger OEM", "excluded": false},
+          {"name": "Garrett Motion", "ticker": "GTX", "ev_ebitda": 7.0, "opm": 0.15, "market_cap_usd_b": 3, "note": "Turbocharger pure-play", "excluded": false}
+        ]
+      },
+      {
+        "key": "social_infra",
+        "label": "Social Infrastructure",
+        "label_jp": "社会基盤",
+        "revenue": [154300, 146000, 140000],
+        "op": [4900, -4200, 0],
+        "fiscal_years": ["FY23", "FY24", "FY25E"],
+        "da_allocation_pct": 0.12,
+        "selected_multiple": 6.0,
+        "multiple_source": "Infrastructure floor",
+        "peers": [
+          {"name": "Yokogawa Bridge", "ticker": "5911.T", "ev_ebitda": 5.5, "opm": 0.04, "market_cap_usd_b": 0, "note": "Bridge construction — low margin", "excluded": false}
+        ]
+      }
+    ],
+
+    "conglomerate_discount": {
+      "base": 0.0,
+      "sensitivity_range": [0.0, 0.05, 0.10, 0.15, 0.20]
+    },
+
+    "sensitivity": {
+      "primary_segment_key": "aero",
+      "primary_multiples": [14, 16, 18, 20, 22, 25],
+      "table2": {
+        "row_segment_key": "industrial",
+        "row_multiples": [7, 8, 10, 12, 14],
+        "col_segment_key": "energy",
+        "col_multiples": [6, 8, 10, 12]
+      }
+    },
+
+    "dcf_crosscheck": {
+      "pgm_fair_value": 1982,
+      "exit_fair_value": 3463,
+      "comps_ev_ebitda": 3794,
+      "comps_per": 4973
+    }
+  },
+
   "_notes": {
     "stock_split": "2025年10月 1:7分割済み。shares_outstandingはyfinanceから自動取得（分割後）",
     "ifrs": "IHIはIFRS適用企業。EDINET XBRLタグはIFRS taxonomyを使用",
