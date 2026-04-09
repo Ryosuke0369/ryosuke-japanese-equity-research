@@ -27,6 +27,10 @@ HEADER_FONT = Font(name="Arial", size=11, bold=True, color="FFFFFF")
 TITLE_FONT  = Font(name="Arial", size=14, bold=True)
 SUB_FONT    = Font(name="Arial", size=11, bold=True)
 GREY_FONT   = Font(name="Arial", size=9, italic=True, color="808080")
+TICKER_FONT = Font(name="Arial", size=10, color="808080")
+NOTE_FONT   = Font(name="Arial", size=9, color="808080")
+EXCLUDED_FONT      = Font(name="Arial", size=10, color="808080", italic=True)
+EXCLUDED_NOTE_FONT = Font(name="Arial", size=9, color="808080", italic=True)
 
 HEADER_FILL    = PatternFill(start_color="000080", end_color="000080", fill_type="solid")
 LIGHT_FILL     = PatternFill(start_color="DCE6F1", end_color="DCE6F1", fill_type="solid")
@@ -289,22 +293,22 @@ def build_peer_comps_sheet(wb, sotp):
         ev_ebitda_cells = []
         for p in included_peers:
             set_cell(ws, r, 2, p["name"], font=BLACK_FONT, border=THIN_BORDER)
-            set_cell(ws, r, 3, p["ticker"], font=GREY_FONT, border=THIN_BORDER)
+            set_cell(ws, r, 3, p["ticker"], font=TICKER_FONT, border=THIN_BORDER)
             set_cell(ws, r, 4, p["ev_ebitda"], font=BLUE_FONT, fmt=FMT_RATIO, border=THIN_BORDER)
             set_cell(ws, r, 5, p["opm"], font=BLUE_FONT, fmt=FMT_PCT, border=THIN_BORDER)
             set_cell(ws, r, 6, p.get("market_cap_usd_b", ""), font=BLUE_FONT, fmt=FMT_INT, border=THIN_BORDER)
-            set_cell(ws, r, 7, p.get("note", ""), font=GREY_FONT, border=THIN_BORDER)
+            set_cell(ws, r, 7, p.get("note", ""), font=NOTE_FONT, border=THIN_BORDER)
             ev_ebitda_cells.append(f"D{r}")
             r += 1
 
-        # Excluded peers
+        # Excluded peers (gray italic to visually indicate exclusion)
         for p in excluded_peers:
-            set_cell(ws, r, 2, p["name"], font=GREY_FONT, border=THIN_BORDER)
-            set_cell(ws, r, 3, p["ticker"], font=GREY_FONT, border=THIN_BORDER)
-            set_cell(ws, r, 4, p["ev_ebitda"], font=GREY_FONT, fmt=FMT_RATIO, border=THIN_BORDER)
-            set_cell(ws, r, 5, p["opm"], font=GREY_FONT, fmt=FMT_PCT, border=THIN_BORDER)
-            set_cell(ws, r, 6, p.get("market_cap_usd_b", ""), font=GREY_FONT, fmt=FMT_INT, border=THIN_BORDER)
-            set_cell(ws, r, 7, p.get("note", ""), font=GREY_FONT, border=THIN_BORDER)
+            set_cell(ws, r, 2, p["name"], font=EXCLUDED_FONT, border=THIN_BORDER)
+            set_cell(ws, r, 3, p["ticker"], font=EXCLUDED_FONT, border=THIN_BORDER)
+            set_cell(ws, r, 4, p["ev_ebitda"], font=EXCLUDED_FONT, fmt=FMT_RATIO, border=THIN_BORDER)
+            set_cell(ws, r, 5, p["opm"], font=EXCLUDED_FONT, fmt=FMT_PCT, border=THIN_BORDER)
+            set_cell(ws, r, 6, p.get("market_cap_usd_b", ""), font=EXCLUDED_FONT, fmt=FMT_INT, border=THIN_BORDER)
+            set_cell(ws, r, 7, p.get("note", ""), font=EXCLUDED_NOTE_FONT, border=THIN_BORDER)
             r += 1
 
         # Median row
@@ -322,7 +326,7 @@ def build_peer_comps_sheet(wb, sotp):
 
         # Selected multiple
         set_cell(ws, r, 2, "Selected Multiple", font=BOLD_FONT, fill=LIGHT_YELLOW, border=SUBTOTAL_BORDER)
-        set_cell(ws, r, 3, seg.get("multiple_source", ""), font=GREY_FONT, fill=LIGHT_YELLOW, border=SUBTOTAL_BORDER)
+        set_cell(ws, r, 3, seg.get("multiple_source", ""), font=NOTE_FONT, fill=LIGHT_YELLOW, border=SUBTOTAL_BORDER)
         set_cell(ws, r, 4, seg["selected_multiple"], font=BLUE_FONT, fmt=FMT_RATIO,
                  fill=LIGHT_YELLOW, border=SUBTOTAL_BORDER)
         selected_multiple_cells[key] = f"D{r}"
@@ -544,7 +548,7 @@ def build_sensitivity_sheet(wb, sotp, val_refs):
     ws.sheet_properties.tabColor = "FF6600"
 
     ws.column_dimensions["A"].width = 3
-    ws.column_dimensions["B"].width = 22
+    ws.column_dimensions["B"].width = 38
 
     set_cell(ws, 1, 2, "Sensitivity Analysis", font=TITLE_FONT)
 
