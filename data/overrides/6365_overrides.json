@@ -1,0 +1,183 @@
+{
+  "company_name": "DMW Corporation",
+  "ticker": "6365.T",
+  "exchange": "TSE Prime",
+  "sector": "Machinery - Pumps & Blowers",
+  "investment_thesis": [
+    "1. DeROs energy recovery device achieves world-leading 99.7% efficiency, positioning DMW for Middle East/India desalination demand growth",
+    "2. India plant expansion enables overseas shipment of large high-pressure pumps, lifting export revenue mix",
+    "3. METI Energy Conservation Grand Prize win reinforces technology brand and strengthens public-sector competitive moat",
+    "4. Stable domestic public-sector backlog (water/sewage/power) provides defensive base while overseas grows"
+  ],
+  "key_risks": [
+    "1. Middle East geopolitical risk could freeze plant projects, delaying DeROs revenue recognition",
+    "2. Q4-skewed revenue recognition creates large quarterly earnings volatility",
+    "3. FX (yen appreciation) compresses overseas margins given JPY-denominated cost base",
+    "4. Domestic public-investment cuts would directly hit ~46% of revenue from government tenders"
+  ],
+  "risk_free": 0.01,
+  "erp": 0.06,
+  "beta": 0.85,
+  "size_premium": 0.02,
+  "cost_of_debt_at": 0.008,
+  "tax_rate": 0.30,
+  "terminal_growth": 0.015,
+  "exit_multiple": 8.0,
+  "primary_multiple": "EV/EBITDA",
+  "nwc_method": "revenue_pct",
+  "base_year_ar": 8910,
+  "base_year_inv": 5000,
+  "base_year_ap": 3961,
+  "base_year_trade_receivables": 8910,
+  "base_year_trade_payables": 3961,
+  "base_year_nwc": 9949,
+  "capex_pct": 0.03,
+  "da_pct": 0.025,
+  "scenarios": {
+    "Base": {
+      "sga_pct": [0.16, 0.16, 0.15, 0.15, 0.15],
+      "nwc_pct": [0.30, 0.30, 0.30, 0.30, 0.30]
+    },
+    "Upside": {
+      "sga_pct": [0.15, 0.15, 0.14, 0.14, 0.14],
+      "nwc_pct": [0.28, 0.28, 0.28, 0.28, 0.28]
+    },
+    "Management": {
+      "sga_pct": [0.16, 0.16, 0.15, 0.15, 0.15],
+      "nwc_pct": [0.30, 0.30, 0.30, 0.30, 0.30]
+    },
+    "Downside 1": {
+      "sga_pct": [0.17, 0.17, 0.16, 0.16, 0.16],
+      "nwc_pct": [0.32, 0.32, 0.32, 0.32, 0.32]
+    },
+    "Downside 2": {
+      "sga_pct": [0.18, 0.18, 0.17, 0.17, 0.17],
+      "nwc_pct": [0.34, 0.34, 0.34, 0.34, 0.34]
+    }
+  },
+  "segments": [
+    {
+      "name": "Public Sector (Pumps & Blowers)",
+      "name_jp": "官需部門（ポンプ・送風機）",
+      "driver_type": "backlog",
+      "notes": "Water/sewage, river drainage, electric utilities. Domestic public tender-driven. Stable stock-type demand. ~46% of FY25 revenue.",
+      "historical": {
+        "revenue": [null, null, null, 12915],
+        "op": [null, null, null, null]
+      },
+      "projections": {
+        "revenue": [13173, 13437, 13840, 14255, 14683],
+        "op_margin": [0.10, 0.10, 0.11, 0.11, 0.11],
+        "revenue_growth": [0.02, 0.02, 0.03, 0.03, 0.03]
+      },
+      "scenario_projections": {
+        "Upside": {
+          "revenue": [13367, 13834, 14457, 15108, 15788],
+          "op_margin": [0.11, 0.11, 0.12, 0.12, 0.12],
+          "revenue_growth": [0.035, 0.035, 0.045, 0.045, 0.045]
+        },
+        "Management": {
+          "revenue": [13173, 13437, 13840, 14255, 14683],
+          "op_margin": [0.10, 0.10, 0.11, 0.11, 0.11],
+          "revenue_growth": [0.02, 0.02, 0.03, 0.03, 0.03]
+        },
+        "Downside 1": {
+          "revenue": [12915, 12915, 13044, 13174, 13306],
+          "op_margin": [0.09, 0.09, 0.10, 0.10, 0.10],
+          "revenue_growth": [0.0, 0.0, 0.01, 0.01, 0.01]
+        },
+        "Downside 2": {
+          "revenue": [12657, 12404, 12280, 12157, 12035],
+          "op_margin": [0.08, 0.08, 0.09, 0.09, 0.09],
+          "revenue_growth": [-0.02, -0.02, -0.01, -0.01, -0.01]
+        }
+      }
+    },
+    {
+      "name": "Private Sector (Industrial Pumps & Blowers)",
+      "name_jp": "民需部門（産業用ポンプ・送風機）",
+      "driver_type": "backlog",
+      "notes": "Petrochemical plants, power generation, steel mills. Linked to private capex cycle. ~32% of FY25 revenue.",
+      "historical": {
+        "revenue": [null, null, null, 8985],
+        "op": [null, null, null, null]
+      },
+      "projections": {
+        "revenue": [9255, 9625, 10106, 10611, 11142],
+        "op_margin": [0.11, 0.12, 0.12, 0.13, 0.13],
+        "revenue_growth": [0.03, 0.04, 0.05, 0.05, 0.05]
+      },
+      "scenario_projections": {
+        "Upside": {
+          "revenue": [9389, 9905, 10549, 11235, 11965],
+          "op_margin": [0.12, 0.13, 0.13, 0.14, 0.14],
+          "revenue_growth": [0.045, 0.055, 0.065, 0.065, 0.065]
+        },
+        "Management": {
+          "revenue": [9255, 9625, 10106, 10611, 11142],
+          "op_margin": [0.11, 0.12, 0.12, 0.13, 0.13],
+          "revenue_growth": [0.03, 0.04, 0.05, 0.05, 0.05]
+        },
+        "Downside 1": {
+          "revenue": [9075, 9257, 9534, 9820, 10115],
+          "op_margin": [0.10, 0.11, 0.11, 0.12, 0.12],
+          "revenue_growth": [0.01, 0.02, 0.03, 0.03, 0.03]
+        },
+        "Downside 2": {
+          "revenue": [8895, 8895, 8984, 9074, 9165],
+          "op_margin": [0.09, 0.10, 0.10, 0.11, 0.11],
+          "revenue_growth": [-0.01, 0.0, 0.01, 0.01, 0.01]
+        }
+      }
+    },
+    {
+      "name": "Overseas & Desalination (DeROs + Export)",
+      "name_jp": "海外・淡水化部門（DeROs・輸出）",
+      "driver_type": "backlog",
+      "notes": "DeROs seawater desalination, Middle East/India/Africa exports. India plant expansion. Growth driver. ~22% of FY25 revenue.",
+      "historical": {
+        "revenue": [null, null, null, 6177],
+        "op": [null, null, null, null]
+      },
+      "projections": {
+        "revenue": [6671, 7338, 8219, 9452, 10586],
+        "op_margin": [0.12, 0.13, 0.14, 0.15, 0.15],
+        "revenue_growth": [0.08, 0.10, 0.12, 0.15, 0.12]
+      },
+      "scenario_projections": {
+        "Upside": {
+          "revenue": [6764, 7542, 8560, 9972, 11318],
+          "op_margin": [0.13, 0.14, 0.15, 0.16, 0.16],
+          "revenue_growth": [0.095, 0.115, 0.135, 0.165, 0.135]
+        },
+        "Management": {
+          "revenue": [6671, 7338, 8219, 9452, 10586],
+          "op_margin": [0.12, 0.13, 0.14, 0.15, 0.15],
+          "revenue_growth": [0.08, 0.10, 0.12, 0.15, 0.12]
+        },
+        "Downside 1": {
+          "revenue": [6548, 7072, 7779, 8791, 9670],
+          "op_margin": [0.11, 0.12, 0.13, 0.14, 0.14],
+          "revenue_growth": [0.06, 0.08, 0.10, 0.13, 0.10]
+        },
+        "Downside 2": {
+          "revenue": [6424, 6809, 7354, 8163, 8816],
+          "op_margin": [0.10, 0.11, 0.12, 0.13, 0.13],
+          "revenue_growth": [0.04, 0.06, 0.08, 0.11, 0.08]
+        }
+      }
+    }
+  ],
+  "comps": {
+    "primary_multiple": "EV/EBITDA",
+    "use_median": true,
+    "exclude_outliers": true,
+    "peers": [
+      {"ticker": "6363.T", "name": "Torishima Pump Mfg.", "notes": "Anchor. Large pump + desalination"},
+      {"ticker": "6351.T", "name": "Tsurumi Manufacturing", "notes": "Water pump major"},
+      {"ticker": "6237.T", "name": "Iwaki Co.", "notes": "Chemical pump specialist"},
+      {"ticker": "6489.T", "name": "Maezawa Industries", "notes": "Water/sewage equipment"},
+      {"ticker": "6391.T", "name": "Kaji Technology", "notes": "Custom-order industrial machinery"}
+    ]
+  }
+}
