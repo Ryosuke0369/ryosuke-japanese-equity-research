@@ -1,4 +1,87 @@
 {
+  "sotp": {
+    "valuation_date": "April 2026",
+    "thesis": "DMW's consolidated valuation obscures the high-growth overseas desalination business (DeROs). SOTP separates the stable domestic public-sector pump business from the higher-margin, higher-growth overseas segment to reveal hidden value. DeROs achieves world-best energy recovery efficiency of 99.7%, positioning DMW for Middle East / India desalination TAM expansion.",
+    "stock_split_ratio": 1,
+    "consolidated": {
+      "da_total": 650,
+      "net_debt": -4000,
+      "minority_interest": 0,
+      "equity_method_op": 0,
+      "equity_method_multiple": 10.0,
+      "shares_outstanding": 7000
+    },
+    "segments": [
+      {
+        "key": "public",
+        "label": "Public Sector (Pumps & Blowers)",
+        "label_jp": "官需部門（ポンプ・送風機）",
+        "revenue": [10000, 11000, 11500],
+        "op": [900, 1000, 1100],
+        "fiscal_years": ["FY23", "FY24", "FY25E"],
+        "da_allocation_pct": 0.45,
+        "selected_multiple": 7.0,
+        "multiple_source": "Median of domestic water infrastructure peers. Stable but low-growth → discount to industrial pump median.",
+        "peers": [
+          {"name": "Maezawa Industries", "ticker": "6489.T", "ev_ebitda": 7.5, "opm": 0.08, "market_cap_usd_b": 0.25, "note": "Water/sewage equipment. Similar public-sector mix", "excluded": false},
+          {"name": "Tsurumi Manufacturing", "ticker": "6351.T", "ev_ebitda": 8.0, "opm": 0.13, "market_cap_usd_b": 0.78, "note": "Water pump major. Higher margin", "excluded": false},
+          {"name": "Kubota (Water seg.)", "ticker": "6326.T", "ev_ebitda": 10.0, "opm": 0.10, "market_cap_usd_b": 22.0, "note": "Water infrastructure. Much larger - EXCLUDED", "excluded": true}
+        ]
+      },
+      {
+        "key": "private",
+        "label": "Private Sector (Industrial Pumps & Blowers)",
+        "label_jp": "民需部門（産業用ポンプ・送風機）",
+        "revenue": [8500, 9500, 10000],
+        "op": [800, 1000, 1100],
+        "fiscal_years": ["FY23", "FY24", "FY25E"],
+        "da_allocation_pct": 0.30,
+        "selected_multiple": 8.5,
+        "multiple_source": "Median of industrial pump / machinery peers. Cyclical but improving margins.",
+        "peers": [
+          {"name": "Torishima Pump", "ticker": "6363.T", "ev_ebitda": 9.0, "opm": 0.065, "market_cap_usd_b": 0.60, "note": "Anchor comp. Large pump + power plant focus", "excluded": false},
+          {"name": "Kaji Technology", "ticker": "6391.T", "ev_ebitda": 8.5, "opm": 0.10, "market_cap_usd_b": 0.05, "note": "High-pressure gas compressor. Backlog-driven", "excluded": false},
+          {"name": "Iwaki Co.", "ticker": "6237.T", "ev_ebitda": 8.0, "opm": 0.09, "market_cap_usd_b": 0.42, "note": "Chemical pump specialist", "excluded": false}
+        ]
+      },
+      {
+        "key": "overseas",
+        "label": "Overseas & Desalination (DeROs + Export)",
+        "label_jp": "海外・淡水化部門（DeROs・輸出）",
+        "revenue": [5000, 6000, 6500],
+        "op": [500, 700, 800],
+        "fiscal_years": ["FY23", "FY24", "FY25E"],
+        "da_allocation_pct": 0.25,
+        "selected_multiple": 12.0,
+        "multiple_source": "Premium to domestic peers: (1) DeROs world-best energy recovery 99.7%, (2) India factory expansion, (3) Middle East / Africa desalination TAM growth.",
+        "peers": [
+          {"name": "Torishima Pump (Overseas)", "ticker": "6363.T", "ev_ebitda": 9.0, "opm": 0.065, "market_cap_usd_b": 0.60, "note": "Desalination pump peer. Overseas revenue ~40%", "excluded": false},
+          {"name": "Organo Corp", "ticker": "6368.T", "ev_ebitda": 14.0, "opm": 0.11, "market_cap_usd_b": 2.5, "note": "Water treatment equipment. Higher growth premium", "excluded": false},
+          {"name": "Metawater", "ticker": "9551.T", "ev_ebitda": 12.0, "opm": 0.09, "market_cap_usd_b": 0.70, "note": "Water infrastructure. Reference only", "excluded": true}
+        ]
+      }
+    ],
+    "conglomerate_discount": {
+      "base": 0.0,
+      "sensitivity_range": [0.0, 0.05, 0.10, 0.15, 0.20]
+    },
+    "sensitivity": {
+      "primary_segment_key": "overseas",
+      "primary_multiples": [8, 10, 12, 14, 16],
+      "table2": {
+        "row_segment_key": "public",
+        "row_multiples": [5, 6, 7, 8, 9],
+        "col_segment_key": "private",
+        "col_multiples": [6, 7, 8, 9, 10]
+      }
+    },
+    "dcf_crosscheck": {
+      "pgm_fair_value": null,
+      "exit_fair_value": null,
+      "comps_ev_ebitda": null,
+      "comps_per": null
+    }
+  },
   "company_name": "DMW Corporation",
   "ticker": "6365.T",
   "exchange": "TSE Prime",
