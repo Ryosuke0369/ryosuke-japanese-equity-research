@@ -76,10 +76,10 @@
       }
     },
     "dcf_crosscheck": {
-      "pgm_fair_value": null,
-      "exit_fair_value": null,
-      "comps_ev_ebitda": null,
-      "comps_per": null
+      "pgm_fair_value": 7391,
+      "exit_fair_value": 8846,
+      "comps_ev_ebitda": 8200,
+      "comps_per": 7496
     }
   },
   "company_name": "DMW Corporation",
