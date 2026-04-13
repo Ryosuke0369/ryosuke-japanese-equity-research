@@ -34,11 +34,12 @@
       215
     ]
   },
-  "tax_rate": 0.305,
-  "risk_free": 0.022,
+  "tax_rate": 0.3062,
+  "risk_free": 0.023,
   "cost_of_debt_at": 0.005,
-  "terminal_growth": 0.015,
+  "terminal_growth": 0.02,
   "exit_multiple": 10.0,
+  "size_premium": 0.04,
   "ltm_revenue": 24599,
   "projection_start_fy": "FY2026(E)",
   "stub_fraction": 0.25,
@@ -375,5 +376,94 @@
         ]
       }
     }
-  ]
+  ],
+
+  "sotp": {
+    "valuation_date": "April 2026",
+    "thesis": "Core Corporation's consolidated valuation obscures the high-growth defense/space tech business (GNSS anti-spoofing, QZSS authentication) within the mature IT services envelope. SOTP separates the premium Future Society Solutions segment from the stable but low-growth Customer Business Integration to reveal the embedded defense tech option value.",
+    "recommendation": "See Sensitivity",
+    "data_source": "FY2025/3 有価証券報告書 + FY2026/3 3Q決算補足説明資料. Segments align with company-reported structure.",
+    "stock_split_ratio": 1,
+    "consolidated": {
+      "da_total": 215,
+      "net_debt": -3000,
+      "net_debt_note": "Net cash position. Negative = net cash. 推計値、正確な値はEDINETから取得。",
+      "minority_interest": 0,
+      "equity_method_op": 0,
+      "equity_method_multiple": 10.0,
+      "shares_outstanding": 11600,
+      "shares_note": "発行済株式数 約11,600千株。正確な値はEDINETから自動取得。自己株式控除後の完全希薄化ベース。"
+    },
+    "segments": [
+      {
+        "key": "future_society",
+        "label": "Future Society Solutions (Defense, Space & GNSS)",
+        "label_jp": "未来社会ソリューション（防衛・宇宙・GNSS）",
+        "revenue": [4771, 4570, 5050],
+        "op": [675, 461, 752],
+        "fiscal_years": ["FY23", "FY24", "FY25E"],
+        "da_allocation_pct": 0.30,
+        "selected_multiple": 16.0,
+        "multiple_source": "Premium for defense/space tech with 4-layer moat (proprietary GNSS receiver + QZSS auth + security clearance + space heritage). Comparable to domestic defense IT premia. Limited pure-play comps; multiple reflects scarcity value of JASDF-grade GNSS anti-spoofing technology.",
+        "peers": [
+          {"name": "Systena", "ticker": "2317.T", "ev_ebitda": 15.0, "opm": 0.17, "note": "IT services with defense/auto exposure. Closest domestic comp.", "excluded": false},
+          {"name": "NEC (Defense seg, ref)", "ticker": "6701.T", "ev_ebitda": 12.0, "opm": 0.08, "note": "Defense electronics major. Reference only, much larger scale.", "excluded": true},
+          {"name": "Fujitsu (Defense seg, ref)", "ticker": "6702.T", "ev_ebitda": 14.0, "opm": 0.10, "note": "Defense IT systems. Reference only.", "excluded": true}
+        ]
+      },
+      {
+        "key": "industrial_tech",
+        "label": "Industrial Technology Solutions (AX/DX, Manufacturing IT)",
+        "label_jp": "産業技術ソリューション（AX・DX・製造業IT）",
+        "revenue": [10546, 12035, 13950],
+        "op": [1641, 1884, 2400],
+        "fiscal_years": ["FY23", "FY24", "FY25E"],
+        "da_allocation_pct": 0.40,
+        "selected_multiple": 13.0,
+        "multiple_source": "AX transformation driving Layer 2 revenue mix from 25.9% to 33.3%. Growing segment with improving margins. Premium to generic SI peers for structural margin improvement story.",
+        "peers": [
+          {"name": "Systena", "ticker": "2317.T", "ev_ebitda": 15.0, "opm": 0.17, "note": "Strong margin IT services.", "excluded": false},
+          {"name": "Cresco", "ticker": "4674.T", "ev_ebitda": 11.0, "opm": 0.11, "note": "Mid-tier IT services. Manufacturing sector exposure.", "excluded": false},
+          {"name": "DTS", "ticker": "9682.T", "ev_ebitda": 12.0, "opm": 0.12, "note": "IT services. Similar scale.", "excluded": false}
+        ]
+      },
+      {
+        "key": "customer_business",
+        "label": "Customer Business Integration (SI & Operations)",
+        "label_jp": "顧客業務インテグレーション（SI・運用保守）",
+        "revenue": [8680, 7993, 8000],
+        "op": [823, 829, 900],
+        "fiscal_years": ["FY23", "FY24", "FY25E"],
+        "da_allocation_pct": 0.30,
+        "selected_multiple": 8.5,
+        "multiple_source": "Mature SI/operations segment with low single-digit growth. Discount to sector median for limited growth visibility. Floor set by recurring maintenance revenue base.",
+        "peers": [
+          {"name": "SRA Holdings", "ticker": "3817.T", "ev_ebitda": 10.0, "opm": 0.15, "note": "IT services with stable operations focus.", "excluded": false},
+          {"name": "CEC", "ticker": "9692.T", "ev_ebitda": 9.5, "opm": 0.11, "note": "Mid-tier SI. Comparable growth profile.", "excluded": false},
+          {"name": "Cresco", "ticker": "4674.T", "ev_ebitda": 11.0, "opm": 0.11, "note": "SI peer.", "excluded": false}
+        ]
+      }
+    ],
+    "conglomerate_discount": {
+      "base": 0.05,
+      "note": "5% discount. Lower than typical because Core reports 3 segments with reasonable disclosure. Discount reflects small-cap liquidity risk only.",
+      "sensitivity_range": [0.0, 0.05, 0.10, 0.15, 0.20]
+    },
+    "sensitivity": {
+      "primary_segment_key": "future_society",
+      "primary_multiples": [10, 13, 16, 19, 22],
+      "table2": {
+        "row_segment_key": "industrial_tech",
+        "row_multiples": [9, 11, 13, 15, 17],
+        "col_segment_key": "customer_business",
+        "col_multiples": [6, 7, 8.5, 10, 11]
+      }
+    },
+    "dcf_crosscheck": {
+      "pgm_fair_value": null,
+      "exit_fair_value": null,
+      "comps_ev_ebitda": null,
+      "comps_per": null
+    }
+  }
 }
