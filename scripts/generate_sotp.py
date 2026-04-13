@@ -13,7 +13,55 @@ Requires: openpyxl
 import sys
 import json
 import os
+import glob
 import subprocess
+
+
+def find_latest_dcf_model(project_root, ticker):
+    """Find the latest DCF model file for a ticker in models/ and output/ dirs."""
+    candidates = []
+    for directory in ["models", "output"]:
+        pattern = os.path.join(project_root, directory, f"{ticker}_DCF_Model_*.xlsx")
+        candidates.extend(glob.glob(pattern))
+    if not candidates:
+        return None
+    # Sort by filename (date suffix) descending to get latest
+    candidates.sort(reverse=True)
+    return candidates[0]
+
+
+def read_dcf_crosscheck(dcf_path):
+    """Read fair values from DCF model's Executive Summary sheet.
+
+    Uses win32com to open Excel and evaluate formulas, then reads:
+      Row 16 C = DCF Perpetuity Growth
+      Row 17 C = DCF Exit Multiple
+      Row 18 C = Comps EV/EBITDA
+      Row 19 C = Comps PER
+    Falls back gracefully if Excel is unavailable.
+    """
+    result = {}
+    try:
+        import win32com.client
+        excel = win32com.client.Dispatch("Excel.Application")
+        excel.Visible = False
+        excel.DisplayAlerts = False
+        wb = excel.Workbooks.Open(os.path.abspath(dcf_path), ReadOnly=True)
+        wb.Application.CalculateFull()
+        ws = wb.Sheets("Executive Summary")
+        result["pgm_fair_value"] = ws.Cells(16, 3).Value
+        result["exit_fair_value"] = ws.Cells(17, 3).Value
+        result["comps_ev_ebitda"] = ws.Cells(18, 3).Value
+        result["comps_per"] = ws.Cells(19, 3).Value
+        wb.Close(SaveChanges=False)
+        excel.Quit()
+        # Convert float values to int for clean display
+        for k, v in result.items():
+            if isinstance(v, float):
+                result[k] = int(round(v))
+    except Exception as e:
+        print(f"  WARNING: Could not read DCF cross-check values: {e}")
+    return result
 
 
 def main():
@@ -53,6 +101,21 @@ def main():
     if "net_debt" in overrides:
         sotp["consolidated"]["net_debt"] = overrides["net_debt"]
         print(f"  Net Debt: {overrides['net_debt']:,} (from overrides.net_debt)")
+
+    # Read cross-check values from latest DCF model
+    dcf_path = find_latest_dcf_model(project_root, ticker)
+    if dcf_path:
+        print(f"  DCF model found: {os.path.basename(dcf_path)}")
+        xcheck = read_dcf_crosscheck(dcf_path)
+        # Only inject non-None values
+        xcheck_clean = {k: v for k, v in xcheck.items() if v is not None}
+        if xcheck_clean:
+            sotp["dcf_crosscheck"] = xcheck_clean
+            print(f"  Cross-check values: {list(xcheck_clean.keys())}")
+        else:
+            print("  WARNING: DCF model has no cached values (formulas not yet calculated)")
+    else:
+        print(f"  No DCF model found for {ticker}, cross-check will be empty")
 
     output_path = os.path.join(project_root, "models", f"{ticker}_SOTP_Model.xlsx")
 
