@@ -538,6 +538,14 @@ def main():
         if config.get("nwc_method") == "revenue_pct":
             print(f"  NWC Method: revenue_pct (NWC % of Revenue) - DSO/DIH/DPO will not be used")
 
+        # When segments define Revenue/EBIT, remove cogs_pct so template uses
+        # back-calculation: COGS = Revenue - SGA - EBIT, EBIT from Segment Analysis
+        if config.get("segments"):
+            for sn in config.get("scenarios", {}):
+                config["scenarios"][sn].pop("cogs_pct", None)
+            config.pop("cogs_pct", None)
+            print("  [Segments] Removed cogs_pct - COGS will be back-calculated from segment EBIT")
+
     # Guard: re-calculate core_ebitda if overrides set it to None
     if config.get("core_ebitda") is None:
         _oi = config.get("hist_operating_income", [])
@@ -553,6 +561,13 @@ def main():
         ticker_str, config["current_price"], config["shares_outstanding"]
     )
     config["beta"] = live_beta  # raw value; template normalizes to [0.6, 1.5]
+
+    # Override shares from overrides["shares"] (single source of truth)
+    if _overrides and "shares" in _overrides:
+        _fd = _overrides["shares"].get("fully_diluted_shares")
+        if _fd:
+            config["shares_outstanding"] = _fd
+            print(f"  Shares override: {_fd:,} (from overrides.shares.fully_diluted_shares)")
 
     # Auto-calculate D/E ratio from net_debt and market cap
     try:

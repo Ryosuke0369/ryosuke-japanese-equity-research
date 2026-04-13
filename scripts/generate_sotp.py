@@ -38,6 +38,22 @@ def main():
         sys.exit(0)
 
     sotp = overrides["sotp"]
+
+    # Inject shares from single source of truth (overrides["shares"])
+    if "shares" in overrides:
+        fd_shares = overrides["shares"]["fully_diluted_shares"]
+        fd_thousands = round(fd_shares / 1000)
+        orig = sotp.get("consolidated", {}).get("shares_outstanding")
+        if orig and abs(orig - fd_thousands) > 1:
+            print(f"  WARNING: shares_outstanding corrected: {orig} -> {fd_thousands} (thousands)")
+        sotp["consolidated"]["shares_outstanding"] = fd_thousands
+        print(f"  Shares: {fd_thousands:,} thousand (from overrides.shares.fully_diluted_shares={fd_shares:,})")
+
+    # Inject net_debt from top-level override if present
+    if "net_debt" in overrides:
+        sotp["consolidated"]["net_debt"] = overrides["net_debt"]
+        print(f"  Net Debt: {overrides['net_debt']:,} (from overrides.net_debt)")
+
     output_path = os.path.join(project_root, "models", f"{ticker}_SOTP_Model.xlsx")
 
     # Import and run template engine

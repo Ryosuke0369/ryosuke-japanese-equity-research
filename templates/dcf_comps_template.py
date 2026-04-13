@@ -1998,6 +1998,21 @@ def generate_dcf_workbook(config, output_path=None):
         # Net Debt = Debt - Cash (negative = net cash)
         set_cell(ws2, 28, col, f"={cl}27-{cl}26", font=BLACK_FONT, fmt=FMT_YEN)
 
+    # ── Compute NWC Change row (needed before DCF Model sheet) ──
+    _nwc_method = C.get("nwc_method", "days")
+    if _nwc_method == "itemized":
+        _nwc_items = C.get("nwc_items", [])
+        _n_total = len(_nwc_items)
+        _n_assets = sum(1 for it in _nwc_items if it["side"] == "asset")
+        _n_liabs = sum(1 for it in _nwc_items if it["side"] == "liability")
+        _itm_cogs = 5 + _n_total + 1 + 2  # ITM_PNL_HDR + 2
+        _itm_ca_total = _itm_cogs + 2 + 1 + _n_assets  # after blank, WC header, assets
+        _itm_cl_total = _itm_ca_total + 1 + _n_liabs
+        _itm_nwc = _itm_cl_total + 2 + 1  # blank, header, NWC
+        actual_nwc_chg_row = _itm_nwc + 1
+    else:
+        actual_nwc_chg_row = NWC_R_CHG_NWC  # 19
+
     # =====================================================================
     # SHEET 3: DCF Model (V3 — Full Waterfall)
     # =====================================================================
@@ -2284,7 +2299,7 @@ def generate_dcf_workbook(config, output_path=None):
         # Change in NWC (linked from NWC Schedule; NWC col = DCF col + 1)
         nwc_col_letter = col_letter(col + 1)
         set_cell(ws3, R_CHG_NWC, col,
-                 f"='NWC Schedule'!{nwc_col_letter}{NWC_R_CHG_NWC}",
+                 f"='NWC Schedule'!{nwc_col_letter}{actual_nwc_chg_row}",
                  font=BLACK_FONT, fmt=FMT_YEN)
         # UFCF = NOPAT + D&A - Capex - Change in NWC
         set_cell(ws3, R_UFCF, col, f"={cl}{R_NOPAT}+{cl}{R_DA}-{cl}{R_CAPEX}-{cl}{R_CHG_NWC}", font=BLACK_FONT, fmt=FMT_YEN,
@@ -2563,6 +2578,230 @@ def generate_dcf_workbook(config, output_path=None):
                 for yr in range(proj_years):
                     set_cell(ws_nwc, r, 4 + yr, scen_data[yr],
                              font=BLUE_FONT, fmt=FMT_PCT, border=INPUT_BORDER)
+
+    elif nwc_method == "itemized":
+        # ================================================================
+        # ITEMIZED METHOD — 7+ individual BS items with turnover days
+        # ================================================================
+        nwc_items = C.get("nwc_items", [])
+        asset_items = [it for it in nwc_items if it["side"] == "asset"]
+        liab_items = [it for it in nwc_items if it["side"] == "liability"]
+        n_total = len(nwc_items)
+        n_assets = len(asset_items)
+        n_liabs = len(liab_items)
+
+        # ── Compute dynamic row positions ──
+        ITM_DRV_START = 5
+        ITM_PNL_HDR = ITM_DRV_START + n_total + 1
+        ITM_REV = ITM_PNL_HDR + 1
+        ITM_COGS = ITM_PNL_HDR + 2
+        ITM_WC_HDR = ITM_COGS + 2
+        ITM_FIRST_ASSET = ITM_WC_HDR + 1
+        ITM_CA_TOTAL = ITM_FIRST_ASSET + n_assets
+        ITM_FIRST_LIAB = ITM_CA_TOTAL + 1
+        ITM_CL_TOTAL = ITM_FIRST_LIAB + n_liabs
+        ITM_NWC_HDR = ITM_CL_TOTAL + 2
+        ITM_NWC = ITM_NWC_HDR + 1
+        ITM_CHG = ITM_NWC + 1
+        actual_nwc_chg_row = ITM_CHG
+
+        # Map each item to its driver row and value row
+        drv_rows = {}  # scenario_key -> driver row
+        val_rows = {}  # scenario_key -> value row
+        for i, item in enumerate(nwc_items):
+            drv_rows[item["scenario_key"]] = ITM_DRV_START + i
+
+        asset_val_rows = []
+        for i in range(n_assets):
+            r = ITM_FIRST_ASSET + i
+            asset_val_rows.append(r)
+            val_rows[asset_items[i]["scenario_key"]] = r
+
+        liab_val_rows = []
+        for i in range(n_liabs):
+            r = ITM_FIRST_LIAB + i
+            liab_val_rows.append(r)
+            val_rows[liab_items[i]["scenario_key"]] = r
+
+        # ── Scenario block row positions ──
+        ITM_SCEN_SEC = ITM_CHG + 3
+        ITM_SCEN_YEARS = ITM_SCEN_SEC + 1
+        scen_block_start = {}
+        cur_blk = ITM_SCEN_YEARS + 1
+        for item in nwc_items:
+            scen_block_start[item["scenario_key"]] = cur_blk
+            cur_blk += 7  # header(1) + 5 scenarios + blank(1)
+
+        def itm_choose(block_start, cl):
+            refs = [f"{cl}{block_start + 1 + s}" for s in range(NUM_SCENARIOS)]
+            return f"=CHOOSE('DCF Model'!$D$27,{','.join(refs)})"
+
+        # ── Driver section header ──
+        c = section_title(ws_nwc, ITM_DRV_START - 1, 2, "Working Capital Drivers (Days)")
+        c.fill = LIGHT_FILL
+        for col_idx in range(3, 3 + proj_years + 1):
+            ws_nwc.cell(row=ITM_DRV_START - 1, column=col_idx).fill = LIGHT_FILL
+
+        # ── Driver rows (turnover days) ──
+        for i, item in enumerate(nwc_items):
+            r = ITM_DRV_START + i
+            set_cell(ws_nwc, r, 2, item["label"] + " Days", font=BOLD_FONT)
+            denom_row = ITM_REV if item["denom"] == "revenue" else ITM_COGS
+            # Base Year: = base_value / denominator * 365
+            set_cell(ws_nwc, r, 3,
+                     f"=C{val_rows[item['scenario_key']]}/C{denom_row}*365",
+                     font=BLACK_FONT, fmt=FMT_DAYS)
+            # Projected: CHOOSE from scenario matrix
+            for yr in range(proj_years):
+                nwc_col = 4 + yr
+                cl = col_letter(nwc_col)
+                set_cell(ws_nwc, r, nwc_col,
+                         itm_choose(scen_block_start[item["scenario_key"]], cl),
+                         font=BLACK_FONT, fmt=FMT_DAYS)
+
+        # ── P&L Reference section ──
+        c = section_title(ws_nwc, ITM_PNL_HDR, 2, "P&L Reference (JPY mn)")
+        c.fill = LIGHT_FILL
+        for col_idx in range(3, 3 + proj_years + 1):
+            ws_nwc.cell(row=ITM_PNL_HDR, column=col_idx).fill = LIGHT_FILL
+
+        set_cell(ws_nwc, ITM_REV, 2, "Revenue", font=BOLD_FONT)
+        set_cell(ws_nwc, ITM_COGS, 2, "COGS", font=BOLD_FONT)
+        set_cell(ws_nwc, ITM_REV, 3, C["base_year_revenue"], font=BLUE_FONT, fmt=FMT_YEN)
+        set_cell(ws_nwc, ITM_COGS, 3, C["base_year_cogs"], font=BLUE_FONT, fmt=FMT_YEN)
+        for yr in range(proj_years):
+            nwc_col = 4 + yr
+            dcf_cl = col_letter(3 + yr)
+            set_cell(ws_nwc, ITM_REV, nwc_col,
+                     f"='DCF Model'!{dcf_cl}{R_REVENUE}", font=BLACK_FONT, fmt=FMT_YEN)
+            set_cell(ws_nwc, ITM_COGS, nwc_col,
+                     f"='DCF Model'!{dcf_cl}{R_COGS}", font=BLACK_FONT, fmt=FMT_YEN)
+
+        # ── Working Capital Items section ──
+        c = section_title(ws_nwc, ITM_WC_HDR, 2, "Working Capital Items (JPY mn)")
+        c.fill = LIGHT_FILL
+        for col_idx in range(3, 3 + proj_years + 1):
+            ws_nwc.cell(row=ITM_WC_HDR, column=col_idx).fill = LIGHT_FILL
+
+        # Asset items
+        for i, item in enumerate(asset_items):
+            r = asset_val_rows[i]
+            drv_r = drv_rows[item["scenario_key"]]
+            denom_row = ITM_REV if item["denom"] == "revenue" else ITM_COGS
+            set_cell(ws_nwc, r, 2, item["label"], font=BOLD_FONT)
+            set_cell(ws_nwc, r, 3, item["base_value"], font=BLUE_FONT, fmt=FMT_YEN)
+            for yr in range(proj_years):
+                nwc_col = 4 + yr
+                cl = col_letter(nwc_col)
+                set_cell(ws_nwc, r, nwc_col,
+                         f"={cl}{denom_row}*{cl}{drv_r}/365",
+                         font=BLACK_FONT, fmt=FMT_YEN)
+
+        # Total Current Assets
+        set_cell(ws_nwc, ITM_CA_TOTAL, 2, "Total Current Assets", font=BOLD_FONT)
+        first_a = asset_val_rows[0]
+        last_a = asset_val_rows[-1]
+        for ci in range(3, 3 + proj_years + 1):
+            cl = col_letter(ci)
+            set_cell(ws_nwc, ITM_CA_TOTAL, ci,
+                     f"=SUM({cl}{first_a}:{cl}{last_a})",
+                     font=BLACK_FONT, fmt=FMT_YEN, border=SUBTOTAL_BORDER)
+
+        # Liability items
+        for i, item in enumerate(liab_items):
+            r = liab_val_rows[i]
+            drv_r = drv_rows[item["scenario_key"]]
+            denom_row = ITM_REV if item["denom"] == "revenue" else ITM_COGS
+            set_cell(ws_nwc, r, 2, item["label"], font=BOLD_FONT)
+            set_cell(ws_nwc, r, 3, item["base_value"], font=BLUE_FONT, fmt=FMT_YEN)
+            for yr in range(proj_years):
+                nwc_col = 4 + yr
+                cl = col_letter(nwc_col)
+                set_cell(ws_nwc, r, nwc_col,
+                         f"={cl}{denom_row}*{cl}{drv_r}/365",
+                         font=BLACK_FONT, fmt=FMT_YEN)
+
+        # Total Current Liabilities
+        set_cell(ws_nwc, ITM_CL_TOTAL, 2, "Total Current Liabilities", font=BOLD_FONT)
+        first_l = liab_val_rows[0]
+        last_l = liab_val_rows[-1]
+        for ci in range(3, 3 + proj_years + 1):
+            cl = col_letter(ci)
+            set_cell(ws_nwc, ITM_CL_TOTAL, ci,
+                     f"=SUM({cl}{first_l}:{cl}{last_l})",
+                     font=BLACK_FONT, fmt=FMT_YEN, border=SUBTOTAL_BORDER)
+
+        # ── NWC Summary ──
+        c = section_title(ws_nwc, ITM_NWC_HDR, 2, "Net Working Capital (JPY mn)")
+        c.fill = LIGHT_GREEN
+        for col_idx in range(3, 3 + proj_years + 1):
+            ws_nwc.cell(row=ITM_NWC_HDR, column=col_idx).fill = LIGHT_GREEN
+
+        set_cell(ws_nwc, ITM_NWC, 2, "Net Working Capital", font=BOLD_FONT)
+        set_cell(ws_nwc, ITM_CHG, 2, "Change in NWC", font=BOLD_FONT)
+
+        # Base Year NWC = CA - CL
+        set_cell(ws_nwc, ITM_NWC, 3,
+                 f"=C{ITM_CA_TOTAL}-C{ITM_CL_TOTAL}",
+                 font=BLACK_FONT, fmt=FMT_YEN, border=SUBTOTAL_BORDER, fill=SUBTOTAL_FILL)
+        set_cell(ws_nwc, ITM_CHG, 3, "n/a", font=BLACK_FONT)
+
+        # Projected NWC & Change
+        for yr in range(proj_years):
+            nwc_col = 4 + yr
+            cl = col_letter(nwc_col)
+            prev_cl = col_letter(nwc_col - 1)
+            set_cell(ws_nwc, ITM_NWC, nwc_col,
+                     f"={cl}{ITM_CA_TOTAL}-{cl}{ITM_CL_TOTAL}",
+                     font=BLACK_FONT, fmt=FMT_YEN, border=SUBTOTAL_BORDER, fill=SUBTOTAL_FILL)
+            set_cell(ws_nwc, ITM_CHG, nwc_col,
+                     f"={cl}{ITM_NWC}-{prev_cl}{ITM_NWC}",
+                     font=BLACK_FONT, fmt=FMT_YEN, border=TOP_BOTTOM)
+
+        # ── Apply borders to all data rows ──
+        _itm_data_rows = (
+            list(range(ITM_DRV_START, ITM_DRV_START + n_total))
+            + [ITM_REV, ITM_COGS]
+            + asset_val_rows + [ITM_CA_TOTAL]
+            + liab_val_rows + [ITM_CL_TOTAL]
+            + [ITM_NWC, ITM_CHG]
+        )
+        for _r in _itm_data_rows:
+            for _ci in range(2, 3 + proj_years + 1):
+                _cell = ws_nwc.cell(row=_r, column=_ci)
+                _has_border = (_cell.border and any([
+                    getattr(_cell.border.top, 'style', None),
+                    getattr(_cell.border.bottom, 'style', None),
+                    getattr(_cell.border.left, 'style', None),
+                    getattr(_cell.border.right, 'style', None),
+                ]))
+                if not _has_border:
+                    _cell.border = NWC_DATA_BORDER
+
+        # ── Scenario Input Matrix ──
+        c = section_title(ws_nwc, ITM_SCEN_SEC, 2,
+                          "Scenario Input Matrix (Working Capital Days)")
+        c.fill = LIGHT_GREEN
+        for col_idx in range(3, 3 + proj_years + 1):
+            ws_nwc.cell(row=ITM_SCEN_SEC, column=col_idx).fill = LIGHT_GREEN
+
+        for yr in range(proj_years):
+            _lbl = nwc_proj_labels[yr] if yr < len(nwc_proj_labels) else f"Year {yr + 1}"
+            set_cell(ws_nwc, ITM_SCEN_YEARS, 4 + yr, _lbl,
+                     font=HEADER_FONT, fill=HEADER_FILL,
+                     alignment=Alignment(horizontal="center"))
+
+        for item in nwc_items:
+            blk = scen_block_start[item["scenario_key"]]
+            section_title(ws_nwc, blk, 2, item["label"] + " Days")
+            for s, scen_name in enumerate(SCENARIO_NAMES):
+                r = blk + 1 + s
+                set_cell(ws_nwc, r, 2, scen_name, font=BOLD_FONT)
+                scen_data = config["scenarios"][scen_name].get(
+                    item["scenario_key"], [0] * proj_years)
+                for yr in range(proj_years):
+                    set_cell(ws_nwc, r, 4 + yr, scen_data[yr],
+                             font=BLUE_FONT, fmt=FMT_DAYS, border=INPUT_BORDER)
 
     else:
         # ================================================================

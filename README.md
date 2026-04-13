@@ -1,18 +1,26 @@
-# Japanese Equity Research — Ryosuke Sato
+# Japanese Equity Research — Automated DCF / SOTP Pipeline
 
-Independent equity research on Japanese-listed companies, targeting foreign institutional investors who lack access to Japanese-language securities filings.
+Python automation pipeline for generating institutional-quality equity research models for Japanese listed companies. All primary data is sourced from original Japanese-language regulatory documents (有価証券報告書, 決算短信) via EDINET XBRL.
 
-## What This Is
+## Features
+- **DCF Model**: 5-scenario (Bull/Upside/Base/Downside1/Downside2) with PGM + Exit Multiple
+- **SOTP Model**: Segment-level EV/EBITDA valuation with Peer Comps
+- **NWC**: 7-item itemized buildup method (not percentage-of-revenue)
+- **Comps**: Automated peer comparable analysis
+- **Sensitivity**: WACC × Terminal Growth + WACC × Exit Multiple matrices
+- **Cross-validation**: Automated shares outstanding consistency check between DCF and SOTP
 
-A Python-automated equity research pipeline that generates institutional-quality DCF and comparable company analysis from EDINET XBRL filings. All primary data is sourced from original Japanese-language regulatory documents (有価証券報告書, 決算短信).
+## Current Coverage
 
-## Active Coverage
+| Ticker | Company | SOTP Fair Value | Rating | Report |
+|--------|---------|----------------|--------|--------|
+| 6365.T | DMW Corporation (電業社機械製作所) | ¥9,366 | BUY | — |
+| 2359.T | Core Corporation | ¥3,386 | BUY | [PDF](reports/Core_2359_Equity_Research_v2.pdf) |
 
-| Company | Ticker | Recommendation | Target Price | Report |
-|---------|--------|---------------|-------------|--------|
-| **Core Corporation** | 2359.T | **BUY** | ¥3,386 (+46.9%) | [PDF](reports/Core_2359_Equity_Research_v2.pdf) |
-
-**Upcoming catalyst:** April 28, 2026 — FY2026/3 full-year earnings. Our estimate: OP ¥4,050M vs guidance ¥3,500M (+15.7% beat). EPS ¥201 vs consensus ~¥174.
+## Tech Stack
+- Python 3.x (openpyxl, yfinance, requests)
+- Claude Code for pipeline orchestration
+- Data sources: EDINET, IR Bank, Yahoo Finance Japan
 
 ## Pipeline
 
@@ -56,21 +64,17 @@ EDINET XBRL → edinet_fetcher.py → edinet_parser.py → generate_dcf.py → 8
 └── notes/            # Weekly coverage notes
 ```
 
-## Quick Start
+## Usage
 
 ```bash
-# 1. Fetch EDINET XBRL data
-python scripts/edinet_fetcher.py 2359
+# 1. Edit overrides JSON with assumptions
+# data/overrides/{ticker}_overrides.json
 
-# 2. Place comps CSV
-# data/comps/2359.T_comps_.csv
+# 2. Generate DCF model
+python scripts/generate_dcf.py {ticker} --output-dir models --force
 
-# 3. Create overrides JSON
-# data/overrides/2359_overrides.json
-# IMPORTANT: Always set de_ratio, capex_pct, da_pct manually
-
-# 4. Generate Excel model
-python scripts/generate_dcf.py 2359
+# 3. Generate SOTP model (if sotp section exists in overrides)
+python scripts/generate_sotp.py {ticker}
 ```
 
 ## Key Design Decisions

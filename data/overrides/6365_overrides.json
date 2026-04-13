@@ -5,11 +5,11 @@
     "stock_split_ratio": 1,
     "consolidated": {
       "da_total": 650,
-      "net_debt": -4000,
+      "net_debt": -6515,
       "minority_interest": 0,
       "equity_method_op": 0,
       "equity_method_multiple": 10.0,
-      "shares_outstanding": 7000
+      "shares_outstanding": 4145
     },
     "segments": [
       {
@@ -76,12 +76,19 @@
       }
     },
     "dcf_crosscheck": {
-      "pgm_fair_value": 7391,
-      "exit_fair_value": 8846,
+      "pgm_fair_value": 6709,
+      "exit_fair_value": 10283,
       "comps_ev_ebitda": 8200,
       "comps_per": 7496
     }
   },
+  "shares": {
+    "shares_issued": 4776900,
+    "treasury_shares": 632344,
+    "fully_diluted_shares": 4144556,
+    "unit": "shares"
+  },
+  "net_debt": -6515,
   "company_name": "DMW Corporation",
   "ticker": "6365.T",
   "exchange": "TSE Prime",
@@ -98,44 +105,83 @@
     "3. FX (yen appreciation) compresses overseas margins given JPY-denominated cost base",
     "4. Domestic public-investment cuts would directly hit ~46% of revenue from government tenders"
   ],
-  "risk_free": 0.01,
+  "risk_free": 0.023,
   "erp": 0.06,
-  "beta": 0.85,
+  "beta": 0.95,
   "size_premium": 0.02,
   "cost_of_debt_at": 0.008,
-  "tax_rate": 0.30,
+  "tax_rate": 0.3062,
   "terminal_growth": 0.015,
-  "exit_multiple": 8.0,
+  "exit_multiple": 8.5,
   "primary_multiple": "EV/EBITDA",
-  "nwc_method": "revenue_pct",
-  "base_year_ar": 8910,
-  "base_year_inv": 5000,
-  "base_year_ap": 3961,
-  "base_year_trade_receivables": 8910,
-  "base_year_trade_payables": 3961,
-  "base_year_nwc": 9949,
+  "nwc_method": "itemized",
+  "nwc_items": [
+    {"label": "Trade Receivables", "base_value": 8637, "scenario_key": "trade_recv_days", "side": "asset", "denom": "revenue"},
+    {"label": "Contract Assets", "base_value": 14251, "scenario_key": "contract_asset_days", "side": "asset", "denom": "revenue"},
+    {"label": "Inventory", "base_value": 196, "scenario_key": "inv_days", "side": "asset", "denom": "cogs"},
+    {"label": "Other Current Assets", "base_value": 741, "scenario_key": "other_ca_days", "side": "asset", "denom": "revenue"}  ,
+    {"label": "Trade Payables", "base_value": 7265, "scenario_key": "trade_payables_days", "side": "liability", "denom": "cogs"},
+    {"label": "Contract Liabilities", "base_value": 604, "scenario_key": "contract_liab_days", "side": "liability", "denom": "revenue"},
+    {"label": "Other Current Liabilities", "base_value": 2576, "scenario_key": "other_cl_days", "side": "liability", "denom": "revenue"}
+  ],
+  "base_year_ar": 8637,
+  "base_year_inv": 196,
+  "base_year_ap": 7265,
+  "base_year_trade_receivables": 8637,
+  "base_year_trade_payables": 7265,
+  "base_year_nwc": 13380,
   "capex_pct": 0.03,
   "da_pct": 0.025,
   "scenarios": {
     "Base": {
-      "sga_pct": [0.16, 0.16, 0.15, 0.15, 0.15],
-      "nwc_pct": [0.30, 0.30, 0.30, 0.30, 0.30]
+      "sga_pct": [0.16, 0.16, 0.16, 0.16, 0.16],
+      "trade_recv_days": [112, 112, 112, 112, 112],
+      "contract_asset_days": [185, 185, 185, 185, 185],
+      "inv_days": [3, 3, 3, 3, 3],
+      "other_ca_days": [10, 10, 10, 10, 10],
+      "trade_payables_days": [128, 128, 128, 128, 128],
+      "contract_liab_days": [8, 8, 8, 8, 8],
+      "other_cl_days": [33, 33, 33, 33, 33]
     },
     "Upside": {
       "sga_pct": [0.15, 0.15, 0.14, 0.14, 0.14],
-      "nwc_pct": [0.28, 0.28, 0.28, 0.28, 0.28]
+      "trade_recv_days": [108, 105, 105, 102, 100],
+      "contract_asset_days": [180, 175, 170, 165, 160],
+      "inv_days": [3, 3, 3, 3, 3],
+      "other_ca_days": [9, 9, 9, 9, 9],
+      "trade_payables_days": [128, 128, 128, 128, 128],
+      "contract_liab_days": [10, 10, 10, 10, 10],
+      "other_cl_days": [33, 33, 33, 33, 33]
     },
     "Management": {
-      "sga_pct": [0.16, 0.16, 0.15, 0.15, 0.15],
-      "nwc_pct": [0.30, 0.30, 0.30, 0.30, 0.30]
+      "sga_pct": [0.16, 0.16, 0.16, 0.16, 0.16],
+      "trade_recv_days": [112, 112, 112, 112, 112],
+      "contract_asset_days": [185, 185, 185, 185, 185],
+      "inv_days": [3, 3, 3, 3, 3],
+      "other_ca_days": [10, 10, 10, 10, 10],
+      "trade_payables_days": [128, 128, 128, 128, 128],
+      "contract_liab_days": [8, 8, 8, 8, 8],
+      "other_cl_days": [33, 33, 33, 33, 33]
     },
     "Downside 1": {
       "sga_pct": [0.17, 0.17, 0.16, 0.16, 0.16],
-      "nwc_pct": [0.32, 0.32, 0.32, 0.32, 0.32]
+      "trade_recv_days": [115, 118, 120, 120, 120],
+      "contract_asset_days": [190, 195, 200, 200, 200],
+      "inv_days": [4, 4, 4, 4, 4],
+      "other_ca_days": [11, 11, 11, 11, 11],
+      "trade_payables_days": [125, 123, 120, 120, 120],
+      "contract_liab_days": [7, 6, 6, 6, 6],
+      "other_cl_days": [31, 30, 30, 30, 30]
     },
     "Downside 2": {
       "sga_pct": [0.18, 0.18, 0.17, 0.17, 0.17],
-      "nwc_pct": [0.34, 0.34, 0.34, 0.34, 0.34]
+      "trade_recv_days": [120, 125, 130, 130, 130],
+      "contract_asset_days": [195, 205, 215, 215, 215],
+      "inv_days": [5, 5, 5, 5, 5],
+      "other_ca_days": [12, 12, 12, 12, 12],
+      "trade_payables_days": [122, 118, 115, 115, 115],
+      "contract_liab_days": [6, 5, 5, 5, 5],
+      "other_cl_days": [29, 28, 28, 28, 28]
     }
   },
   "segments": [
@@ -145,13 +191,16 @@
       "driver_type": "backlog",
       "notes": "Water/sewage, river drainage, electric utilities. Domestic public tender-driven. Stable stock-type demand. ~46% of FY25 revenue.",
       "historical": {
-        "revenue": [null, null, null, 12915],
-        "op": [null, null, null, null]
+        "revenue": [null, 10300, 10600, 12915],
+        "op": [null, 927, 848, 1292],
+        "orders": [null, 11700, 12886, 12305],
+        "backlog_end": [9317, 10717, 13003, 12393]
       },
       "projections": {
-        "revenue": [13173, 13437, 13840, 14255, 14683],
-        "op_margin": [0.10, 0.10, 0.11, 0.11, 0.11],
-        "revenue_growth": [0.02, 0.02, 0.03, 0.03, 0.03]
+        "revenue": [13173, 13502, 13840, 14186, 14541],
+        "op_margin": [0.10, 0.10, 0.105, 0.105, 0.105],
+        "revenue_growth": [0.02, 0.025, 0.025, 0.025, 0.025],
+        "orders": [13173, 13502, 13840, 14186, 14541]
       },
       "scenario_projections": {
         "Upside": {
@@ -160,9 +209,9 @@
           "revenue_growth": [0.035, 0.035, 0.045, 0.045, 0.045]
         },
         "Management": {
-          "revenue": [13173, 13437, 13840, 14255, 14683],
-          "op_margin": [0.10, 0.10, 0.11, 0.11, 0.11],
-          "revenue_growth": [0.02, 0.02, 0.03, 0.03, 0.03]
+          "revenue": [13173, 13502, 13840, 14186, 14541],
+          "op_margin": [0.10, 0.10, 0.105, 0.105, 0.105],
+          "revenue_growth": [0.02, 0.025, 0.025, 0.025, 0.025]
         },
         "Downside 1": {
           "revenue": [12915, 12915, 13044, 13174, 13306],
@@ -182,13 +231,16 @@
       "driver_type": "backlog",
       "notes": "Petrochemical plants, power generation, steel mills. Linked to private capex cycle. ~32% of FY25 revenue.",
       "historical": {
-        "revenue": [null, null, null, 8985],
-        "op": [null, null, null, null]
+        "revenue": [null, 8800, 8700, 8985],
+        "op": [null, 924, 827, 1017],
+        "orders": [null, 10000, 10577, 8561],
+        "backlog_end": [7977, 9177, 11054, 10630]
       },
       "projections": {
         "revenue": [9255, 9625, 10106, 10611, 11142],
         "op_margin": [0.11, 0.12, 0.12, 0.13, 0.13],
-        "revenue_growth": [0.03, 0.04, 0.05, 0.05, 0.05]
+        "revenue_growth": [0.03, 0.04, 0.05, 0.05, 0.05],
+        "orders": [9255, 9625, 10106, 10611, 11142]
       },
       "scenario_projections": {
         "Upside": {
@@ -219,13 +271,16 @@
       "driver_type": "backlog",
       "notes": "DeROs seawater desalination, Middle East/India/Africa exports. India plant expansion. Growth driver. ~22% of FY25 revenue.",
       "historical": {
-        "revenue": [null, null, null, 6177],
-        "op": [null, null, null, null]
+        "revenue": [null, 4774, 4796, 6177],
+        "op": [null, 694, 608, 926],
+        "orders": [null, 5416, 5837, 5883],
+        "backlog_end": [4324, 4966, 6007, 5713]
       },
       "projections": {
         "revenue": [6671, 7338, 8219, 9452, 10586],
-        "op_margin": [0.12, 0.13, 0.14, 0.15, 0.15],
-        "revenue_growth": [0.08, 0.10, 0.12, 0.15, 0.12]
+        "op_margin": [0.12, 0.125, 0.13, 0.135, 0.14],
+        "revenue_growth": [0.08, 0.10, 0.12, 0.15, 0.12],
+        "orders": [7000, 7700, 8600, 9900, 11100]
       },
       "scenario_projections": {
         "Upside": {
@@ -235,7 +290,7 @@
         },
         "Management": {
           "revenue": [6671, 7338, 8219, 9452, 10586],
-          "op_margin": [0.12, 0.13, 0.14, 0.15, 0.15],
+          "op_margin": [0.12, 0.125, 0.13, 0.135, 0.14],
           "revenue_growth": [0.08, 0.10, 0.12, 0.15, 0.12]
         },
         "Downside 1": {
