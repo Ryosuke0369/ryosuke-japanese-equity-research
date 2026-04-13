@@ -1,0 +1,283 @@
+{
+  "sotp": {
+    "valuation_date": "April 2026",
+    "thesis": "Torishima's consolidated valuation at ~15x PER masks the divergent growth profiles of its three business areas. SOTP separates the mature domestic public infrastructure segment from the high-growth overseas desalination/power business to reveal the embedded option value of the backlog-rich international pipeline.",
+    "recommendation": "See Sensitivity",
+    "data_source": "FY2025/3 有価証券報告書 + FY2026/3 3Q決算補足説明資料. Segment split is analyst estimate based on geographic revenue data and order backlog disclosure.",
+    "stock_split_ratio": 1,
+    "consolidated": {
+      "da_total": 3000,
+      "net_debt": -5000,
+      "minority_interest": 0,
+      "equity_method_op": 0,
+      "equity_method_multiple": 10.0,
+      "shares_outstanding": 23668
+    },
+    "segments": [
+      {
+        "key": "domestic_public",
+        "label": "Domestic Public Sector (Water Infrastructure & Drainage)",
+        "label_jp": "国内公共（上下水道・排水ポンプ場）",
+        "revenue": [23000, 24000, 25000],
+        "op": [1900, 2000, 2000],
+        "fiscal_years": ["FY23", "FY24", "FY25E"],
+        "da_allocation_pct": 0.35,
+        "selected_multiple": 7.5,
+        "multiple_source": "Median of domestic water infrastructure peers. Stable but low-growth. Slight premium to DMW public sector (7.0x) due to larger scale and EPC capabilities.",
+        "peers": [
+          {"name": "DMW Corporation", "ticker": "6365.T", "ev_ebitda": 7.0, "opm": 0.10, "market_cap_usd_b": 0.26, "note": "Pump maker. Public sector comp from DMW SOTP.", "excluded": false},
+          {"name": "Maezawa Industries", "ticker": "6489.T", "ev_ebitda": 7.5, "opm": 0.08, "market_cap_usd_b": 0.25, "note": "Water/sewage equipment.", "excluded": false},
+          {"name": "Tsurumi Manufacturing", "ticker": "6351.T", "ev_ebitda": 9.0, "opm": 0.14, "market_cap_usd_b": 0.78, "note": "Submersible pump major.", "excluded": false}
+        ]
+      },
+      {
+        "key": "domestic_private",
+        "label": "Domestic Private Sector (Power & Industrial Pumps)",
+        "label_jp": "国内民需（発電・産業用ポンプ）",
+        "revenue": [19500, 20500, 21500],
+        "op": [1800, 1800, 1700],
+        "fiscal_years": ["FY23", "FY24", "FY25E"],
+        "da_allocation_pct": 0.30,
+        "selected_multiple": 9.0,
+        "multiple_source": "Industrial pump peers. Premium for power plant specialization (boiler feed pumps, ammonia co-firing) and Super Eco Pump replacement cycle.",
+        "peers": [
+          {"name": "DMW Corporation", "ticker": "6365.T", "ev_ebitda": 8.5, "opm": 0.12, "market_cap_usd_b": 0.26, "note": "Private sector comp from DMW SOTP.", "excluded": false},
+          {"name": "Iwaki Co.", "ticker": "6237.T", "ev_ebitda": 9.5, "opm": 0.13, "market_cap_usd_b": 0.42, "note": "Chemical pump specialist.", "excluded": false},
+          {"name": "Nikkiso Co.", "ticker": "6376.T", "ev_ebitda": 10.0, "opm": 0.07, "market_cap_usd_b": 1.50, "note": "Specialty industrial pumps. Higher multiple for tech premium.", "excluded": false}
+        ]
+      },
+      {
+        "key": "overseas",
+        "label": "Overseas (Desalination, Power & O&G)",
+        "label_jp": "海外（淡水化・発電・O&G）",
+        "revenue": [34000, 36000, 40000],
+        "op": [2100, 1600, 1900],
+        "fiscal_years": ["FY23", "FY24", "FY25E"],
+        "da_allocation_pct": 0.35,
+        "selected_multiple": 11.0,
+        "multiple_source": "Growth premium for desalination/power plant pump backlog. Discount to DMW overseas (12.0x) because Torishima's overseas OPM is currently depressed (~4.8%) due to large project cost overruns. Once margins normalize to 8-10%, this multiple is conservative.",
+        "peers": [
+          {"name": "DMW Corporation (Overseas)", "ticker": "6365.T", "ev_ebitda": 12.0, "opm": 0.12, "market_cap_usd_b": 0.26, "note": "DeROs desalination. Higher margin, smaller scale.", "excluded": false},
+          {"name": "Flowserve (reference)", "ticker": "FLS", "ev_ebitda": 14.0, "opm": 0.12, "market_cap_usd_b": 7.0, "note": "Global engineered pumps. Not a direct comp due to 10x+ size gap, reference only.", "excluded": true},
+          {"name": "Sulzer (reference)", "ticker": "SUN.SW", "ev_ebitda": 12.0, "opm": 0.11, "market_cap_usd_b": 5.0, "note": "Desalination pump global leader. Reference only.", "excluded": true}
+        ]
+      }
+    ],
+    "conglomerate_discount": {
+      "base": 0.10,
+      "sensitivity_range": [0.0, 0.05, 0.10, 0.15, 0.20]
+    },
+    "sensitivity": {
+      "primary_segment_key": "overseas",
+      "primary_multiples": [7, 9, 11, 13, 15],
+      "table2": {
+        "row_segment_key": "domestic_public",
+        "row_multiples": [5.5, 6.5, 7.5, 8.5, 9.5],
+        "col_segment_key": "domestic_private",
+        "col_multiples": [7, 8, 9, 10, 11]
+      }
+    },
+    "dcf_crosscheck": {
+      "pgm_fair_value": null,
+      "exit_fair_value": null,
+      "comps_ev_ebitda": null,
+      "comps_per": null
+    }
+  },
+  "shares": {
+    "shares_issued": 26315789,
+    "treasury_shares": 2648000,
+    "fully_diluted_shares": 23667789,
+    "unit": "shares"
+  },
+  "net_debt": -5000,
+  "company_name": "Torishima Pump Mfg. Co., Ltd.",
+  "ticker": "6363.T",
+  "exchange": "TSE Prime",
+  "sector": "Machinery - Pumps",
+  "investment_thesis": [
+    "1. World-class desalination pump technology positions Torishima for Middle East/North Africa water infrastructure boom (backlog >¥115B)",
+    "2. Super Eco Pump (SEP) drives domestic replacement cycle with 30-40% energy savings, creating recurring revenue",
+    "3. Ammonia co-firing pump development opens new market as Japan transitions power generation fuel mix",
+    "4. Mid-term plan targets ¥100B revenue / 10%+ OPM by FY2029, implying significant margin recovery from FY2025 trough"
+  ],
+  "key_risks": [
+    "1. Middle East/North Africa geopolitical risk could freeze or delay large desalination contracts (Egypt is a major customer)",
+    "2. FY2025 margin compression (OPM 6.2%) reflects execution risk on overseas mega-projects — recovery pace uncertain",
+    "3. Shin Nippon Machinery M&A integration costs in FY2026-2027 may weigh on near-term earnings",
+    "4. Yen appreciation would compress overseas margins given JPY-denominated manufacturing cost base"
+  ],
+  "risk_free": 0.023,
+  "erp": 0.06,
+  "beta": 1.05,
+  "size_premium": 0.03,
+  "cost_of_debt_at": 0.008,
+  "tax_rate": 0.3062,
+  "terminal_growth": 0.02,
+  "exit_multiple": 9.0,
+  "primary_multiple": "EV/EBITDA",
+  "nwc_method": "revenue_pct",
+  "capex_pct": 0.05,
+  "da_pct": 0.035,
+  "cost_structure": {
+    "cogs_pct": 0.82,
+    "cogs_note": "FY2025/3 売上原価率約82%。海外大型案件の原価率上昇が影響。中計ではFY2029に向け改善目標。",
+    "sga_pct": 0.12,
+    "sga_note": "販管費率12%。FY2025は人件費増+海外拠点拡大で上昇。AI活用とフロントローディングで今後抑制方針。"
+  },
+  "segments": [
+    {
+      "name": "Domestic Public Sector (Water Infrastructure & Drainage)",
+      "name_jp": "国内公共（上下水道・排水ポンプ場）",
+      "driver_type": "backlog",
+      "notes": "上下水道、雨水排水、灌漑向けポンプ場EPC。国土交通省・自治体案件。安定的だが低成長。約29% of FY2025 revenue.",
+      "historical": {
+        "revenue": [null, 23000, 24000, 25000],
+        "op": [null, 1900, 2000, 2000],
+        "orders": [null, null, null, null],
+        "backlog_end": [null, null, null, null]
+      },
+      "projections": {
+        "revenue": [25500, 26010, 26530, 27193, 27873],
+        "op_margin": [0.08, 0.08, 0.085, 0.085, 0.09],
+        "revenue_growth": [0.02, 0.02, 0.02, 0.025, 0.025],
+        "orders": [25500, 26010, 26530, 27193, 27873]
+      },
+      "scenario_projections": {
+        "Upside": {
+          "revenue": [25750, 26522, 27383, 28273, 29193],
+          "op_margin": [0.085, 0.09, 0.09, 0.095, 0.095],
+          "revenue_growth": [0.03, 0.03, 0.0325, 0.0325, 0.0325]
+        },
+        "Management": {
+          "revenue": [25500, 26010, 26530, 27193, 27873],
+          "op_margin": [0.08, 0.08, 0.085, 0.085, 0.09],
+          "revenue_growth": [0.02, 0.02, 0.02, 0.025, 0.025]
+        },
+        "Downside 1": {
+          "revenue": [25250, 25503, 25758, 26016, 26276],
+          "op_margin": [0.075, 0.075, 0.08, 0.08, 0.08],
+          "revenue_growth": [0.01, 0.01, 0.01, 0.01, 0.01]
+        },
+        "Downside 2": {
+          "revenue": [25000, 25000, 25000, 25000, 25000],
+          "op_margin": [0.07, 0.07, 0.075, 0.075, 0.075],
+          "revenue_growth": [0.0, 0.0, 0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "name": "Domestic Private Sector (Power & Industrial Pumps)",
+      "name_jp": "国内民需（発電・産業用ポンプ）",
+      "driver_type": "backlog",
+      "notes": "火力・原子力発電所向けボイラ給水ポンプ、石油化学プラント向け。スーパーエコポンプ(SEP)による更新需要。データセンター冷却需要も。約25% of FY2025 revenue.",
+      "historical": {
+        "revenue": [null, 19500, 20500, 21500],
+        "op": [null, 1800, 1800, 1700],
+        "orders": [null, null, null, null],
+        "backlog_end": [null, null, null, null]
+      },
+      "projections": {
+        "revenue": [22145, 23031, 24183, 25392, 26661],
+        "op_margin": [0.09, 0.10, 0.10, 0.11, 0.11],
+        "revenue_growth": [0.03, 0.04, 0.05, 0.05, 0.05],
+        "orders": [22145, 23031, 24183, 25392, 26661]
+      },
+      "scenario_projections": {
+        "Upside": {
+          "revenue": [22575, 23703, 25126, 26633, 28231],
+          "op_margin": [0.10, 0.11, 0.11, 0.12, 0.12],
+          "revenue_growth": [0.05, 0.05, 0.06, 0.06, 0.06]
+        },
+        "Management": {
+          "revenue": [22145, 23031, 24183, 25392, 26661],
+          "op_margin": [0.09, 0.10, 0.10, 0.11, 0.11],
+          "revenue_growth": [0.03, 0.04, 0.05, 0.05, 0.05]
+        },
+        "Downside 1": {
+          "revenue": [21715, 22149, 22814, 23498, 24203],
+          "op_margin": [0.08, 0.09, 0.09, 0.10, 0.10],
+          "revenue_growth": [0.01, 0.02, 0.03, 0.03, 0.03]
+        },
+        "Downside 2": {
+          "revenue": [21500, 21500, 21715, 21932, 22152],
+          "op_margin": [0.07, 0.08, 0.08, 0.09, 0.09],
+          "revenue_growth": [0.0, 0.0, 0.01, 0.01, 0.01]
+        }
+      }
+    },
+    {
+      "name": "Overseas (Desalination, Power & O&G)",
+      "name_jp": "海外（淡水化・発電・O&G）",
+      "driver_type": "backlog",
+      "notes": "海水淡水化プラント用高圧ポンプ、中東・北アフリカ・アジア向け。エジプト政府が主要顧客。受注残1,000億円超のうち海外比率が高い。中期計画で売上1,000億規模を目指す成長エンジン。約46% of FY2025 revenue.",
+      "historical": {
+        "revenue": [null, 34000, 36000, 40000],
+        "op": [null, 2100, 1600, 1900],
+        "orders": [null, null, null, null],
+        "backlog_end": [null, null, null, null]
+      },
+      "projections": {
+        "revenue": [43200, 47520, 53222, 59609, 65570],
+        "op_margin": [0.08, 0.09, 0.10, 0.10, 0.11],
+        "revenue_growth": [0.08, 0.10, 0.12, 0.12, 0.10],
+        "orders": [43200, 47520, 53222, 59609, 65570]
+      },
+      "scenario_projections": {
+        "Upside": {
+          "revenue": [44000, 49280, 56181, 63883, 71311],
+          "op_margin": [0.09, 0.10, 0.11, 0.11, 0.12],
+          "revenue_growth": [0.10, 0.12, 0.14, 0.137, 0.116]
+        },
+        "Management": {
+          "revenue": [43200, 47520, 53222, 59609, 65570],
+          "op_margin": [0.08, 0.09, 0.10, 0.10, 0.11],
+          "revenue_growth": [0.08, 0.10, 0.12, 0.12, 0.10]
+        },
+        "Downside 1": {
+          "revenue": [42000, 44940, 49434, 54377, 58128],
+          "op_margin": [0.07, 0.08, 0.09, 0.09, 0.10],
+          "revenue_growth": [0.05, 0.07, 0.10, 0.10, 0.069]
+        },
+        "Downside 2": {
+          "revenue": [40800, 42432, 45367, 48543, 50486],
+          "op_margin": [0.06, 0.07, 0.08, 0.08, 0.09],
+          "revenue_growth": [0.02, 0.04, 0.069, 0.07, 0.04]
+        }
+      }
+    }
+  ],
+  "scenarios": {
+    "Base": {
+      "sga_pct": [0.12, 0.12, 0.115, 0.115, 0.11],
+      "nwc_pct": [0.30, 0.30, 0.29, 0.29, 0.28]
+    },
+    "Upside": {
+      "sga_pct": [0.115, 0.11, 0.11, 0.105, 0.105],
+      "nwc_pct": [0.28, 0.27, 0.27, 0.26, 0.26]
+    },
+    "Management": {
+      "sga_pct": [0.12, 0.12, 0.115, 0.115, 0.11],
+      "nwc_pct": [0.30, 0.30, 0.29, 0.29, 0.28]
+    },
+    "Downside 1": {
+      "sga_pct": [0.125, 0.125, 0.12, 0.12, 0.12],
+      "nwc_pct": [0.32, 0.32, 0.31, 0.31, 0.30]
+    },
+    "Downside 2": {
+      "sga_pct": [0.13, 0.13, 0.125, 0.125, 0.125],
+      "nwc_pct": [0.34, 0.34, 0.33, 0.33, 0.32]
+    }
+  },
+  "comps": {
+    "primary_multiple": "EV/EBITDA",
+    "use_median": true,
+    "exclude_outliers": true,
+    "peers": [
+      {"ticker": "6365.T", "name": "DMW Corporation", "notes": "Domestic pump peer. Public/private sector overlap"},
+      {"ticker": "6351.T", "name": "Tsurumi Manufacturing", "notes": "Water pump major. Higher domestic margin"},
+      {"ticker": "6237.T", "name": "Iwaki Co.", "notes": "Chemical pump specialist"},
+      {"ticker": "6376.T", "name": "Nikkiso Co.", "notes": "Specialty industrial pumps. Power/aerospace"}
+    ]
+  }
+}
