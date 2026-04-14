@@ -122,7 +122,7 @@ def main():
     # Import and run template engine
     sys.path.insert(0, os.path.join(project_root, "templates"))
     from sotp_template import generate_sotp_excel
-    generate_sotp_excel(sotp, output_path)
+    generate_sotp_excel(sotp, output_path, dcf_excel_path=dcf_path)
 
     # Run recalc.py for formula validation
     recalc_path = os.path.join(project_root, "scripts", "recalc.py")

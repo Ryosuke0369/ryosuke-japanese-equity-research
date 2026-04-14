@@ -416,7 +416,7 @@ def main():
     )
     parser.add_argument("ticker", help="Securities code (e.g. 2359)")
     parser.add_argument("--years", type=int, default=5, help="Number of years to fetch (default: 5)")
-    parser.add_argument("--output-dir", default="output", help="Output directory (default: output)")
+    parser.add_argument("--output-dir", default="models", help="Output directory (default: models)")
     parser.add_argument("--comps-csv", default=None, help="Path to comps CSV (default: data/comps/<ticker>_comps.csv)")
     parser.add_argument("--overrides", default=None,
                         help="Path to JSON override file (e.g. data/overrides/2359_overrides.json)")

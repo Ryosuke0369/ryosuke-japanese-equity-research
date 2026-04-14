@@ -16,6 +16,39 @@ import openpyxl
 from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 from openpyxl.utils import get_column_letter
 
+
+def _read_dcf_crosscheck(dcf_path):
+    """
+    Read valuation cross-check values from DCF Excel's Executive Summary sheet.
+    Returns dict with keys: pgm_fair_value, exit_fair_value, comps_ev_ebitda, comps_per
+    Returns None values if file doesn't exist or read fails.
+    """
+    import os
+    result = {
+        "pgm_fair_value": None,
+        "exit_fair_value": None,
+        "comps_ev_ebitda": None,
+        "comps_per": None,
+    }
+    if not dcf_path or not os.path.exists(dcf_path):
+        return result
+    try:
+        wb_dcf = openpyxl.load_workbook(dcf_path, data_only=True)
+        ws_exec = wb_dcf["Executive Summary"]
+        # DCF Excel Executive Summary layout:
+        #   C16 = DCF – Perpetuity Growth implied value
+        #   C17 = DCF – Exit Multiple implied value
+        #   C18 = Comps – EV/EBITDA Median implied value
+        #   C19 = Comps – PER Median implied value
+        result["pgm_fair_value"]  = ws_exec.cell(row=16, column=3).value
+        result["exit_fair_value"] = ws_exec.cell(row=17, column=3).value
+        result["comps_ev_ebitda"] = ws_exec.cell(row=18, column=3).value
+        result["comps_per"]       = ws_exec.cell(row=19, column=3).value
+        wb_dcf.close()
+    except Exception as e:
+        print(f"Warning: Could not read DCF cross-check from {dcf_path}: {e}")
+    return result
+
 # =====================================================================
 # STYLE CONSTANTS (matching dcf_comps_template.py)
 # =====================================================================
@@ -143,14 +176,18 @@ def build_cover_sheet(wb, sotp):
         if i == 0:
             # SOTP: link to SOTP Valuation sheet
             set_cell(ws, row, 3, val, font=GREEN_FONT, fmt=FMT_PRICE, border=THIN_BORDER)
-        else:
+        elif val is not None:
             set_cell(ws, row, 3, val, font=BLUE_FONT, fmt=FMT_PRICE, border=THIN_BORDER)
+        else:
+            set_cell(ws, row, 3, "N/A — Run DCF first", font=GREY_FONT, border=THIN_BORDER)
         if i == 0:
             set_cell(ws, row, 4, "—", font=GREY_FONT, border=THIN_BORDER, alignment=CENTER)
-        else:
+        elif val is not None:
             # vs SOTP = (method - SOTP) / SOTP
             set_cell(ws, row, 4, f"=(C{row}-{sotp_val_cell})/{sotp_val_cell}",
                      font=BLACK_FONT, fmt=FMT_PCT, border=THIN_BORDER, alignment=CENTER)
+        else:
+            set_cell(ws, row, 4, "", font=GREY_FONT, border=THIN_BORDER, alignment=CENTER)
 
 
 # =====================================================================
@@ -815,9 +852,19 @@ def build_da_allocation_sheet(wb, sotp, val_refs):
 # =====================================================================
 # MAIN ENTRY POINT
 # =====================================================================
-def generate_sotp_excel(sotp, output_path):
+def generate_sotp_excel(sotp, output_path, dcf_excel_path=None):
     """Generate the 6-sheet SOTP Excel workbook."""
     wb = openpyxl.Workbook()
+
+    # Read DCF cross-check values from DCF Excel if available
+    if dcf_excel_path:
+        dcf_values = _read_dcf_crosscheck(dcf_excel_path)
+        # Merge: DCF Excel values take priority, fallback to JSON overrides
+        existing = sotp.get("dcf_crosscheck", {})
+        for key in ["pgm_fair_value", "exit_fair_value", "comps_ev_ebitda", "comps_per"]:
+            if dcf_values.get(key) is not None:
+                existing[key] = dcf_values[key]
+        sotp["dcf_crosscheck"] = existing
 
     # Sheet 1: Cover & Thesis
     build_cover_sheet(wb, sotp)
