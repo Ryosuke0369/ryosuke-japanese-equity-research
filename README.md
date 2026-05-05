@@ -64,7 +64,21 @@ IT services + defense/space tech (GNSS, satellite systems). Market values it as 
 | DCF — PGM | ¥2,824 | +27% |
 | Comps PER | ¥2,055 | -7% |
 
-**Catalyst**: Q4 earnings (4/28) — OP +30% surprise expected, short squeeze setup (lending ratio 0.20)
+**Catalyst (delivered)**: Q4 FY3/26 results (4/28/2026) — OP ¥3.82B, +9% above revised MTP target. Next catalyst: 15th Mid-Term Plan announcement (FY3/27-29).
+
+**MTP Track Record Analysis**
+
+Core Corp delivers consistent ~35-39% operating profit growth across each three-year mid-term plan, while keeping revenue guidance conservative. The 14th MTP target was revised down on April 28, 2025 — a footnote that appears only in the Japanese MTP document, not in English IR materials.
+
+| MTP | Period | OP Growth (3Y) | Outcome |
+|---|---|---|---|
+| 12th | FY3/18-FY3/20 | +38% | Delivered |
+| 13th | FY3/21-FY3/23 | +35% | Delivered |
+| 14th | FY3/24-FY3/26 | +39% | Delivered (revised target +9% beat) |
+
+Pattern: lower the bar → clear it. The 15th MTP announcement is likely to follow the same template — a conservative headline, with delivery skewing higher by FY3/29.
+
+2040 vision: ¥100B revenue (vs FY3/26 actual ¥26.5B), implying ¥50B by 2030. The 15th MTP is the bridge.
 
 ### Torishima Pump (6363.T) — HOLD | Fair Value ¥3,392 (+2%)
 Pump manufacturer with desalination exposure. 5-method average converges near current price — limited upside.
