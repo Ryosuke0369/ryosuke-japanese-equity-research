@@ -12,9 +12,10 @@
     ],
     "projections": [
       100,
-      100,
       105,
-      105
+      105,
+      110,
+      110
     ]
   },
   "da_pct": 0.009,
@@ -30,8 +31,9 @@
     "projections": [
       210,
       210,
-      210,
-      215
+      215,
+      220,
+      220
     ]
   },
   "tax_rate": 0.3062,
@@ -40,10 +42,10 @@
   "terminal_growth": 0.02,
   "exit_multiple": 10.0,
   "size_premium": 0.04,
-  "ltm_revenue": 24599,
-  "projection_start_fy": "FY2026(E)",
-  "stub_fraction": 0.25,
-  "stub_months_elapsed": 9,
+  "ltm_revenue": 26532,
+  "projection_start_fy": "FY2027(E)",
+  "stub_fraction": 0.0,
+  "stub_months_elapsed": 0,
   "base_year_ar": 7878,
   "base_year_inv": 269,
   "base_year_ap": 1738,
@@ -203,14 +205,14 @@
     }
   },
   "investment_thesis": [
-    "1. Defense Tech: GNSS anti-spoofing tech for JASDF; 4-layer moat (proprietary receiver + QZSS auth + security clearance + space tech track record)",
-    "2. AX Transformation: Layer 2 (solution) ratio rising 25.9% → 33.3%, structurally improving OPM",
-    "3. Earnings Surprise: Base case EPS >¥200 vs consensus ~¥174; Q3 OP progress rate 82.5% implies ~¥4,050M OP"
+    "1. Vision2029 Mid-term Plan: FY29/3 targets of JPY35bn rev / JPY5.25bn OP imply +9.7% revenue CAGR and OPM expansion 14.4%->15.0%. Customer Business +8.9% CAGR is the biggest about-face vs FY26's -3.0% decline.",
+    "2. Defense/Space Tech: Vision2029 explicitly elevates 'Space Tech' (small-satellite GNSS systems) to a strategic pillar within Industrial Tech. 4-layer moat (proprietary receiver + QZSS auth + security clearance + space heritage) intact.",
+    "3. Stock Business Pivot: Stock revenue mix targeted to grow 7%->20% over 3 years (JPY1.7bn -> JPY7.0bn, 4x). This drives OPM expansion across all segments and structurally improves earnings quality."
   ],
   "key_risks": [
-    "1. Defense contracts still in R&D/validation phase — mass production orders unconfirmed",
-    "2. Key person risk in specialized GNSS/space technology division",
-    "3. Revenue concentration in Japanese domestic IT services market"
+    "1. Customer Business growth pivot from -3% FY26 actual to +8.9% CAGR target is the most aggressive turnaround in the plan; execution risk is highest here.",
+    "2. Stock business 4x scale-up requires sales-model transformation (one-shot SI -> recurring services); transition could pressure near-term revenue recognition.",
+    "3. Market reaction post-plan (5/9 close ~JPY2,006, +0.0% from pre-plan) suggests investors are skeptical of plan execution. Implied alpha remains deeply pessimistic."
   ],
   "segments": [
     {
@@ -221,36 +223,132 @@
         "revenue": [
           null,
           4771,
-          4570
+          4570,
+          5084
         ],
         "op": [
           null,
           675,
-          461
+          461,
+          730
         ]
       },
       "projections": {
         "revenue": [
-          5050,
-          5700,
-          6200,
-          6700,
-          7000
+          5999,
+          7019,
+          8072,
+          8879,
+          9501
         ],
         "op_margin": [
-          0.149,
-          0.14,
-          0.145,
-          0.15,
-          0.152
+          0.16,
+          0.17,
+          0.18,
+          0.185,
+          0.19
         ],
         "revenue_growth": [
-          0.105,
-          0.1287,
-          0.0877,
-          0.0806,
-          0.0448
+          0.18,
+          0.17,
+          0.15,
+          0.1,
+          0.07
         ]
+      },
+      "scenario_projections": {
+        "Upside": {
+          "revenue": [
+            6355,
+            7753,
+            9149,
+            10338,
+            11268
+          ],
+          "revenue_growth": [
+            0.25,
+            0.22,
+            0.18,
+            0.13,
+            0.09
+          ],
+          "op_margin": [
+            0.17,
+            0.185,
+            0.2,
+            0.21,
+            0.22
+          ]
+        },
+        "Management": {
+          "revenue": [
+            6035,
+            7163,
+            8503,
+            9353,
+            10008
+          ],
+          "revenue_growth": [
+            0.187,
+            0.187,
+            0.187,
+            0.1,
+            0.07
+          ],
+          "op_margin": [
+            0.145,
+            0.155,
+            0.17,
+            0.18,
+            0.185
+          ]
+        },
+        "Downside 1": {
+          "revenue": [
+            5592,
+            6040,
+            6402,
+            6658,
+            6858
+          ],
+          "revenue_growth": [
+            0.1,
+            0.08,
+            0.06,
+            0.04,
+            0.03
+          ],
+          "op_margin": [
+            0.145,
+            0.15,
+            0.155,
+            0.16,
+            0.16
+          ]
+        },
+        "Downside 2": {
+          "revenue": [
+            5338,
+            5498,
+            5608,
+            5664,
+            5721
+          ],
+          "revenue_growth": [
+            0.05,
+            0.03,
+            0.02,
+            0.01,
+            0.01
+          ],
+          "op_margin": [
+            0.135,
+            0.13,
+            0.13,
+            0.13,
+            0.13
+          ]
+        }
       }
     },
     {
@@ -261,14 +359,17 @@
         "revenue": [
           null,
           10546,
-          12035
+          12035,
+          13695
         ],
         "op": [
           null,
           1641,
-          1884
+          1884,
+          2260
         ],
         "headcount": [
+          null,
           null,
           null,
           null
@@ -276,64 +377,160 @@
         "layer1_revenue": [
           null,
           null,
+          null,
           null
         ],
         "layer2_revenue": [
           null,
           null,
-          6058
+          6058,
+          null
         ]
       },
       "projections": {
         "revenue": [
-          13950,
-          16000,
-          18000,
-          20000,
-          21000
+          14791,
+          15826,
+          16775,
+          17614,
+          18319
         ],
         "headcount": [
-          820,
           850,
           880,
           910,
+          940,
           940
         ],
         "utilization": [
-          0.92,
           0.93,
           0.93,
+          0.94,
           0.94,
           0.94
         ],
         "unit_price_monthly": [
-          0.7,
           0.72,
           0.74,
           0.76,
+          0.78,
           0.78
         ],
         "layer2_revenue": [
-          7400,
-          9238,
-          11000,
-          13000,
-          14500
+          8135,
+          9496,
+          10904,
+          11978,
+          12823
         ],
         "op_margin": [
-          0.172,
-          0.165,
-          0.17,
           0.175,
-          0.178
+          0.18,
+          0.185,
+          0.187,
+          0.19
         ],
         "revenue_growth": [
-          0.1591,
-          0.147,
-          0.125,
-          0.1111,
-          0.05
+          0.08,
+          0.07,
+          0.06,
+          0.05,
+          0.04
         ]
+      },
+      "scenario_projections": {
+        "Upside": {
+          "revenue": [
+            15065,
+            16420,
+            17734,
+            18975,
+            19924
+          ],
+          "revenue_growth": [
+            0.1,
+            0.09,
+            0.08,
+            0.07,
+            0.05
+          ],
+          "op_margin": [
+            0.185,
+            0.19,
+            0.195,
+            0.2,
+            0.205
+          ]
+        },
+        "Management": {
+          "revenue": [
+            14571,
+            15504,
+            16496,
+            17321,
+            18014
+          ],
+          "revenue_growth": [
+            0.064,
+            0.064,
+            0.064,
+            0.05,
+            0.04
+          ],
+          "op_margin": [
+            0.165,
+            0.165,
+            0.165,
+            0.17,
+            0.175
+          ]
+        },
+        "Downside 1": {
+          "revenue": [
+            14380,
+            14955,
+            15404,
+            15866,
+            16183
+          ],
+          "revenue_growth": [
+            0.05,
+            0.04,
+            0.03,
+            0.03,
+            0.02
+          ],
+          "op_margin": [
+            0.16,
+            0.16,
+            0.162,
+            0.165,
+            0.165
+          ]
+        },
+        "Downside 2": {
+          "revenue": [
+            14106,
+            14388,
+            14532,
+            14677,
+            14824
+          ],
+          "revenue_growth": [
+            0.03,
+            0.02,
+            0.01,
+            0.01,
+            0.01
+          ],
+          "op_margin": [
+            0.15,
+            0.145,
+            0.145,
+            0.145,
+            0.145
+          ]
+        }
       }
     },
     {
@@ -344,45 +541,140 @@
         "revenue": [
           null,
           8680,
-          7993
+          7993,
+          7751
         ],
         "op": [
           null,
           823,
-          829
+          829,
+          830
         ]
       },
       "projections": {
         "revenue": [
-          8000,
-          8100,
-          8200,
-          8300,
-          8400
+          8139,
+          8627,
+          9058,
+          9330,
+          9517
         ],
         "op_margin": [
-          0.1125,
-          0.108,
           0.11,
-          0.112,
-          0.114
+          0.12,
+          0.13,
+          0.135,
+          0.14
         ],
         "revenue_growth": [
-          0.0009,
-          0.0125,
-          0.0123,
-          0.0122,
-          0.012
+          0.05,
+          0.06,
+          0.05,
+          0.03,
+          0.02
         ]
+      },
+      "scenario_projections": {
+        "Upside": {
+          "revenue": [
+            8371,
+            9208,
+            9945,
+            10442,
+            10755
+          ],
+          "revenue_growth": [
+            0.08,
+            0.1,
+            0.08,
+            0.05,
+            0.03
+          ],
+          "op_margin": [
+            0.12,
+            0.135,
+            0.15,
+            0.155,
+            0.16
+          ]
+        },
+        "Management": {
+          "revenue": [
+            8441,
+            9192,
+            10010,
+            10411,
+            10619
+          ],
+          "revenue_growth": [
+            0.089,
+            0.089,
+            0.089,
+            0.04,
+            0.02
+          ],
+          "op_margin": [
+            0.1,
+            0.105,
+            0.115,
+            0.12,
+            0.125
+          ]
+        },
+        "Downside 1": {
+          "revenue": [
+            7829,
+            7907,
+            7986,
+            8066,
+            8146
+          ],
+          "revenue_growth": [
+            0.01,
+            0.01,
+            0.01,
+            0.01,
+            0.01
+          ],
+          "op_margin": [
+            0.095,
+            0.095,
+            0.1,
+            0.1,
+            0.1
+          ]
+        },
+        "Downside 2": {
+          "revenue": [
+            7596,
+            7520,
+            7520,
+            7520,
+            7520
+          ],
+          "revenue_growth": [
+            -0.02,
+            -0.01,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "op_margin": [
+            0.085,
+            0.08,
+            0.08,
+            0.08,
+            0.08
+          ]
+        }
       }
     }
   ],
-
   "sotp": {
-    "valuation_date": "April 2026",
-    "thesis": "Core Corporation's consolidated valuation obscures the high-growth defense/space tech business (GNSS anti-spoofing, QZSS authentication) within the mature IT services envelope. SOTP separates the premium Future Society Solutions segment from the stable but low-growth Customer Business Integration to reveal the embedded defense tech option value.",
+    "valuation_date": "May 2026",
+    "thesis": "Core Corporation announced its 15th Mid-term Plan 'Vision2029' on 2026-05-01, targeting JPY35bn revenue and JPY5.25bn OP by FY2029/3 (vs FY2026/3 actuals of JPY26.5bn / JPY3.8bn). The SOTP separates the high-growth Future Society Solutions segment (defense/space/GNSS, +18.7% CAGR per plan) from the slower Industrial Tech (+6.4% CAGR) and now-recovering Customer Business (+8.9% CAGR, rebranded as 'Customer Co-creation Business' in plan). Stock business mix targeted at 20% (vs 7% FY26).",
     "recommendation": "See Sensitivity",
-    "data_source": "FY2025/3 有価証券報告書 + FY2026/3 3Q決算補足説明資料. Segments align with company-reported structure.",
+    "data_source": "FY2026/3 有価証券報告書 + 第15次コアグループ中期経営計画 Vision2029 (2026-05-01発表).",
     "stock_split_ratio": 1,
     "consolidated": {
       "da_total": 215,
@@ -399,64 +691,187 @@
         "key": "future_society",
         "label": "Future Society Solutions (Defense, Space & GNSS)",
         "label_jp": "未来社会ソリューション（防衛・宇宙・GNSS）",
-        "revenue": [4771, 4570, 5050],
-        "op": [675, 461, 752],
-        "fiscal_years": ["FY23", "FY24", "FY25E"],
-        "da_allocation_pct": 0.30,
-        "selected_multiple": 16.0,
-        "multiple_source": "Premium for defense/space tech with 4-layer moat (proprietary GNSS receiver + QZSS auth + security clearance + space heritage). Comparable to domestic defense IT premia. Limited pure-play comps; multiple reflects scarcity value of JASDF-grade GNSS anti-spoofing technology.",
+        "revenue": [
+          4570,
+          5050,
+          5084
+        ],
+        "op": [
+          461,
+          752,
+          730
+        ],
+        "fiscal_years": [
+          "FY24",
+          "FY25",
+          "FY26"
+        ],
+        "da_allocation_pct": 0.3,
+        "selected_multiple": 17.0,
+        "multiple_source": "Premium multiple for defense/space tech with 4-layer moat (proprietary GNSS receiver + QZSS auth + security clearance + space heritage). Bumped to 17.0x from 16.0x to reflect Vision2029's explicit '宇宙テック' strategic pillar (small-satellite system development) and +18.7% segment CAGR target.",
         "peers": [
-          {"name": "Systena", "ticker": "2317.T", "ev_ebitda": 15.0, "opm": 0.17, "note": "IT services with defense/auto exposure. Closest domestic comp.", "excluded": false},
-          {"name": "NEC (Defense seg, ref)", "ticker": "6701.T", "ev_ebitda": 12.0, "opm": 0.08, "note": "Defense electronics major. Reference only, much larger scale.", "excluded": true},
-          {"name": "Fujitsu (Defense seg, ref)", "ticker": "6702.T", "ev_ebitda": 14.0, "opm": 0.10, "note": "Defense IT systems. Reference only.", "excluded": true}
+          {
+            "name": "Systena",
+            "ticker": "2317.T",
+            "ev_ebitda": 15.0,
+            "opm": 0.17,
+            "note": "IT services with defense/auto exposure. Closest domestic comp.",
+            "excluded": false
+          },
+          {
+            "name": "NEC (Defense seg, ref)",
+            "ticker": "6701.T",
+            "ev_ebitda": 12.0,
+            "opm": 0.08,
+            "note": "Defense electronics major. Reference only, much larger scale.",
+            "excluded": true
+          },
+          {
+            "name": "Fujitsu (Defense seg, ref)",
+            "ticker": "6702.T",
+            "ev_ebitda": 14.0,
+            "opm": 0.1,
+            "note": "Defense IT systems. Reference only.",
+            "excluded": true
+          }
         ]
       },
       {
         "key": "industrial_tech",
         "label": "Industrial Technology Solutions (AX/DX, Manufacturing IT)",
         "label_jp": "産業技術ソリューション（AX・DX・製造業IT）",
-        "revenue": [10546, 12035, 13950],
-        "op": [1641, 1884, 2400],
-        "fiscal_years": ["FY23", "FY24", "FY25E"],
-        "da_allocation_pct": 0.40,
+        "revenue": [
+          12035,
+          13950,
+          13695
+        ],
+        "op": [
+          1884,
+          2400,
+          2260
+        ],
+        "fiscal_years": [
+          "FY24",
+          "FY25",
+          "FY26"
+        ],
+        "da_allocation_pct": 0.4,
         "selected_multiple": 13.0,
         "multiple_source": "AX transformation driving Layer 2 revenue mix from 25.9% to 33.3%. Growing segment with improving margins. Premium to generic SI peers for structural margin improvement story.",
         "peers": [
-          {"name": "Systena", "ticker": "2317.T", "ev_ebitda": 15.0, "opm": 0.17, "note": "Strong margin IT services.", "excluded": false},
-          {"name": "Cresco", "ticker": "4674.T", "ev_ebitda": 11.0, "opm": 0.11, "note": "Mid-tier IT services. Manufacturing sector exposure.", "excluded": false},
-          {"name": "DTS", "ticker": "9682.T", "ev_ebitda": 12.0, "opm": 0.12, "note": "IT services. Similar scale.", "excluded": false}
+          {
+            "name": "Systena",
+            "ticker": "2317.T",
+            "ev_ebitda": 15.0,
+            "opm": 0.17,
+            "note": "Strong margin IT services.",
+            "excluded": false
+          },
+          {
+            "name": "Cresco",
+            "ticker": "4674.T",
+            "ev_ebitda": 11.0,
+            "opm": 0.11,
+            "note": "Mid-tier IT services. Manufacturing sector exposure.",
+            "excluded": false
+          },
+          {
+            "name": "DTS",
+            "ticker": "9682.T",
+            "ev_ebitda": 12.0,
+            "opm": 0.12,
+            "note": "IT services. Similar scale.",
+            "excluded": false
+          }
         ]
       },
       {
         "key": "customer_business",
         "label": "Customer Business Integration (SI & Operations)",
         "label_jp": "顧客業務インテグレーション（SI・運用保守）",
-        "revenue": [8680, 7993, 8000],
-        "op": [823, 829, 900],
-        "fiscal_years": ["FY23", "FY24", "FY25E"],
-        "da_allocation_pct": 0.30,
+        "revenue": [
+          7993,
+          8000,
+          7751
+        ],
+        "op": [
+          829,
+          900,
+          830
+        ],
+        "fiscal_years": [
+          "FY24",
+          "FY25",
+          "FY26"
+        ],
+        "da_allocation_pct": 0.3,
         "selected_multiple": 8.5,
         "multiple_source": "Mature SI/operations segment with low single-digit growth. Discount to sector median for limited growth visibility. Floor set by recurring maintenance revenue base.",
         "peers": [
-          {"name": "SRA Holdings", "ticker": "3817.T", "ev_ebitda": 10.0, "opm": 0.15, "note": "IT services with stable operations focus.", "excluded": false},
-          {"name": "CEC", "ticker": "9692.T", "ev_ebitda": 9.5, "opm": 0.11, "note": "Mid-tier SI. Comparable growth profile.", "excluded": false},
-          {"name": "Cresco", "ticker": "4674.T", "ev_ebitda": 11.0, "opm": 0.11, "note": "SI peer.", "excluded": false}
+          {
+            "name": "SRA Holdings",
+            "ticker": "3817.T",
+            "ev_ebitda": 10.0,
+            "opm": 0.15,
+            "note": "IT services with stable operations focus.",
+            "excluded": false
+          },
+          {
+            "name": "CEC",
+            "ticker": "9692.T",
+            "ev_ebitda": 9.5,
+            "opm": 0.11,
+            "note": "Mid-tier SI. Comparable growth profile.",
+            "excluded": false
+          },
+          {
+            "name": "Cresco",
+            "ticker": "4674.T",
+            "ev_ebitda": 11.0,
+            "opm": 0.11,
+            "note": "SI peer.",
+            "excluded": false
+          }
         ]
       }
     ],
     "conglomerate_discount": {
       "base": 0.05,
       "note": "5% discount. Lower than typical because Core reports 3 segments with reasonable disclosure. Discount reflects small-cap liquidity risk only.",
-      "sensitivity_range": [0.0, 0.05, 0.10, 0.15, 0.20]
+      "sensitivity_range": [
+        0.0,
+        0.05,
+        0.1,
+        0.15,
+        0.2
+      ]
     },
     "sensitivity": {
       "primary_segment_key": "future_society",
-      "primary_multiples": [10, 13, 16, 19, 22],
+      "primary_multiples": [
+        10,
+        13,
+        16,
+        19,
+        22
+      ],
       "table2": {
         "row_segment_key": "industrial_tech",
-        "row_multiples": [9, 11, 13, 15, 17],
+        "row_multiples": [
+          9,
+          11,
+          13,
+          15,
+          17
+        ],
         "col_segment_key": "customer_business",
-        "col_multiples": [6, 7, 8.5, 10, 11]
+        "col_multiples": [
+          6,
+          7,
+          8.5,
+          10,
+          11
+        ]
       }
     },
     "dcf_crosscheck": {
