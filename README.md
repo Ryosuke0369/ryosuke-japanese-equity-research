@@ -1,121 +1,142 @@
-# Japanese Equity Research — Python-Automated Financial Modeling
+# Japanese Equity Research — Modeling Toolkit
 
-Automated equity research pipeline for Japanese listed companies. Built with Python + Claude Code.
+日本中小型株の独立リサーチプロジェクト。投資判断を「定量化されたシナリオ」に
+基づいて行うため、DCF / Comps / SOTP / Implied Growth Analysis / Market Scorecard
+を組み合わせたモデリングツールを蓄積している。
 
-Reads original Japanese filings directly (決算短信, 有価証券報告書, 適時開示) and generates institutional-grade financial models in ~30 minutes per company.
+## カバレッジ銘柄(2026年5月時点)
+
+| 銘柄 | 業種 | 現在価格 | 判定 | Total Score | アクション |
+|---|---|---|---|---|---|
+| コア (2359) | IT・防衛 | ¥2,006 | **BUY** | +0.55 | 保有継続、6月末カタリスト待ち |
+| 酉島 (6363) | ポンプ | - | HOLD | - | 5手法平均で適正水準 |
+| 電業社 (6365) | ポンプ | ¥5,490 | **CAUTION** | -0.55 | エントリー見送り、¥4,800-5,000まで待機 |
+| IHI (7013) | 重工業 | ¥2,824 | (作業中) | - | 中計反映DCFで再評価予定 |
 
 ---
 
-## Automation Pipeline
+## 分析フレームワーク
 
-The core of this project is a Python pipeline that auto-generates DCF and SOTP Excel models from structured JSON inputs.
+3層のバリュエーション構造を採用:
 
-### Templates
-| File | Description |
+### 1. 絶対価値層
+- **DCF (Perpetual Growth Method)**: 永続成長モデル
+- **DCF (Exit Multiple)**: マルチプル退出モデル
+- **SOTP (Sum-of-the-Parts)**: 事業別評価の合計
+
+### 2. 相対価値層
+- **Comps (EV/EBITDA)**: 同業他社比較
+- **Comps (PER)**: 株価収益率比較
+
+### 3. 市場期待層
+- **Implied Growth Analysis**: 株価から市場が織り込む成長率(α)を逆算
+- **Market Scorecard**: 4要素加重スコアによる総合判定
+
+---
+
+## Market Scorecard — 4要素設計
+
+| 要素 | ウェイト | 計測内容 |
+|---|---|---|
+| ① Implied Growth | **40%** | 1 - 市場α |
+| ② Price Momentum | 25% | 3ヶ月変化率 |
+| ③ Margin Balance | 20% | 信用倍率 × 売残充実度 |
+| ④ Forecast Gap | 15% | 自分予想 vs 会社予想 |
+
+判定スケール(5段階):
+
+| Total Score | Verdict |
 |---|---|
-| `templates/dcf_comps_template.py` | DCF (PGM + Exit Multiple) + Comparable Company Analysis — generates 5-sheet Excel workbook |
-| `templates/sotp_template.py` | Sum-of-the-Parts valuation — generates 6-sheet Excel workbook with cross-check to DCF |
-
-### Key Features
-- **DCF Model**: 5-year FCF projection, WACC (CAPM + size premium), terminal value (perpetuity growth + exit multiple), scenario matrix, sensitivity analysis, NWC schedule
-- **SOTP Model**: Segment EBITDA buildup, peer comps per segment, conglomerate/liquidity discount, sensitivity tables, D&A allocation
-- **Cross-Check**: SOTP automatically reads DCF Excel outputs for 5-method valuation comparison
-- **Comps Analysis**: EV/EBITDA and PER with median-based implied valuation
-- All calculations use **Excel formulas** (not hardcoded values) — fully auditable
-
-### How It Works
-```
-data/overrides/{ticker}_overrides.json   ← Company-specific assumptions
-data/comps/{ticker}_comps.csv            ← Comparable companies data
-        ↓
-scripts/generate_dcf.py                  ← Generates DCF + Comps Excel
-scripts/generate_sotp.py                 ← Generates SOTP Excel (reads DCF output)
-        ↓
-models/{ticker}_DCF_Model_*.xlsx         ← Output: DCF workbook
-models/{ticker}_SOTP_Model.xlsx          ← Output: SOTP workbook
-```
+| ≥ +1.0 | STRONG BUY |
+| +0.5 〜 +1.0 | **BUY** |
+| -0.5 〜 +0.5 | HOLD |
+| -1.0 〜 -0.5 | **CAUTION** |
+| ≤ -1.0 | AVOID |
 
 ---
 
-## Coverage
+## 2026年5月の主要改善
 
-### DMW Corporation (6365.T) — BUY | TP ¥8,576 (+48%)
-Pump & blower manufacturer with proprietary DeROs® energy recovery device for desalination (99.7% efficiency, world-leading). Market prices it as a boring domestic pump maker — SOTP reveals hidden overseas/desalination value.
+### 改善1: Implied Growth Analysisの数値精度向上
 
-| Method | Fair Value | vs ¥5,800 |
-|---|---|---|
-| SOTP (Base) | ¥8,196 | +41% |
-| DCF — Exit Multiple | ¥9,660 | +67% |
-| Comps EV/EBITDA | ¥9,772 | +69% |
-| Comps PER | ¥7,496 | +29% |
-| DCF — PGM | ¥5,882 | +1% |
-| **Weighted Target** | **¥8,576** | **+48%** |
+**問題**: Excelの`FORECAST`関数による線形回帰で、α-株価関係の凸性(Terminal Valueの指数的影響)に対応できず、低α領域で系統的バイアス(0.025〜0.032)が発生していた。
 
-**Catalysts**: Middle East desalination reconstruction (2026-28), India factory doubling (2027E), METI Energy Conservation Grand Prize (Jan 2026)
+**修正**: 局所線形補間(`MATCH` + `INDEX`)に置換。隣接2点間でのみ補間することで凸関数の局所特性を保持。
 
-### Core Corporation (2359.T) — BUY (Catalyst-Driven) | TP ¥2,784 (+26%)
-IT services + defense/space tech (GNSS, satellite systems). Market values it as a generic SIer — SOTP shows defense tech segment at near-zero implied value.
+**検証**: DCF Base PGM Targetの α が**正確に 1.0000** になることを数学的に保証。
 
-| Method | Fair Value | vs ¥2,218 |
-|---|---|---|
-| SOTP (Base) | ¥4,786 | +116% |
-| DCF — Exit Multiple | ¥3,781 | +70% |
-| Comps EV/EBITDA | ¥2,476 | +12% |
-| DCF — PGM | ¥2,824 | +27% |
-| Comps PER | ¥2,055 | -7% |
+**実測影響**:
+- コア(2359) 現在価格 ¥2,006 の α: -0.083 → **-0.108**
+- 電業社(6365) 現在価格 ¥5,490 の α: +0.738 → **+0.770**
+- 両者ともTotal Score / Verdict は維持
+- コアDownside 1シナリオが Mildly Bullish → **BULLISH** に昇格
 
-**Catalyst (delivered)**: Q4 FY3/26 results (4/28/2026) — OP ¥3.82B, +9% above revised MTP target. Next catalyst: 15th Mid-Term Plan announcement (FY3/27-29).
+### 改善2: 株価データの自動取得
 
-**MTP Track Record Analysis**
+`yfinance` 連携により以下を自動取得:
+- 現在価格、3ヶ月前終値、1ヶ月前終値、3ヶ月間の高値・安値
 
-Core Corp delivers consistent ~35-39% operating profit growth across each three-year mid-term plan, while keeping revenue guidance conservative. The 14th MTP target was revised down on April 28, 2025 — a footnote that appears only in the Japanese MTP document, not in English IR materials.
-
-| MTP | Period | OP Growth (3Y) | Outcome |
-|---|---|---|---|
-| 12th | FY3/18-FY3/20 | +38% | Delivered |
-| 13th | FY3/21-FY3/23 | +35% | Delivered |
-| 14th | FY3/24-FY3/26 | +39% | Delivered (revised target +9% beat) |
-
-Pattern: lower the bar → clear it. The 15th MTP announcement is likely to follow the same template — a conservative headline, with delivery skewing higher by FY3/29.
-
-2040 vision: ¥100B revenue (vs FY3/26 actual ¥26.5B), implying ¥50B by 2030. The 15th MTP is the bridge.
-
-### Torishima Pump (6363.T) — HOLD | Fair Value ¥3,392 (+2%)
-Pump manufacturer with desalination exposure. 5-method average converges near current price — limited upside.
+**設計**:
+- configに値があれば優先(後方互換性維持)
+- 取得失敗時は明示的にValueErrorで停止(暗黙のNone伝播を回避)
+- 高値・安値の期間を3ヶ月に統一(モメンタム計算と整合)
 
 ---
 
-## Repository Structure
+## ディレクトリ構成
 
 ```
-├── data/
-│   ├── overrides/       # Company-specific model assumptions (JSON)
-│   └── comps/           # Comparable company data (CSV)
-├── models/              # Generated Excel models (DCF, SOTP)
-├── templates/           # Python templates for Excel generation
-│   ├── dcf_comps_template.py
-│   └── sotp_template.py
-├── scripts/             # Generation & utility scripts
-├── reports/             # PDF equity research reports
-├── docs/                # Documentation & specs
-└── notes/               # Analysis notes & memos
+ryosuke-japanese-equity-research/
+├── templates/        # 汎用テンプレート(DCF, SOTP, Market Analysis等)
+├── scripts/          # 銘柄別実行スクリプト
+├── models/           # 銘柄別のDCF/SOTP Excel(再生成可能なため.gitignore)
+├── reports/          # 生成されたMarket Analysisレポート
+├── data/overrides/   # 銘柄ごとの前提値オーバーライド(JSON)
+├── docs/             # 銘柄別の分析メモ、LinkedIn投稿
+├── notes/            # セッション引継ぎ、学習メモ
+└── comps/            # Compsデータ
 ```
 
 ---
 
-## Tech Stack
+## 今後の作業予定
 
-- **Python**: openpyxl, yfinance, pandas, numpy
-- **Claude Code**: AI-assisted model generation and code automation
-- **Data Sources**: EDINET, TDnet (決算短信), yfinance
-- **Output**: Formula-driven Excel models (fully auditable, zero hardcoded values)
+### 短期(数週間以内)
+- **IHI(7013)**: 2026年3月期決算をDCFに反映、新中計(フェーズ1〜3、FY2034まで)をManagementシナリオに統合してMarket Analysis実行
+- **コア(2359)**: 6月末カタリスト待ち、損切ライン ¥1,750 維持
+- **電業社(6365)**: ¥4,800-5,000 への押し目待ち
+
+### 中期
+- 酉島(6363)を新テンプレートで再評価
+- 木村化工機(6378) 初期分析(核融合テーマ)
+- 信用残データの自動取得(株探スクレイピング)
+- 複数銘柄一括処理ラッパー(`auto_generate_for_ticker`)
 
 ---
 
-## About
+## 技術スタック
 
-Financial analyst based in Japan. Specializing in Japanese equity research for foreign investors, bridging the language and information gap between global capital and Japan's undercovered small/mid-cap market.
+- Python 3.x
+- `openpyxl`(Excel生成・操作)
+- `yfinance`(株価データ取得)
+- `pandas` / `numpy`(データ処理)
+- EDINET API(財務データ取得、`scripts/edinet_fetcher.py`)
 
-## Disclaimer
+---
 
-All analyses are for informational and demonstration purposes only. They do not constitute investment advice.
+## 設計思想
+
+> シナリオを描いて待ち、想定外なら新シナリオを考える。値動きに翻弄されない。
+
+定量化ツールの目的は「判断を**正しく**する」ことではなく「判断を**ブレなく**する」こと。
+市場の悲観・楽観に流されず、自分の前提に立ち返るための錨として機能する。
+
+BUY/CAUTIONの判定は確率分布の中央値であり、定量+定性で統合的に投資判断を行う。
+
+---
+
+## ライセンス・免責
+
+- 本リポジトリは個人の学習・記録目的
+- 投資推奨ではない
+- 提示される分析は時点情報であり、市場環境により変化する
