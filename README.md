@@ -1,142 +1,173 @@
 # Japanese Equity Research — Modeling Toolkit
 
-日本中小型株の独立リサーチプロジェクト。投資判断を「定量化されたシナリオ」に
-基づいて行うため、DCF / Comps / SOTP / Implied Growth Analysis / Market Scorecard
-を組み合わせたモデリングツールを蓄積している。
+An independent research project on Japanese small/mid-cap equities. To ground investment decisions in *quantified scenarios* rather than price action, this repository accumulates a modeling toolkit combining DCF / Comps / SOTP / Implied Growth Analysis / Market Scorecard / Narrative Stage Assessment.
 
-## カバレッジ銘柄(2026年5月時点)
+## Coverage (as of May 2026)
 
-| 銘柄 | 業種 | 現在価格 | 判定 | Total Score | アクション |
+| Ticker | Sector | Price | Verdict | Total Score | Action |
 |---|---|---|---|---|---|
-| コア (2359) | IT・防衛 | ¥2,006 | **BUY** | +0.55 | 保有継続、6月末カタリスト待ち |
-| 酉島 (6363) | ポンプ | - | HOLD | - | 5手法平均で適正水準 |
-| 電業社 (6365) | ポンプ | ¥5,490 | **CAUTION** | -0.55 | エントリー見送り、¥4,800-5,000まで待機 |
-| IHI (7013) | 重工業 | ¥2,824 | (作業中) | - | 中計反映DCFで再評価予定 |
+| Core (2359) | IT / Defense | ¥2,006 | BUY | +0.55 | Hold; awaiting late-June catalyst |
+| Torishima (6363) | Pumps | — | HOLD | — | Fairly valued on 5-method average |
+| Denyo-sha (6365) | Pumps | ¥5,490 | CAUTION | -0.55 | Entry on hold; wait for ¥4,800–5,000 |
+| IHI (7013) | Heavy Industry | ¥2,824 | (in progress) | — | Re-valuing with MTP-reflected DCF |
 
----
+## Analysis Framework
 
-## 分析フレームワーク
+The framework uses a layered valuation structure. The first three layers measure **Gap 1** (the *surprise gap*: realized results vs prior expectations). A fourth layer, **Block 5**, measures **Gap 2** (the *catalyst gap*: today's expectation vs the expectation about to form).
 
-3層のバリュエーション構造を採用:
+### 1. Absolute Value Layer
+- **DCF (Perpetual Growth Method)**: perpetuity growth model
+- **DCF (Exit Multiple)**: exit-multiple terminal value
+- **SOTP (Sum-of-the-Parts)**: sum of segment-level valuations
 
-### 1. 絶対価値層
-- **DCF (Perpetual Growth Method)**: 永続成長モデル
-- **DCF (Exit Multiple)**: マルチプル退出モデル
-- **SOTP (Sum-of-the-Parts)**: 事業別評価の合計
+### 2. Relative Value Layer
+- **Comps (EV/EBITDA)**: peer comparison
+- **Comps (PER)**: price-to-earnings comparison
 
-### 2. 相対価値層
-- **Comps (EV/EBITDA)**: 同業他社比較
-- **Comps (PER)**: 株価収益率比較
+### 3. Market Expectation Layer
+- **Implied Growth Analysis**: reverse-engineers the growth rate (α) the market prices into the share price
+- **Market Scorecard**: composite buy/sell judgment from a 4-factor weighted score
 
-### 3. 市場期待層
-- **Implied Growth Analysis**: 株価から市場が織り込む成長率(α)を逆算
-- **Market Scorecard**: 4要素加重スコアによる総合判定
+### 4. Narrative Stage Layer (Block 5) — *new*
+- **Narrative Stage Assessment**: scores where a stock sits in the lifecycle of a narrative re-rating, to identify doubler candidates before the re-rating spreads. See [docs/narrative_stage.md](docs/narrative_stage.md).
 
----
+## Market Scorecard — 4-Factor Design
 
-## Market Scorecard — 4要素設計
-
-| 要素 | ウェイト | 計測内容 |
+| Factor | Weight | What it measures |
 |---|---|---|
-| ① Implied Growth | **40%** | 1 - 市場α |
-| ② Price Momentum | 25% | 3ヶ月変化率 |
-| ③ Margin Balance | 20% | 信用倍率 × 売残充実度 |
-| ④ Forecast Gap | 15% | 自分予想 vs 会社予想 |
+| ① Implied Growth | 40% | 1 − market α |
+| ② Price Momentum | 25% | 3-month change |
+| ③ Margin Balance | 20% | Margin ratio × short-interest depth |
+| ④ Forecast Gap | 15% | My forecast vs company guidance |
 
-判定スケール(5段階):
+**Verdict scale (5 tiers):**
 
 | Total Score | Verdict |
 |---|---|
 | ≥ +1.0 | STRONG BUY |
-| +0.5 〜 +1.0 | **BUY** |
-| -0.5 〜 +0.5 | HOLD |
-| -1.0 〜 -0.5 | **CAUTION** |
+| +0.5 to +1.0 | BUY |
+| -0.5 to +0.5 | HOLD |
+| -1.0 to -0.5 | CAUTION |
 | ≤ -1.0 | AVOID |
 
----
+## Block 5 — Narrative Stage Assessment
 
-## 2026年5月の主要改善
+The Market Scorecard (Blocks 1–4) is strong at catching **Gap 1** (the surprise gap, observed via reverse-DCF). It cannot score **Gap 2** — the gap between the market's *current* expectation and the expectation *about to form*. Doublers are usually triggered by Gap 2 and then compounded by Gap 1 (e.g. a mid-term plan lifts expectations → next earnings beat the new bar → expectations rise again). Block 5 fills this hole.
 
-### 改善1: Implied Growth Analysisの数値精度向上
+### Six axes (each scored 0 / +1 / +2)
 
-**問題**: Excelの`FORECAST`関数による線形回帰で、α-株価関係の凸性(Terminal Valueの指数的影響)に対応できず、低α領域で系統的バイアス(0.025〜0.032)が発生していた。
+Four core axes track the narrative re-rating using a *fire* metaphor:
 
-**修正**: 局所線形補間(`MATCH` + `INDEX`)に置換。隣接2点間でのみ補間することで凸関数の局所特性を保持。
+- **Axis 1 — Label Status** *(is there a spark?)*: how far the old label has been rewritten into a new one. Label-rewrite progress.
+- **Axis 2A — Catalyst Potential** *(is there fuel?)*: existence of real, factual sources that could drive the rewrite (counts facts, not wishes).
+- **Axis 2B — Catalyst Realization** *(has it ignited?)*: whether the catalyst has fired into the market.
+- **Axis 3 — Diffusion Stage** *(how wide is the fire?)*: how far the new label has reached (retail → media → sell-side → institutions). **This axis gates the stage.**
+- **Axis 4 — Earnings Materiality**: is the narrative backed by real earnings?
+- **Axis 5 — Narrative Durability**: does the story survive the next cycle?
 
-**検証**: DCF Base PGM Targetの α が**正確に 1.0000** になることを数学的に保証。
+### Two key design choices
 
-**実測影響**:
-- コア(2359) 現在価格 ¥2,006 の α: -0.083 → **-0.108**
-- 電業社(6365) 現在価格 ¥5,490 の α: +0.738 → **+0.770**
-- 両者ともTotal Score / Verdict は維持
-- コアDownside 1シナリオが Mildly Bullish → **BULLISH** に昇格
+1. **Stage is gated by REACH (Axis 3), not the sum.** A brilliant story nobody has heard is Stage 1 — price moves with recognition, not with the truth of the thesis. Axis 1 (label rewrite) is *independent* of Axis 3 (reach) and does **not** move the stage; instead the gap between them is reported as a headroom / reversal-risk read (Axis 1 > Axis 3 = room to spread; Axis 1 < Axis 3 = shallow-rewrite risk).
+2. **If Earnings Materiality (Axis 4) = 0, the stage is capped at 2.** This blocks narrative-only stocks that excite the market until the theme cools. The cap only ever *lowers* a stage; it never raises one.
 
-### 改善2: 株価データの自動取得
+### Five stages
 
-`yfinance` 連携により以下を自動取得:
-- 現在価格、3ヶ月前終値、1ヶ月前終値、3ヶ月間の高値・安値
+Stage 0 (no label change) → Stage 1 (emergence) → Stage 2 (diffusion) → Stage 3 (recognition / sell-side) → Stage 4 (peer-group rewrite).
 
-**設計**:
-- configに値があれば優先(後方互換性維持)
-- 取得失敗時は明示的にValueErrorで停止(暗黙のNone伝播を回避)
-- 高値・安値の期間を3ヶ月に統一(モメンタム計算と整合)
+### Final Verdict matrix
 
----
+The Block 2–4 score crosses with the Block 5 stage:
 
-## ディレクトリ構成
+| Block 2–4 | Stage 0–1 | Stage 2 | Stage 3–4 |
+|---|---|---|---|
+| BUY | **STRONG BUY** (doubler zone) | BUY | HOLD (consider exit) |
+| HOLD | OBSERVE | HOLD | TRIM |
+| CAUTION | AVOID | CAUTION | EXIT |
+
+The doubler sweet spot is **cheap on fundamentals × Stage 0–1** (top-left).
+
+### Companion metric: absolute earnings impact
+
+Stage measures the *phase* of the narrative, not the *size of the prize*. A separate check on TAM × share × segment OPM (vs current operating profit) estimates the absolute uplift — because an identical stage profile can hide wildly different ceilings.
+
+### Implementation
+
+- `templates/narrative_stage_template.py` — core scoring logic (`assess()`), stage determination, headroom signal, earnings-impact and verdict calculation.
+- `templates/test_narrative_stage.py` — validation against 4 reference cases (Core, Denyo-sha, IHI, retroactive Fujikura 2023) plus 3 edge cases. Run with `PYTHONIOENCODING=utf-8 python test_narrative_stage.py`.
+- `templates/market_analysis_template.py` — emits a "Narrative Stage" sheet (six-axis table, stage judgment, headroom signal, earnings impact, verdict, radar chart) alongside the existing Implied Growth and Market Scorecard sheets. Backward compatible: skipped when no `narrative` config is supplied.
+- Full design: [docs/narrative_stage.md](docs/narrative_stage.md).
+
+## May 2026 — Key Improvements
+
+### Improvement 1: Higher numerical precision in Implied Growth Analysis
+
+**Problem**: Excel's `FORECAST` linear regression could not handle the convexity of the α–price relationship (the exponential influence of terminal value), producing a systematic bias (0.025–0.032) in the low-α region.
+
+**Fix**: Replaced with local linear interpolation (`MATCH` + `INDEX`). Interpolating only between adjacent points preserves the local character of the convex function.
+
+**Validation**: Mathematically guarantees that the α of the DCF Base PGM Target is exactly 1.0000.
+
+**Measured impact**:
+- Core (2359) α at ¥2,006: -0.083 → -0.108
+- Denyo-sha (6365) α at ¥5,490: +0.738 → +0.770
+- Both retained Total Score / Verdict
+- Core's Downside-1 scenario upgraded from Mildly Bullish → BULLISH
+
+### Improvement 2: Automated price-data retrieval
+
+`yfinance` integration auto-fetches: current price, 3-month-ago close, 1-month-ago close, and the 3-month high/low.
+
+Design:
+- Config values take priority when present (backward compatible)
+- Explicit `ValueError` on fetch failure (avoids silent `None` propagation)
+- High/low window unified to 3 months (consistent with momentum calc)
+
+## Directory Structure
 
 ```
 ryosuke-japanese-equity-research/
-├── templates/        # 汎用テンプレート(DCF, SOTP, Market Analysis等)
-├── scripts/          # 銘柄別実行スクリプト
-├── models/           # 銘柄別のDCF/SOTP Excel(再生成可能なため.gitignore)
-├── reports/          # 生成されたMarket Analysisレポート
-├── data/overrides/   # 銘柄ごとの前提値オーバーライド(JSON)
-├── docs/             # 銘柄別の分析メモ、LinkedIn投稿
-├── notes/            # セッション引継ぎ、学習メモ
-└── comps/            # Compsデータ
+├── templates/        # Generic templates (DCF, SOTP, Market Analysis, Narrative Stage, etc.)
+├── scripts/          # Per-ticker execution scripts (incl. recalc.py formula checker)
+├── models/           # Per-ticker DCF/SOTP Excel (regenerable, so .gitignored)
+├── reports/          # Generated Market Analysis reports
+├── data/overrides/   # Per-ticker assumption overrides (JSON)
+├── docs/             # Per-ticker analysis notes, design docs, LinkedIn posts
+├── notes/            # Session handoffs, learning notes
+└── comps/            # Comps data
 ```
 
----
+## Roadmap
 
-## 今後の作業予定
+### Short term (within weeks)
+- **IHI (7013)**: reflect FY2026/3 results in the DCF; integrate the new mid-term plan (Phases 1–3, through FY2034) into the Management scenario and run Market Analysis
+- **Core (2359)**: await late-June catalyst; hold stop-loss at ¥1,750
+- **Denyo-sha (6365)**: wait for a pullback to ¥4,800–5,000
 
-### 短期(数週間以内)
-- **IHI(7013)**: 2026年3月期決算をDCFに反映、新中計(フェーズ1〜3、FY2034まで)をManagementシナリオに統合してMarket Analysis実行
-- **コア(2359)**: 6月末カタリスト待ち、損切ライン ¥1,750 維持
-- **電業社(6365)**: ¥4,800-5,000 への押し目待ち
+### Medium term
+- Re-value Torishima (6363) with the new template
+- Initial analysis of Kimura Chemical Plants (6378) (fusion theme)
+- Automated margin-balance data retrieval (Kabutan scraping)
+- Multi-ticker batch wrapper (`auto_generate_for_ticker`)
+- Backtest Block 5 retroactively on past doublers (Lasertec 2019, Hitachi 2020–21, Mitsubishi Heavy 2022) for statistical validation
 
-### 中期
-- 酉島(6363)を新テンプレートで再評価
-- 木村化工機(6378) 初期分析(核融合テーマ)
-- 信用残データの自動取得(株探スクレイピング)
-- 複数銘柄一括処理ラッパー(`auto_generate_for_ticker`)
-
----
-
-## 技術スタック
+## Tech Stack
 
 - Python 3.x
-- `openpyxl`(Excel生成・操作)
-- `yfinance`(株価データ取得)
-- `pandas` / `numpy`(データ処理)
-- EDINET API(財務データ取得、`scripts/edinet_fetcher.py`)
+- openpyxl (Excel generation/manipulation)
+- yfinance (price data)
+- pandas / numpy (data processing)
+- EDINET API (financial data, `scripts/edinet_fetcher.py`)
 
----
+## Design Philosophy
 
-## 設計思想
+Draw a scenario and wait; when reality breaks it, draw a new one. Don't get tossed around by price action.
 
-> シナリオを描いて待ち、想定外なら新シナリオを考える。値動きに翻弄されない。
+The purpose of quantification is not to make judgments *correct* but to make them *consistent* — an anchor for returning to one's own assumptions instead of being swept along by the market's pessimism or optimism.
 
-定量化ツールの目的は「判断を**正しく**する」ことではなく「判断を**ブレなく**する」こと。
-市場の悲観・楽観に流されず、自分の前提に立ち返るための錨として機能する。
+A BUY/CAUTION verdict is the median of a probability distribution; the final call integrates quantitative and qualitative judgment.
 
-BUY/CAUTIONの判定は確率分布の中央値であり、定量+定性で統合的に投資判断を行う。
+## License / Disclaimer
 
----
-
-## ライセンス・免責
-
-- 本リポジトリは個人の学習・記録目的
-- 投資推奨ではない
-- 提示される分析は時点情報であり、市場環境により変化する
+- This repository is for personal study and record-keeping.
+- It is not investment advice.
+- All analyses are point-in-time and change with market conditions.

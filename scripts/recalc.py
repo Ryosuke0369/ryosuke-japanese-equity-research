@@ -113,6 +113,12 @@ def check_workbook(path):
         ("Cash Flow Statement", "E55", "CF Consistency (Year 1)"),
         ("Debt Schedule", "D32", "Total Debt (Pro Forma)"),
         ("Returns Analysis", "D23", "Sponsor Equity Invested"),
+        # Block 5 (Narrative Stage) — value-embedded, so checks confirm
+        # presence rather than recalculating. C16 = Stage label cell,
+        # C29 = Final Verdict cell. Both layouts derived from
+        # _build_narrative_stage_sheet in market_analysis_template.py.
+        ("Narrative Stage", "C16", "Block 5 Stage Label"),
+        ("Narrative Stage", "C29", "Block 5 Final Verdict"),
     ]
     for sheet, cell_addr, desc in key_checks:
         if sheet not in wb.sheetnames:

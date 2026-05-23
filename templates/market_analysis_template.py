@@ -17,6 +17,10 @@ import os
 import openpyxl
 from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 from openpyxl.utils import get_column_letter, column_index_from_string
+from openpyxl.chart import RadarChart, Reference
+from openpyxl.worksheet.properties import PageSetupProperties
+
+from narrative_stage_template import NarrativeInput, assess
 
 # ---------------------------------------------------------------------------
 # Style constants (kept aligned with dcf_comps_template.py / sotp_template.py)
@@ -39,6 +43,13 @@ BORDER    = Border(top=THIN_SIDE, bottom=THIN_SIDE, left=THIN_SIDE, right=THIN_S
 # 18-point alpha grid spanning Deep-Pessimism through Bullish
 ALPHA_VALUES = [-0.5, -0.3, -0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5,
                  0.6,  0.7,  0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.5]
+
+# Block 5 (Narrative Stage) — short labels for the axis1 vs axis3 headroom signal
+HEADROOM_LABEL = {
+    'HEADROOM': '伸びしろ (軸1>軸3: ラベル置換が到達に先行)',
+    'BALANCED': 'バランス (軸1=軸3)',
+    'SHALLOW':  '逆行リスク (軸1<軸3: 到達がラベル置換に先行)',
+}
 
 
 # ---------------------------------------------------------------------------
@@ -948,6 +959,220 @@ def _build_market_scorecard_sheet(wb, config, dd, market_alpha_cell='C90'):
 
 
 # ---------------------------------------------------------------------------
+# Sheet 3: Narrative Stage (Block 5) — optional, added when config['narrative']
+# is present. Uses assess() from narrative_stage_template; values are written
+# as values (not formulas), consistent with this template's value-embedding
+# approach (recalc.py is a static checker and does not compute).
+# ---------------------------------------------------------------------------
+def _narrative_input_from_config(config):
+    """Build NarrativeInput from config['narrative']."""
+    n = config['narrative']
+    return NarrativeInput(
+        ticker=config['ticker'],
+        company_name=config['company_name'],
+        date=n.get('date', ''),
+        axis_1_label_status=n['axis_1_label_status'],
+        axis_2a_catalyst_potential=n['axis_2a_catalyst_potential'],
+        axis_2b_catalyst_realization=n['axis_2b_catalyst_realization'],
+        axis_3_diffusion_stage=n['axis_3_diffusion_stage'],
+        axis_4_earnings_materiality=n['axis_4_earnings_materiality'],
+        axis_5_narrative_durability=n['axis_5_narrative_durability'],
+        axis_1_note=n.get('axis_1_note', ''),
+        axis_2a_note=n.get('axis_2a_note', ''),
+        axis_2b_note=n.get('axis_2b_note', ''),
+        axis_3_note=n.get('axis_3_note', ''),
+        axis_4_note=n.get('axis_4_note', ''),
+        axis_5_note=n.get('axis_5_note', ''),
+        tam_oku_jpy=n.get('tam_oku_jpy'),
+        expected_share_pct=n.get('expected_share_pct'),
+        segment_opm_pct=n.get('segment_opm_pct'),
+        current_operating_profit_oku=n.get('current_operating_profit_oku'),
+        fundamental_verdict=n.get('fundamental_verdict'),
+    )
+
+
+def _build_narrative_stage_sheet(wb, config, dd=None):
+    """Build the 'Narrative Stage' sheet (Block 5)."""
+    res = assess(_narrative_input_from_config(config))
+
+    ws = wb.create_sheet('Narrative Stage')
+    ws.column_dimensions['A'].width = 3
+    ws.column_dimensions['B'].width = 30
+    ws.column_dimensions['C'].width = 10
+    ws.column_dimensions['D'].width = 48
+    ws.column_dimensions['E'].width = 12
+    ws.column_dimensions['F'].width = 14
+
+    # ── Title ──
+    ws['B2'] = f"Block 5: Narrative Stage — {config['company_name']} ({config['ticker']})"
+    ws['B2'].font = TITLE_FONT
+    ws['B2'].fill = TITLE_FILL
+    ws.merge_cells('B2:F2')
+    ws['B3'] = res.date
+    ws['B3'].font = Font(name='Calibri', size=9, italic=True)
+
+    # ── Six-axis scores ──
+    ws['B5'] = '6軸スコア (0/+1/+2)'
+    ws['B5'].font = HEADER_FONT
+    ws['B5'].fill = HEADER_FILL
+    ws.merge_cells('B5:F5')
+
+    for i, h in enumerate(['軸 (Axis)', 'Score', '根拠 (Note)']):
+        c = chr(ord('B') + i if i < 2 else ord('D'))
+        ws[f'{c}6'] = h
+        ws[f'{c}6'].font = SUBHEADER_FONT
+        ws[f'{c}6'].fill = SUBHEADER_FILL
+
+    axis_rows = [
+        ('軸1: ラベル現状 (火種/置換)',   res.axis_scores['1_label_status'],        res.axis_notes['1_label_status']),
+        ('軸2A: 触媒ポテンシャル (燃料)',  res.axis_scores['2a_catalyst_potential'], res.axis_notes['2a_catalyst_potential']),
+        ('軸2B: 触媒実現度 (発火)',       res.axis_scores['2b_catalyst_realization'],res.axis_notes['2b_catalyst_realization']),
+        ('軸3: 拡散進行度 (到達/Stage本体)',res.axis_scores['3_diffusion_stage'],     res.axis_notes['3_diffusion_stage']),
+        ('軸4: 業績寄与の現実性',         res.axis_scores['4_earnings_materiality'], res.axis_notes['4_earnings_materiality']),
+        ('軸5: 物語持続性',              res.axis_scores['5_narrative_durability'],  res.axis_notes['5_narrative_durability']),
+    ]
+    axis_start = 7
+    for j, (label, score, note) in enumerate(axis_rows):
+        r = axis_start + j
+        ws[f'B{r}'] = label
+        ws[f'C{r}'] = score
+        ws[f'C{r}'].fill = INPUT_FILL
+        ws[f'C{r}'].alignment = Alignment(horizontal='center')
+        ws[f'D{r}'] = note
+        ws[f'D{r}'].alignment = Alignment(wrap_text=True, vertical='top')
+        for c in 'BCD':
+            ws[f'{c}{r}'].border = BORDER
+    axis_end = axis_start + len(axis_rows) - 1  # row 12
+
+    ws[f'B{axis_end+1}'] = 'Total'
+    ws[f'B{axis_end+1}'].font = SUBHEADER_FONT
+    ws[f'C{axis_end+1}'] = res.total_score
+    ws[f'C{axis_end+1}'].font = Font(name='Calibri', size=11, bold=True)
+    ws[f'C{axis_end+1}'].fill = HIGHLIGHT_FILL
+    ws[f'C{axis_end+1}'].alignment = Alignment(horizontal='center')
+
+    # ── Stage judgment ──
+    sr = axis_end + 3  # row 15
+    ws[f'B{sr}'] = 'Stage 判定'
+    ws[f'B{sr}'].font = HEADER_FONT
+    ws[f'B{sr}'].fill = HEADER_FILL
+    ws.merge_cells(f'B{sr}:F{sr}')
+
+    stage_rows = [
+        ('Stage', res.stage_label),
+        ('律速軸 (Rate-limiting)', res.rate_limiting_axis),
+        ('理由 (Reason)', res.rate_limiting_reason),
+        ('業績キャップ適用', 'Yes' if res.earnings_cap_applied else 'No'),
+    ]
+    for j, (label, val) in enumerate(stage_rows):
+        r = sr + 1 + j
+        ws[f'B{r}'] = label
+        ws[f'B{r}'].font = SUBHEADER_FONT
+        ws[f'C{r}'] = val
+        ws.merge_cells(f'C{r}:F{r}')
+        ws[f'C{r}'].alignment = Alignment(wrap_text=True, vertical='top')
+        ws[f'C{r}'].fill = OUTPUT_FILL
+
+    # ── Headroom signal (axis1 vs axis3) ──
+    hr = sr + 6  # row 21
+    ws[f'B{hr}'] = 'Headroom シグナル (軸1 vs 軸3)'
+    ws[f'B{hr}'].font = HEADER_FONT
+    ws[f'B{hr}'].fill = HEADER_FILL
+    ws.merge_cells(f'B{hr}:F{hr}')
+    ws[f'B{hr+1}'] = 'シグナル'
+    ws[f'B{hr+1}'].font = SUBHEADER_FONT
+    ws[f'C{hr+1}'] = res.headroom_signal
+    ws[f'C{hr+1}'].font = Font(name='Calibri', size=11, bold=True)
+    fill = OUTPUT_FILL if res.headroom_signal == 'HEADROOM' else (
+        WARNING_FILL if res.headroom_signal == 'SHALLOW' else SUBHEADER_FILL)
+    ws[f'C{hr+1}'].fill = fill
+    ws[f'D{hr+1}'] = HEADROOM_LABEL.get(res.headroom_signal, '')
+    ws.merge_cells(f'D{hr+1}:F{hr+1}')
+    ws[f'B{hr+2}'] = '解説'
+    ws[f'B{hr+2}'].font = SUBHEADER_FONT
+    ws[f'C{hr+2}'] = res.headroom_note
+    ws.merge_cells(f'C{hr+2}:F{hr+2}')
+    ws[f'C{hr+2}'].alignment = Alignment(wrap_text=True, vertical='top')
+
+    # ── Earnings impact ──
+    er = hr + 4
+    ws[f'B{er}'] = '業績インパクト (補助評価)'
+    ws[f'B{er}'].font = HEADER_FONT
+    ws[f'B{er}'].fill = HEADER_FILL
+    ws.merge_cells(f'B{er}:F{er}')
+    ws[f'B{er+1}'] = res.earnings_impact_note or 'TAM/share/OPM未入力'
+    ws.merge_cells(f'B{er+1}:F{er+1}')
+    ws[f'B{er+1}'].alignment = Alignment(wrap_text=True, vertical='top')
+
+    # ── Final verdict ──
+    vr = er + 3
+    ws[f'B{vr}'] = '最終 Verdict (Block2-4 × Stage)'
+    ws[f'B{vr}'].font = HEADER_FONT
+    ws[f'B{vr}'].fill = HEADER_FILL
+    ws.merge_cells(f'B{vr}:F{vr}')
+    ws[f'B{vr+1}'] = 'Verdict'
+    ws[f'B{vr+1}'].font = SUBHEADER_FONT
+    ws[f'C{vr+1}'] = res.final_verdict or 'N/A'
+    ws[f'C{vr+1}'].font = Font(name='Calibri', size=12, bold=True)
+    ws[f'C{vr+1}'].fill = VERDICT_FILL
+    ws[f'D{vr+1}'] = res.verdict_rationale
+    ws.merge_cells(f'D{vr+1}:F{vr+1}')
+    ws[f'D{vr+1}'].alignment = Alignment(wrap_text=True, vertical='top')
+
+    # ── Radar chart (6 axes) ──
+    # Hidden data block for the chart (categories + values), placed to the
+    # right so it doesn't clutter the visible layout.
+    data_col = 8  # H
+    cat_col = 7   # G
+    chart_axes = [
+        ('軸1', res.axis_scores['1_label_status']),
+        ('軸2A', res.axis_scores['2a_catalyst_potential']),
+        ('軸2B', res.axis_scores['2b_catalyst_realization']),
+        ('軸3', res.axis_scores['3_diffusion_stage']),
+        ('軸4', res.axis_scores['4_earnings_materiality']),
+        ('軸5', res.axis_scores['5_narrative_durability']),
+    ]
+    hdr_row = 6
+    ws.cell(row=hdr_row, column=cat_col, value='Axis')
+    ws.cell(row=hdr_row, column=data_col, value='Score')
+    for k, (name, val) in enumerate(chart_axes):
+        ws.cell(row=hdr_row + 1 + k, column=cat_col, value=name)
+        ws.cell(row=hdr_row + 1 + k, column=data_col, value=val)
+
+    chart = RadarChart()
+    chart.type = 'filled'
+    chart.title = 'Narrative 6-Axis Profile'
+    chart.style = 26
+    data = Reference(ws, min_col=data_col, min_row=hdr_row,
+                     max_row=hdr_row + len(chart_axes))
+    cats = Reference(ws, min_col=cat_col, min_row=hdr_row + 1,
+                     max_row=hdr_row + len(chart_axes))
+    chart.add_data(data, titles_from_data=True)
+    chart.set_categories(cats)
+    chart.y_axis.scaling.min = 0
+    chart.y_axis.scaling.max = 2
+    chart.height = 8
+    chart.width = 11
+    # Anchor on column J so the chart sits to the right of the vertical
+    # stack of sections and never overlaps them.
+    ws.add_chart(chart, 'J6')
+
+    # Hide the helper data columns (G/H) that feed the chart.
+    ws.column_dimensions['G'].hidden = True
+    ws.column_dimensions['H'].hidden = True
+
+    # Print setup: landscape + fit-to-width so the note column (D) and the
+    # chart area are not clipped on PDF export.
+    ws.page_setup.orientation = 'landscape'
+    ws.page_setup.fitToWidth = 1
+    ws.page_setup.fitToHeight = 0
+    ws.sheet_properties.pageSetUpPr = PageSetupProperties(fitToPage=True)
+
+    return {'stage': res.stage, 'verdict': res.final_verdict,
+            'sheet': 'Narrative Stage'}
+
+
+# ---------------------------------------------------------------------------
 # Public entry point
 # ---------------------------------------------------------------------------
 def generate_market_analysis_excel(config, output_path, dcf_excel_path=None):
@@ -983,6 +1208,8 @@ def generate_market_analysis_excel(config, output_path, dcf_excel_path=None):
     iga_info = _build_implied_growth_sheet(wb, config, dd)
     market_alpha_cell = iga_info['market_alpha_cell']
     _build_market_scorecard_sheet(wb, config, dd, market_alpha_cell=market_alpha_cell)
+    if config.get('narrative'):
+        _build_narrative_stage_sheet(wb, config, dd)
 
     os.makedirs(os.path.dirname(os.path.abspath(output_path)) or '.', exist_ok=True)
     wb.save(output_path)
@@ -1069,6 +1296,12 @@ def _build_fallback_data(config):
 # Standalone demo: 株式会社コア (2359) post-Vision2029
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
+    import sys
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
+
     here = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.abspath(os.path.join(here, '..'))
 
@@ -1102,6 +1335,29 @@ if __name__ == "__main__":
         "margin_sell_peak_6m": 169300,
         "company_op_growth":  0.113,
         "company_rev_growth": 0.093,
+        # Block 5: Narrative Stage inputs (6-axis scoring + notes). Drives the
+        # 'Narrative Stage' sheet via assess(). Same scores as the Phase 1 test
+        # for ticker 2359 (Stage 1 / STRONG_BUY / Headroom=BALANCED).
+        "narrative": {
+            "date": "2026-05-22",
+            "axis_1_label_status":        1,
+            "axis_2a_catalyst_potential": 2,
+            "axis_2b_catalyst_realization":1,
+            "axis_3_diffusion_stage":     1,
+            "axis_4_earnings_materiality":1,
+            "axis_5_narrative_durability":2,
+            "axis_1_note":  "防衛タグへの言及が個人投資家層で出始め",
+            "axis_2a_note": "防衛省ドローン・スプーフィング実証実験を単独落札(2025/5)",
+            "axis_2b_note": "続報待ち、6月カタリスト期待",
+            "axis_3_note":  "個人投資家の一部段階、機関・セルサイドはまだ",
+            "axis_4_note":  "現状寄与は中程度、継続案件化で拡大可能",
+            "axis_5_note":  "構造的な防衛予算増、競合限定",
+            "tam_oku_jpy":         5000,
+            "expected_share_pct":  10,
+            "segment_opm_pct":     12,
+            "current_operating_profit_oku": 80,
+            "fundamental_verdict": "BUY",
+        },
     }
 
     dcf_path = os.path.join(project_root, "models", "2359_DCF_Model_20260509.xlsx")
