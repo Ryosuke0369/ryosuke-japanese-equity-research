@@ -1148,17 +1148,17 @@ def _build_narrative_stage_sheet(wb, config, dd=None):
     cats = Reference(ws, min_col=cat_col, min_row=hdr_row + 1,
                      max_row=hdr_row + len(chart_axes))
     chart.add_data(data, titles_from_data=True)
-    chart.set_categories(cats)
+    chart.set_categories(cats)            # add_data の後に呼ぶ
     chart.y_axis.scaling.min = 0
     chart.y_axis.scaling.max = 2
+    chart.visible_cells_only = False      # 非表示セルも描画
     chart.height = 8
     chart.width = 11
     # Anchor on column J so the chart sits to the right of the vertical
     # stack of sections and never overlaps them.
     ws.add_chart(chart, 'J6')
 
-    # Hide the helper data columns (G/H) that feed the chart.
-    ws.column_dimensions['G'].hidden = True
+    # H列のみ非表示。G列(カテゴリ)は可視のままにする（非表示だとExcelが描画しない）
     ws.column_dimensions['H'].hidden = True
 
     # Print setup: landscape + fit-to-width so the note column (D) and the
