@@ -25,3 +25,10 @@ tmp/
 .venv/
 venv/
 
+# Personal files (never commit by accident)
+*.pdf
+*.lnk
+
+# Generated models (regenerable via generate_dcf.py; may sit next to personal files)
+models/
+
