@@ -18,6 +18,18 @@ except ImportError:
     YFINANCE_AVAILABLE = False
 
 
+def _normalize_ticker(ticker):
+    """Append the Tokyo Stock Exchange suffix `.T` to a bare 4-digit code.
+
+    yfinance returns HTTP 404 for bare codes (e.g. "5038"); it needs "5038.T".
+    Tickers that already carry a suffix (".T", ".JP", etc.) are returned as-is.
+    """
+    t = ticker.strip()
+    if "." not in t and t[:4].isdigit():
+        return f"{t}.T"
+    return t
+
+
 def _fetch_market_cap(ticker_str):
     """Fetch market cap for a single ticker via yfinance.
 
@@ -28,6 +40,7 @@ def _fetch_market_cap(ticker_str):
         logger.warning("yfinance not installed. Cannot fetch market cap for %s.", ticker_str)
         return None
 
+    ticker_str = _normalize_ticker(ticker_str)
     try:
         tkr = yf.Ticker(ticker_str)
         info = tkr.info
@@ -50,12 +63,16 @@ def _fetch_market_cap(ticker_str):
 
 
 def get_comps_data(csv_path):
-    """Load comparable company data from CSV, enrich with yfinance market cap.
+    """Load comparable company data from CSV.
 
     Args:
         csv_path: Path to UTF-8 comma-delimited CSV with columns:
                   Ticker, Name, Revenue, EBITDA, Operating_Income,
                   Net_Income, Book_Value, Net_Debt
+                  Optional column Market_Cap (JPY mn): when present it must be
+                  filled for ALL rows (a partial column raises ValueError) and
+                  is used as-is with no yfinance call; when absent, market caps
+                  are fetched live from yfinance with a reproducibility warning.
 
     Returns:
         List of dicts with keys: name, ticker, mkt_cap, ev, revenue,
@@ -63,10 +80,22 @@ def get_comps_data(csv_path):
     """
     comps = []
 
-    with open(csv_path, encoding="utf-8") as f:
-        # Sanitize: strip trailing whitespace from each line before parsing.
-        # Trailing tabs corrupt delimiter auto-detection and DictReader fields.
-        clean_lines = [line.rstrip() for line in f]
+    # Read bytes and decode defensively: files exported from Excel/PowerShell
+    # are often UTF-16 with a BOM, which would garble a plain utf-8 open().
+    with open(csv_path, "rb") as f:
+        raw = f.read()
+    for enc in ("utf-8-sig", "utf-16"):
+        try:
+            text = raw.decode(enc)
+            break
+        except UnicodeDecodeError:
+            continue
+    else:
+        text = raw.decode("utf-8", errors="replace")
+
+    # Sanitize: strip trailing whitespace from each line before parsing.
+    # Trailing tabs corrupt delimiter auto-detection and DictReader fields.
+    clean_lines = [line.rstrip() for line in text.splitlines()]
 
     clean_content = "\n".join(clean_lines)
     with io.StringIO(clean_content) as f_clean:
@@ -74,6 +103,18 @@ def get_comps_data(csv_path):
         sample = clean_lines[0] if clean_lines else ""
         delimiter = "\t" if "\t" in sample else ","
         reader = csv.DictReader(f_clean, delimiter=delimiter)
+
+        # Market_Cap column contract: all rows filled, or the column omitted
+        # entirely. A partially-filled column would silently mix static and
+        # live-fetched market caps in one comps set, so it is a hard error.
+        fieldnames = [fn.strip() for fn in (reader.fieldnames or [])]
+        has_mkt_cap_col = ("Market_Cap" in fieldnames) or ("Market Cap" in fieldnames)
+        if has_mkt_cap_col:
+            print("[Comps] Market cap source: CSV (static)")
+        else:
+            print("[Comps] WARNING: Market cap source: yfinance live — 出力は実行時点で"
+                  "変動する（再現性が必要なら Market_Cap 列を記入）")
+
         for row in reader:
             ticker = row["Ticker"].strip()
             name = row["Name"].strip()
@@ -88,8 +129,20 @@ def get_comps_data(csv_path):
             book_value = float(row.get("Book_Value") or row.get("Book Value", "0"))
             net_debt = float(row.get("Net_Debt") or row.get("Net Debt", "0"))
 
-            # Fetch market cap from yfinance
-            mkt_cap = _fetch_market_cap(ticker)
+            # Market cap (JPY mn): static from the Market_Cap column when the
+            # column exists (required for delisted/TOB names, e.g. LightWorks
+            # 4267, and for reproducible outputs); yfinance live otherwise.
+            if has_mkt_cap_col:
+                mkt_cap_manual = (row.get("Market_Cap") or row.get("Market Cap") or "").strip()
+                if not mkt_cap_manual:
+                    raise ValueError(
+                        f"Market_Cap column exists but is blank for {ticker} ({name}). "
+                        f"Fill Market_Cap (JPY mn) for ALL rows or remove the column "
+                        f"entirely — a static/live mix is not allowed."
+                    )
+                mkt_cap = float(mkt_cap_manual)
+            else:
+                mkt_cap = _fetch_market_cap(ticker)
 
             # Derived values
             if mkt_cap is not None:
