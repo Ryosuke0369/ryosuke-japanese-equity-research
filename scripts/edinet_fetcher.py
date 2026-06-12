@@ -149,7 +149,7 @@ def _search_single_date(api_key, target_date, sec_code, doc_type_code=DOC_TYPE_A
     return matches
 
 
-def get_document_ids(ticker_code, num_years=5):
+def get_document_ids(ticker_code, num_years=5, fiscal_year_end_month=None):
     """Find annual report docIDs for the past `num_years` years.
 
     Two-phase targeted search:
@@ -167,9 +167,22 @@ def get_document_ids(ticker_code, num_years=5):
     Args:
         ticker_code: Stock ticker code (e.g. "2359" or 2359).
         num_years: Number of annual reports to find (default: 5, max: 5).
+        fiscal_year_end_month: Optional FY-end month (1-12). When provided, a
+            dynamic filing season centred on (FY-end month + 3) is searched
+            FIRST. This covers non-standard fiscal years (e.g. November-FY
+            companies file 有報 in February, which none of the hardcoded
+            SEASONS windows cover). The default 4 seasons are reproduced
+            exactly by this formula for March/December/June/September FY ends.
 
     Returns:
         list[dict]: Document metadata sorted newest-first.
+
+    Notes:
+        - A company files its 有価証券報告書 in exactly one filing season, so the
+          search short-circuits as soon as any season yields a document.
+        - A hard API-call budget (MAX_API_CALLS) caps total work so the search
+          can never grind for minutes when fewer than num_years reports exist
+          (e.g. recently-listed companies).
     """
     api_key = _get_api_key()
     sec_code = str(ticker_code).strip() + SEC_CODE_SUFFIX
@@ -180,10 +193,20 @@ def get_document_ids(ticker_code, num_years=5):
     seen_period_ends = set()
     searched_dates = set()
     api_calls = 0
+    # Safety budget: hard cap on total EDINET queries so the search cannot hang
+    # indefinitely. Sized to comfortably cover a full scan of all 4 default
+    # seasons × ~7 years (~310 calls) so legitimate multi-season discovery is
+    # never cut short; it only bounds the pathological "no reports exist at all"
+    # case (wrong/delisted ticker). The real speed-up for low-history tickers
+    # comes from the dynamic season (correct window searched first) plus the
+    # one-season short-circuit below, not from this cap.
+    MAX_API_CALLS = 400
 
     def search_date(d):
         """Search a single date, returns True if new doc(s) found."""
         nonlocal api_calls
+        if api_calls >= MAX_API_CALLS:
+            return False
         if d in searched_dates or d > today or d.weekday() >= 5:
             return False
         searched_dates.add(d)
@@ -259,8 +282,23 @@ def get_document_ids(ticker_code, num_years=5):
         (12, 18, 1, 8),   # September FY → Dec-Jan
     ]
 
+    # Dynamic season for non-standard fiscal years: 有報 is filed within ~3
+    # months of FY end, so the filing peak is around (FY-end month + 3). For a
+    # November FY (e.g. ELEMENTS 5246) this resolves to February, which none of
+    # the hardcoded windows cover. For March/Dec/June/Sep FY ends this formula
+    # reproduces the existing seasons, so prepending it is harmless there.
+    if fiscal_year_end_month:
+        filing_month = ((int(fiscal_year_end_month) + 3 - 1) % 12) + 1
+        end_month = (filing_month % 12) + 1  # one month after the peak
+        dynamic_season = (filing_month, 10, end_month, 10)
+        if dynamic_season not in SEASONS:
+            SEASONS = [dynamic_season] + SEASONS
+            logger.info("FY-end month %d → searching dynamic filing season "
+                        "(month %d-%d) first.",
+                        fiscal_year_end_month, filing_month, end_month)
+
     for season_idx, (ms, ds, me, de) in enumerate(SEASONS):
-        if len(found_docs) >= num_years:
+        if len(found_docs) >= num_years or api_calls >= MAX_API_CALLS:
             break
 
         logger.info("Trying filing season %d/%d (month %d-%d)...",
@@ -269,7 +307,7 @@ def get_document_ids(ticker_code, num_years=5):
         # Search this season's peak window for each year (newest first)
         first_found_in_season = False
         for year in range(current_year, current_year - num_years - 2, -1):
-            if len(found_docs) >= num_years:
+            if len(found_docs) >= num_years or api_calls >= MAX_API_CALLS:
                 break
             if search_window(year, ms, ds, me, de):
                 first_found_in_season = True
@@ -285,6 +323,13 @@ def get_document_ids(ticker_code, num_years=5):
                     adaptive_search(ref_date)
                 except ValueError:
                     pass
+
+        # A company files in exactly one season. Once any report is found,
+        # stop scanning the remaining seasons — this both speeds things up and
+        # prevents grinding through every season/year when fewer than num_years
+        # reports exist (recently-listed companies).
+        if found_docs:
+            break
 
     if not found_docs:
         raise EdinetDocumentNotFound(
@@ -758,7 +803,8 @@ def _find_xbrl_files(extract_dir, search_all=False):
     return xbrl_files
 
 
-def fetch_and_parse_multi_year(ticker_code, num_years=5, output_dir=None):
+def fetch_and_parse_multi_year(ticker_code, num_years=5, output_dir=None,
+                               fiscal_year_end_month=None):
     """Fetch multiple years of annual reports + latest quarterly, return merged data with LTM.
 
     Downloads up to `num_years` annual reports and the latest quarterly report,
@@ -769,6 +815,8 @@ def fetch_and_parse_multi_year(ticker_code, num_years=5, output_dir=None):
         ticker_code: Stock ticker code (e.g. "2359").
         num_years: Number of years to fetch (default: 5).
         output_dir: Directory for downloaded files (default: tmp/edinet_data).
+        fiscal_year_end_month: Optional FY-end month (1-12) to search the correct
+            filing season for non-standard fiscal years (see get_document_ids).
 
     Returns:
         tuple: (company_info, merged_data) where merged_data is an OrderedDict
@@ -788,7 +836,8 @@ def fetch_and_parse_multi_year(ticker_code, num_years=5, output_dir=None):
         )
 
     # Step 1: Find annual report document IDs
-    doc_infos = get_document_ids(ticker_code, num_years=num_years)
+    doc_infos = get_document_ids(ticker_code, num_years=num_years,
+                                 fiscal_year_end_month=fiscal_year_end_month)
 
     print(f"\nFound {len(doc_infos)} annual report(s):")
     for i, d in enumerate(doc_infos, 1):
