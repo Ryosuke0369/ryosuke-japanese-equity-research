@@ -2,7 +2,7 @@
 
 An independent research project on Japanese small/mid-cap equities. To ground investment decisions in *quantified scenarios* rather than price action, this repository accumulates a modeling toolkit combining DCF / Comps / SOTP / Implied Growth Analysis / Market Scorecard / Narrative Stage Assessment.
 
-## Coverage (as of May 2026)
+## Coverage (as of June 2026)
 
 | Ticker | Sector | Price | Verdict | Total Score | Action |
 |---|---|---|---|---|---|
@@ -10,6 +10,12 @@ An independent research project on Japanese small/mid-cap equities. To ground in
 | Torishima (6363) | Pumps | — | HOLD | — | Fairly valued on 5-method average |
 | Denyo-sha (6365) | Pumps | ¥5,490 | CAUTION | -0.55 | Entry on hold; wait for ¥4,800–5,000 |
 | IHI (7013) | Heavy Industry | ¥2,824 | (in progress) | — | Re-valuing with MTP-reflected DCF |
+| SpiderPlus (4192) | Construction SaaS | ¥244 | HOLD | -0.40 | DCF Target Mid ¥340 (+39%); loss-making, PER excluded |
+| ELEMENTS (5246) | eKYC / Identity SaaS | ¥557 | HOLD | 0.00 | DCF Target Mid ¥644 (+16%); loss-making, PER excluded |
+
+*4192 / 5246: the scorecard's momentum and margin-trading factors use neutral placeholders (no
+real price-history / margin feed wired yet) — their Total Score is driven by the implied-growth
+and forecast-gap factors. Prices are 2026-06-12 closes.*
 
 ## Analysis Framework
 
@@ -26,6 +32,7 @@ The framework uses a layered valuation structure. The first three layers measure
 
 ### 3. Market Expectation Layer
 - **Implied Growth Analysis**: reverse-engineers the growth rate (α) the market prices into the share price
+- **Implied Multiple Analysis**: reverse comps — what EV/Sales / EV/EBITDA / PER the market currently awards, positioned against the peer distribution
 - **Market Scorecard**: composite buy/sell judgment from a 4-factor weighted score
 
 ### 4. Narrative Stage Layer (Block 5) — *new*
@@ -97,6 +104,35 @@ Stage measures the *phase* of the narrative, not the *size of the prize*. A sepa
 - `templates/market_analysis_template.py` — emits a "Narrative Stage" sheet (six-axis table, stage judgment, headroom signal, earnings impact, verdict, radar chart) alongside the existing Implied Growth and Market Scorecard sheets. Backward compatible: skipped when no `narrative` config is supplied.
 - Full design: [docs/narrative_stage.md](docs/narrative_stage.md).
 
+## June 2026 — Key Improvements
+
+### Improvement 1: Overrides validation layer — fail fast on contract violations
+
+**Problem**: Overrides keys could silently fall back to defaults with no error. Nested structures, custom scenario names and typo'd keys were dropped without a trace, so a run could finish cleanly while the model was built on default assumptions — silent mis-valuation (one model even shipped with another ticker's peer set).
+
+**Fix**: `scripts/overrides_validator.py` validates every overrides file before generation: unknown-key detection with typo suggestions, fixed scenario names (Base/Upside/Management/Downside 1/Downside 2), a `__CONFIRM__` placeholder guard, and array-length checks — all violations reported at once, then a hard stop. A missing comps CSV is now an error (`--no-comps` to opt out), market analysis rejects unrecalced DCF models, and every run echoes the effective WACC inputs and the five comp names for visual verification.
+
+**Design principle**: a run that finishes without error now *guarantees* every key was consumed. The contract lives in `docs/overrides_schema.md`.
+
+### Improvement 2: Valuation-method guards — no meaningless averages
+
+**Problem**: The Target Mid averaged four methods unconditionally. For loss-making companies the PER method produced "median PER × negative net income" — a meaningless negative price that silently contaminated the average.
+
+**Fix**: When net income ≤ 0 the PER method renders as "N/A" and is auto-excluded from the Target Mid average and valuation range, with an explicit exclusion note on the Executive Summary (never silent). The same guard protects EV/EBITDA when EBITDA ≤ 0.
+
+### Improvement 3: Reproducibility — static market caps for comps
+
+**Problem**: Comp market caps were fetched live from yfinance at generation time, so the same CSV produced slightly different outputs run-to-run, and delisted/TOB peers could never resolve.
+
+**Fix**: comps CSVs support a static `Market_Cap` column (JPY mn) with an all-or-nothing rule — a partially-filled column is a hard error — and live fetching now prints an explicit warning instead of running silently. Verified: two consecutive generations produce identical outputs down to floating point.
+
+### Improvement 4: Modeling & pipeline extensions
+
+- EV/Sales exit multiple (`primary_multiple` + `exit_sales_multiple`) for SaaS names
+- Beta clamp widened to [0.6, 1.75] to admit high-beta growth names
+- EDINET search windows derived from the fiscal year-end month (off-cycle filers such as November-FY no longer stall the document search)
+- Market-analysis runners auto-select the latest dated DCF model (`--dcf` to pin one)
+
 ## May 2026 — Key Improvements
 
 ### Improvement 1: Higher numerical precision in Implied Growth Analysis
@@ -130,10 +166,11 @@ ryosuke-japanese-equity-research/
 ├── scripts/          # Per-ticker execution scripts (incl. recalc.py formula checker)
 ├── models/           # Per-ticker DCF/SOTP Excel (regenerable, so .gitignored)
 ├── reports/          # Generated Market Analysis reports
-├── data/overrides/   # Per-ticker assumption overrides (JSON)
+├── data/overrides/   # Per-ticker assumption overrides (JSON; contract: docs/overrides_schema.md)
+├── data/comps/       # Comps input CSVs (static Market_Cap; as-of dates in docs/overrides_schema.md)
 ├── docs/             # Per-ticker analysis notes, design docs, LinkedIn posts
 ├── notes/            # Session handoffs, learning notes
-└── comps/            # Comps data
+└── tasks/            # Working plans & lessons learned
 ```
 
 ## Roadmap
@@ -142,6 +179,8 @@ ryosuke-japanese-equity-research/
 - **IHI (7013)**: reflect FY2026/3 results in the DCF; integrate the new mid-term plan (Phases 1–3, through FY2034) into the Management scenario and run Market Analysis
 - **Core (2359)**: await late-June catalyst; hold stop-loss at ¥1,750
 - **Denyo-sha (6365)**: wait for a pullback to ¥4,800–5,000
+- Replace delisted comp (LightWorks) in 4192 peer set
+- Static Market_Cap for remaining tickers' comps CSVs (2359 / 6363 / 6365 / 7013)
 
 ### Medium term
 - Re-value Torishima (6363) with the new template
@@ -149,6 +188,7 @@ ryosuke-japanese-equity-research/
 - Automated margin-balance data retrieval (Kabutan scraping)
 - Multi-ticker batch wrapper (`auto_generate_for_ticker`)
 - Backtest Block 5 retroactively on past doublers (Lasertec 2019, Hitachi 2020–21, Mitsubishi Heavy 2022) for statistical validation
+- Optional NOL (tax-loss carryforward) treatment in DCF tax line
 
 ## Tech Stack
 
