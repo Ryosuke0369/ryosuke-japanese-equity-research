@@ -1,0 +1,94 @@
+{
+  "_README": "ELEMENTS (5246) overrides — NORMALIZED to dcf_comps_template.py contract (2026-06-04). WACC inputs are flat top-level keys (cost_of_debt_at is AFTER-TAX = pretax 0.025 x (1-0.30) = 0.0175). Scenarios use the 5 fixed template names. Exit uses EV/Sales (exit_sales_multiple) via the template's USE_EV_SALES_EXIT path. shares/price/net_debt CONFIRMED 2026-06-12 from FY2025/11 決算短信 (2026-01-13開示).",
+
+  "ticker": "5246",
+  "company_name": "ELEMENTS",
+  "fiscal_year_end_month": 11,
+
+  "shares_outstanding": 27115114,
+  "_shares_note": "期末発行済株式総数 27,115,114株（自己株式 0株）, FY2025/11 決算短信 p2",
+  "current_price": 557,
+  "_price_note": "557円 = 2026-06-12 終値（出所: yfinance、ユーザー承認 2026-06-12）",
+  "net_debt": -548,
+  "_net_debt_note": "借入金のみ定義: 借入金合計 2,727mn（短期643＋1年内長期473＋長期1,612）− 現金及び預金 3,275mn = -548mn（ネットキャッシュ）。リース債務279mnは除外（ユーザー決定 2026-06-12）",
+
+  "tax_rate": 0.30,
+  "risk_free": 0.023,
+  "erp": 0.06,
+  "beta": 1.6,
+  "size_premium": 0.04,
+  "cost_of_debt_at": 0.0175,
+  "de_ratio": 0.20,
+  "_wacc_note": "Ke = 0.023 + 1.6*0.06 + 0.04 = 0.159. WACC = 0.159*(1/1.2) + 0.0175*(0.2/1.2) ≒ 0.1354 (13.5%) at de_ratio 0.20. cost_of_debt_at は税引後 (= 税前2.5% x (1-30%))。テンプレWACC式は(1-t)を掛けないため税引後で投入。beta 1.6 はテンプレ clamp 上限1.75内。感応度で de_ratio 0.10-0.40, beta 1.45-1.75 を振ること。",
+
+  "terminal_growth": 0.015,
+  "primary_multiple": "EV/Sales",
+  "exit_sales_multiple": 4.0,
+  "exit_multiple": 12.0,
+  "_exit_note": "SaaSゆえ EV/Sales primary。Exit EV/Sales = 4.0倍 (Comps5社分布の下〜中位, 本業粗利86%は中位超だがのれん償却の重しと保守で欲張らない)。テンプレ USE_EV_SALES_EXIT 経路で Terminal Value = Year5 Revenue x 4.0。exit_multiple 12.0 は EV/EBITDA フォールバック (≒ EV/Sales4.0 を Year5 EBITDAマージン~31%で換算した参考値)。感応度Exitは 3.0-6.0倍。",
+
+  "fundamentals_fy2025": {
+    "revenue": 3895,
+    "operating_income": -215,
+    "ordinary_income": -301,
+    "net_income": -700,
+    "ebitda": 270,
+    "gross_margin_consolidated": 0.749,
+    "gross_margin_apple_to_apple": 0.864,
+    "net_assets": 3585,
+    "total_assets": 7239,
+    "total_liabilities": 3654,
+    "goodwill_intangibles_added": 948,
+    "_note": "本業(個人認証)売上3853でCAGR+46%。連結+53%はポラリファイ買収込み。粗利率74.9%は買収希薄化、同一条件86.4%が本業の真の収益力。DA=EBITDA270-営業損失(-215)=485。のれん償却が営業利益を圧迫し続ける構造。"
+  },
+
+  "_scenario_mapping_note": "旧Bull/StrongBull/Bear/StrongBear をテンプレ固定5名へ移植。Upside=旧Bull×StrongBull平均(やや強気化、ダブルバガー余地はExit感応度3-6倍で表現)。Management=新設の会社計画線(特需控えめ保守, FY2026は会社レンジ中央+33%)。Downside1=旧Bear, Downside2=旧StrongBear。",
+
+  "scenarios": {
+    "Base": {
+      "_desc": "会社予想中央値+33%スタート→法改正特需で中盤維持→逓減。市場CAGR並み。",
+      "revenue_growth": [0.33, 0.35, 0.30, 0.24, 0.18],
+      "cogs_pct":       [0.16, 0.15, 0.15, 0.14, 0.14],
+      "sga_pct":        [0.82, 0.78, 0.74, 0.70, 0.67],
+      "dso_days":       [60, 58, 56, 55, 55],
+      "dih_days":       [0, 0, 0, 0, 0],
+      "dpo_days":       [30, 30, 30, 30, 30]
+    },
+    "Upside": {
+      "_desc": "旧Bull×StrongBull平均。ホ方式廃止特需フル捕捉、シェア2→3割、当人認証ストック伸長＋寡占化/海外の上振れを一部織込み。",
+      "revenue_growth": [0.42, 0.53, 0.46, 0.35, 0.26],
+      "cogs_pct":       [0.15, 0.135, 0.125, 0.125, 0.125],
+      "sga_pct":        [0.79, 0.72, 0.65, 0.60, 0.57],
+      "dso_days":       [60, 58, 56, 55, 55],
+      "dih_days":       [0, 0, 0, 0, 0],
+      "dpo_days":       [30, 30, 30, 30, 30]
+    },
+    "Management": {
+      "_desc": "会社計画線。FY2026は会社予想レンジ中央(+33%)、以降は中計に沿う保守線で特需は控えめにしか織り込まない。",
+      "revenue_growth": [0.33, 0.28, 0.22, 0.17, 0.13],
+      "cogs_pct":       [0.16, 0.15, 0.15, 0.14, 0.14],
+      "sga_pct":        [0.82, 0.78, 0.74, 0.70, 0.67],
+      "dso_days":       [60, 58, 56, 55, 55],
+      "dih_days":       [0, 0, 0, 0, 0],
+      "dpo_days":       [30, 30, 30, 30, 30]
+    },
+    "Downside 1": {
+      "_desc": "旧Bear。特需を競合(TRUSTDOCK/DNP/サイバートラスト等)と分け合い、のれん償却で黒字化遅延。",
+      "revenue_growth": [0.28, 0.25, 0.20, 0.16, 0.12],
+      "cogs_pct":       [0.17, 0.17, 0.16, 0.16, 0.15],
+      "sga_pct":        [0.85, 0.82, 0.80, 0.78, 0.76],
+      "dso_days":       [62, 60, 58, 57, 57],
+      "dih_days":       [0, 0, 0, 0, 0],
+      "dpo_days":       [30, 30, 30, 30, 30]
+    },
+    "Downside 2": {
+      "_desc": "旧StrongBear。市場の天井(248億)が効きシェア頭打ち、増資希薄化、黒字化さらに後ずれ。",
+      "revenue_growth": [0.22, 0.18, 0.14, 0.10, 0.08],
+      "cogs_pct":       [0.18, 0.18, 0.17, 0.17, 0.17],
+      "sga_pct":        [0.88, 0.86, 0.84, 0.82, 0.80],
+      "dso_days":       [65, 63, 62, 60, 60],
+      "dih_days":       [0, 0, 0, 0, 0],
+      "dpo_days":       [30, 30, 30, 30, 30]
+    }
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "_comment_header": "SpiderPlus (4192) DCF overrides. Source: FY2025/12 Tanshin (filed 2026-02-12), Q1 FY2026/12 (filed 2026-05), all figures JPY mn. Single segment (consolidated direct revenue forecast, NOT SOTP).",
+
+  "ticker": "4192",
+  "_comment_market": "Market data fallback for when yfinance is unavailable. shares_outstanding = issued shares at 2025-12 FY-end. generate_dcf.py re-applies these over any yfinance value.",
+  "shares_outstanding": 35507400,
+  "current_price": 244,
+  "_price_note": "244円 = 2026-06-12 終値（出所: yfinance、ユーザー承認 2026-06-12）",
+  "company_name": "スパイダープラス株式会社",
+  "_company_name_en": "SpiderPlus & Co.",
+  "fiscal_year_end_month": 12,
+  "projection_start_fy": "FY2026",
+  "projection_years": 5,
+
+  "_comment_historical": "Consolidated actuals. FY2024 and FY2025 from Tanshin. Revenue / OP / COGS / SGA / NetIncome / OCF / DA / Capex.",
+  "hist_years": ["FY2024", "FY2025"],
+  "hist_revenue": [4072, 4895],
+  "hist_operating_income": [-519, -11],
+  "_hist_ordinary_income": [-526, -41],
+  "hist_net_income": [-772, -17],
+  "hist_cogs": [1303, 1276],
+  "hist_sga": [3288, 3630],
+  "hist_depreciation": [140, 160],
+  "hist_capex": [170, 186],
+
+  "_comment_base_year": "Base year = FY2025 actual. COGS% 26.1, SGA% 74.2, OP margin -0.2%.",
+  "base_year_revenue": 4895,
+  "base_year_cogs": 1276,
+
+  "_comment_nwc": "NWC base from Q1 FY2026 BS (2026-03-31). AR=accounts receivable 620, INV=work in process 26, AP=accrued/payables 211.",
+  "base_year_ar": 620,
+  "base_year_inv": 26,
+  "base_year_ap": 211,
+
+  "_comment_scenarios": "HYBRID design: Base follows ARR-trend (low churn 0.9%/mo, ARPU +16.7%, logos +15% => durable ~20% tapering). Upside/Downside take WIDE spread (construction 2024-problem tailwind vs construction recession / ANDPAD competition). Management = company plan FY2026 +20.5% held flat. SGA% declines faster in higher-growth scenarios (SaaS operating leverage). COGS% roughly flat ~26%.",
+  "scenarios": {
+    "Base":       {"revenue_growth": [0.20, 0.19, 0.17, 0.14, 0.11], "cogs_pct": [0.26, 0.26, 0.26, 0.255, 0.255], "sga_pct": [0.734, 0.708, 0.683, 0.658, 0.638], "dso_days": [46, 46, 46, 46, 46], "dih_days": [7, 7, 7, 7, 7], "dpo_days": [60, 60, 60, 60, 60]},
+    "Upside":     {"revenue_growth": [0.25, 0.24, 0.22, 0.18, 0.15], "cogs_pct": [0.26, 0.255, 0.25, 0.245, 0.24], "sga_pct": [0.728, 0.688, 0.648, 0.608, 0.568], "dso_days": [44, 44, 44, 44, 44], "dih_days": [7, 7, 7, 7, 7], "dpo_days": [60, 60, 60, 60, 60]},
+    "Management": {"revenue_growth": [0.205, 0.20, 0.20, 0.20, 0.20], "cogs_pct": [0.26, 0.26, 0.26, 0.26, 0.26], "sga_pct": [0.732, 0.700, 0.672, 0.645, 0.620], "dso_days": [46, 46, 46, 46, 46], "dih_days": [7, 7, 7, 7, 7], "dpo_days": [60, 60, 60, 60, 60]},
+    "Downside 1": {"revenue_growth": [0.12, 0.09, 0.07, 0.05, 0.04], "cogs_pct": [0.27, 0.27, 0.275, 0.28, 0.28], "sga_pct": [0.745, 0.738, 0.730, 0.725, 0.720], "dso_days": [48, 48, 48, 48, 48], "dih_days": [7, 7, 7, 7, 7], "dpo_days": [60, 60, 60, 60, 60]},
+    "Downside 2": {"revenue_growth": [0.08, 0.05, 0.03, 0.02, 0.00], "cogs_pct": [0.28, 0.28, 0.28, 0.285, 0.29], "sga_pct": [0.755, 0.758, 0.760, 0.765, 0.770], "dso_days": [50, 50, 50, 50, 50], "dih_days": [7, 7, 7, 7, 7], "dpo_days": [60, 60, 60, 60, 60]}
+  },
+
+  "_comment_capex_da": "DA% 3.3 and Capex% 3.8 of revenue (FY2025). Software-heavy SaaS: capex is mostly capitalized software dev. Asset-light, so PGM and EV/Sales are primary (Exit-Multiple secondary). revenue_pct method.",
+  "capex_method": "revenue_pct",
+  "da_method": "revenue_pct",
+  "capex_pct": 0.038,
+  "da_pct": 0.033,
+
+  "_comment_tax": "Tax rate: pre/early-profit, statutory ~30%. Note large carryforward losses (capital reduction 2026-05-01 wiped deficit) => effective cash tax may be lower near-term, but 30% conservative for steady-state.",
+  "tax_rate": 0.30,
+
+  "_comment_wacc": "User inputs: risk_free 2.3%, ERP 6.0%, size_premium 4.0%. Beta 1.45 (SaaS growth, construction-linked but subscription-buffered; ADJUST if you prefer 1.3-1.6 range). Cost of equity = 2.3 + 1.45*6.0 + 4.0 = 15.0%.",
+  "risk_free": 0.023,
+  "beta": 1.45,
+  "erp": 0.060,
+  "size_premium": 0.040,
+
+  "_comment_debt": "Net cash position. Interest-bearing debt ~796 (ST 500 + current portion 153 + long 143), cash 2,355 (Q1-end) => net cash ~1,559. de_ratio tiny; cost_of_debt minor. de_ratio set low to reflect near-zero leverage (NOT EDINET-derived to avoid the narrow-taxonomy trap).",
+  "cost_of_debt_at": 0.010,
+  "de_ratio": 0.03,
+  "net_debt": -1559,
+
+  "_comment_terminal": "Terminal growth 1.5% (Japan long-run). Exit multiple: for SaaS use EV/Sales-consistent; 15x EBITDA placeholder but Exit method is SECONDARY here.",
+  "terminal_growth": 0.015,
+  "exit_multiple": 15.0,
+
+  "_comment_v3": "Primary multiple = EV/Sales (SaaS standard; PER/EV-EBITDA unstable at near-zero profit). ARR FY2025 = 6,000 mn (+20.2%), useful for EV/ARR cross-check.",
+  "primary_multiple": "EV/Sales",
+  "_arr_latest": 6000,
+
+  "investment_thesis": [
+    "1. Construction-vertical SaaS leader: SPIDER+ embedded in major general contractors, 1,800+ companies, monthly churn 0.9% (high switching cost / durable ARR)",
+    "2. Triple growth engine: contract logos +15%, ARPU +16.7%, contract IDs +10% simultaneously => structural (not cost-cut) path to profitability",
+    "3. Operating-leverage inflection: reached operating breakeven in Q1 FY2026 (+5 mn) after FY2025 (-11 mn); construction 2024-problem & labor shortage are structural tailwinds for digitization"
+  ],
+  "key_risks": [
+    "1. Founder owns 52.9% (Kenji Ito) => thin float, liquidity/exit risk and overhang if founder sells; weak minority governance",
+    "2. ANDPAD (unlisted, well-funded construction SaaS leader) competition could cap pricing/share",
+    "3. Construction capex cyclicality and a few large-account concentration could break the smooth ARR ramp; FY2026 plan (+20.5%, OP 50mn) still early in ramp"
+  ]
+}
