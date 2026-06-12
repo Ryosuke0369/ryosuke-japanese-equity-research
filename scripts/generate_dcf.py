@@ -22,7 +22,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from scripts.edinet_fetcher import fetch_and_parse_multi_year, fetch_tanshin
 from scripts.comps_fetcher import get_comps_data
 from scripts.yfinance_quarterly import enrich_merged_data_with_yfinance
-from templates.dcf_comps_template import generate_dcf_workbook, get_live_market_data
+from scripts.overrides_validator import validate_overrides, OverridesValidationError
+from templates.dcf_comps_template import generate_dcf_workbook, get_live_market_data, calc_wacc
 
 
 # =====================================================================
@@ -407,6 +408,102 @@ def merged_data_to_config(company_info, merged_data, forecast_data=None):
 
 
 # =====================================================================
+# OVERRIDES FALLBACK: inject 決算短信-derived latest FY actuals
+# =====================================================================
+def _is_placeholder(v):
+    """True if an override value is an unfilled "__CONFIRM__" placeholder string.
+
+    The overrides template marks values that the analyst must confirm from the
+    決算短信 (e.g. shares_outstanding, current_price, net_debt) with a
+    __CONFIRM__ sentinel. Applying these strings would break numeric math, so
+    they are skipped and the auto-derived value (yfinance / EDINET) is kept.
+    """
+    return isinstance(v, str) and "__CONFIRM__" in v
+
+
+def _inject_latest_fy_from_overrides(merged_data, overrides):
+    """Inject/override the latest fiscal year with 決算短信-derived actuals.
+
+    When overrides define a `fundamentals_fy<YYYY>` block (一次情報 from the
+    earnings release), use it as the latest annual actuals — taking priority
+    over EDINET for that period, which may not yet be published on EDINET.
+
+    Only acts when such a key exists, so tickers without it (e.g. 4192) are
+    completely unaffected.
+
+    Args:
+        merged_data: OrderedDict from fetch_and_parse_multi_year (may be empty).
+        overrides: Loaded overrides dict.
+
+    Returns:
+        The (possibly new) merged_data OrderedDict with the latest FY set.
+    """
+    fund_keys = []
+    for k in overrides:
+        m = re.match(r"fundamentals_fy(\d{4})$", k)
+        if m:
+            fund_keys.append((int(m.group(1)), k))
+    if not fund_keys:
+        return merged_data
+
+    fy_year, fund_key = max(fund_keys)  # newest fundamentals block
+    f = overrides[fund_key]
+    fy_label = f"FY{fy_year}"
+
+    rev = f.get("revenue")
+    oi = f.get("operating_income")
+    ni = f.get("net_income")
+    ebitda = f.get("ebitda")
+    # D&A reverse-calc: EBITDA = OI + D&A  ->  D&A = EBITDA - OI
+    dep = round(ebitda - oi, 1) if (ebitda is not None and oi is not None) else None
+    # COGS/SGA for historical display, derived from override ratios if present
+    cogs = round(rev * overrides["cogs_pct"], 1) if (rev is not None and overrides.get("cogs_pct")) else None
+    sga = round(rev * overrides["sga_pct"], 1) if (rev is not None and overrides.get("sga_pct")) else None
+    # net_debt only if numeric (override may hold a "__CONFIRM__" placeholder)
+    nd = overrides.get("net_debt")
+    nd = nd if isinstance(nd, (int, float)) else None
+
+    record = {
+        "revenue": rev,
+        "operating_income": oi,
+        "net_income": ni,
+        "cogs": cogs,
+        "sga": sga,
+        "depreciation": dep,
+        "net_debt": nd,
+        "total_assets": f.get("total_assets"),
+        "total_liabilities": f.get("total_liabilities"),
+        "net_assets": f.get("net_assets"),
+    }
+
+    existing = merged_data.get(fy_label)
+    if isinstance(existing, dict):
+        # FY already present from EDINET → override only the 一次情報 fields,
+        # preserving EDINET-derived balance-sheet detail (AR/Inv/AP, cash, debt).
+        for k, v in record.items():
+            if v is not None:
+                existing[k] = v
+        print(f"  [Fundamentals] Overrode {fy_label} latest-period actuals "
+              f"from overrides.{fund_key} (revenue={rev:,.0f} mn)")
+        return merged_data
+
+    # FY not in EDINET data → insert as the newest FY column.
+    new_merged = OrderedDict()
+    for k, v in merged_data.items():  # keep LTM column(s) first
+        if k.startswith("LTM"):
+            new_merged[k] = v
+    new_merged[fy_label] = record
+    for k, v in merged_data.items():
+        if k == "_meta" or k.startswith("LTM"):
+            continue
+        new_merged[k] = v
+    new_merged["_meta"] = merged_data.get("_meta", {})
+    print(f"  [Fundamentals] Injected {fy_label} as latest FY from "
+          f"overrides.{fund_key} (revenue={rev:,.0f} mn, not on EDINET)")
+    return new_merged
+
+
+# =====================================================================
 # CLI
 # =====================================================================
 def main():
@@ -422,6 +519,12 @@ def main():
                         help="Path to JSON override file (e.g. data/overrides/2359_overrides.json)")
     parser.add_argument("--force", action="store_true",
                         help="Overwrite existing output file without warning")
+    parser.add_argument("--allow-unconfirmed", action="store_true",
+                        help="Allow __CONFIRM__ placeholders in overrides (auto-derived "
+                             "fallbacks are used; final runs should not need this)")
+    parser.add_argument("--no-comps", action="store_true",
+                        help="Explicitly generate without comparable companies "
+                             "(otherwise a missing comps CSV is an error)")
     args = parser.parse_args()
 
     ticker_code = args.ticker.strip()
@@ -440,14 +543,54 @@ def main():
     if args.overrides and os.path.isfile(args.overrides):
         with open(args.overrides, encoding="utf-8") as f:
             _overrides = json.load(f)
+        # Fail fast on contract violations: unknown keys, nested WACC blocks,
+        # legacy scenario names, wrong array lengths, __CONFIRM__ leftovers.
+        # A run that completes must mean every override key was consumed.
+        try:
+            validate_overrides(_overrides, source_path=args.overrides,
+                               allow_unconfirmed=args.allow_unconfirmed)
+        except OverridesValidationError as e:
+            print(f"\nERROR: {e}")
+            sys.exit(1)
+        print(f"  Overrides validated: {args.overrides}")
 
     print(f"\n{'=' * 60}")
     print(f"DCF Model Generator - Ticker: {ticker_code}")
     print(f"{'=' * 60}")
 
     # Step 1: EDINET fetch + parse
+    # Pull FY-end month from overrides so the fetcher searches the correct
+    # filing season for non-standard fiscal years (e.g. November-FY companies
+    # file 有報 in February, outside the default search windows).
+    fy_end_month = _overrides.get("fiscal_year_end_month") if _overrides else None
+    # If overrides supply a 一次情報 latest FY (決算短信-derived), an EDINET
+    # shortfall (report not yet published, recently-listed) is non-fatal.
+    has_fundamentals_override = bool(_overrides) and any(
+        re.match(r"fundamentals_fy\d{4}$", k) for k in _overrides
+    )
     print(f"\n[Step 1/7] Fetching {num_years} years of financial data from EDINET...")
-    company_info, merged_data = fetch_and_parse_multi_year(ticker_code, num_years)
+    try:
+        company_info, merged_data = fetch_and_parse_multi_year(
+            ticker_code, num_years, fiscal_year_end_month=fy_end_month
+        )
+    except Exception as e:
+        if not has_fundamentals_override:
+            raise
+        print(f"  WARNING: EDINET fetch failed ({type(e).__name__}: {e}).")
+        print(f"  Falling back to overrides fundamentals (no EDINET history).")
+        company_info = {
+            "company_name": _overrides.get("company_name") or ticker_code,
+            "securities_code": str(_overrides.get("ticker") or ticker_code),
+            "fiscal_year_end": None,
+        }
+        merged_data = OrderedDict()
+        merged_data["_meta"] = {}
+
+    # Step 1.5: Inject 決算短信-derived latest FY actuals from overrides (if any),
+    # taking priority over EDINET for the latest period. No-op when overrides
+    # lack a fundamentals_fy<YYYY> key (e.g. 4192) → existing tickers unaffected.
+    if _overrides:
+        merged_data = _inject_latest_fy_from_overrides(merged_data, _overrides)
 
     # Step 2: Check LTM coverage, yfinance fallback if needed
     print(f"\n[Step 2/7] Checking LTM data coverage...")
@@ -518,6 +661,9 @@ def main():
                         config["scenarios"][scen_name].update(scen_data)
                     else:
                         config["scenarios"][scen_name] = scen_data
+            elif _is_placeholder(value):
+                print(f"  Skipped unfilled override '{key}' (__CONFIRM__ placeholder)")
+                continue
             else:
                 config[key] = value
 
@@ -554,6 +700,12 @@ def main():
             config["core_ebitda"] = _oi[-1] + _da[-1]
             print(f"  [Auto] core_ebitda = {_oi[-1]:,.0f} (OI) + {_da[-1]:,.0f} (D&A) = {config['core_ebitda']:,.0f}")
 
+    # Normalize ticker for yfinance: overrides may carry a bare 4-digit code
+    # (e.g. "4192"), which yfinance 404s on. TSE tickers need the ".T" suffix.
+    _t = str(config.get("ticker", ticker_code)).strip()
+    if "." not in _t and _t[:4].isdigit():
+        config["ticker"] = f"{_t[:4]}.T"
+
     # Step 5: Fetch live market data via yfinance (price, shares, beta)
     print(f"\n[Step 5/7] Fetching market data...")
     ticker_str = config["ticker"]
@@ -585,6 +737,9 @@ def main():
     if _overrides:
         for field in ["current_price", "shares_outstanding", "beta", "de_ratio"]:
             if field in _overrides:
+                if _is_placeholder(_overrides[field]):
+                    print(f"  Skipped unfilled override '{field}' (__CONFIRM__ placeholder)")
+                    continue
                 config[field] = _overrides[field]
                 print(f"  Override applied: {field} = {_overrides[field]}")
 
@@ -600,18 +755,34 @@ def main():
     else:
         comps_csv_path = os.path.join(project_root, "data", "comps", f"{ticker_code}_comps.csv")
 
-    if os.path.isfile(comps_csv_path):
+    if args.no_comps:
+        print(f"  --no-comps: generating without comparable companies (explicit).")
+        config["comps"] = []
+    elif os.path.isfile(comps_csv_path):
+        # Loading failures are fatal: silently continuing without comps produced
+        # workbooks whose Comps-implied values looked valid but meant nothing.
         try:
             config["comps"] = get_comps_data(comps_csv_path)
-            print(f"  Loaded {len(config['comps'])} comps from {comps_csv_path}")
         except Exception as e:
-            print(f"  WARNING: Failed to load comps from {comps_csv_path}: {e}")
-            print(f"  Continuing without comps data.")
-            config["comps"] = []
+            print(f"\nERROR: Failed to parse comps CSV {comps_csv_path}: "
+                  f"{type(e).__name__}: {e}")
+            print(f"  Fix the CSV (see templates/comps_input_template.csv) or pass --no-comps.")
+            sys.exit(1)
+        if not config["comps"]:
+            print(f"\nERROR: {comps_csv_path} parsed to 0 comps. Check the CSV "
+                  f"format (see templates/comps_input_template.csv), or pass "
+                  f"--no-comps to generate without comps.")
+            sys.exit(1)
+        print(f"  Loaded {len(config['comps'])} comps from {comps_csv_path}")
     else:
-        print(f"  No comps CSV found at: {comps_csv_path}")
-        print(f"  Continuing without comps data. To add comps, create the CSV or use --comps-csv.")
-        config["comps"] = []
+        print(f"\nERROR: No comps CSV found at: {comps_csv_path}")
+        txt_sibling = os.path.splitext(comps_csv_path)[0] + ".txt"
+        if os.path.isfile(txt_sibling):
+            print(f"  Found {txt_sibling} — the pipeline only reads the .csv path. "
+                  f"Rename it to {os.path.basename(comps_csv_path)}.")
+        print(f"  Create the CSV (data/comps/{ticker_code}_comps.csv), pass --comps-csv PATH,")
+        print(f"  or pass --no-comps to explicitly generate without comparable companies.")
+        sys.exit(1)
 
     # Step 6: Generate Excel
     print(f"\n[Step 7/7] Generating DCF workbook...")
@@ -643,7 +814,22 @@ def main():
     print(f"  LTM Rev:    {config['ltm_revenue']:,.0f} mn")
     print(f"  Stub:       {config['stub_fraction']:.2f} ({config['stub_months_elapsed']}m elapsed)")
     print(f"  Proj Start: {config['projection_start_fy']}")
-    print(f"  Comps:      {len(config['comps'])} companies")
+
+    # Echo the effective WACC inputs and comps so the analyst can verify at a
+    # glance that the workbook reflects the overrides (no silent defaults).
+    print(f"\nEffective WACC inputs (as written to 'DCF Model'!C7:C12):")
+    print(f"  Risk-Free:     {config['risk_free']:.3%}")
+    print(f"  Beta:          {config['beta']:.2f}")
+    print(f"  ERP:           {config['erp']:.3%}")
+    print(f"  Size Premium:  {config['size_premium']:.3%}")
+    print(f"  Cost of Debt:  {config['cost_of_debt_at']:.3%} (after-tax)")
+    print(f"  D/E Ratio:     {config['de_ratio']:.4f}")
+    print(f"  => WACC:       {calc_wacc(config):.2%}")
+    if config["comps"]:
+        comp_names = ", ".join(c["name"] for c in config["comps"])
+        print(f"\nComps ({len(config['comps'])}): {comp_names}")
+    else:
+        print(f"\nComps: NONE (--no-comps)")
 
 
 if __name__ == "__main__":

@@ -306,7 +306,7 @@
       }
     }
   ],
-  "comps": {
+  "_comps_reference": {
     "primary_multiple": "EV/EBITDA",
     "use_median": true,
     "exclude_outliers": true,
