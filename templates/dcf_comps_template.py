@@ -1678,9 +1678,11 @@ def generate_dcf_workbook(config, output_path=None):
     C = config
 
     # ── Normalize WACC inputs ──
-    # Beta: clamp to [0.6, 1.5]; outside range → sector-standard 1.0
+    # Beta: clamp to [0.6, 1.75]; outside range → sector-standard 1.0
+    # Upper bound is 1.75 (not 1.5) to admit high-beta growth names (e.g. ELEMENTS
+    # 5246 at 1.6) without collapsing them to 1.0.
     raw_beta = C.get("beta", 1.0)
-    if not raw_beta or raw_beta < 0.6 or raw_beta > 1.5:
+    if not raw_beta or raw_beta < 0.6 or raw_beta > 1.75:
         C["beta"] = 1.0
     # Size Premium: auto-determine from market cap (JPY mn) unless explicitly overridden
     if "size_premium" not in C.get("_override_keys", set()):
@@ -1732,6 +1734,22 @@ def generate_dcf_workbook(config, output_path=None):
         C["cogs_pct"] = [0.78] * C.get("projection_years", 5)  # reasonable default
 
     USE_EV_SALES = (C.get("primary_multiple", "EV/EBITDA") == "EV/Sales")
+
+    # ── Meaningless-multiple guards ──
+    # A median multiple applied to a negative (or missing) base metric yields a
+    # meaningless implied price (e.g. PER × net loss) that would silently
+    # contaminate the Target Mid average. Excluded methods are written as the
+    # text "N/A" — AVERAGE/MIN/MAX skip text cells — and the exclusion is
+    # disclosed on the Executive Summary (never dropped silently).
+    _ni = C.get("core_net_income")
+    PER_EXCLUDED = not (isinstance(_ni, (int, float)) and _ni > 0)
+    _eb = C.get("core_ebitda")
+    EBITDA_EXCLUDED = (not USE_EV_SALES) and not (isinstance(_eb, (int, float)) and _eb > 0)
+    # EV/Sales exit: when primary is EV/Sales AND an exit_sales_multiple is given,
+    # the DCF Exit-Multiple terminal value uses Year-5 Revenue × exit_sales_multiple
+    # instead of Year-5 EBITDA × exit_multiple. Backward-compatible: off unless both
+    # conditions hold, so EBITDA-exit tickers (e.g. 4192) are unaffected.
+    USE_EV_SALES_EXIT = USE_EV_SALES and C.get("exit_sales_multiple") is not None
 
     # ── Pre-calculate Segment Analysis row numbers (needed by DCF Model) ──
     has_segments = bool(C.get("segments"))
@@ -1837,7 +1855,8 @@ def generate_dcf_workbook(config, output_path=None):
     set_cell(ws1, 9, 2, "Current Price", font=BOLD_FONT)
     set_cell(ws1, 9, 3, C["current_price"], font=BLUE_FONT, fmt=FMT_YEN)
 
-    # Target Price = average of 4 methods (C16:C19)
+    # Target Price = average of the valid methods in C16:C19 (excluded methods
+    # hold the text "N/A", which AVERAGE skips)
     set_cell(ws1, 10, 2, "Target Price (Mid)", font=BOLD_FONT)
     set_cell(ws1, 10, 3, "=ROUND(AVERAGE(C16:C19),0)", font=BLACK_FONT, fmt=FMT_YEN)
 
@@ -1873,11 +1892,24 @@ def generate_dcf_workbook(config, output_path=None):
     else:
         set_cell(ws1, 18, 2, "Comps - EV/EBITDA Median")
     set_cell(ws1, 18, 3, "='Comps Analysis'!C27", font=GREEN_FONT, fmt=FMT_YEN)
-    set_cell(ws1, 18, 4, "=(C18-C9)/C9", font=BLACK_FONT, fmt=FMT_PCT)
+    set_cell(ws1, 18, 4, '=IF(ISNUMBER(C18),(C18-C9)/C9,"N/A")', font=BLACK_FONT, fmt=FMT_PCT)
 
     set_cell(ws1, 19, 2, "Comps - PER Median")
     set_cell(ws1, 19, 3, "='Comps Analysis'!C28", font=GREEN_FONT, fmt=FMT_YEN)
-    set_cell(ws1, 19, 4, "=(C19-C9)/C9", font=BLACK_FONT, fmt=FMT_PCT)
+    set_cell(ws1, 19, 4, '=IF(ISNUMBER(C19),(C19-C9)/C9,"N/A")', font=BLACK_FONT, fmt=FMT_PCT)
+
+    # Disclose excluded methods explicitly — never drop one silently
+    _excluded_methods = []
+    if PER_EXCLUDED:
+        _excluded_methods.append("PER法は赤字（純利益≦0）のため除外")
+    if EBITDA_EXCLUDED:
+        _excluded_methods.append("EV/EBITDA法はEBITDA≦0のため除外")
+    if _excluded_methods:
+        set_cell(ws1, 20, 2,
+                 "Note: " + "；".join(_excluded_methods)
+                 + "（Target Mid / Range は有効手法のみで算出）",
+                 font=GREY_FONT)
+        ws1.merge_cells("B20:E20")
 
     # Integrated Valuation Range
     set_cell(ws1, 21, 2, "Integrated Valuation Range", font=BOLD_FONT)
@@ -2057,7 +2089,9 @@ def generate_dcf_workbook(config, output_path=None):
         ("After-tax Cost of Debt",     C["cost_of_debt_at"],      FMT_PCT),      # C11
         ("D/E Ratio",                  C["de_ratio"],             "0.000"),      # C12
         ("Terminal Growth Rate",       C["terminal_growth"],      FMT_PCT),      # C13
-        ("Exit Multiple (EV/EBITDA)",  C["exit_multiple"],        FMT_RATIO),    # C14
+        (("Exit Multiple (EV/Sales)" if USE_EV_SALES_EXIT else "Exit Multiple (EV/EBITDA)"),
+         (C["exit_sales_multiple"] if USE_EV_SALES_EXIT else C["exit_multiple"]),
+         FMT_RATIO),    # C14
         ("Fully Diluted Shares",       C["shares_outstanding"],   FMT_INT),      # C15
         ("Net Debt (JPY mn)",          C["net_debt"],             FMT_YEN),      # C16
         ("Base Year Revenue (JPY mn)", C["base_year_revenue"],    FMT_YEN),      # C17
@@ -2346,9 +2380,14 @@ def generate_dcf_workbook(config, output_path=None):
     set_cell(ws3, R_SUM_PV_EX, 2, "Sum of PV of FCFs", font=BOLD_FONT)
     set_cell(ws3, R_SUM_PV_EX, 3, f"=C{R_SUM_PV}", font=BLACK_FONT, fmt=FMT_YEN)
 
-    # Year 5 EBITDA = EBIT + D&A
-    set_cell(ws3, R_YR5_EBITDA, 2, "Year 5 EBITDA", font=BOLD_FONT)
-    set_cell(ws3, R_YR5_EBITDA, 3, f"={last_cl}{R_EBIT}+{last_cl}{R_DA}", font=BLACK_FONT, fmt=FMT_YEN)
+    # Terminal-value metric: Year-5 Revenue (EV/Sales exit) or Year-5 EBITDA (EV/EBITDA).
+    # C14 holds the corresponding multiple; TV = metric × C14 either way.
+    if USE_EV_SALES_EXIT:
+        set_cell(ws3, R_YR5_EBITDA, 2, "Year 5 Revenue", font=BOLD_FONT)
+        set_cell(ws3, R_YR5_EBITDA, 3, f"={last_cl}{R_REVENUE}", font=BLACK_FONT, fmt=FMT_YEN)
+    else:
+        set_cell(ws3, R_YR5_EBITDA, 2, "Year 5 EBITDA", font=BOLD_FONT)
+        set_cell(ws3, R_YR5_EBITDA, 3, f"={last_cl}{R_EBIT}+{last_cl}{R_DA}", font=BLACK_FONT, fmt=FMT_YEN)
 
     set_cell(ws3, R_TV_EXIT, 2, "Terminal Value (Exit Multiple)", font=BOLD_FONT)
     set_cell(ws3, R_TV_EXIT, 3, f"=C{R_YR5_EBITDA}*C14", font=BLACK_FONT, fmt=FMT_YEN)
@@ -3076,12 +3115,20 @@ def generate_dcf_workbook(config, output_path=None):
 
         for dst_col, src_col in stat_col_map:
             src_letter = col_letter(src_col)
-            rng = f"{src_letter}5:{src_letter}{last_comp_row}"
 
             if src_col in (14, 15):
                 fmt = FMT_PCT
             else:
                 fmt = FMT_RATIO
+
+            # Guard: with zero comps last_comp_row (4) < first data row (5),
+            # which would produce a reversed range like "J5:J4". Emit N/A instead.
+            if len(comps) == 0:
+                set_cell(ws4, r, dst_col, "N/A", font=BLACK_FONT, border=THIN_BORDER,
+                         alignment=Alignment(horizontal="right"))
+                continue
+
+            rng = f"{src_letter}5:{src_letter}{last_comp_row}"
 
             if stat_idx == 0:
                 formula = f"=PERCENTILE({rng},0.25)"
@@ -3122,12 +3169,24 @@ def generate_dcf_workbook(config, output_path=None):
                  border=TOP_BOTTOM)
     else:
         set_cell(ws4, 27, 2, "Via EV/EBITDA (Median)", font=BOLD_FONT)
-        set_cell(ws4, 27, 3, "=ROUND((C21*D16-C24)*1000000/C23,0)", font=BLACK_FONT, fmt=FMT_YEN,
-                 border=TOP_BOTTOM)
+        if EBITDA_EXCLUDED:
+            set_cell(ws4, 27, 3, "N/A", font=BLACK_FONT, border=TOP_BOTTOM,
+                     alignment=Alignment(horizontal="right"))
+            set_cell(ws4, 27, 4, "EBITDA <= 0 — median multiple not meaningful",
+                     font=GREY_FONT)
+        else:
+            set_cell(ws4, 27, 3, "=ROUND((C21*D16-C24)*1000000/C23,0)", font=BLACK_FONT, fmt=FMT_YEN,
+                     border=TOP_BOTTOM)
 
     set_cell(ws4, 28, 2, "Via PER (Median)", font=BOLD_FONT)
-    set_cell(ws4, 28, 3, "=ROUND(C22*F16*1000000/C23,0)", font=BLACK_FONT, fmt=FMT_YEN,
-             border=TOP_BOTTOM)
+    if PER_EXCLUDED:
+        set_cell(ws4, 28, 3, "N/A", font=BLACK_FONT, border=TOP_BOTTOM,
+                 alignment=Alignment(horizontal="right"))
+        set_cell(ws4, 28, 4, "Net income <= 0 — PER not meaningful",
+                 font=GREY_FONT)
+    else:
+        set_cell(ws4, 28, 3, "=ROUND(C22*F16*1000000/C23,0)", font=BLACK_FONT, fmt=FMT_YEN,
+                 border=TOP_BOTTOM)
 
     # =====================================================================
     # SHEET 6: Sensitivity Analysis (Dynamic Excel formulas)
@@ -3166,8 +3225,12 @@ def generate_dcf_workbook(config, output_path=None):
 
     def _build_exit_formula(wacc_ref, mult_ref):
         pv_parts = [f"{_ufcf_cells[yr]}/(1+{wacc_ref})^({_stub_ref}+{yr})" for yr in range(proj_years)]
-        yr5_ebitda = f"({_DCF}!{_last_cl}{R_EBIT}+{_DCF}!{_last_cl}{R_DA})"
-        pv_tv = f"{yr5_ebitda}*{mult_ref}/(1+{wacc_ref})^({_stub_ref}+{proj_years-1})"
+        # Match the DCF Exit metric: Year-5 Revenue (EV/Sales) or Year-5 EBITDA (EV/EBITDA)
+        if USE_EV_SALES_EXIT:
+            yr5_metric = f"{_DCF}!{_last_cl}{R_REVENUE}"
+        else:
+            yr5_metric = f"({_DCF}!{_last_cl}{R_EBIT}+{_DCF}!{_last_cl}{R_DA})"
+        pv_tv = f"{yr5_metric}*{mult_ref}/(1+{wacc_ref})^({_stub_ref}+{proj_years-1})"
         return f'=IFERROR(ROUND(({"+".join(pv_parts)}+{pv_tv}-{_NET_DEBT})*1000000/{_SHARES},0),"")'
 
     # ── Dynamic header helpers ──
@@ -3381,7 +3444,7 @@ if __name__ == "__main__":
     "base_year_ap":   22,    # Accounts Payable
     
     # ── Comparable Companies (loaded dynamically from CSV) ──
-    "comps": get_comps_data(os.path.join(_script_dir, "comps_input.csv")),
+    "comps": get_comps_data(os.path.join(_script_dir, "comps_input_template.csv")),
     
     # ── Kudan Comps Data (for implied valuation) ──
     "core_ebitda": (_get("hist_operating_income") or [-800])[-1] + 8,
