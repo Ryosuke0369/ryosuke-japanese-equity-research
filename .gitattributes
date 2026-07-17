@@ -1,0 +1,4 @@
+# Binary formats — never apply line-ending conversion
+*.pdf binary
+*.xlsx binary
+*.xls binary

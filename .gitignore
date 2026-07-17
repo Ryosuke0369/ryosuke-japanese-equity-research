@@ -28,6 +28,12 @@ venv/
 # Personal files (never commit by accident)
 *.pdf
 *.lnk
+# Published research reports are the exception to the PDF rule
+!reports/*.pdf
+
+# Excel lock/owner files
+~$*.xlsx
+~$*.xls
 
 # Generated models (regenerable via generate_dcf.py; may sit next to personal files)
 models/
