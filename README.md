@@ -10,7 +10,7 @@ Most listed companies on the Tokyo Stock Exchange below ~¥50B market cap have n
 |---|---|---|---|---|
 | Core Corporation | 2359.T | [Post-Earnings Verification Report](reports/Core_2359_Verification_Report.pdf) (Jul 2026) | HOLD | Full cycle complete: thesis → pre-registered estimates → public reconciliation |
 | SpiderPlus & Co. | 4192.T | [Initial Coverage](reports/SpiderPlus_4192_Equity_Research.pdf) (Jul 2026) | BUY | Active coverage |
-| DMW Corporation | 6365.T | [Equity Research Report](reports/DMW_6365_Equity_Research_Report.pdf) (Apr 2026) | BUY (Apr 2026) | Dormant — Jun 2026 scorecard moved to CAUTION; awaiting pullback |
+| DMW Corporation | 6365.T | [v2 Revised](reports/DMW_6365_Equity_Research_v2.pdf) (Jul 2026) | BUY | Target ¥8,120 — v2 corrects the SOTP sensitivity matrix, unifies the DCF exit-multiple base at 8.5x, and states the target methodology explicitly (see Revision Note in the report) |
 
 Each report links to its underlying model in [`reports/`](reports/) (e.g. [4192 reverse-DCF / implied-multiple model](reports/4192_market_analysis_20260618.xlsx)).
 
