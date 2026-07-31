@@ -52,27 +52,23 @@ def read_dcf_crosscheck(dcf_path):
         wb.Application.CalculateFull()
         ws = wb.Sheets("Executive Summary")
 
-        matchers = [
-            ("exit_fair_value", lambda s: "exit" in s),
-            ("pgm_fair_value", lambda s: "perpetuity" in s or "pgm" in s),
-            ("comps_ev_ebitda", lambda s: "ev/ebitda" in s or "ev/sales" in s),
-            ("comps_per", lambda s: "per" in s and "comps" in s),
-        ]
+        # Matching rules live in sotp_template so the COM path and the openpyxl
+        # path can never disagree about which row is which method.
+        sys.path.insert(0, os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "templates"))
+        from sotp_template import DCF_CROSSCHECK_MATCHERS, match_crosscheck_key
+
         taken = set()
         for row in range(1, 61):
             label = ws.Cells(row, 2).Value
-            if not isinstance(label, str) or not label.strip():
+            key = match_crosscheck_key(label, taken)
+            if key is None:
                 continue
-            s = label.strip().lower()
-            for key, pred in matchers:
-                if key in taken or not pred(s):
-                    continue
-                result[key] = ws.Cells(row, 3).Value
-                taken.add(key)
-                break
+            result[key] = ws.Cells(row, 3).Value
+            taken.add(key)
         wb.Close(SaveChanges=False)
         excel.Quit()
-        missing = [k for k, _ in matchers if k not in taken]
+        missing = [k for k, _ in DCF_CROSSCHECK_MATCHERS if k not in taken]
         if missing:
             print(f"  WARNING: no Executive Summary row matched {', '.join(missing)}")
         # Convert float values to int for clean display

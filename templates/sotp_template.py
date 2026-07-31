@@ -12,9 +12,72 @@ Generates a 6-sheet Excel workbook:
 All calculations use Excel formulas (not hardcoded Python values).
 """
 
+import re
+
 import openpyxl
 from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 from openpyxl.utils import get_column_letter
+
+
+# =====================================================================
+# DCF CROSS-CHECK: label -> method key
+# =====================================================================
+# Shared by sotp_template._read_dcf_crosscheck (openpyxl) and
+# scripts/generate_sotp.read_dcf_crosscheck (Excel COM) so the two can never
+# drift apart.
+#
+# Every predicate takes the lower-cased, stripped column-B label.
+#
+# Exclusions matter more than inclusions here:
+#   * A restructured "bank-type" Valuation Summary puts DDM and Residual Income
+#     ABOVE the DCF rows, and a DDM row is often labelled "... perpetuity
+#     growth". First-match-wins then hands `pgm_fair_value` the DDM number and
+#     the real DCF PGM disappears. DDM / dividend / residual rows are therefore
+#     excluded from BOTH DCF matchers.
+#   * "ev/ebitda" and "ev/ebit" are checked EXCLUSIVELY. Searching for the
+#     shorter "ev/ebit" would also match every "EV/EBITDA" row (substring), so
+#     the EV/EBIT test additionally requires "ev/ebitda" to be absent. Only
+#     EV/EBITDA and EV/Sales fill `comps_ev_ebitda`; an EV/EBIT model reports
+#     N/A rather than putting an EBIT multiple under an EBITDA label.
+#   * `per` is matched as a WORD (\bper\b) so "Peer group median" and
+#     "period" cannot be read as a PER row.
+_NON_DCF = ('ddm', 'dividend discount', 'residual income')
+
+
+def _is_non_dcf(s):
+    return any(t in s for t in _NON_DCF)
+
+
+DCF_CROSSCHECK_MATCHERS = [
+    # (key, predicate) - order matters: more specific first
+    ("exit_fair_value",
+     lambda s: 'exit' in s and not _is_non_dcf(s)),
+    ("pgm_fair_value",
+     lambda s: ('perpetuity' in s or 'pgm' in s) and not _is_non_dcf(s)),
+    ("comps_ev_ebitda",
+     lambda s: 'ev/ebitda' in s or 'ev/sales' in s),
+    ("comps_per",
+     lambda s: re.search(r'\bper\b', s) is not None and 'comps' in s),
+]
+
+# Comps rows that exist but deliberately do NOT fill comps_ev_ebitda, so the
+# skip can be reported instead of silently dropping a valuation method.
+_OTHER_COMPS_MULTIPLE = (
+    lambda s: 'comps' in s and 'ev/ebit' in s and 'ev/ebitda' not in s
+)
+
+
+def match_crosscheck_key(label, taken):
+    """Return the method key this Executive Summary label fills, or None."""
+    if not isinstance(label, str) or not label.strip():
+        return None
+    s = label.strip().lower()
+    for key, pred in DCF_CROSSCHECK_MATCHERS:
+        if key in taken:
+            continue
+        if pred(s):
+            return key
+    return None
 
 
 def _read_dcf_crosscheck(dcf_path):
@@ -46,31 +109,26 @@ def _read_dcf_crosscheck(dcf_path):
         wb_dcf = openpyxl.load_workbook(dcf_path, data_only=True)
         ws_exec = wb_dcf["Executive Summary"]
 
-        # Ordered so the more specific patterns win: 'Exit' before the generic
-        # DCF match, and EV/EBITDA before PER.
-        matchers = [
-            ("exit_fair_value",  lambda s: "exit" in s),
-            ("pgm_fair_value",   lambda s: "perpetuity" in s or "pgm" in s),
-            ("comps_ev_ebitda",  lambda s: "ev/ebitda" in s or "ev/sales" in s),
-            ("comps_per",        lambda s: "per" in s and "comps" in s),
-        ]
         taken = set()
+        skipped_multiples = []
         for row in range(1, min(ws_exec.max_row, 60) + 1):
             label = ws_exec.cell(row=row, column=2).value
-            if not isinstance(label, str) or not label.strip():
+            key = match_crosscheck_key(label, taken)
+            if key is None:
+                if isinstance(label, str) and _OTHER_COMPS_MULTIPLE(label.strip().lower()):
+                    skipped_multiples.append(label.strip())
                 continue
-            s = label.strip().lower()
-            for key, pred in matchers:
-                if key in taken or not pred(s):
-                    continue
-                result[key] = ws_exec.cell(row=row, column=3).value
-                result["labels"][key] = label.strip()
-                taken.add(key)
-                break
-        missing = [k for k, _ in matchers if k not in taken]
+            result[key] = ws_exec.cell(row=row, column=3).value
+            result["labels"][key] = label.strip()
+            taken.add(key)
+        missing = [k for k, _ in DCF_CROSSCHECK_MATCHERS if k not in taken]
         if missing:
             print(f"  [SOTP] DCF cross-check: no row found for {', '.join(missing)} "
                   f"in {os.path.basename(dcf_path)} (left as N/A).")
+        for lbl in skipped_multiples:
+            print(f"  [SOTP] DCF cross-check: '{lbl}' is a comps multiple other than "
+                  f"EV/EBITDA - NOT loaded into comps_ev_ebitda (an EBIT multiple "
+                  f"under an EBITDA label would be wrong). Add it manually if needed.")
         wb_dcf.close()
     except Exception as e:
         print(f"Warning: Could not read DCF cross-check from {dcf_path}: {e}")
