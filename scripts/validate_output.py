@@ -494,6 +494,211 @@ def check_peer_ebitda_equals_ebit(res, wbf, wbv, meta, has_values):
                 "no peer row where EBITDA equals operating income")
 
 
+# =====================================================================
+# market_analysis / sotp checks (14-20)
+# =====================================================================
+def _kind(wbf):
+    """Classify the workbook by its sheets."""
+    names = set(wbf.sheetnames)
+    if {'Implied Growth Analysis', 'Market Scorecard'} & names:
+        return 'market_analysis'
+    if {'SOTP Valuation', 'D&A Allocation'} & names:
+        return 'sotp'
+    if 'DCF Model' in names:
+        return 'dcf'
+    return 'unknown'
+
+
+def check_interp_iferror(res, wbf):
+    """#14 Block 3's MATCH must be wrapped in IFERROR (price below the grid)."""
+    ws = wbf['Implied Growth Analysis']
+    hits, bad = 0, []
+    for row in ws.iter_rows(min_col=4, max_col=4):
+        v = row[0].value
+        if isinstance(v, str) and 'MATCH(' in v.upper():
+            hits += 1
+            if 'IFERROR(' not in v.upper():
+                bad.append(row[0].coordinate)
+    if not hits:
+        res.add(14, SKIP, "Block 3 interpolation guards #N/A", "no MATCH formula found")
+    elif bad:
+        res.add(14, FAIL, "Block 3 interpolation guards #N/A",
+                f"{len(bad)} formula(s) without IFERROR: {', '.join(bad[:6])} — a "
+                f"price below the alpha grid returns #N/A")
+    else:
+        res.add(14, PASS, "Block 3 interpolation guards #N/A",
+                f"all {hits} interpolation formula(s) wrap MATCH in IFERROR")
+
+
+def _peer_breakdown_rows(ws):
+    """[(row, name)] for the peer rows under the 'N社内訳' header."""
+    out = []
+    for r in range(1, ws.max_row + 1):
+        v = ws.cell(row=r, column=2).value
+        if not (isinstance(v, str) and '内訳' in v):
+            continue
+        rr = r + 1
+        while True:
+            nm = ws.cell(row=rr, column=2).value
+            if not isinstance(nm, str) or not nm.strip():
+                break
+            s = nm.strip()
+            if s.startswith('（参考') or s.startswith('(参考'):
+                break  # explicitly flagged as outside the sample
+            out.append((rr, s))
+            rr += 1
+        break
+    return out
+
+
+def check_reverse_comps_excludes_self(res, wbf, wbv):
+    """#15 the distribution inputs must not contain the subject's own multiple."""
+    if 'Implied Multiple Analysis' not in wbf.sheetnames:
+        res.add(15, SKIP, "逆算Comps excludes the subject", "no reverse-comps sheet")
+        return
+    ws = wbf['Implied Multiple Analysis']
+    title = str(wbf['Implied Growth Analysis']['B2'].value or '')
+    # "... - <company> (<ticker>)" -> company name
+    subject = title.split(' - ')[-1].rsplit('(', 1)[0].strip() if ' - ' in title else ''
+    # Only the peer-breakdown block counts — the sheet title also carries the
+    # company name, and matching that would fail every workbook.
+    listed = _peer_breakdown_rows(ws)
+    if not subject:
+        res.add(15, WARN, "逆算Comps excludes the subject",
+                "could not determine the subject company name")
+        return
+    hit = [f"B{r}" for r, s in listed if subject and subject in s]
+    if hit:
+        res.add(15, FAIL, "逆算Comps excludes the subject",
+                f"subject '{subject}' appears in the peer breakdown at "
+                f"{', '.join(hit)} — its own multiple is inside the distribution")
+    else:
+        res.add(15, PASS, "逆算Comps excludes the subject",
+                f"'{subject}' not present among the distribution inputs")
+
+
+def check_alpha_scan_ascending(res, wbv, has_values):
+    """#16 implied price row must be ascending across the alpha grid."""
+    if not has_values:
+        res.add(16, SKIP, "alpha-scan is ascending", "needs recalc")
+        return
+    ws = wbv['Implied Growth Analysis']
+    vals = []
+    for col in range(3, 21):
+        v = _num(ws.cell(row=45, column=col).value)
+        if v is None:
+            break
+        vals.append(v)
+    if len(vals) < 3:
+        res.add(16, SKIP, "alpha-scan is ascending", "no cached implied prices")
+        return
+    if all(b >= a for a, b in zip(vals, vals[1:])):
+        res.add(16, PASS, "alpha-scan is ascending",
+                f"{vals[0]:,.0f} -> {vals[-1]:,.0f} across {len(vals)} alphas")
+    else:
+        res.add(16, WARN, "alpha-scan is ascending",
+                f"implied price is NOT ascending ({vals[0]:,.0f} -> {vals[-1]:,.0f}); "
+                f"Base growth is negative, so Block 3's MATCH bracket is unreliable")
+
+
+def check_sotp_da_check_ok(res, wbv, wbf, has_values):
+    """#17 the D&A allocation Check cell must read OK (weights sum to 100%)."""
+    ws = wbv['D&A Allocation'] if has_values else wbf['D&A Allocation']
+    found = None
+    for r in range(1, ws.max_row + 1):
+        v = ws.cell(row=r, column=5).value
+        if isinstance(v, str) and v.strip() in ('OK', 'CHECK'):
+            found = (r, v.strip())
+            break
+    if found is None:
+        res.add(17, SKIP if not has_values else FAIL,
+                "D&A allocation sums to 100%",
+                "Check cell not found / not recalculated")
+        return
+    r, v = found
+    if v == 'OK':
+        res.add(17, PASS, "D&A allocation sums to 100%", f"E{r} = OK")
+    else:
+        res.add(17, FAIL, "D&A allocation sums to 100%",
+                f"E{r} = CHECK — the allocation percentages do not sum to 100%")
+
+
+def check_sotp_cover_link(res, wbf):
+    """#18 the Cover's SOTP row must be a live link, not a pasted number."""
+    ws = wbf['Cover & Thesis']
+    row = None
+    for r in range(1, ws.max_row + 1):
+        v = ws.cell(row=r, column=2).value
+        # 'SOTP (Base Case)' in the cross-check table — not the sheet title
+        # ('SOTP Valuation Model'), which also starts with "SOTP".
+        if isinstance(v, str) and v.strip().upper().startswith('SOTP ('):
+            row = r
+            break
+    if row is None:
+        res.add(18, FAIL, "Cover SOTP value is a live link",
+                "no 'SOTP (Base Case)' row on the Cover sheet")
+        return
+    v = ws.cell(row=row, column=3).value
+    if isinstance(v, str) and "'SOTP Valuation'" in v:
+        res.add(18, PASS, "Cover SOTP value is a live link", f"C{row} = {v}")
+    else:
+        res.add(18, FAIL, "Cover SOTP value is a live link",
+                f"C{row} = {v!r} — expected a formula referencing 'SOTP Valuation'")
+
+
+def check_sotp_fair_value_range(res, wbv, has_values):
+    """#19 fair value per share in a plausible range (unit-error detector)."""
+    if not has_values:
+        res.add(19, SKIP, "SOTP fair value per share is plausible", "needs recalc")
+        return
+    ws = wbv['SOTP Valuation']
+    for r in range(1, ws.max_row + 1):
+        lbl = ws.cell(row=r, column=2).value
+        if isinstance(lbl, str) and lbl.strip().startswith('Fair Value Per Share'):
+            v = _num(ws.cell(row=r, column=3).value)
+            if v is None:
+                res.add(19, SKIP, "SOTP fair value per share is plausible",
+                        "no cached value")
+            elif 10 <= v <= 1_000_000:
+                res.add(19, PASS, "SOTP fair value per share is plausible",
+                        f"JPY {v:,.0f}")
+            else:
+                res.add(19, WARN, "SOTP fair value per share is plausible",
+                        f"JPY {v:,.0f} is outside [10, 1,000,000] — check the "
+                        f"shares unit (this template wants 千株, not 株)")
+            return
+    res.add(19, SKIP, "SOTP fair value per share is plausible", "row not found")
+
+
+def check_hardcoded_company_count(res, wbf, wbv, has_values):
+    """#20 a literal "N社" caption must match the number of peers actually shown."""
+    ws = wbf['Implied Multiple Analysis'] if 'Implied Multiple Analysis' in wbf.sheetnames else None
+    if ws is None:
+        res.add(20, SKIP, "Peer-count caption matches the data", "no reverse-comps sheet")
+        return
+    counted = set()
+    for r in range(1, ws.max_row + 1):
+        v = ws.cell(row=r, column=2).value
+        if not isinstance(v, str):
+            continue
+        s = v.strip()
+        if s.startswith('（参考') or s.startswith('(参考'):
+            continue
+        m = re.search(r'(\d+)\s*社', s)
+        if m:
+            counted.add(int(m.group(1)))
+    n_listed = len(_peer_breakdown_rows(ws))
+    if not counted:
+        res.add(20, SKIP, "Peer-count caption matches the data", "no 'N社' caption")
+    elif n_listed and counted != {n_listed}:
+        res.add(20, WARN, "Peer-count caption matches the data",
+                f"caption(s) say {sorted(counted)}社 but {n_listed} peer row(s) "
+                f"are listed")
+    else:
+        res.add(20, PASS, "Peer-count caption matches the data",
+                f"{n_listed} peer row(s), caption says {sorted(counted)}社")
+
+
 def check_adjustments_log(res, wbf):
     if "Adjustments Log" in wbf.sheetnames:
         res.add(13, PASS, "Adjustments Log sheet present", "")
@@ -510,26 +715,58 @@ def validate_workbook(path, write_report=True):
     wbv = openpyxl.load_workbook(path, data_only=True)
 
     # "Has values" = Excel has cached results for at least one formula cell.
+    # Probed generically (any sheet) so it works for every template, not just
+    # the DCF's WACC cell.
     has_values = False
-    if "DCF Model" in wbv.sheetnames:
-        probe = wbv["DCF Model"]["C26"].value
-        has_values = isinstance(probe, (int, float))
+    probed = 0
+    for ws in wbf.worksheets:
+        wsv = wbv[ws.title]
+        for row in ws.iter_rows():
+            for c in row:
+                if not (isinstance(c.value, str) and c.value.startswith('=')):
+                    continue
+                probed += 1
+                if wsv[c.coordinate].value is not None:
+                    has_values = True
+                    break
+            if has_values or probed > 200:
+                break
+        if has_values or probed > 200:
+            break
 
     meta = read_metadata(wbf)
     res = Result(path)
+    kind = _kind(wbf)
+    print(f"  workbook kind: {kind}")
 
-    check_formula_errors(res, wbv, has_values)
-    check_scenario_index(res, wbf, meta)
-    check_stats_exclude_subject(res, wbf, meta)
-    check_subject_row_formulas(res, wbf, meta)
-    check_ltm_revenue(res, wbf, wbv, meta, has_values)
-    check_capex_da_ratios(res, wbf, meta)
-    check_fs_year_alignment(res, wbf, meta)
-    check_terminal_capex(res, wbf, wbv, has_values)
-    check_pgm_negative_equity(res, wbf, wbv, has_values)
-    check_implied_exit_multiple(res, wbf, wbv, has_values)
-    check_peer_ebitda_equals_ebit(res, wbf, wbv, meta, has_values)
-    check_adjustments_log(res, wbf)
+    if kind == 'dcf':
+        # `has_values` probes the DCF WACC cell, which only exists on a DCF.
+        check_formula_errors(res, wbv, has_values)
+        check_scenario_index(res, wbf, meta)
+        check_stats_exclude_subject(res, wbf, meta)
+        check_subject_row_formulas(res, wbf, meta)
+        check_ltm_revenue(res, wbf, wbv, meta, has_values)
+        check_capex_da_ratios(res, wbf, meta)
+        check_fs_year_alignment(res, wbf, meta)
+        check_terminal_capex(res, wbf, wbv, has_values)
+        check_pgm_negative_equity(res, wbf, wbv, has_values)
+        check_implied_exit_multiple(res, wbf, wbv, has_values)
+        check_peer_ebitda_equals_ebit(res, wbf, wbv, meta, has_values)
+        check_adjustments_log(res, wbf)
+    elif kind == 'market_analysis':
+        check_formula_errors(res, wbv, has_values)
+        check_interp_iferror(res, wbf)
+        check_reverse_comps_excludes_self(res, wbf, wbv)
+        check_alpha_scan_ascending(res, wbv, has_values)
+        check_hardcoded_company_count(res, wbf, wbv, has_values)
+    elif kind == 'sotp':
+        check_formula_errors(res, wbv, has_values)
+        check_sotp_da_check_ok(res, wbv, wbf, has_values)
+        check_sotp_cover_link(res, wbf)
+        check_sotp_fair_value_range(res, wbv, has_values)
+    else:
+        res.add(0, WARN, "Workbook type recognised",
+                f"sheets {wbf.sheetnames} match no known template")
 
     res.rows.sort(key=lambda r: r[0])
     text = res.render()

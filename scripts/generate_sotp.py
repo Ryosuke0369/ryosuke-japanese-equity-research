@@ -31,14 +31,16 @@ def find_latest_dcf_model(project_root, ticker):
 
 
 def read_dcf_crosscheck(dcf_path):
-    """Read fair values from DCF model's Executive Summary sheet.
+    """Read fair values from a DCF model's Executive Summary sheet.
 
-    Uses win32com to open Excel and evaluate formulas, then reads:
-      Row 16 C = DCF Perpetuity Growth
-      Row 17 C = DCF Exit Multiple
-      Row 18 C = Comps EV/EBITDA
-      Row 19 C = Comps PER
-    Falls back gracefully if Excel is unavailable.
+    Uses win32com so formulas are evaluated even when the workbook was never
+    recalculated (openpyxl alone would see empty cells).
+
+    Rows are matched by their column-B LABELS, not by position: rows 16-19 are
+    only the plain-DCF layout, and a bank-type model (8410: DDM / Residual
+    Income) rebuilds its Valuation Summary — a positional read would import one
+    method's number under another method's name. Falls back gracefully when
+    Excel is unavailable.
     """
     result = {}
     try:
@@ -49,12 +51,30 @@ def read_dcf_crosscheck(dcf_path):
         wb = excel.Workbooks.Open(os.path.abspath(dcf_path), ReadOnly=True)
         wb.Application.CalculateFull()
         ws = wb.Sheets("Executive Summary")
-        result["pgm_fair_value"] = ws.Cells(16, 3).Value
-        result["exit_fair_value"] = ws.Cells(17, 3).Value
-        result["comps_ev_ebitda"] = ws.Cells(18, 3).Value
-        result["comps_per"] = ws.Cells(19, 3).Value
+
+        matchers = [
+            ("exit_fair_value", lambda s: "exit" in s),
+            ("pgm_fair_value", lambda s: "perpetuity" in s or "pgm" in s),
+            ("comps_ev_ebitda", lambda s: "ev/ebitda" in s or "ev/sales" in s),
+            ("comps_per", lambda s: "per" in s and "comps" in s),
+        ]
+        taken = set()
+        for row in range(1, 61):
+            label = ws.Cells(row, 2).Value
+            if not isinstance(label, str) or not label.strip():
+                continue
+            s = label.strip().lower()
+            for key, pred in matchers:
+                if key in taken or not pred(s):
+                    continue
+                result[key] = ws.Cells(row, 3).Value
+                taken.add(key)
+                break
         wb.Close(SaveChanges=False)
         excel.Quit()
+        missing = [k for k, _ in matchers if k not in taken]
+        if missing:
+            print(f"  WARNING: no Executive Summary row matched {', '.join(missing)}")
         # Convert float values to int for clean display
         for k, v in result.items():
             if isinstance(v, float):

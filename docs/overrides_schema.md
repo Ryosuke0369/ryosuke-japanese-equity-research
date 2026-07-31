@@ -188,6 +188,54 @@ Comps Analysis の自社行 Book Value 列（P列）に使う純資産。未指�
   "price_targets": {"損切り": 100, "現在": 200, "第1利確": 300},
   ```
 
+## `sotp` ブロック（generate_sotp.py / sotp_template.py）
+
+### 単位契約（最重要 — 桁事故の温床）
+| キー | 単位 | 備考 |
+|---|---|---|
+| `sotp.consolidated.shares_outstanding` | **千株** | `dcf_comps_template` の `shares_outstanding` は【株】。**1,000倍違う**。generate_sotp.py が `overrides.shares.fully_diluted_shares ÷ 1000` を自動注入する |
+| `sotp.consolidated.da_total` / `net_debt` / `minority_interest` | ¥百万 (¥M) | |
+| セグメント OP | ¥百万 (¥M) | |
+
+- Fair Value = `Equity Value(¥M) × 1,000 ÷ Shares(千株) ÷ split_ratio`。
+- **ガード（2026-07-31〜）**: `shares_outstanding > 1e8` なら「株単位で渡している疑い」として
+  **エラー停止**する（従来は静かに 1/1000 の株価が出ていた）。
+
+### 必須キー（2026-07-31〜 デフォルト廃止）
+- `sotp.sensitivity.primary_segment_key`: **必須**。実在するセグメント key でなければエラー停止。
+  （旧デフォルト `"aero"` は IHI 専用で、他社では無言でラベル空・別セグメント基準の表になっていた）
+- `sotp.sensitivity.table2` を書く場合、`row_segment_key` / `col_segment_key` も**必須**
+  （旧デフォルト `"industrial"` / `"energy"` を廃止）。
+
+### 任意キー
+- `sotp.da_allocation_intro`（文字列リスト）: D&A Allocation シート冒頭の方法論説明。
+  未指定時は汎用文（「セグメント別D&Aは非開示のため固定資産集約度で按分」）。
+- `sotp.da_allocation_notes`（文字列リスト）: セグメント別の按分根拠。未指定時は
+  「合計100%・残差は全社/消去」の共通注記のみ。
+  （旧実装は IHI の Aero/Niigata 等の注記を全銘柄に固定出力していた）
+
+### DCF クロスチェックの読み取り
+Executive Summary の**列Bラベル**（`Perpetuity` / `Exit` / `EV/EBITDA` / `PER`）で行を特定する。
+行16-19 の位置決めは廃止（銀行型など Valuation Summary が再構成されたモデルで別手法の値を
+誤ったラベルで取り込むため）。読み取れたラベルは Cover シートにそのまま表示する。
+クロスチェック値は生成時スナップショットのため、表の下に取得日時と元ファイル名を自動注記。
+
+## market_analysis の入力契約（補足・2026-07-31〜）
+
+- `dcf_excel_path` は**必須**（config だけのフォールバック経路は存在しない。旧実装は
+  「fallback を使う」と印字してから NotImplementedError で落ちていた）。
+- 逆算Comps の分布は **peer のみ**（自社は統計対象外、`（参考・統計対象外）` 行に別掲）。
+  peer 数は可変なので見出しは `{n}社` と動的表示。**p25/中央値/p75 は peer 行から
+  Excel PERCENTILE.INC 互換で再計算**する（古い DCF の統計セルは自社込みのため）。
+  再計算値と DCF シートの統計セルが食い違う場合はコンソールに NOTE を出す
+  → **DCF を現行テンプレで再生成すれば一致する**。
+- `price_points` を指定する場合、**先頭要素の label は `Current Price`** にすること
+  （Block 4/5 が先頭行の alpha を市場 alpha として参照する。違う場合は警告）。
+- Block 4 の alpha（1.00/1.50/0.85/0.40/0.15）は DCF シナリオの実データではなく
+  **Base 成長にかける倍率プロキシ**（列見出しは `alpha (proxy)`）。
+- Narrative Stage シートの値は生成時の静的値。**Excel 上で編集しても Stage/Verdict は
+  動かない**（スコア変更は config の `narrative` を更新して再生成）。
+
 ## 生成物の自動検証（2026-07-31〜）
 
 - `scripts/generate_dcf.py` は生成後に **Excel COM で recalc → `scripts/validate_output.py`** を
@@ -195,6 +243,12 @@ Comps Analysis の自社行 Book Value 列（P列）に使う純資産。未指�
   `--no-recalc` / `--no-validate` で個別にスキップ可。
 - 単体実行: `python scripts/validate_output.py <xlsx>`（FAIL で exit 1、
   `<xlsx>_validation.txt` にレポート出力）。判定は FAIL / WARN / SKIP / PASS。
+- **対象ファイル種別はシート名で自動判別**する:
+  - DCF（`DCF Model`）: チェック 1-13
+  - market_analysis（`Implied Growth Analysis`）: 1, 14（Block3 の IFERROR）,
+    15（逆算Comps に自社が混入していない）, 16（implied price が昇順）, 20（「N社」表記の整合）
+  - SOTP（`SOTP Valuation`）: 1, 17（D&A 按分 Check = OK）, 18（Cover の SOTP 行が
+    `'SOTP Valuation'` 参照の数式）, 19（Fair Value が 10〜10^6 の範囲＝単位事故検出）
 - 検証の根拠は xlsx 内の **`Adjustments Log` シート**下部 `Pipeline Metadata` ブロック
   （生成時の LTM 3成分・C5/C18 の算出根拠・年度突合の結果・自社行/peer 行番号等）。
   **このブロックは手で編集しないこと**（手修正の記録は同シート上部の表に書く）。

@@ -62,6 +62,37 @@ Base 9,121 → Upside 15,181 → Management 30,952 → Downside 1 3,442 → **Do
 
 ---
 
+## 追補: 姉妹テンプレート修正（2026-07-31）
+
+- [x] M1 `_read_comps_stats` のラベルベース化 + 自社除外（p25/中央値/p75 も peer から再計算）
+- [x] M2 Block 3 補間式に IFERROR + alpha-scan 単調性チェック + NOPATフロア注記
+- [x] M3 DCF 読取のラベル探索化（WACC/g/tax/net debt/shares/stub/PGM/Exit/行42-44）+ フォールバック警告
+- [x] M4 Scorecard Factor 3 の空欄→中立0化、C9 を C36 と同じ買/売に統一
+- [x] M5 Narrative Stage の擬似入力セルを OUTPUT 化 + 再生成注記（案A採用、案Bは将来課題）
+- [x] M6 fallback パスのエラー明確化 / `market_alpha_cell` 必須化 / price_points 先頭検証 /
+      Block 4 を `alpha (proxy)` 表記化 / デモ出力を reports→tmp へ
+- [x] S1 `_read_dcf_crosscheck` ラベルベース化（scripts/generate_sotp.py の COM 版も同様に修正）
+- [x] S2 IHI 固有文言を config 供給化 / segment key デフォルト廃止（未指定はエラー停止）
+- [x] S3 単位契約の明文化 + `shares_outstanding > 1e8` でエラー停止
+- [x] S4 Table2 の割引率をセル参照化 / 行レイアウト先決め / Cover 行番号 return 化 /
+      as-of 注記 / float 等値比較を許容誤差比較へ
+- [x] N stage_pre_cap + pre_cap_reason 追加、bool 弾き、Stage 0 優先順位を docstring 明記
+- [x] validate_output にチェック 14-20 追加（シート名で種別自動判別）
+
+### 検証結果
+- `test_narrative_stage.py`: **5/5 PASS**（新規2アサーション追加後も既存期待値は不変）
+- 3687 market_analysis（新DCF入力）: validate **FAIL 0 / PASS 5**、
+  peer 5社 [6-10] を使用（旧実装は rows 5..9 = 自社込み4社で **5社目を取りこぼし**）、
+  peer-only 中央値と DCF シート統計セルが**完全一致**（NOTE なし）、alpha=1.0 = PGM 1,064（-0.02%）
+- 2359 / 4192 デモ（旧DCF入力）: 完走。peer-only 中央値が旧DCFの自社込み中央値と食い違う旨を
+  NOTE で明示（4192: 3.3227 vs 3.5818 → justified price 502 vs C27 538）。**旧DCFを再生成すれば解消**
+- 7013 SOTP 再生成: validate **FAIL 0 / PASS 4**、Fair Value **3,072.064691736476 で修正前と完全一致**、
+  Sensitivity C27 も一致。単位ガード / segment key 必須化とも意図どおりエラー停止を確認
+- 8410（銀行型）read-only 読取テスト: ラベル探索で 389/431/505/196 を正しく取得
+  （当該ファイルの Exec Summary は結局 16-19 のままだったが、ラベル読取でも同値）
+
+---
+
 # Fix: 株価更新 + Comps時価総額の固定化 + 旧成果物整理 (2026-06-12 夕)
 
 ## TODO

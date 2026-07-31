@@ -13,6 +13,18 @@ reversal-risk read instead.
 """
 
 import sys
+
+# This file prints em dashes and ✅/❌, neither of which exists in cp932 (the
+# default console encoding on this machine) — without this the suite dies on
+# its own banner before running a single case.
+try:
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+except Exception:
+    try:
+        sys.stdout.reconfigure(errors='replace')
+    except Exception:
+        pass
+
 from narrative_stage_template import NarrativeInput, assess
 
 
@@ -197,6 +209,15 @@ def test_edge_cases():
     p1 = _check('Edge: Pure narrative play (cap to Stage 2)',
                 r1, expected_stage=2, expected_cap=True)
 
+    # The cap overwrites rate_limiting_axis/reason with the axis-4 message, so
+    # the pre-cap stage and its binding constraint must survive separately.
+    p1_pre = (r1.stage_pre_cap == 3 and bool(r1.pre_cap_reason))
+    print(f"\n{'✅ PASS' if p1_pre else '❌ FAIL'}: "
+          f"Edge: pre-cap stage preserved")
+    print(f"  stage_pre_cap:  {r1.stage_pre_cap} (expected 3)")
+    print(f"  pre_cap_reason: {r1.pre_cap_reason or '(empty)'}")
+
+
     # Edge 2: Stage 0 — no spark, no fuel
     inp2 = NarrativeInput(
         ticker='TEST2', company_name='Sleeper', date='2026-01-01',
@@ -225,7 +246,14 @@ def test_edge_cases():
     p3 = _check('Edge: Fully rewritten (Stage 4)',
                 r3, expected_stage=4)
 
-    return p1 and p2 and p3
+    # No cap fired here, so the pre-cap fields must stay empty rather than
+    # reporting a cap that never happened.
+    p3_pre = (r3.stage_pre_cap is None and r3.pre_cap_reason == '')
+    print(f"\n{'✅ PASS' if p3_pre else '❌ FAIL'}: "
+          f"Edge: no cap -> pre-cap fields stay empty")
+    print(f"  stage_pre_cap:  {r3.stage_pre_cap} (expected None)")
+
+    return p1 and p1_pre and p2 and p3 and p3_pre
 
 
 def main():

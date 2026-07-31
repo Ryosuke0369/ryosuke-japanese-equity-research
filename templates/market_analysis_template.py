@@ -133,38 +133,138 @@ def _read_base_scenario_from_matrix(ws_dcf):
     return growth, opm
 
 
-def _read_comps_stats(wb):
+def _find_label_row(ws, matcher, col=2, start=1, end=None):
+    """First row whose column-`col` value satisfies `matcher` (str or callable)."""
+    end = end or ws.max_row
+    for r in range(start, end + 1):
+        v = ws.cell(row=r, column=col).value
+        if not isinstance(v, str):
+            continue
+        hit = matcher(v) if callable(matcher) else (v.strip() == matcher)
+        if hit:
+            return r
+    return None
+
+
+def _cell_by_label(ws, matcher, col=3, fallback_addr=None, label=None, warn=True):
+    """Read a value located by its row label in column B (not by fixed address).
+
+    Falls back to `fallback_addr` (with a warning) when the label is absent, so
+    workbooks produced by older template revisions still load.
+    """
+    r = _find_label_row(ws, matcher)
+    if r is not None:
+        return ws.cell(row=r, column=col).value, f'{get_column_letter(col)}{r}'
+    if fallback_addr is None:
+        return None, None
+    if warn:
+        import warnings as _w
+        _w.warn(
+            f"'{label or matcher}' label not found on sheet '{ws.title}'; "
+            f"falling back to the fixed address {fallback_addr}. Regenerate the "
+            f"DCF workbook with the current template to remove this fallback.",
+            UserWarning, stacklevel=2,
+        )
+        _LABEL_FALLBACKS.append(f"{ws.title}!{fallback_addr} ({label or matcher})")
+    return ws[fallback_addr].value, fallback_addr
+
+
+# Records every read that had to fall back to a hard-coded address (reported at
+# the end of a run so layout drift is visible instead of silent).
+_LABEL_FALLBACKS = []
+
+
+def _read_comps_stats(wb, subject_ticker=None):
     """Read the Comps Analysis distribution for the reverse-comps sheet.
 
-    Returns a dict with a 'present' flag. Reads off the data_only handle so the
-    per-company multiple columns (J=EV/EBITDA, K=EV/Revenue, L=PER) and the
-    percentile rows come back as cached numbers. By dcf_comps_template
-    convention the percentile columns D/E/F correspond to indicators J/K/L
-    (D<-J=EV/EBITDA, E<-K=EV/Sales, F<-L=PER). min/max are taken from the raw
-    per-company rows (the percentile rows hold no min/max). Any indicator whose
-    five summary stats are not all numeric is flagged present=False and skipped.
+    Rows are located by their labels, never by fixed numbers:
+      - the subject company's own row (ticker match, else the first data row)
+      - peer rows (every other data row until column B goes blank)
+      - the percentile rows ('25th Percentile' / 'Median (50th)' / '75th')
+
+    **The distribution is peer-only.** A company is not its own comparable, and
+    dcf_comps_template excludes the subject row from its MEDIAN/PERCENTILE
+    ranges; reading rows 5..9 blindly used to mix the subject back in (and, with
+    5 peers, drop the last one entirely) so this sheet's median disagreed with
+    the DCF sheet's. The subject's own multiples are kept under 'subject'.
+
+    Column convention (dcf_comps_template): per-company J=EV/EBITDA, K=EV/Revenue,
+    L=PER; percentile columns D<-J, E<-K, F<-L. min/max come from the peer rows.
     """
     if 'Comps Analysis' not in wb.sheetnames:
         return {'present': False}
     ws = wb['Comps Analysis']
 
-    def _num(addr):
-        v = ws[addr].value
-        return float(v) if isinstance(v, (int, float)) else None
+    def _numv(v):
+        return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else None
 
-    def _col_vals(col):  # per-company rows 5..9
-        return [_num(f'{col}{r}') for r in range(5, 10)]
+    def _num(addr):
+        return _numv(ws[addr].value)
+
+    # ── Data rows: from the header row + 1 until column B goes blank ──
+    hdr_row = _find_label_row(ws, 'Company') or 4
+    data_rows = []
+    r = hdr_row + 1
+    while isinstance(ws.cell(row=r, column=2).value, str) and ws.cell(row=r, column=2).value.strip():
+        data_rows.append(r)
+        r += 1
+
+    # ── Subject row: ticker match, else the first data row (template contract) ──
+    def _tkr_key(t):
+        return str(t or '').strip().upper().split('.')[0]
+
+    subj_key = _tkr_key(subject_ticker)
+    subject_row = None
+    if subj_key:
+        for rr in data_rows:
+            if _tkr_key(ws.cell(row=rr, column=3).value) == subj_key:
+                subject_row = rr
+                break
+    if subject_row is None and data_rows:
+        subject_row = data_rows[0]
+    peer_rows = [rr for rr in data_rows if rr != subject_row]
+
+    # ── Percentile rows by label ──
+    p25_row = _find_label_row(ws, lambda v: v.strip().startswith('25th'))
+    med_row = _find_label_row(ws, lambda v: v.strip().startswith('Median'))
+    p75_row = _find_label_row(ws, lambda v: v.strip().startswith('75th'))
+    if None in (p25_row, med_row, p75_row):
+        p25_row, med_row, p75_row = 15, 16, 17
+        _LABEL_FALLBACKS.append('Comps Analysis!15/16/17 (percentile rows)')
+
+    def _percentile_inc(sorted_vals, q):
+        """Excel PERCENTILE.INC — linear interpolation on rank q*(n-1)."""
+        if not sorted_vals:
+            return None
+        if len(sorted_vals) == 1:
+            return sorted_vals[0]
+        pos = q * (len(sorted_vals) - 1)
+        lo = int(pos)
+        hi = min(lo + 1, len(sorted_vals) - 1)
+        return sorted_vals[lo] + (pos - lo) * (sorted_vals[hi] - sorted_vals[lo])
 
     def _stat_block(each_col, pct_col):
-        each = _col_vals(each_col)
-        positive = [x for x in each if x is not None and x > 0]
+        each = [_num(f'{each_col}{rr}') for rr in peer_rows]
+        positive = sorted(x for x in each if x is not None and x > 0)
+        # Percentiles are recomputed from the peer rows rather than lifted from
+        # the sheet's percentile cells. On a workbook generated before the
+        # subject-exclusion fix those cells still include the subject, and
+        # silently importing them would put the company's own multiple back into
+        # its own comparable distribution. The sheet's values are kept alongside
+        # so a disagreement is visible instead of hidden.
+        sheet_stats = {
+            'p25': _num(f'{pct_col}{p25_row}'),
+            'median': _num(f'{pct_col}{med_row}'),
+            'p75': _num(f'{pct_col}{p75_row}'),
+        }
         block = {
-            'min': min(positive) if positive else None,
-            'p25': _num(f'{pct_col}15'),
-            'median': _num(f'{pct_col}16'),
-            'p75': _num(f'{pct_col}17'),
-            'max': max(positive) if positive else None,
+            'min': positive[0] if positive else None,
+            'p25': _percentile_inc(positive, 0.25),
+            'median': _percentile_inc(positive, 0.50),
+            'p75': _percentile_inc(positive, 0.75),
+            'max': positive[-1] if positive else None,
             'each': each,
+            'sheet_stats': sheet_stats,
         }
         block['present'] = all(
             block[k] is not None for k in ('min', 'p25', 'median', 'p75', 'max')
@@ -175,28 +275,43 @@ def _read_comps_stats(wb):
     ev_ebitda = _stat_block('J', 'D')   # EV/EBITDA   -> percentile col D
     per       = _stat_block('L', 'F')   # PER         -> percentile col F
 
-    # The 'Implied Valuation' block is layout-dependent: EV/Sales-primary models
-    # (e.g. 4192) put Revenue in C21 and an EV/Sales-median price in C27, whereas
-    # EV/EBITDA-primary models (e.g. 2359) put EBITDA in C21 and an EV/EBITDA
-    # price in C27. So we DON'T read revenue from C21 here -- the caller supplies
-    # the company's actual revenue (fy_actual_total_rev) which is layout-safe --
-    # and we read the B27 label to know whether C27 is the EV/Sales price.
-    b27 = ws['B27'].value
+    # ── Implied Valuation block, located by label ──
+    # EV/Sales-primary models (e.g. 4192) label it 'Via EV/Sales (Median)';
+    # EV/EBITDA-primary models label it 'Via EV/EBITDA (Median)'. Reading the
+    # label (not a fixed row) is what tells us which multiple C27 actually holds.
+    mult_row = _find_label_row(ws, lambda v: v.strip().startswith('Via EV/'))
+    per_row = _find_label_row(ws, lambda v: v.strip().startswith('Via PER'))
+    mult_label = ws.cell(row=mult_row, column=2).value if mult_row else None
+    ni_val, _ = _cell_by_label(ws, 'Net Income (JPY mn)', fallback_addr='C22',
+                               label='Net Income')
+    sh_val, _ = _cell_by_label(ws, 'Shares Outstanding', fallback_addr='C23',
+                               label='Shares Outstanding')
+    nd_val, _ = _cell_by_label(ws, 'Net Debt (JPY mn)', fallback_addr='C24',
+                               label='Net Debt')
+
     comps = {
         'ev_sales': ev_sales,
         'ev_ebitda': ev_ebitda,
         'per': per,
         'ev_sales_each': ev_sales['each'],
-        'company_names': [ws[f'B{r}'].value for r in range(5, 10)],
+        'company_names': [ws.cell(row=rr, column=2).value for rr in peer_rows],
+        'peer_count': len(peer_rows),
+        'subject': {
+            'name': ws.cell(row=subject_row, column=2).value if subject_row else None,
+            'ticker': ws.cell(row=subject_row, column=3).value if subject_row else None,
+            'ev_sales': _num(f'K{subject_row}') if subject_row else None,
+            'ev_ebitda': _num(f'J{subject_row}') if subject_row else None,
+            'per': _num(f'L{subject_row}') if subject_row else None,
+        },
         'target_revenue': None,            # set by extract_dcf_data (layout-safe)
-        'target_net_income': _num('C22'),
-        'target_shares': _num('C23'),
-        'target_net_debt': _num('C24'),
-        'c27_label': b27,
-        'fwd_median_price': _num('C27'),
-        'per_median_price': _num('C28'),
-        'c27_is_ev_sales': isinstance(b27, str) and (
-            'EV/Sales' in b27 or 'EV/Revenue' in b27),
+        'target_net_income': _numv(ni_val),
+        'target_shares': _numv(sh_val),
+        'target_net_debt': _numv(nd_val),
+        'c27_label': mult_label,
+        'fwd_median_price': _num(f'C{mult_row}') if mult_row else None,
+        'per_median_price': _num(f'C{per_row}') if per_row else None,
+        'c27_is_ev_sales': isinstance(mult_label, str) and (
+            'EV/Sales' in mult_label or 'EV/Revenue' in mult_label),
     }
     # Partial readiness: EV/Sales distribution + shares + net debt present. The
     # caller fills target revenue and finalises 'present'.
@@ -205,6 +320,16 @@ def _read_comps_stats(wb):
         and comps['target_shares'] not in (None, 0)
         and comps['target_net_debt'] is not None
     )
+    if peer_rows:
+        print(f"  [Comps] subject row {subject_row} excluded; "
+              f"{len(peer_rows)} peer row(s) {peer_rows} used for the distribution.")
+        _sm = (ev_sales.get('sheet_stats') or {}).get('median')
+        _pm = ev_sales.get('median')
+        if _sm is not None and _pm is not None and abs(_sm - _pm) > 1e-6:
+            print(f"  [Comps] NOTE: peer-only EV/Sales median {_pm:.4f} differs from "
+                  f"the DCF sheet's median cell {_sm:.4f} - that workbook's "
+                  f"MEDIAN range still includes the subject. Regenerate the DCF "
+                  f"with the current template.")
     return comps
 
 
@@ -243,27 +368,33 @@ def extract_dcf_data(dcf_excel_path, segment_layout=None):
     # data_only=True returns None for never-recalced formulas. The old
     # `float(... or 0)` fallback silently produced a 0% WACC and a meaningless
     # reverse DCF that completed without any error.
-    def _read_required(addr, label):
-        v = ws_dcf[addr].value
+    # Addresses are resolved from the row LABELS in column B, so an inserted row
+    # in the DCF template shifts the read with it instead of silently returning
+    # the neighbouring assumption. The historical fixed addresses remain as a
+    # warned fallback for workbooks built by older template revisions.
+    def _read_required(matcher, addr, label):
+        v, used = _cell_by_label(ws_dcf, matcher, fallback_addr=addr, label=label)
         if v is None:
             raise ValueError(
-                f"DCF Model!{addr} ({label}) is empty in {dcf_excel_path}. "
+                f"DCF Model!{used or addr} ({label}) is empty in {dcf_excel_path}. "
                 f"The workbook has not been recalculated — run "
                 f"`python scripts/recalc_excel_com.py <dcf.xlsx>` first, then rerun."
             )
         return float(v)
 
-    wacc            = _read_required('C26', 'WACC')
-    terminal_growth = _read_required('C13', 'Terminal Growth Rate')
-    tax_rate        = _read_required('C6',  'Effective Tax Rate')
-    net_debt        = _read_required('C16', 'Net Debt')
-    shares          = _read_required('C15', 'Fully Diluted Shares')
+    wacc            = _read_required('WACC', 'C26', 'WACC')
+    terminal_growth = _read_required('Terminal Growth Rate', 'C13', 'Terminal Growth Rate')
+    tax_rate        = _read_required('Effective Tax Rate', 'C6', 'Effective Tax Rate')
+    net_debt        = _read_required(lambda v: v.strip().startswith('Net Debt'),
+                                     'C16', 'Net Debt')
+    shares          = _read_required('Fully Diluted Shares', 'C15', 'Fully Diluted Shares')
     if wacc <= 0:
         raise ValueError(
             f"DCF Model!C26 (WACC) is {wacc} in {dcf_excel_path} — a non-positive "
             f"WACC is never valid. Check the WACC inputs (C7:C12) and recalc."
         )
-    raw_stub        = ws_dcf['C19'].value
+    raw_stub, _ = _cell_by_label(ws_dcf, lambda v: v.strip().startswith('Stub Fraction'),
+                                 fallback_addr='C19', label='Stub Fraction')
     stub_fraction   = float(raw_stub) if raw_stub is not None else 0.0
 
     # Stub Fraction sanity check: 0 means the DCF discounts year-1 with no stub,
@@ -349,17 +480,35 @@ def extract_dcf_data(dcf_excel_path, segment_layout=None):
         for yr in range(5)
     ]
 
-    # ── DCF Model active-scenario WC items (rows 42/43/44, columns C-G) ──
-    da         = [float(ws_dcf[f'{c}42'].value or 0) for c in 'CDEFG']
-    capex      = [float(ws_dcf[f'{c}43'].value or 0) for c in 'CDEFG']
-    nwc_change = [float(ws_dcf[f'{c}44'].value or 0) for c in 'CDEFG']
+    # ── DCF Model active-scenario WC items (columns C-G of the FCF waterfall) ──
+    # Rows located by their waterfall labels; 42/43/44 kept as warned fallbacks.
+    def _row_of(label, fallback):
+        r = _find_label_row(ws_dcf, label)
+        if r is None:
+            _LABEL_FALLBACKS.append(f"DCF Model!row {fallback} ({label})")
+            import warnings as _w
+            _w.warn(f"'{label}' row not found on 'DCF Model'; using row {fallback}.",
+                    UserWarning, stacklevel=2)
+            return fallback
+        return r
+
+    r_da    = _row_of('Plus: D&A', 42)
+    r_capex = _row_of('Less: Capex', 43)
+    r_nwc   = _row_of('Change in NWC', 44)
+    da         = [float(ws_dcf[f'{c}{r_da}'].value or 0) for c in 'CDEFG']
+    capex      = [float(ws_dcf[f'{c}{r_capex}'].value or 0) for c in 'CDEFG']
+    nwc_change = [float(ws_dcf[f'{c}{r_nwc}'].value or 0) for c in 'CDEFG']
 
     # "My prediction" = Base scenario FY1 growth (used in Scorecard Factor 4)
     my_rev_growth = base_total_growth[0]
     my_op_growth  = (base_total_op[0] / fy_actual_total_op - 1) if fy_actual_total_op else 0.0
 
-    base_pgm  = float(ws_dcf['C55'].value or 0)
-    base_exit = float(ws_dcf['C64'].value or 0)
+    _pgm_v, _ = _cell_by_label(ws_dcf, 'Implied Share Price (PGM)',
+                               fallback_addr='C55', label='Implied Share Price (PGM)')
+    _exit_v, _ = _cell_by_label(ws_dcf, 'Implied Share Price (Exit Multiple)',
+                                fallback_addr='C64', label='Implied Share Price (Exit Multiple)')
+    base_pgm  = float(_pgm_v or 0) if isinstance(_pgm_v, (int, float)) else 0.0
+    base_exit = float(_exit_v or 0) if isinstance(_exit_v, (int, float)) else 0.0
 
     # Compute a Base-consistent PGM target in Python so Block 1 can show it
     # without depending on whichever scenario was active when the DCF saved.
@@ -381,7 +530,12 @@ def extract_dcf_data(dcf_excel_path, segment_layout=None):
     # when the DCF Excel has no Comps Analysis sheet or lacks cached values).
     # Target revenue comes from the company's actual revenue (layout-safe),
     # not the Comps sheet's C21 which differs by primary-multiple choice.
-    comps = _read_comps_stats(wb)
+    # Subject ticker comes from the Executive Summary ("3687.T (TSE)") so the
+    # subject row is found by identity rather than by position.
+    _exec_t = None
+    if 'Executive Summary' in wb.sheetnames:
+        _exec_t = str(wb['Executive Summary']['C7'].value or '').split(' ')[0] or None
+    comps = _read_comps_stats(wb, subject_ticker=_exec_t)
     if comps.get('present'):
         comps['target_revenue'] = fy_actual_total_rev
         comps['present'] = fy_actual_total_rev not in (None, 0)
@@ -457,6 +611,21 @@ def _build_implied_growth_sheet(wb, config, dd):
     # Default order keeps Current Price first (Block 4/5 reference its alpha).
     if config.get('price_points'):
         price_points = list(config['price_points'])
+        # Blocks 4 and 5 read the market alpha off the FIRST Block-3 row. A
+        # custom list whose first entry is not the current price would point
+        # them at some other price's alpha without any visible sign.
+        _first = str((price_points[0] or {}).get('label', ''))
+        if _first.strip().lower() != 'current price':
+            import warnings as _w
+            _w.warn(
+                f"config['price_points'][0] is '{_first}', not 'Current Price'. "
+                f"Blocks 4/5 take the market alpha from the first row, so they "
+                f"will compare against '{_first}' instead of the current price. "
+                f"Put Current Price first.",
+                UserWarning, stacklevel=2,
+            )
+            print(f"  [warn] price_points[0] = '{_first}' (expected 'Current Price') "
+                  f"- Block 4/5 market alpha will reference that row.")
     else:
         price_points = [
             {'label': 'Current Price', 'price': config['current_price'], 'timing': 'now'},
@@ -756,7 +925,12 @@ def _build_implied_growth_sheet(wb, config, dd):
         # nearest grid points instead of producing #REF! (INDEX past the end).
         # This matters for high-multiple names (e.g. SaaS) whose market price
         # implies alpha > 1.5 -- the PGM reverse-DCF grid would otherwise error.
-        m = f'MAX(1,MIN(MATCH({price_cell},{impl_price_range},1),{n_alpha - 1}))'
+        #
+        # IFERROR is not decoration: when the price is BELOW the grid's lowest
+        # implied price (alpha=-0.5), MATCH itself returns #N/A and MAX/MIN
+        # propagate it — the clamp only ever protected the upper end. A "Recent
+        # Low" below the deep-pessimism price used to blank the whole row.
+        m = f'MAX(1,MIN(IFERROR(MATCH({price_cell},{impl_price_range},1),1),{n_alpha - 1}))'
         a_lo = f'INDEX({alpha_range},{m})'
         a_hi = f'INDEX({alpha_range},{m}+1)'
         p_lo = f'INDEX({impl_price_range},{m})'
@@ -788,7 +962,7 @@ def _build_implied_growth_sheet(wb, config, dd):
     ws[f'B{block4_header_row}'].fill = HEADER_FILL
     ws.merge_cells(f'B{block4_header_row}:G{block4_header_row}')
 
-    for i, h in enumerate(['Scenario', 'alpha', '5Y CAGR (Rev)', 'Avg OPM',
+    for i, h in enumerate(['Scenario', 'alpha (proxy)', '5Y CAGR (Rev)', 'Avg OPM',
                            'Gap vs Market', 'Verdict']):
         c = chr(ord('B') + i)
         ws[f'{c}{block4_colheader_row}'] = h
@@ -866,6 +1040,12 @@ def _build_implied_growth_sheet(wb, config, dd):
         '4. Block 4: 5-scenario comparison',
         f'5. Block 5: final verdict (edit C{block5_my_row} to set your own alpha)',
         '',
+        '── 注意 / caveats ──',
+        'Block 4 の alpha (1.00/1.50/0.85/0.40/0.15) は DCF 側シナリオの実データではなく、',
+        '  Base 成長にかける倍率のプロキシ。DCF Model のシナリオ切替結果とは別物。',
+        'FCF は MAX(0, EBIT×(1-tax)) の NOPAT フロアを持つため、赤字レンジ（低 alpha）では',
+        '  曲線が平坦化し、implied alpha の解像度が落ちる（赤字銘柄で顕著）。',
+        '',
         '── alpha interpretation ──',
         'alpha = 1.0 -> full Base scenario priced in',
         'alpha = 0.0 -> zero growth priced in (FY actual flat)',
@@ -916,6 +1096,9 @@ def _build_reverse_comps_sheet(wb, config, dd):
     ZNUM = '0.00'
 
     evs = comps['ev_sales']
+    # Peer count is data, not a constant: the comps set is 3-6 names depending on
+    # the ticker (8410 has 3 usable peers), and the subject itself is excluded.
+    n_peers = comps.get('peer_count') or len(comps.get('company_names') or [])
 
     # ── Title ──
     ws['B2'] = (f"逆算Comps (Implied Multiple Analysis) - "
@@ -923,7 +1106,8 @@ def _build_reverse_comps_sheet(wb, config, dd):
     ws['B2'].font = TITLE_FONT
     ws['B2'].fill = TITLE_FILL
     ws.merge_cells('B2:H2')
-    ws['B3'] = '現在株価が市場に付けられた EV/Sales 倍率を逆算し、Comps 5社分布上の位置を測る'
+    ws['B3'] = (f'現在株価が市場に付けられた EV/Sales 倍率を逆算し、'
+                f'Comps {n_peers}社（自社除く）分布上の位置を測る')
     ws['B3'].font = Font(name='Calibri', size=9, italic=True)
 
     def header(row, text, span):
@@ -963,7 +1147,7 @@ def _build_reverse_comps_sheet(wb, config, dd):
     inp('C12', config.get('comps_pos_threshold_major', 1.0), ZNUM)
 
     # Comps EV/Sales distribution (embedded values; min/max from raw rows)
-    ws['B14'] = 'Comps EV/Sales 分布 (5社)'
+    ws['B14'] = f'Comps EV/Sales 分布 ({n_peers}社・自社除く)'
     ws['B14'].font = SUBHEADER_FONT
     ws['B14'].fill = SUBHEADER_FILL
     ws.merge_cells('B14:H14')
@@ -999,7 +1183,7 @@ def _build_reverse_comps_sheet(wb, config, dd):
             ws[f'{c}{r}'].border = BORDER
 
     # ════════ Block B: distribution position ════════
-    header(23, 'Block B: 5社分布上の位置 (EV/Sales 実績ベース)', 'B23:H23')
+    header(23, f'Block B: peer {n_peers}社分布上の位置 (EV/Sales 実績ベース)', 'B23:H23')
     pos_rows = [
         ('中央値との乖離', '=C20/E16-1', PCT),
         ('最安との乖離',   '=C20/C16-1', PCT),
@@ -1051,8 +1235,9 @@ def _build_reverse_comps_sheet(wb, config, dd):
             ws[f'{c}{r}'].border = BORDER
         r += 1
 
-    # 5-company breakdown (transparency)
-    ws['B37'] = '5社内訳 (EV/Sales)'
+    # Peer breakdown (transparency). Peers only — the subject's own multiple is
+    # shown separately below so it is never mistaken for part of the sample.
+    ws['B37'] = f'{n_peers}社内訳 (EV/Sales・自社除く)'
     ws['B37'].font = SUBHEADER_FONT
     ws['B37'].fill = SUBHEADER_FILL
     ws.merge_cells('B37:H37')
@@ -1066,6 +1251,17 @@ def _build_reverse_comps_sheet(wb, config, dd):
             inp(f'C{r}', mult, MULT)
         else:
             inp(f'C{r}', '-', MULT)
+        r += 1
+
+    subj = comps.get('subject') or {}
+    if subj.get('name'):
+        ws[f'B{r}'] = f"（参考・統計対象外）{subj['name']}"
+        ws[f'B{r}'].font = Font(name='Calibri', size=9, italic=True)
+        ws[f'B{r}'].border = BORDER
+        sv = subj.get('ev_sales')
+        ws[f'C{r}'] = sv if isinstance(sv, (int, float)) else '-'
+        ws[f'C{r}'].number_format = MULT
+        ws[f'C{r}'].border = BORDER
         r += 1
 
     # ════════ Block D: price-target multiple translation (optional) ════════
@@ -1114,12 +1310,43 @@ def _build_reverse_comps_sheet(wb, config, dd):
         for c in 'BC':
             ws[f'{c}{rr}'].border = BORDER
 
+    # Peer distribution + position for the secondary multiples. These blocks were
+    # read from the DCF workbook and then thrown away; showing them is the whole
+    # point of reading them (and it is what makes the implied values above
+    # interpretable rather than free-floating).
+    sec_rows = [('EV/EBITDA', comps.get('ev_ebitda') or {}, f'C{sr+4}'),
+                ('PER',       comps.get('per') or {},       f'C{sr+3}')]
+    dr = sr + 6
+    ws[f'B{dr}'] = f'peer 分布 ({n_peers}社・自社除く)'
+    ws[f'B{dr}'].font = SUBHEADER_FONT
+    for i, lab in enumerate(['25%ile', '中央値', '75%ile', '位置 z']):
+        col = get_column_letter(3 + i)
+        ws[f'{col}{dr}'] = lab
+        ws[f'{col}{dr}'].font = SUBHEADER_FONT
+        ws[f'{col}{dr}'].fill = SUBHEADER_FILL
+        ws[f'{col}{dr}'].alignment = Alignment(horizontal='center')
+    for k, (lab, blk, impl_cell) in enumerate(sec_rows):
+        rr = dr + 1 + k
+        ws[f'B{rr}'] = lab
+        for i, key in enumerate(('p25', 'median', 'p75')):
+            col = get_column_letter(3 + i)
+            v = blk.get(key)
+            inp(f'{col}{rr}', v if isinstance(v, (int, float)) else '-', MULT)
+        p25c, medc, p75c = f'C{rr}', f'D{rr}', f'E{rr}'
+        ws[f'F{rr}'] = f'=IFERROR(({impl_cell}-{medc})/({p75c}-{p25c}),"n/a")'
+        ws[f'F{rr}'].number_format = ZNUM
+        ws[f'F{rr}'].fill = OUTPUT_FILL
+        for c in 'BCDEF':
+            ws[f'{c}{rr}'].border = BORDER
+
     # ════════ Notes ════════
-    nr = sr + 6
+    nr = dr + len(sec_rows) + 2
     notes = [
         '── 注記 ──',
         '倍率は実績売上ベース。会社予想売上を分母にするとフォワード倍率はさらに低く（割安に）見える。'
-        'Comps 5社も実績ベースのため、実績同士の比較が最もフェア。',
+        f'Comps {n_peers}社も実績ベースのため、実績同士の比較が最もフェア。',
+        f'分布は peer {n_peers}社のみで構成（自社は統計対象外）。DCF側 Comps Analysis の '
+        f'MEDIAN/PERCENTILE と同じ母集団。',
     ]
     # Conditional guard note when EBITDA/Net Income is non-positive
     ni = comps.get('target_net_income')
@@ -1140,13 +1367,14 @@ def _build_reverse_comps_sheet(wb, config, dd):
     return {'sheet': ws, 'median_price_cell': 'D33'}
 
 
-def _build_market_scorecard_sheet(wb, config, dd, market_alpha_cell='C90'):
+def _build_market_scorecard_sheet(wb, config, dd, market_alpha_cell):
     """Build the Market Scorecard sheet.
 
     market_alpha_cell: address of the Market View alpha cell on the
-    'Implied Growth Analysis' sheet. Defaults to legacy 'C90' for backward
-    compatibility but should be passed from _build_implied_growth_sheet so
-    the reference tracks layout changes (segments, price-point count).
+    'Implied Growth Analysis' sheet. REQUIRED — it is computed by
+    _build_implied_growth_sheet from the actual layout (segment count,
+    price-point count). The old 'C90' default silently pointed at whatever
+    happened to sit on row 90 for any other layout.
     """
     ws = wb.create_sheet('Market Scorecard')
 
@@ -1177,10 +1405,10 @@ def _build_market_scorecard_sheet(wb, config, dd, market_alpha_cell='C90'):
         ws[f'{c}6'].fill = SUBHEADER_FILL
 
     # Factor 1: Implied Growth (40%)
-    # Note: spec literally says "=1 - 'Implied Growth Analysis'!C91" but C91 is
-    # the *user's* alpha (editable, default 1.0) -- which would always make the
-    # measure 0. The intent (per the verdict labels "市場大幅悲観 = 強気") is
-    # clearly to compare 1 vs the *market* alpha, which lives in C90. We use C90.
+    # Note: the spec literally says "=1 - <user alpha>", but the user's alpha is
+    # editable and defaults to 1.0 -- which would always make the measure 0. The
+    # intent (per the verdict labels "市場大幅悲観 = 強気") is to compare 1 vs the
+    # *market* alpha, so we reference the Market View alpha cell passed in.
     ws['B7'] = 'Implied Growth (1 - market alpha)'
     ws['C7'] = f"=1-'Implied Growth Analysis'!{market_alpha_cell}"
     ws['C7'].number_format = '0.000'
@@ -1209,21 +1437,29 @@ def _build_market_scorecard_sheet(wb, config, dd, market_alpha_cell='C90'):
                 'IF(D8=-1,"期待やや過熱","期待過熱 = 失望売りリスク"))))')
 
     # Factor 3: Margin Balance (20%) -- 信用倍率 + 売残充実度
-    ws['B9'] = 'Margin Balance (credit ratio)'
-    ws['C9'] = '=IFERROR(C34/C33,0)'  # short ratio (sell/buy) for display
+    # C9 shows the SAME ratio the score uses (買残/売残 = C36), not its
+    # reciprocal: the label says "credit ratio" (信用倍率), which in Japanese
+    # market data is buy/sell.
+    ws['B9'] = 'Margin Balance (信用倍率 買残/売残)'
+    ws['C9'] = '=IFERROR(C33/C34,"")'
     ws['C9'].number_format = '0.00'
-    ws['D9'] = ('=IF(AND(C36<=1,C34/C35>=0.5),2,'
+    # Blank margin inputs must score 0 (neutral), not -2. C36's 99 sentinel used
+    # to fall through every branch straight to "需給最悪", moving the weighted
+    # Total by -0.4 purely because the analyst had not typed the 信用残 yet.
+    ws['D9'] = ('=IF(OR(C33="",C34="",C35=""),0,'
+                'IF(AND(C36<=1,C34/C35>=0.5),2,'
                 'IF(AND(C36<=3,C34/C35>=0.3),1,'
                 'IF(AND(C36<=10,C34/C35>=0.1),0,'
-                'IF(AND(C36<=20,C34/C35>=0.05),-1,-2))))')
+                'IF(AND(C36<=20,C34/C35>=0.05),-1,-2)))))')
     ws['E9'] = 0.20
     ws['E9'].number_format = '0%'
     ws['F9'] = '=D9*E9'
     ws['F9'].number_format = '+0.00;-0.00;0.00'
-    ws['G9'] = ('=IF(D9=2,"踏み上げ余地大",'
+    ws['G9'] = ('=IF(OR(C33="",C34="",C35=""),"信用残 未入力 (中立扱い)",'
+                'IF(D9=2,"踏み上げ余地大",'
                 'IF(D9=1,"需給良好",'
                 'IF(D9=0,"ニュートラル",'
-                'IF(D9=-1,"戻り売り圧力","需給最悪"))))')
+                'IF(D9=-1,"戻り売り圧力","需給最悪")))))')
 
     # Factor 4: Forecast Gap (15%)
     ws['B10'] = 'Forecast Gap (vs Company)'
@@ -1401,7 +1637,7 @@ def _build_market_scorecard_sheet(wb, config, dd, market_alpha_cell='C90'):
     ws['B62'].font = SUBHEADER_FONT
     usage = [
         '1. Block 2 / 3 / 4 の黄色入力欄に最新の市場データを入力する。',
-        f"2. Implied Growth Analysis シートで Block 5 の {market_alpha_cell.replace('C', 'C')} 行近くで My View alpha を入力する。",
+        f"2. Implied Growth Analysis シートの Block 5（{market_alpha_cell} の直下）で My View alpha を入力する。",
         '3. Block 1 (this sheet) Total Score と判定を確認する。',
         '4. 複数銘柄で同じテンプレートを使用し、横比較で買い候補を絞り込む。',
     ]
@@ -1489,7 +1725,10 @@ def _build_narrative_stage_sheet(wb, config, dd=None):
         r = axis_start + j
         ws[f'B{r}'] = label
         ws[f'C{r}'] = score
-        ws[f'C{r}'].fill = INPUT_FILL
+        # OUTPUT, not INPUT: Stage / Verdict / Headroom below are static values
+        # from assess(), so editing a score here changes nothing. A yellow
+        # (input) fill advertised an interactivity this sheet does not have.
+        ws[f'C{r}'].fill = OUTPUT_FILL
         ws[f'C{r}'].alignment = Alignment(horizontal='center')
         ws[f'D{r}'] = note
         ws[f'D{r}'].alignment = Alignment(wrap_text=True, vertical='top')
@@ -1517,6 +1756,14 @@ def _build_narrative_stage_sheet(wb, config, dd=None):
         ('理由 (Reason)', res.rate_limiting_reason),
         ('業績キャップ適用', 'Yes' if res.earnings_cap_applied else 'No'),
     ]
+    # When axis 4 capped the stage, keep what it was capped FROM and why —
+    # otherwise the pre-cap rate-limiting axis is overwritten and lost.
+    if res.earnings_cap_applied and res.stage_pre_cap is not None:
+        stage_rows.append(
+            ('キャップ前 Stage (pre-cap)',
+             f'Stage {res.stage_pre_cap}'
+             + (f' / {res.pre_cap_reason}' if res.pre_cap_reason else ''))
+        )
     for j, (label, val) in enumerate(stage_rows):
         r = sr + 1 + j
         ws[f'B{r}'] = label
@@ -1527,7 +1774,9 @@ def _build_narrative_stage_sheet(wb, config, dd=None):
         ws[f'C{r}'].fill = OUTPUT_FILL
 
     # ── Headroom signal (axis1 vs axis3) ──
-    hr = sr + 6  # row 21
+    # Positioned off the actual number of stage rows (the pre-cap row is
+    # conditional), not a fixed offset.
+    hr = sr + 1 + len(stage_rows) + 1
     ws[f'B{hr}'] = 'Headroom シグナル (軸1 vs 軸3)'
     ws[f'B{hr}'].font = HEADER_FONT
     ws[f'B{hr}'].fill = HEADER_FILL
@@ -1571,6 +1820,13 @@ def _build_narrative_stage_sheet(wb, config, dd=None):
     ws[f'D{vr+1}'] = res.verdict_rationale
     ws.merge_cells(f'D{vr+1}:F{vr+1}')
     ws[f'D{vr+1}'].alignment = Alignment(wrap_text=True, vertical='top')
+
+    ws[f'B{vr+3}'] = ('注: このシートの値はすべて生成時の静的値（assess() の出力）。'
+                      'スコアを変えたい場合は Excel 上で編集せず、config の narrative を'
+                      '更新して再生成すること。')
+    ws[f'B{vr+3}'].font = Font(name='Calibri', size=9, italic=True)
+    ws.merge_cells(f'B{vr+3}:F{vr+3}')
+    ws[f'B{vr+3}'].alignment = Alignment(wrap_text=True, vertical='top')
 
     # ── Radar chart (6 axes) ──
     # Hidden data block for the chart (categories + values), placed to the
@@ -1660,7 +1916,10 @@ def generate_market_analysis_excel(config, output_path, dcf_excel_path=None):
         dd = extract_dcf_data(dcf_excel_path, seg_layout)
     else:
         if dcf_excel_path:
-            print(f"  [warn] DCF Excel not found: {dcf_excel_path} -- using config-supplied fallbacks.")
+            raise FileNotFoundError(
+                f"DCF Excel not found: {dcf_excel_path}. dcf_excel_path is "
+                f"required — see _build_fallback_data()."
+            )
         dd = _build_fallback_data(config)
 
     # Build workbook
@@ -1684,9 +1943,17 @@ def generate_market_analysis_excel(config, output_path, dcf_excel_path=None):
     # or a mismatched stub fraction.
     _verify_alpha_one_matches_base_pgm(dd)
 
+    # Block 3's MATCH-based interpolation is only valid on an ascending grid.
+    _verify_alpha_scan_is_monotonic(dd)
+
     # Self-check: the EV/Sales-median justified price computed on the reverse-
     # comps sheet should match the DCF Excel's forward Comps price (C27).
     _verify_comps_median_matches_c27(dd)
+
+    if _LABEL_FALLBACKS:
+        print("\n  [warn] label lookups that fell back to fixed addresses:")
+        for f in sorted(set(_LABEL_FALLBACKS)):
+            print(f"    - {f}")
 
     return output_path
 
@@ -1699,8 +1966,11 @@ def _verify_comps_median_matches_c27(dd, threshold_yen=1.0):
     mismatch between the DCF Comps sheet and what we embedded.
     """
     comps = dd.get('comps') or {}
-    # Only meaningful when the DCF Comps sheet's C27 IS the EV/Sales-median price
-    # (EV/Sales-primary layout). EBITDA-primary models put EV/EBITDA in C27.
+    # Only meaningful when the DCF Comps sheet's implied-price row IS the
+    # EV/Sales median (EV/Sales-primary layout). EBITDA-primary models put
+    # EV/EBITDA there. Both sides now use the peer-only median (the subject is
+    # excluded here and in dcf_comps_template's MEDIAN range), so a mismatch is
+    # a real data problem rather than a definitional one.
     if not comps.get('present') or not comps.get('c27_is_ev_sales'):
         return
     median = comps['ev_sales']['median']
@@ -1724,6 +1994,57 @@ def _verify_comps_median_matches_c27(dd, threshold_yen=1.0):
             f"(>{threshold_yen} yen). Check the Comps cache / shares / net debt.",
             UserWarning, stacklevel=2,
         )
+
+
+def _implied_price_for_alpha(dd, alpha):
+    """Reverse-DCF implied share price at a given alpha (same maths as Block 2)."""
+    fy_rev = dd['fy_actual_total_rev']
+    fy_opm = dd['fy_actual_opm']
+    rev = fy_rev
+    revs = []
+    for yr in range(5):
+        rev *= (1 + alpha * dd['base_total_growth'][yr])
+        revs.append(rev)
+    ops = [revs[yr] * (fy_opm + alpha * (dd['base_total_opm'][yr] - fy_opm))
+           for yr in range(5)]
+    fcfs = [
+        max(0.0, ops[yr] * (1 - dd['tax_rate']))
+        + dd['da'][yr] - dd['capex'][yr] - dd['nwc_change'][yr]
+        for yr in range(5)
+    ]
+    sum_pv = sum(fcfs[yr] / (1 + dd['wacc']) ** (dd['stub_fraction'] + yr) for yr in range(5))
+    if dd['wacc'] > dd['terminal_growth']:
+        tv = fcfs[-1] * (1 + dd['terminal_growth']) / (dd['wacc'] - dd['terminal_growth'])
+    else:
+        tv = 0.0
+    pv_tv = tv / (1 + dd['wacc']) ** (dd['stub_fraction'] + 4)
+    equity = sum_pv + pv_tv - dd['net_debt']
+    return equity * 1_000_000 / dd['shares'] if dd['shares'] else 0.0
+
+
+def _verify_alpha_scan_is_monotonic(dd):
+    """Warn when implied price is not increasing in alpha.
+
+    Block 3 brackets a price with MATCH(..., 1), which REQUIRES the lookup
+    vector to be ascending. When Base growth is negative, a higher alpha means
+    a deeper contraction, so price falls as alpha rises and MATCH silently
+    returns a wrong bracket (no error, just a wrong implied alpha).
+    """
+    prices = [_implied_price_for_alpha(dd, a) for a in ALPHA_VALUES]
+    ascending = all(b >= a for a, b in zip(prices, prices[1:]))
+    if not ascending:
+        import warnings as _w
+        _w.warn(
+            "Implied price is NOT ascending across the alpha grid "
+            f"({prices[0]:,.0f} at alpha={ALPHA_VALUES[0]} -> "
+            f"{prices[-1]:,.0f} at alpha={ALPHA_VALUES[-1]}). Base growth is "
+            "negative, so the alpha-scan direction is inverted: MATCH(...,1) in "
+            "Block 3 requires an ascending vector, and the interpolated implied "
+            "alpha is NOT reliable for this ticker.",
+            UserWarning, stacklevel=2,
+        )
+        print("  [warn] alpha-scan is not monotonic - Block 3 implied alpha is unreliable.")
+    return prices, ascending
 
 
 def _verify_alpha_one_matches_base_pgm(dd, threshold_pct=5.0):
@@ -1778,20 +2099,18 @@ def _verify_alpha_one_matches_base_pgm(dd, threshold_pct=5.0):
 
 
 def _build_fallback_data(config):
-    """Construct a minimal data dict when no DCF Excel is available.
+    """There is no working fallback path — this always raises.
 
-    Looks for these optional config keys: wacc, terminal_growth, tax_rate,
-    net_debt, shares_outstanding, stub_fraction. Segments must still come
-    from segment_layout but with config-supplied per-segment fields.
+    Kept as a named function so the failure names itself. It previously printed
+    "using config-supplied fallbacks" and then raised, which read like a
+    recoverable warning.
     """
-    seg_layout = config['segment_layout']
-    n_seg = len(seg_layout['segments'])
-    # Without a DCF file we cannot compute Base scenario projections; bail
-    # gracefully unless the caller provided full overrides.
     raise NotImplementedError(
-        "Fallback path without dcf_excel_path requires a richer config "
-        "schema (per-segment Base growth/OPM, D&A/Capex/NWC arrays, etc.). "
-        "Pass dcf_excel_path to use the auto-extraction path instead."
+        "dcf_excel_path is REQUIRED. There is no config-only fallback: the "
+        "reverse DCF needs per-segment Base growth/OPM plus D&A/Capex/NWC "
+        "arrays, none of which exist outside a generated DCF workbook. "
+        "Generate one with scripts/generate_dcf.py, recalc it "
+        "(scripts/recalc_excel_com.py), and pass its path."
     )
 
 
@@ -1807,6 +2126,19 @@ if __name__ == "__main__":
 
     here = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.abspath(os.path.join(here, '..'))
+    # The demo writes to tmp/, never to reports/ (curated final models live
+    # there and must not be overwritten by a template smoke-run).
+    demo_out_dir = os.environ.get('MARKET_ANALYSIS_DEMO_DIR',
+                                  os.path.join(project_root, 'tmp', 'market_analysis_demo'))
+    os.makedirs(demo_out_dir, exist_ok=True)
+
+    def _run_demo(cfg, dcf_rel, out_name):
+        dcf_p = os.path.join(project_root, 'models', dcf_rel)
+        if not os.path.exists(dcf_p):
+            print(f"  [skip] {out_name}: DCF workbook not found ({dcf_rel})")
+            return None
+        return generate_market_analysis_excel(
+            cfg, os.path.join(demo_out_dir, out_name), dcf_excel_path=dcf_p)
 
     config_2359 = {
         "ticker": "2359.T",
@@ -1863,10 +2195,8 @@ if __name__ == "__main__":
         },
     }
 
-    dcf_path = os.path.join(project_root, "models", "2359_DCF_Model_20260509.xlsx")
-    out_path = os.path.join(project_root, "reports", "2359_market_analysis_20260509_v2.xlsx")
-
-    generate_market_analysis_excel(config_2359, out_path, dcf_excel_path=dcf_path)
+    _run_demo(config_2359, "2359_DCF_Model_20260509.xlsx",
+              "2359_market_analysis_demo.xlsx")
 
     # ── 4192 SpiderPlus demo: single-segment (no segment_layout) + reverse-comps.
     # Exercises the Comps Analysis path. current_price 282 = 2026-06-03 snapshot.
@@ -1884,6 +2214,5 @@ if __name__ == "__main__":
         "margin_buy": 1000, "margin_sell": 200, "margin_sell_peak_6m": 400,
         "company_rev_growth": 0.205, "company_op_growth": -4.204,
     }
-    dcf_path_4192 = os.path.join(project_root, "models", "4192_DCF_Model_20260603.xlsx")
-    out_path_4192 = os.path.join(project_root, "reports", "4192_market_analysis_20260604.xlsx")
-    generate_market_analysis_excel(config_4192, out_path_4192, dcf_excel_path=dcf_path_4192)
+    _run_demo(config_4192, "4192_DCF_Model_20260603.xlsx",
+              "4192_market_analysis_demo.xlsx")
