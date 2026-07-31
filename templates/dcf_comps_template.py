@@ -11,6 +11,85 @@ from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 import subprocess, sys, os
+import re
+import datetime as _dt
+import json as _json
+
+# =====================================================================
+# NARRATIVE TOKENS (investment_thesis / key_risks)
+# =====================================================================
+# A thesis that hardcodes "target 644 yen (+15%)" is wrong the moment the price
+# or share count is refreshed. These tokens are rewritten into a live
+# ="..."&TEXT(<cell>,"<fmt>")&"..." formula so the prose tracks the model.
+# Keep in sync with docs/overrides_schema.md and overrides_validator.py.
+NARRATIVE_TOKEN_FORMATS = {
+    "price":        "#,##0",
+    "target_price": "#,##0",
+    "upside_pct":   "+0.0%;-0.0%",
+    "pb":           '0.00"x"',
+    "per":          '0.0"x"',
+    "wacc":         "0.00%",
+}
+_TOKEN_RE = re.compile(r"\{([a-zA-Z_][a-zA-Z0-9_]*)\}")
+# Excel's hard limit on a single formula is 8,192 characters.
+_MAX_FORMULA_LEN = 8192
+
+
+def _excel_str_literal(text):
+    return '"' + text.replace('"', '""') + '"'
+
+
+def _render_narrative_line(line, token_refs, warn):
+    """Render one thesis/risk line into 1+ cell values.
+
+    Lines without tokens are returned unchanged (plain text — the pre-token
+    behaviour, so existing overrides are untouched). Lines with tokens become
+    string-concatenation formulas; a line whose formula would exceed Excel's
+    8,192-character limit is split across consecutive cells.
+    """
+    if not isinstance(line, str) or not _TOKEN_RE.search(line):
+        return [line]
+
+    def build(fragment):
+        pieces, last = [], 0
+        for m in _TOKEN_RE.finditer(fragment):
+            name = m.group(1)
+            ref = token_refs.get(name)
+            if ref is None:
+                # Unknown tokens are rejected by the validator; a known token
+                # with no reference (e.g. {pb} with no comps) degrades to text.
+                warn(name)
+                continue
+            if m.start() > last:
+                pieces.append(_excel_str_literal(fragment[last:m.start()]))
+            fmt = NARRATIVE_TOKEN_FORMATS[name]
+            pieces.append(f'TEXT({ref},{_excel_str_literal(fmt)})')
+            last = m.end()
+        if last == 0:
+            return None  # no token resolved -> keep as plain text
+        if last < len(fragment):
+            pieces.append(_excel_str_literal(fragment[last:]))
+        return "=" + "&".join(pieces)
+
+    formula = build(line)
+    if formula is None:
+        return [line]
+    if len(formula) <= _MAX_FORMULA_LEN:
+        return [formula]
+
+    # Too long for one cell: split on sentence boundaries and lay the halves out
+    # in consecutive cells rather than truncating or dropping the tokens.
+    chunks, buf = [], ""
+    for sentence in re.split(r"(?<=[。.!?])\s*", line):
+        candidate = buf + sentence
+        if buf and len(build(candidate) or candidate) > _MAX_FORMULA_LEN - 200:
+            chunks.append(buf)
+            buf = sentence
+        else:
+            buf = candidate
+    if buf:
+        chunks.append(buf)
+    return [build(ch) or ch for ch in chunks]
 
 try:
     import yfinance as yf
@@ -1677,6 +1756,48 @@ def generate_dcf_workbook(config, output_path=None):
     """
     C = config
 
+    # ── Generation metadata ──
+    # Everything a machine needs to re-check the workbook after the fact
+    # (scripts/validate_output.py) is recorded here and written to the
+    # 'Adjustments Log' sheet as a "Pipeline Metadata" block. Without it the
+    # validator would have to re-derive the intent from the numbers, which is
+    # exactly the guesswork that let year-shifted data through before.
+    _meta = {}
+
+    # ── Comps Analysis layout (needed by Executive Summary, built first) ──
+    # The sheet keeps its historical row numbers (statistics 14-17, implied
+    # valuation 19-28) so existing consumers of 'Comps Analysis'!C27/C28 keep
+    # working; a comps set large enough to reach row 14 shifts the whole lower
+    # block down instead of silently overwriting the statistics.
+    _n_comps = len(C.get("comps") or [])
+    _comps_row_shift = max(0, (5 + _n_comps - 1) + 3 - 14) if _n_comps else 0
+    R_CMP_SHARES = 23 + _comps_row_shift
+    R_CMP_NETDEBT = 24 + _comps_row_shift
+    R_CMP_IMPL_MULT = 27 + _comps_row_shift   # EV/EBITDA (or EV/Sales) implied
+    R_CMP_IMPL_PER = 28 + _comps_row_shift    # PER implied
+
+    # ── Locate the subject company's own row in the comps table ──────────
+    # The comps CSV carries the subject as its first row (for display), but its
+    # own multiple must never enter the peer statistics — a company cannot be
+    # its own comparable. Matching is by ticker, so the row is found wherever
+    # the analyst puts it (no "row 5" assumption anywhere below).
+    def _tkr_key(t):
+        return str(t or "").strip().upper().split(".")[0]
+
+    _subject_key = _tkr_key(C.get("ticker"))
+    subject_idx = None
+    for _i, _comp in enumerate(C.get("comps") or []):
+        if _subject_key and _tkr_key(_comp.get("ticker")) == _subject_key:
+            subject_idx = _i
+            break
+    if subject_idx is None:
+        _cname = str(C.get("company_name", "")).strip()
+        for _i, _comp in enumerate(C.get("comps") or []):
+            if _cname and str(_comp.get("name", "")).strip() == _cname:
+                subject_idx = _i
+                break
+    R_CMP_SUBJECT = (5 + subject_idx) if subject_idx is not None else None
+
     # ── Normalize WACC inputs ──
     # Beta: clamp to [0.6, 1.75]; outside range → sector-standard 1.0
     # Upper bound is 1.75 (not 1.5) to admit high-beta growth names (e.g. ELEMENTS
@@ -1877,9 +1998,17 @@ def generate_dcf_workbook(config, output_path=None):
     header_row(ws1, 15, 2, 4, ["Methodology", "Implied Value (JPY)", "vs Current Price"])
 
     # DCF - Perpetuity Growth
+    # Guard: when the PGM enterprise value falls below net debt (+MI) the equity
+    # value is negative and the "implied price" is an artefact, not a valuation
+    # (8267's negative PGM). It is surfaced as the text "INVALID" so AVERAGE /
+    # MIN / MAX below skip it — the method drops out of Target Price instead of
+    # dragging the average to a meaningless number.
     set_cell(ws1, 16, 2, "DCF - Perpetuity Growth")
-    set_cell(ws1, 16, 3, f"='DCF Model'!C{R_PRICE_PGM}", font=GREEN_FONT, fmt=FMT_YEN)
-    set_cell(ws1, 16, 4, "=(C16-C9)/C9", font=BLACK_FONT, fmt=FMT_PCT)
+    set_cell(ws1, 16, 3,
+             f"=IF('DCF Model'!C{R_EV_PGM}<'DCF Model'!C16,"
+             f"\"INVALID (EV < net debt)\",'DCF Model'!C{R_PRICE_PGM})",
+             font=GREEN_FONT, fmt=FMT_YEN)
+    set_cell(ws1, 16, 4, '=IF(ISNUMBER(C16),(C16-C9)/C9,"N/A")', font=BLACK_FONT, fmt=FMT_PCT)
 
     # DCF - Exit Multiple
     set_cell(ws1, 17, 2, "DCF - Exit Multiple")
@@ -1891,11 +2020,11 @@ def generate_dcf_workbook(config, output_path=None):
         set_cell(ws1, 18, 2, "Comps - EV/Sales Median")
     else:
         set_cell(ws1, 18, 2, "Comps - EV/EBITDA Median")
-    set_cell(ws1, 18, 3, "='Comps Analysis'!C27", font=GREEN_FONT, fmt=FMT_YEN)
+    set_cell(ws1, 18, 3, f"='Comps Analysis'!C{R_CMP_IMPL_MULT}", font=GREEN_FONT, fmt=FMT_YEN)
     set_cell(ws1, 18, 4, '=IF(ISNUMBER(C18),(C18-C9)/C9,"N/A")', font=BLACK_FONT, fmt=FMT_PCT)
 
     set_cell(ws1, 19, 2, "Comps - PER Median")
-    set_cell(ws1, 19, 3, "='Comps Analysis'!C28", font=GREEN_FONT, fmt=FMT_YEN)
+    set_cell(ws1, 19, 3, f"='Comps Analysis'!C{R_CMP_IMPL_PER}", font=GREEN_FONT, fmt=FMT_YEN)
     set_cell(ws1, 19, 4, '=IF(ISNUMBER(C19),(C19-C9)/C9,"N/A")', font=BLACK_FONT, fmt=FMT_PCT)
 
     # Disclose excluded methods explicitly — never drop one silently
@@ -1915,21 +2044,54 @@ def generate_dcf_workbook(config, output_path=None):
     set_cell(ws1, 21, 2, "Integrated Valuation Range", font=BOLD_FONT)
     set_cell(ws1, 21, 3, '=MIN(C16:C19)&" - "&MAX(C16:C19)', font=BLACK_FONT)
 
-    # Investment Thesis
+    # ── Investment Thesis / Key Risks (token-aware) ──
+    # Cell addresses are taken from where this template just wrote each value,
+    # never hardcoded, so the prose cannot drift from the numbers it cites.
+    _token_refs = {
+        "price":        "C9",
+        "target_price": "C10",
+        "upside_pct":   "C12",
+        "wacc":         "'DCF Model'!C26",
+        "pb":           (f"'Comps Analysis'!M{R_CMP_SUBJECT}" if R_CMP_SUBJECT else None),
+        "per":          (f"'Comps Analysis'!L{R_CMP_SUBJECT}" if R_CMP_SUBJECT else None),
+    }
+    _unresolved = set()
+
+    def _warn_token(name):
+        _unresolved.add(name)
+
+    def _render_block(lines):
+        out = []
+        for line in lines:
+            out.extend(_render_narrative_line(line, _token_refs, _warn_token))
+        return out
+
+    _thesis_cells = _render_block(C["investment_thesis"])
+    _risk_cells = _render_block(C["key_risks"])
+    if _unresolved:
+        print(f"  WARNING: narrative token(s) {sorted(_unresolved)} have no cell to "
+              f"reference in this model (no comps subject row?) — rendered as plain text.")
+
     c = set_cell(ws1, 23, 2, "Key Investment Thesis", font=SUB_FONT)
     c.fill = LIGHT_FILL
     for col_idx in range(3, 5):
         ws1.cell(row=23, column=col_idx).fill = LIGHT_FILL
-    for i, line in enumerate(C["investment_thesis"]):
+    for i, line in enumerate(_thesis_cells):
         set_cell(ws1, 24 + i, 2, line)
 
-    # Key Risks
-    c = set_cell(ws1, 28, 2, "Key Risks", font=SUB_FONT)
+    # Key Risks: row 28 as before; only pushed down when the thesis needs the room
+    _risk_hdr_row = max(28, 24 + len(_thesis_cells) + 1)
+    c = set_cell(ws1, _risk_hdr_row, 2, "Key Risks", font=SUB_FONT)
     c.fill = LIGHT_FILL
     for col_idx in range(3, 5):
-        ws1.cell(row=28, column=col_idx).fill = LIGHT_FILL
-    for i, line in enumerate(C["key_risks"]):
-        set_cell(ws1, 29 + i, 2, line)
+        ws1.cell(row=_risk_hdr_row, column=col_idx).fill = LIGHT_FILL
+    for i, line in enumerate(_risk_cells):
+        set_cell(ws1, _risk_hdr_row + 1 + i, 2, line)
+
+    _meta["narrative_tokens_used"] = ",".join(sorted(
+        {m.group(1) for line in list(C["investment_thesis"]) + list(C["key_risks"])
+         if isinstance(line, str) for m in _TOKEN_RE.finditer(line)}
+    )) or "none"
 
     # =====================================================================
     # SHEET 2: Financial Statements (V3 — Full PL Waterfall + BS Highlights)
@@ -2010,9 +2172,13 @@ def generate_dcf_workbook(config, output_path=None):
         capex_val = C["hist_capex"][i] if C["hist_capex"] and i < len(C["hist_capex"]) else None
         set_cell(ws2, 19, col, ocf_val, font=BLUE_FONT, fmt=FMT_YEN)
         set_cell(ws2, 20, col, capex_val, font=BLUE_FONT, fmt=FMT_YEN)
-        set_cell(ws2, 21, col, f"={cl}19-{cl}20", font=BLACK_FONT, fmt=FMT_YEN)
-        set_cell(ws2, 22, col, f"={cl}21/{cl}6", font=BLACK_FONT, fmt=FMT_PCT)
-        set_cell(ws2, 23, col, f"={cl}20/{cl}6", font=BLACK_FONT, fmt=FMT_PCT)
+        # Derived rows are left blank when a source year is blank, so a missing
+        # year reads as missing instead of as "FCF = -capex" (bug B1).
+        if ocf_val is not None and capex_val is not None:
+            set_cell(ws2, 21, col, f"={cl}19-{cl}20", font=BLACK_FONT, fmt=FMT_YEN)
+            set_cell(ws2, 22, col, f"={cl}21/{cl}6", font=BLACK_FONT, fmt=FMT_PCT)
+        if capex_val is not None:
+            set_cell(ws2, 23, col, f"={cl}20/{cl}6", font=BLACK_FONT, fmt=FMT_PCT)
 
     # ── Balance Sheet Highlights ──
     section_title(ws2, 25, 2, "Balance Sheet Highlights")
@@ -2026,9 +2192,21 @@ def generate_dcf_workbook(config, output_path=None):
         cash_val = C["hist_cash"][i] if C["hist_cash"] and i < len(C["hist_cash"]) else None
         debt_val = C["hist_debt"][i] if C["hist_debt"] and i < len(C["hist_debt"]) else None
         set_cell(ws2, 26, col, cash_val, font=BLUE_FONT, fmt=FMT_YEN)
-        set_cell(ws2, 27, col, debt_val if debt_val is not None else 0, font=BLUE_FONT, fmt=FMT_YEN)
+        # Blank stays blank: writing 0 for "no data" used to present an unknown
+        # debt balance as a confirmed zero (bug B1).
+        set_cell(ws2, 27, col, debt_val, font=BLUE_FONT, fmt=FMT_YEN)
         # Net Debt = Debt - Cash (negative = net cash)
-        set_cell(ws2, 28, col, f"={cl}27-{cl}26", font=BLACK_FONT, fmt=FMT_YEN)
+        if cash_val is not None and debt_val is not None:
+            set_cell(ws2, 28, col, f"={cl}27-{cl}26", font=BLACK_FONT, fmt=FMT_YEN)
+
+    # Year-key coverage note for the CF/BS blocks (set by generate_dcf.py)
+    if C.get("_fs_year_coverage"):
+        set_cell(ws2, 30, 2,
+                 f"Note: OCF / Cash / Debt coverage {C['_fs_year_coverage']} — blank "
+                 f"cells are years with no year-key match in the source data "
+                 f"(verify against 決算短信 or set hist_ocf / hist_cash / hist_debt "
+                 f"in overrides).",
+                 font=GREY_FONT)
 
     # ── Compute NWC Change row (needed before DCF Model sheet) ──
     _nwc_method = C.get("nwc_method", "days")
@@ -2064,23 +2242,72 @@ def generate_dcf_workbook(config, output_path=None):
     for col_idx in range(3, 8):
         ws3.cell(row=4, column=col_idx).fill = LIGHT_FILL
 
-    # Determine effective Capex/D&A assumption values for display
+    # Determine effective Capex/D&A assumption values for display.
+    #
+    # Under the "direct" method these cells are the FALLBACK ratio: the per-year
+    # projection arrays drive the FCF rows, and C5/C18 only step in for years the
+    # arrays do not cover. They used to be back-solved from the projections
+    # themselves (mean(projections) / base-year revenue), which made a
+    # "fallback" that just echoed the forecast — circular, and wrong whenever the
+    # forecast ramped. They are now the plain historical ratio: the mean of the
+    # last three years of actual capex (D&A) over actual revenue.
     _capex_method = C.get("capex_method", "revenue_pct")
     _da_method = C.get("da_method", "revenue_pct")
     _capex_pct_display = C["capex_pct"]
     _da_pct_display = C["da_pct"]
+
+    def _hist_ratio_3yr(num_key):
+        """Mean of the last <=3 historical <num>/revenue ratios (None if no data)."""
+        nums = C.get(num_key) or []
+        revs = C.get("hist_revenue") or []
+        ratios = [
+            n / d for n, d in zip(nums, revs)
+            if isinstance(n, (int, float)) and isinstance(d, (int, float))
+            and d > 0 and n > 0
+        ]
+        ratios = ratios[-3:]
+        return sum(ratios) / len(ratios) if ratios else None
+
+    _capex_hist3 = _hist_ratio_3yr("hist_capex")
+    _da_hist3 = _hist_ratio_3yr("hist_depreciation")
+    _capex_label = "Capex / Revenue"
+    _da_label = "D&A / Revenue"
+    _capex_basis = "assumption"
+    _da_basis = "assumption"
+
     if _capex_method == "direct":
-        _cp = C.get("capex_direct", {}).get("projections", [])
-        if _cp:
-            _capex_pct_display = sum(c for c in _cp if c is not None) / len(_cp) / C["base_year_revenue"] if C["base_year_revenue"] else 0
+        if _capex_hist3 is not None:
+            _capex_pct_display = round(_capex_hist3, 4)
+            _capex_label = "Capex / Revenue (hist 3yr avg, fallback)"
+            _capex_basis = "hist_3yr_avg"
+        else:
+            _capex_label = "Capex / Revenue (fallback)"
+            print("  WARNING: capex_method=direct but no historical capex/revenue "
+                  "pairs — C5 falls back to the capex_pct assumption.")
     if _da_method == "direct":
-        _dp = C.get("da_direct", {}).get("projections", [])
-        if _dp:
-            _da_pct_display = sum(d for d in _dp if d is not None) / len(_dp) / C["base_year_revenue"] if C["base_year_revenue"] else 0
+        if _da_hist3 is not None:
+            _da_pct_display = round(_da_hist3, 4)
+            _da_label = "D&A / Revenue (hist 3yr avg, fallback)"
+            _da_basis = "hist_3yr_avg"
+        else:
+            _da_label = "D&A / Revenue (fallback)"
+            print("  WARNING: da_method=direct but no historical D&A/revenue "
+                  "pairs — C18 falls back to the da_pct assumption.")
+
+    # Keep the python-side sensitivity helpers on the same fallback ratio as the sheet
+    C["capex_pct"] = _capex_pct_display
+    C["da_pct"] = _da_pct_display
+
+    _meta["capex_pct_c5"] = _capex_pct_display
+    _meta["da_pct_c18"] = _da_pct_display
+    _meta["capex_pct_basis"] = _capex_basis
+    _meta["da_pct_basis"] = _da_basis
+    _meta["capex_pct_hist3yr"] = round(_capex_hist3, 6) if _capex_hist3 is not None else "n/a"
+    _meta["da_pct_hist3yr"] = round(_da_hist3, 6) if _da_hist3 is not None else "n/a"
 
     assumptions = [
         # Revenue Growth Rate and COGS % removed — now in per-year driver rows
-        ("Capex / Revenue",            _capex_pct_display,        FMT_PCT),      # C5
+        (_capex_label,                 _capex_pct_display,        FMT_PCT),      # C5
         ("Effective Tax Rate",         C["tax_rate"],             FMT_PCT),      # C6
         ("Risk-Free Rate",             C["risk_free"],            FMT_PCT),      # C7
         ("Beta",                       C["beta"],                 "0.00"),       # C8
@@ -2095,10 +2322,17 @@ def generate_dcf_workbook(config, output_path=None):
         ("Fully Diluted Shares",       C["shares_outstanding"],   FMT_INT),      # C15
         ("Net Debt (JPY mn)",          C["net_debt"],             FMT_YEN),      # C16
         ("Base Year Revenue (JPY mn)", C["base_year_revenue"],    FMT_YEN),      # C17
-        ("D&A / Revenue",              _da_pct_display,           FMT_PCT),      # C18
+        (_da_label,                    _da_pct_display,           FMT_PCT),      # C18
         ("Stub Fraction (yr remaining)", C.get("stub_fraction", 1.0), "0.00"),  # C19
-        ("LTM Revenue (JPY mn)",         C.get("ltm_revenue", C["base_year_revenue"]), FMT_YEN),  # C20
+        (("LTM Revenue (JPY mn) (override)" if C.get("_ltm_revenue_overridden")
+          else "LTM Revenue (JPY mn)"),
+         C.get("ltm_revenue", C["base_year_revenue"]), FMT_YEN),  # C20
     ]
+    _meta["ltm_revenue_c20"] = C.get("ltm_revenue", C["base_year_revenue"])
+    _meta["ltm_revenue_source"] = ("override" if C.get("_ltm_revenue_overridden")
+                                   else C.get("_ltm_revenue_source", "auto"))
+    if C.get("_ltm_revenue_components"):
+        _meta["ltm_revenue_components"] = C["_ltm_revenue_components"]
     for i, (label, val, fmt) in enumerate(assumptions):
         r = 5 + i
         set_cell(ws3, r, 2, label, font=BOLD_FONT)
@@ -2125,16 +2359,24 @@ def generate_dcf_workbook(config, output_path=None):
     # ── Active Scenario Selector (Row 27) ──
     set_cell(ws3, 27, 2, "Active Scenario", font=BOLD_FONT)
     set_cell(ws3, 27, 3, "Base", font=BLUE_FONT, border=INPUT_BORDER)
-    # D27 = MATCH index (1-5) for CHOOSE formula
+    # D27 = MATCH index (1-5) driving every CHOOSE() in the workbook.
+    # ALWAYS a MATCH against a live range of the 5 scenario-name cells — never a
+    # constant, and never an inline array constant (which cannot be audited and
+    # silently decouples from the sheet if a scenario name is edited).
+    # The range is derived from the rows the template itself writes the scenario
+    # names into, so it follows any layout change automatically:
+    #   - no segments  -> DCF Model's own Scenario Input Matrix (growth block)
+    #   - segments     -> Segment Analysis's Consolidated Inputs SGA% block,
+    #                     the one scenario-name column that always exists there.
     if has_segments:
-        # No local matrix — match against array constant
-        set_cell(ws3, 27, 4,
-                 '=MATCH(C27,{"Base","Upside","Management","Downside 1","Downside 2"},0)',
-                 font=BLACK_FONT)
+        _scen_name_rows = seg_info["sga_scenario_rows"]
+        _scen_range = (f"'Segment Analysis'!B{_scen_name_rows[0]}"
+                       f":B{_scen_name_rows[-1]}")
     else:
-        set_cell(ws3, 27, 4,
-                 f"=MATCH(C27,B{R_SCEN_BLK_GROWTH + 1}:B{R_SCEN_BLK_GROWTH + NUM_SCENARIOS},0)",
-                 font=BLACK_FONT)
+        _scen_range = (f"B{R_SCEN_BLK_GROWTH + 1}"
+                       f":B{R_SCEN_BLK_GROWTH + NUM_SCENARIOS}")
+    set_cell(ws3, 27, 4, f"=MATCH(C27,{_scen_range},0)", font=BLACK_FONT)
+    _meta["scenario_index_range"] = _scen_range
 
     dv_scenario = DataValidation(
         type="list",
@@ -3021,24 +3263,75 @@ def generate_dcf_workbook(config, output_path=None):
     ws4.column_dimensions["A"].width = 3
     ws4.column_dimensions["B"].width = 16
     ws4.column_dimensions["C"].width = 10
-    for letter in ["D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O"]:
+    for letter in ["D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P"]:
         ws4.column_dimensions[letter].width = 12
+    ws4.column_dimensions["Q"].width = 26
 
     set_cell(ws4, 2, 2, "Comparable Company Analysis", font=TITLE_FONT)
+
+    comps = C["comps"]
+
+    # ── Peer data-quality screens (applied to peers only) ─────────────────
+    # 1. D&A missing: a peer whose EBITDA equals its operating income has no
+    #    depreciation added back. Its EV/EBITDA is really EV/EBIT and inflates
+    #    the median (8410: implied roughly doubled). The row stays for display,
+    #    but the EBITDA cell is blanked so every EV/EBITDA statistic skips it.
+    # 2. Stale/delisted: flagged upstream by generate_dcf.py's peer freshness
+    #    check (comp["exclude_from_stats"]) — excluded from ALL statistics.
+    comp_flags = []
+    for i, comp in enumerate(comps):
+        is_subject = (i == subject_idx)
+        eb = comp.get("ebitda")
+        oi = comp.get("op_income")
+        da_missing = (
+            not is_subject
+            and isinstance(eb, (int, float)) and isinstance(oi, (int, float))
+            and eb == oi and eb > 0
+        )
+        stale = bool(comp.get("exclude_from_stats")) and not is_subject
+        notes = []
+        if da_missing:
+            notes.append("(D&A n/a)")
+        if stale:
+            notes.append(comp.get("exclude_reason") or "(stale/delisted)")
+        comp_flags.append({
+            "is_subject": is_subject,
+            "da_missing": da_missing,
+            "stale": stale,
+            "note": " ".join(notes),
+        })
+
+    _da_missing_names = [c["name"] for c, f in zip(comps, comp_flags) if f["da_missing"]]
+    _stale_names = [c["name"] for c, f in zip(comps, comp_flags) if f["stale"]]
+    if _da_missing_names:
+        print(f"  [Comps] WARNING: EBITDA == Operating Income (D&A not added back) for: "
+              f"{', '.join(_da_missing_names)} — excluded from EV/EBITDA statistics.")
+    if _stale_names:
+        print(f"  [Comps] WARNING: excluded from all statistics (stale/delisted): "
+              f"{', '.join(_stale_names)}")
+
+    # As-of note for the static peer market caps (they are point-in-time values)
+    _asof = _dt.datetime.now().strftime("%Y-%m-%d")
+    set_cell(ws4, 3, 2,
+             f"Peer prices as of {_asof} (Mkt Cap / EV of peer rows are static CSV "
+             f"values; the subject row is live-linked to Executive Summary)",
+             font=GREY_FONT)
 
     # Header row
     comp_headers = [
         "Company", "Ticker", "Mkt Cap\n(JPY mn)", "EV\n(JPY mn)",
         "Revenue\n(JPY mn)", "EBITDA\n(JPY mn)", "Op Income\n(JPY mn)",
         "Net Income\n(JPY mn)", "EV/EBITDA", "EV/Revenue", "PER",
-        "PBR", "Op Margin", "ROE"
+        "PBR", "Op Margin", "ROE", "Book Value\n(JPY mn)", "Note"
     ]
-    header_row(ws4, 4, 2, 15, comp_headers)
+    header_row(ws4, 4, 2, 17, comp_headers)
 
-    # Company data rows (rows 5-10 for 6 comps)
-    comps = C["comps"]
+    _no_book_value = []
+
+    # Company data rows (row 5 onward, one per CSV row)
     for i, comp in enumerate(comps):
         r = 5 + i
+        flags = comp_flags[i]
 
         _na = lambda ws, r, c: set_cell(ws, r, c, "N/A", font=BLACK_FONT, border=THIN_BORDER,
                                          alignment=Alignment(horizontal="right"))
@@ -3046,60 +3339,100 @@ def generate_dcf_workbook(config, output_path=None):
         set_cell(ws4, r, 2, comp["name"], font=BOLD_FONT)
         set_cell(ws4, r, 3, comp["ticker"])
 
-        # Mkt Cap & EV: may be None if yfinance fetch failed
-        if comp["mkt_cap"] is None:
-            _na(ws4, r, 4)
+        # Mkt Cap & EV.
+        # Subject row: computed from the SAME price/share count the rest of the
+        # model uses, so a price update flows through instead of leaving a stale
+        # hardcoded market cap behind (285A/8410 used to be patched by hand).
+        if flags["is_subject"]:
+            set_cell(ws4, r, 4, f"='Executive Summary'!C9*C{R_CMP_SHARES}/1000000",
+                     font=BLACK_FONT, fmt=FMT_YEN, border=THIN_BORDER)
+            set_cell(ws4, r, 5, f"=D{r}+C{R_CMP_NETDEBT}",
+                     font=BLACK_FONT, fmt=FMT_YEN, border=THIN_BORDER)
         else:
-            set_cell(ws4, r, 4, comp["mkt_cap"], font=BLUE_FONT, fmt=FMT_YEN, border=THIN_BORDER)
-        if comp["ev"] is None:
-            _na(ws4, r, 5)
-        else:
-            set_cell(ws4, r, 5, comp["ev"], font=BLUE_FONT, fmt=FMT_YEN, border=THIN_BORDER)
+            if comp["mkt_cap"] is None:
+                _na(ws4, r, 4)
+            else:
+                set_cell(ws4, r, 4, comp["mkt_cap"], font=BLUE_FONT, fmt=FMT_YEN, border=THIN_BORDER)
+            if comp["ev"] is None:
+                _na(ws4, r, 5)
+            else:
+                set_cell(ws4, r, 5, comp["ev"], font=BLUE_FONT, fmt=FMT_YEN, border=THIN_BORDER)
 
         set_cell(ws4, r, 6, comp["revenue"], font=BLUE_FONT, fmt=FMT_YEN, border=THIN_BORDER)
-        set_cell(ws4, r, 7, comp["ebitda"], font=BLUE_FONT, fmt=FMT_YEN, border=THIN_BORDER)
+        if flags["da_missing"]:
+            # Blank, not zero: MEDIAN/PERCENTILE skip empty cells but not zeros.
+            set_cell(ws4, r, 7, None, border=THIN_BORDER)
+        else:
+            set_cell(ws4, r, 7, comp["ebitda"], font=BLUE_FONT, fmt=FMT_YEN, border=THIN_BORDER)
         set_cell(ws4, r, 8, comp["op_income"], font=BLUE_FONT, fmt=FMT_YEN, border=THIN_BORDER)
         set_cell(ws4, r, 9, comp["net_income"], font=BLUE_FONT, fmt=FMT_YEN, border=THIN_BORDER)
 
+        # Book Value (JPY mn): subject prefers config["book_value"], else the CSV row
+        bv = None
+        if flags["is_subject"] and isinstance(C.get("book_value"), (int, float)):
+            bv = C["book_value"]
+        elif isinstance(comp.get("book_value"), (int, float)) and comp["book_value"] != 0:
+            bv = comp["book_value"]
+        if bv is None:
+            _na(ws4, r, 16)
+            _no_book_value.append(comp["name"])
+        else:
+            set_cell(ws4, r, 16, bv, font=BLUE_FONT, fmt=FMT_YEN, border=THIN_BORDER)
+
         # EV/EBITDA
-        if comp["ev"] is None or comp["ebitda"] <= 0:
+        if flags["da_missing"] or comp["ev"] is None or not comp["ebitda"] or comp["ebitda"] <= 0:
             _na(ws4, r, 10)
         else:
-            set_cell(ws4, r, 10, f"=E{r}/G{r}", font=BLACK_FONT, fmt=FMT_RATIO, border=THIN_BORDER)
+            set_cell(ws4, r, 10, f"=IFERROR(E{r}/G{r},\"\")", font=BLACK_FONT, fmt=FMT_RATIO,
+                     border=THIN_BORDER)
 
         # EV/Revenue
         if comp["ev"] is None or comp["revenue"] <= 0:
             _na(ws4, r, 11)
         else:
-            set_cell(ws4, r, 11, f"=E{r}/F{r}", font=BLACK_FONT, fmt=FMT_RATIO, border=THIN_BORDER)
+            set_cell(ws4, r, 11, f"=IFERROR(E{r}/F{r},\"\")", font=BLACK_FONT, fmt=FMT_RATIO,
+                     border=THIN_BORDER)
 
         # PER
         if comp["mkt_cap"] is None or comp["net_income"] <= 0:
             _na(ws4, r, 12)
         else:
-            set_cell(ws4, r, 12, f"=D{r}/I{r}", font=BLACK_FONT, fmt=FMT_RATIO, border=THIN_BORDER)
+            set_cell(ws4, r, 12, f"=IFERROR(D{r}/I{r},\"\")", font=BLACK_FONT, fmt=FMT_RATIO,
+                     border=THIN_BORDER)
 
-        # PBR
-        if comp["pbr"] is None:
+        # PBR / ROE: formulas off the Book Value column, so they follow a
+        # market-cap or book-value correction instead of freezing at load time.
+        if bv is None:
             _na(ws4, r, 13)
-        else:
-            set_cell(ws4, r, 13, comp["pbr"], font=BLUE_FONT, fmt=FMT_RATIO, border=THIN_BORDER)
-
-        set_cell(ws4, r, 14, f"=H{r}/F{r}", font=BLACK_FONT, fmt=FMT_PCT, border=THIN_BORDER)
-
-        # ROE
-        if comp["roe"] is None:
             _na(ws4, r, 15)
         else:
-            set_cell(ws4, r, 15, comp["roe"], font=BLUE_FONT, fmt=FMT_PCT, border=THIN_BORDER)
+            set_cell(ws4, r, 13, f"=IFERROR(D{r}/P{r},\"\")", font=BLACK_FONT, fmt=FMT_RATIO,
+                     border=THIN_BORDER)
+            set_cell(ws4, r, 15, f"=IFERROR(I{r}/P{r},\"\")", font=BLACK_FONT, fmt=FMT_PCT,
+                     border=THIN_BORDER)
+
+        set_cell(ws4, r, 14, f"=IFERROR(H{r}/F{r},\"\")", font=BLACK_FONT, fmt=FMT_PCT,
+                 border=THIN_BORDER)
+
+        if flags["note"]:
+            set_cell(ws4, r, 17, flags["note"], font=GREY_FONT)
+
+    if _no_book_value:
+        print(f"  [Comps] WARNING: no Book Value for {', '.join(_no_book_value)} — "
+              f"PBR/ROE left blank for those rows (add Book_Value to the comps CSV).")
 
     last_comp_row = 5 + len(comps) - 1
 
     # ── Statistics ──
-    section_title(ws4, 14, 2, "Statistics")
+    # Rows kept at 14-17 for backward compatibility (Executive Summary and
+    # market_analysis_template read C27/C28 below); shifted down only when a
+    # large comps set would otherwise overlap them.
+    stat_sec_row = 14 + _comps_row_shift
+    section_title(ws4, stat_sec_row, 2, "Statistics")
 
     stat_labels = ["25th Percentile", "Median (50th)", "75th Percentile"]
-    stat_rows = [15, 16, 17]
+    stat_rows = [stat_sec_row + 1, stat_sec_row + 2, stat_sec_row + 3]
+    R_STAT_MEDIAN = stat_rows[1]
 
     stat_col_map = [
         (4, 10),  # EV/EBITDA
@@ -3110,25 +3443,53 @@ def generate_dcf_workbook(config, output_path=None):
         (9, 15),  # ROE
     ]
 
+    # Peer rows = every data row except the subject's own and any row excluded
+    # by the freshness screen. Derived from the comps list — no fixed addresses.
+    peer_rows = [5 + i for i, f in enumerate(comp_flags)
+                 if not f["is_subject"] and not f["stale"]]
+    ev_ebitda_rows = [5 + i for i, f in enumerate(comp_flags)
+                      if not f["is_subject"] and not f["stale"] and not f["da_missing"]
+                      and comps[i].get("ev") is not None
+                      and (comps[i].get("ebitda") or 0) > 0]
+    n_ev_ebitda = len(ev_ebitda_rows)
+    EV_EBITDA_INVALID = (not USE_EV_SALES) and n_ev_ebitda < 3
+    if EV_EBITDA_INVALID:
+        print(f"  [Comps] WARNING: only {n_ev_ebitda} peer(s) with usable EBITDA "
+              f"(<3) — EV/EBITDA implied price marked INVALID and excluded from "
+              f"the Target Price average.")
+
+    def _rows_to_ref(letter, rows):
+        """Collapse row numbers into an Excel reference (union when non-contiguous)."""
+        if not rows:
+            return None
+        blocks, start, prev = [], rows[0], rows[0]
+        for rr in rows[1:]:
+            if rr == prev + 1:
+                prev = rr
+                continue
+            blocks.append((start, prev))
+            start = prev = rr
+        blocks.append((start, prev))
+        parts = [f"{letter}{a}:{letter}{b}" for a, b in blocks]
+        return parts[0] if len(parts) == 1 else "(" + ",".join(parts) + ")"
+
     for stat_idx, (label, r) in enumerate(zip(stat_labels, stat_rows)):
         set_cell(ws4, r, 2, label, font=BOLD_FONT)
 
         for dst_col, src_col in stat_col_map:
             src_letter = col_letter(src_col)
+            fmt = FMT_PCT if src_col in (14, 15) else FMT_RATIO
 
-            if src_col in (14, 15):
-                fmt = FMT_PCT
-            else:
-                fmt = FMT_RATIO
+            rows_for_col = ev_ebitda_rows if src_col == 10 else peer_rows
+            rng = _rows_to_ref(src_letter, rows_for_col)
 
-            # Guard: with zero comps last_comp_row (4) < first data row (5),
-            # which would produce a reversed range like "J5:J4". Emit N/A instead.
-            if len(comps) == 0:
+            # No peer rows at all (zero comps, or the CSV holds only the subject,
+            # or every peer was screened out): a range formula would return #NUM!,
+            # so emit the text "N/A" that every downstream AVERAGE already skips.
+            if rng is None:
                 set_cell(ws4, r, dst_col, "N/A", font=BLACK_FONT, border=THIN_BORDER,
                          alignment=Alignment(horizontal="right"))
                 continue
-
-            rng = f"{src_letter}5:{src_letter}{last_comp_row}"
 
             if stat_idx == 0:
                 formula = f"=PERCENTILE({rng},0.25)"
@@ -3139,54 +3500,86 @@ def generate_dcf_workbook(config, output_path=None):
 
             set_cell(ws4, r, dst_col, formula, font=BLACK_FONT, fmt=fmt, border=THIN_BORDER)
 
+    _meta["comps_subject_row"] = R_CMP_SUBJECT
+    _meta["comps_peer_rows"] = ",".join(str(x) for x in peer_rows)
+    _meta["comps_ev_ebitda_rows"] = ",".join(str(x) for x in ev_ebitda_rows)
+    _meta["comps_da_missing"] = ", ".join(_da_missing_names) or "none"
+    _meta["comps_stale_excluded"] = ", ".join(_stale_names) or "none"
+    _meta["comps_stat_median_row"] = R_STAT_MEDIAN
+    _meta["comps_asof"] = _asof
+
     # ── Implied Valuation ──
-    c = section_title(ws4, 19, 2, f'Implied Valuation for {C["company_name"]}')
+    _r_impl_sec = 19 + _comps_row_shift
+    _r_fin_hdr = 20 + _comps_row_shift
+    _r_metric = 21 + _comps_row_shift
+    _r_ni = 22 + _comps_row_shift
+    _r_med = R_STAT_MEDIAN
+
+    c = section_title(ws4, _r_impl_sec, 2, f'Implied Valuation for {C["company_name"]}')
     c.fill = LIGHT_GREEN
     for col_idx in range(3, 10):
-        ws4.cell(row=19, column=col_idx).fill = LIGHT_GREEN
+        ws4.cell(row=_r_impl_sec, column=col_idx).fill = LIGHT_GREEN
 
-    section_title(ws4, 20, 2, f'{C["company_name"]} Financials')
-
-    if USE_EV_SALES:
-        set_cell(ws4, 21, 2, "Revenue (JPY mn)", font=BOLD_FONT)
-        set_cell(ws4, 21, 3, C["base_year_revenue"], font=BLUE_FONT, fmt=FMT_YEN)
-    else:
-        set_cell(ws4, 21, 2, "EBITDA (JPY mn)", font=BOLD_FONT)
-        set_cell(ws4, 21, 3, C["core_ebitda"], font=BLUE_FONT, fmt=FMT_YEN)
-
-    set_cell(ws4, 22, 2, "Net Income (JPY mn)", font=BOLD_FONT)
-    set_cell(ws4, 22, 3, C["core_net_income"], font=BLUE_FONT, fmt=FMT_YEN)
-    set_cell(ws4, 23, 2, "Shares Outstanding", font=BOLD_FONT)
-    set_cell(ws4, 23, 3, C["shares_outstanding"], font=BLUE_FONT, fmt=FMT_INT)
-    set_cell(ws4, 24, 2, "Net Debt (JPY mn)", font=BOLD_FONT)
-    set_cell(ws4, 24, 3, C["net_debt"], font=BLUE_FONT, fmt=FMT_YEN)
-
-    section_title(ws4, 26, 2, "Implied Share Price (Median Multiples)")
+    section_title(ws4, _r_fin_hdr, 2, f'{C["company_name"]} Financials')
 
     if USE_EV_SALES:
-        set_cell(ws4, 27, 2, "Via EV/Sales (Median)", font=BOLD_FONT)
-        set_cell(ws4, 27, 3, "=ROUND((C21*E16-C24)*1000000/C23,0)", font=BLACK_FONT, fmt=FMT_YEN,
-                 border=TOP_BOTTOM)
+        set_cell(ws4, _r_metric, 2, "Revenue (JPY mn)", font=BOLD_FONT)
+        set_cell(ws4, _r_metric, 3, C["base_year_revenue"], font=BLUE_FONT, fmt=FMT_YEN)
     else:
-        set_cell(ws4, 27, 2, "Via EV/EBITDA (Median)", font=BOLD_FONT)
+        set_cell(ws4, _r_metric, 2, "EBITDA (JPY mn)", font=BOLD_FONT)
+        set_cell(ws4, _r_metric, 3, C["core_ebitda"], font=BLUE_FONT, fmt=FMT_YEN)
+
+    set_cell(ws4, _r_ni, 2, "Net Income (JPY mn)", font=BOLD_FONT)
+    set_cell(ws4, _r_ni, 3, C["core_net_income"], font=BLUE_FONT, fmt=FMT_YEN)
+    set_cell(ws4, R_CMP_SHARES, 2, "Shares Outstanding", font=BOLD_FONT)
+    set_cell(ws4, R_CMP_SHARES, 3, C["shares_outstanding"], font=BLUE_FONT, fmt=FMT_INT)
+    set_cell(ws4, R_CMP_NETDEBT, 2, "Net Debt (JPY mn)", font=BOLD_FONT)
+    set_cell(ws4, R_CMP_NETDEBT, 3, C["net_debt"], font=BLUE_FONT, fmt=FMT_YEN)
+
+    section_title(ws4, 26 + _comps_row_shift, 2, "Implied Share Price (Median Multiples)")
+
+    _impl_na = lambda row, msg: (
+        set_cell(ws4, row, 3, "N/A", font=BLACK_FONT, border=TOP_BOTTOM,
+                 alignment=Alignment(horizontal="right")),
+        set_cell(ws4, row, 4, msg, font=GREY_FONT),
+    )
+
+    if USE_EV_SALES:
+        set_cell(ws4, R_CMP_IMPL_MULT, 2, "Via EV/Sales (Median)", font=BOLD_FONT)
+        set_cell(ws4, R_CMP_IMPL_MULT, 3,
+                 f"=ROUND((C{_r_metric}*E{_r_med}-C{R_CMP_NETDEBT})*1000000/C{R_CMP_SHARES},0)",
+                 font=BLACK_FONT, fmt=FMT_YEN, border=TOP_BOTTOM)
+    else:
+        set_cell(ws4, R_CMP_IMPL_MULT, 2, "Via EV/EBITDA (Median)", font=BOLD_FONT)
         if EBITDA_EXCLUDED:
-            set_cell(ws4, 27, 3, "N/A", font=BLACK_FONT, border=TOP_BOTTOM,
-                     alignment=Alignment(horizontal="right"))
-            set_cell(ws4, 27, 4, "EBITDA <= 0 — median multiple not meaningful",
-                     font=GREY_FONT)
+            _impl_na(R_CMP_IMPL_MULT, "EBITDA <= 0 — median multiple not meaningful")
+        elif EV_EBITDA_INVALID:
+            # Fewer than 3 peers with a usable (D&A-inclusive) EBITDA: the median
+            # is not a statistic. Written as text so AVERAGE/MIN/MAX on the
+            # Executive Summary skip it — the method is dropped, never averaged in.
+            set_cell(ws4, R_CMP_IMPL_MULT, 3, f"INVALID (n<3)", font=BLACK_FONT,
+                     border=TOP_BOTTOM, alignment=Alignment(horizontal="right"))
+            set_cell(ws4, R_CMP_IMPL_MULT, 4,
+                     f"Only {n_ev_ebitda} peer(s) with D&A-inclusive EBITDA — "
+                     f"EV/EBITDA excluded from Target Price", font=GREY_FONT)
         else:
-            set_cell(ws4, 27, 3, "=ROUND((C21*D16-C24)*1000000/C23,0)", font=BLACK_FONT, fmt=FMT_YEN,
-                     border=TOP_BOTTOM)
+            set_cell(ws4, R_CMP_IMPL_MULT, 3,
+                     f"=ROUND((C{_r_metric}*D{_r_med}-C{R_CMP_NETDEBT})*1000000/C{R_CMP_SHARES},0)",
+                     font=BLACK_FONT, fmt=FMT_YEN, border=TOP_BOTTOM)
 
-    set_cell(ws4, 28, 2, "Via PER (Median)", font=BOLD_FONT)
+    set_cell(ws4, R_CMP_IMPL_PER, 2, "Via PER (Median)", font=BOLD_FONT)
     if PER_EXCLUDED:
-        set_cell(ws4, 28, 3, "N/A", font=BLACK_FONT, border=TOP_BOTTOM,
-                 alignment=Alignment(horizontal="right"))
-        set_cell(ws4, 28, 4, "Net income <= 0 — PER not meaningful",
-                 font=GREY_FONT)
+        _impl_na(R_CMP_IMPL_PER, "Net income <= 0 — PER not meaningful")
+    elif not peer_rows:
+        _impl_na(R_CMP_IMPL_PER, "No peer rows — median PER not meaningful")
     else:
-        set_cell(ws4, 28, 3, "=ROUND(C22*F16*1000000/C23,0)", font=BLACK_FONT, fmt=FMT_YEN,
-                 border=TOP_BOTTOM)
+        set_cell(ws4, R_CMP_IMPL_PER, 3,
+                 f"=ROUND(C{_r_ni}*F{_r_med}*1000000/C{R_CMP_SHARES},0)",
+                 font=BLACK_FONT, fmt=FMT_YEN, border=TOP_BOTTOM)
+
+    _meta["comps_ev_ebitda_invalid"] = "yes" if EV_EBITDA_INVALID else "no"
+    _meta["comps_impl_mult_row"] = R_CMP_IMPL_MULT
+    _meta["comps_impl_per_row"] = R_CMP_IMPL_PER
 
     # =====================================================================
     # SHEET 6: Sensitivity Analysis (Dynamic Excel formulas)
@@ -3334,6 +3727,60 @@ def generate_dcf_workbook(config, output_path=None):
 
         _create_segment_sheet(wb, C, segments, proj_years, _year_labels)
         _create_driver_sheet(wb, C, segments, proj_years, _year_labels)
+
+    # =====================================================================
+    # SHEET: Adjustments Log (manual-edit ledger + pipeline metadata)
+    # =====================================================================
+    # Every model eventually gets hand-patched. Shipping the ledger with the
+    # model means the edit gets recorded in the model instead of in a chat log.
+    # The metadata block below it is what scripts/validate_output.py checks the
+    # workbook against, so the model carries its own ground truth.
+    ws_log = wb.create_sheet("Adjustments Log")
+    ws_log.sheet_properties.tabColor = "808080"
+    ws_log.column_dimensions["A"].width = 3
+    ws_log.column_dimensions["B"].width = 14
+    ws_log.column_dimensions["C"].width = 16
+    ws_log.column_dimensions["D"].width = 46
+    ws_log.column_dimensions["E"].width = 46
+    ws_log.column_dimensions["F"].width = 20
+    ws_log.column_dimensions["G"].width = 12
+
+    set_cell(ws_log, 2, 2, f'Adjustments Log - {C["company_name"]}', font=TITLE_FONT)
+    header_row(ws_log, 4, 2, 8, ["日付", "セル", "変更内容", "理由", "元の値", "状態"])
+
+    _template_rev = C.get("_template_rev") or _dt.date.today().strftime("%Y-%m-%d")
+    set_cell(ws_log, 5, 2, _dt.datetime.now().strftime("%Y-%m-%d"))
+    set_cell(ws_log, 5, 3, "-")
+    set_cell(ws_log, 5, 4,
+             f"Generated by pipeline on {_dt.datetime.now().strftime('%Y-%m-%d %H:%M')}, "
+             f"template rev {_template_rev}")
+    set_cell(ws_log, 5, 5, "初期生成（手修正なし）")
+    set_cell(ws_log, 5, 6, "-")
+    set_cell(ws_log, 5, 7, "generated")
+
+    _meta.setdefault("template_rev", _template_rev)
+    _meta["generated_at"] = _dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    _meta["company_name"] = C.get("company_name")
+    _meta["ticker"] = C.get("ticker")
+    # Year-key alignment audit recorded by generate_dcf.py (bug B1)
+    for _k in ("_fs_year_coverage", "_fs_year_map", "_fs_year_sources"):
+        if C.get(_k) is not None:
+            _meta[_k.lstrip("_")] = C[_k]
+
+    _meta_start = 12
+    c = section_title(ws_log, _meta_start, 2,
+                      "Pipeline Metadata (do not edit — read by scripts/validate_output.py)")
+    c.fill = LIGHT_FILL
+    header_row(ws_log, _meta_start + 1, 2, 3, ["key", "value"])
+    for _i, (_k, _v) in enumerate(sorted(_meta.items())):
+        _r = _meta_start + 2 + _i
+        set_cell(ws_log, _r, 2, str(_k), font=BOLD_FONT)
+        _vs = "" if _v is None else str(_v)
+        _c = set_cell(ws_log, _r, 3, _vs)
+        # A value starting with "=" would be stored as a formula (and blow up as
+        # #NAME?); metadata is always text.
+        if _vs.startswith("="):
+            _c.data_type = "s"
 
     # =====================================================================
     # SAVE & VERIFY

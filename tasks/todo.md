@@ -1,3 +1,34 @@
+# DCFパイプライン テンプレート恒久修正 (2026-07-31)
+
+Branch: `template-hardening-20260731` / 仕様書: ユーザー提供「ClaudeCode実行仕様書」
+
+## A群: テンプレート本体
+- [ ] A1 シナリオ切替 D27 を MATCH 式に統一（segments 有無で分岐しない）
+- [ ] A2 Comps 統計範囲から subject company を自動除外（動的行算出）
+- [ ] A3 Comps 時価総額/EV/PBR/ROE 数式化 + Book Value 列 + Peer prices as-of 注記
+
+## B群: データ整合
+- [ ] B1 FS の OCF/現金/有利子負債を年度キー突合で割当（位置ベース廃止）
+- [ ] B2 C5/C18 を実績3年平均ベースに（予測からの逆算を廃止）
+- [ ] B3 C20 LTM Revenue の3成分ログ出力 + `ltm_revenue` override
+- [ ] B4 D&A欠損 peer を EV/EBITDA 統計から自動除外（有効 n<3 で INVALID）
+- [ ] B5 thesis/key_risks のトークン→数式化
+
+## C群: 自動検証層
+- [ ] C1 `scripts/validate_output.py` 新規（13チェック）+ generate_dcf からの自動呼出
+- [ ] C2 validator 追加チェック（配列長・トークン・ターミナルcapex）+ peer 鮮度チェック
+- [ ] C3 Adjustments Log シートの標準生成
+
+## 回帰テスト
+- [ ] 3687 再生成 → validate FAIL 0 → 不変6値照合
+      (WACC 11.54% / PGM 970 / Exit 1,559 / EV-EBITDA 1,256 / PER 1,737 / Target 1,381)
+- [ ] 285A 再生成 → D27=MATCH / 自社除外 / Downside 2 動作確認
+
+## Review
+（実施後に追記）
+
+---
+
 # Fix: 株価更新 + Comps時価総額の固定化 + 旧成果物整理 (2026-06-12 夕)
 
 ## TODO
