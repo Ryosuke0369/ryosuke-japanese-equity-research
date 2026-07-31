@@ -55,7 +55,60 @@
 `projection_years`（=シナリオ配列長）/ `projection_start_fy` / `stub_fraction` / `stub_months_elapsed` / `ltm_revenue` / `base_year_revenue` / `base_year_cogs` / `core_ebitda` / `core_net_income`（null 指定で自動再計算にフォールバック）
 
 `hist_years` / `hist_revenue` / `hist_operating_income` / `hist_net_income` / `hist_cogs` / `hist_sga` / `hist_ocf` / `hist_capex` / `hist_cash` / `hist_debt` / `hist_depreciation` / `hist_nwc_pct`（すべて oldest-first 配列）
-※ `hist_da` ではなく **`hist_depreciation`**。`hist_ordinary_income` は消費されない（書くなら `_` 接頭辞）。
+※ `hist_da` ではなく **`hist_depreciation`**（キー名は既存契約のまま。バリデータが `hist_da` をサジェスト付きエラーにする）。`hist_ordinary_income` は消費されない（書くなら `_` 接頭辞）。
+
+**配列長は契約**（2026-07-31〜）: `hist_years` を指定する場合、上記 `hist_*` 配列は
+**すべて `hist_years` と同じ長さ**でなければならない。不一致は**エラー停止**する。
+（長さ違いの配列が位置コピーされ、ある年度のCFが別年度の列に入る事故の再発防止。）
+
+#### OCF / 現金 / 有利子負債の年度突合（2026-07-31〜）
+
+`hist_ocf` / `hist_cash` / `hist_debt` / `hist_capex` / `hist_depreciation` の値は
+**位置ではなく会計年度キーで** Financial Statements の各列に割り当てられる。
+
+優先順位: **overrides 指定 > EDINET の年度キー一致 > 空欄**
+
+EDINET 側キー（`FY2024` 等）と `hist_years`（`FY2024/3` 等）の突合ラダー:
+
+1. ラベル完全一致
+2. 年 + 決算月が一致（`FY2024/3` ↔ `FY2024/3`）
+3. 年が一致し、その年が**両側で一意**（`FY2024/3` ↔ `FY2024`）
+
+いずれにも当たらない年は**空欄**にする（詰めない・ずらさない）。生成ログ最終行に
+`WARNING: OCF/Cash/Debt coverage OCF a/m, Cash b/m, Debt c/m` を出力し、
+Financial Statements シートにも注記セルを置く。埋めたい場合は overrides に
+`hist_ocf` / `hist_cash` / `hist_debt` を明示すること。
+
+#### `ltm_revenue`（C20 の上書き）
+
+未指定なら `LTM = 直近本決算FY実績 − 前年同期累計Q + 当期累計Q` で自動構築し、
+**3成分と結果をコンソールに必ずログ出力**する（`[LTM]` 行）。スコープ調整が必要な銘柄
+（7203=自動車事業のみ、8267=営業収益合計 等）では本キーで上書きする。上書き時は
+C20 のラベルに `(override)` が付き、自動構築値との乖離が **20%超なら警告**（停止はしない）。
+
+#### `book_value`（新規, JPY mn）
+
+Comps Analysis の自社行 Book Value 列（P列）に使う純資産。未指定時は comps CSV の
+自社行 `Book_Value` を使う。PBR / ROE はこの列を参照する数式（`=D/P` / `=I/P`）。
+
+### investment_thesis / key_risks のトークン（2026-07-31〜）
+
+本文中の以下のトークンは、テンプレートが `="…"&TEXT(<セル参照>,"<書式>")&"…"` の
+連結数式に変換して書き込む（株価・株数を更新すると本文の数値も追随する）。
+**トークンを含まない行は従来どおり素のテキスト**（後方互換）。
+
+| トークン | 参照先 | TEXT書式 |
+|---|---|---|
+| `{price}` | Executive Summary!C9（現在株価） | `#,##0` |
+| `{target_price}` | Executive Summary!C10 | `#,##0` |
+| `{upside_pct}` | Executive Summary!C12 | `+0.0%;-0.0%` |
+| `{pb}` | Comps Analysis 自社行 PBR | `0.00"x"` |
+| `{per}` | Comps Analysis 自社行 PER | `0.0"x"` |
+| `{wacc}` | DCF Model!C26 | `0.00%` |
+
+- 上表以外の `{...}` は**バリデータがエラー停止**（タイプミス検出）。
+- 参照先セルが存在しない場合（comps 無しで `{pb}` 等）は警告のうえ素のテキストに降格。
+- 1セル 8,192 字を超える場合は文単位で複数セルに分割出力される。
 
 ### scenarios（固定5名のみ）
 ```json
@@ -87,6 +140,18 @@
 - **パスと拡張子が契約**: `data/comps/<ticker>_comps.csv`。`.txt` は読まれない（5246事故の原因）。CSV が無いと**エラー停止**（`--no-comps` 明示時のみ comps なし生成可）
 - UTF-8 カンマ区切り推奨（UTF-16/タブ区切りも自動吸収はされる）
 - 必須列: `Ticker`（`.T` 付き）, `Name`, `Revenue`, `EBITDA`, `Operating_Income`, `Net_Income`, `Book_Value`, `Net_Debt`
+- **`EBITDA` = 営業利益 + 減価償却費**。D&A が取れない社は **EBITDA を空欄で提出**すること
+  （営業利益をそのまま入れない）。空欄／営業利益と完全一致の行は自動検知され、EBITDA セルを
+  空欄化 + `(D&A n/a)` 注記のうえ **EV/EBITDA 統計から除外**される。有効 peer が 3社未満に
+  なると implied は `INVALID (n<3)` となり Target Price の平均から外れる（2026-07-31〜）。
+- **`Book_Value` は必須**。欠損行は PBR / ROE が空欄になり警告が出る。
+- **自社行**（CSV 1行目に置く運用）は統計から**自動除外**される（ティッカー突合。
+  `add_bank_valuation.py` 等の生成後パッチに頼らない）。自社行の時価総額・EV は
+  `'Executive Summary'!C9 × 株数` の数式でリンクされる。
+- peer 行の時価総額は CSV の生成時点値のまま。シート上部に `Peer prices as of <生成日>` を自動注記。
+- 生成時に各 peer の直近株価日付を yfinance で照会し、**45日超古い / 取得不能なら統計から除外**
+  （行は Note 付きで残る）。オフライン等で過半が取得失敗した場合は環境要因とみなし除外しない。
+  `--no-peer-check` でスキップ可。
 - 旧 `scripts/comps_input.csv` は**廃止済み**（パイプラインは一度も読んでいなかった）
 
 ### Market_Cap 列（任意・JPY mn）— 2026-06-12 仕様
@@ -107,6 +172,11 @@
 |---|---|---|
 | `5246_comps.csv` | 2026-06-12 終値 | 全5社 yfinance 取得 |
 | `4192_comps.csv` | 2026-06-12 終値 | LightWorks 4267 のみ上場廃止（yfinance 404）のため TOB 価格固定の継承値 10,730 を据え置き |
+| `285A_comps.csv` | 2026-07-29終値ベース（SNDK/MU）、SK Hynix FY2025実績ベース | 外貨comps（USD/KRW）のためレート制限回避と再現性を優先し静的値を採用。FX: USD/JPY 163.46、KRW/JPY 0.11339（2026-07-29/30時点、xe.com）。Samsung Electronics（005930.KS）はメモリ単体の完全財務諸表が非開示のため comps から除外（DS部門営業利益のみ判明、EBITDA/NI/BV不可）。SanDisk はTTM値（2026年4月期まで）を使用、FY2025単独では赤字のため。 |
+| `3687_comps.csv` | 2026-07-30時点(stockanalysis.com) | 全社日本企業のためFX換算不要。**プロンプトのティッカー誤りを2件発見・訂正**: (1)「ベース株式会社」は`4483.T`ではなく`4481.T`が正しい(4483.Tは無関係のJMDC)。(2)`4726.T`(SBテクノロジー)は2024-09-06にソフトバンクのTOBで上場廃止済み(時価総額取得不可)のため、プロンプト指定の代替候補`2158.T`(FRONTEO)に差し替え。EBITDA=営業利益+減価償却費(CF計算書)で全社統一、D&A取得不能で除外した社はなし。統計からフィックスターズ自身を除外(`_comps_stats_helper`スクリプトなし、`overrides_validator`側でなく市場分析側での別処理が必要な場合は要確認)。 |
+| `8267_comps.csv` | 2026-07-29終値ベース(3382/9843)、7532は日付未確認のIR公表値 | 銀行(イオン銀行)連結子会社があるため、自社行のNet_Debtは有利子負債(預金除く)−現金+非支配株主持分(984,094)で算出(schema上部「net_debtにMIを織り込む」設計、DCF側overridesのnet_debtと整合)。プロンプト指定peer5社のうち`3141.T`(ウエルシアHD)は2025-11-27にツルハHDへ吸収合併され上場廃止、`8905.T`(イオンモール)は2025-06-27に株式交換で完全子会社化され上場廃止と判明(いずれも時価総額取得不可)のため**両方除外**、3社(3382/7532/9843)のみで統計を構成(元々イオン自身は統計除外の設計だったため、実質的な変更は「表示専用2社」が無くなった点のみ)。`scripts/add_sotp_crosscheck.py`が生成後にComps Analysisの統計式(row5除外)をパッチ。 |
+| `8410_comps.csv` | 2026-07-29終値ベース(Rakuten Bank/Japan Post Bank)、AEON Financial Serviceは日付未確認のIR公表値 | 銀行のため全行Net_Debt=0固定(schema上部「銀行のNet_Debt」注記参照)。プロンプト指定のpeer4社のうち`7163.T`(住信SBIネット銀行)は2025-09-25にNTT Docomoの TOB で東証上場廃止済みと判明(時価総額なし、FY2026/3科目も未確認)のため**除外**、3社(5838/7182/8570)で統計を構成。統計からセブン銀行自身を除外する要件があるが`dcf_comps_template.py`の統計式(`{col}5:{col}{last_row}`)には自社除外の仕組みがなく、`scripts/add_bank_valuation.py`が生成後にopenpyxlでComps Analysisの統計式レンジ(row5除外)を書き換えるポストプロセスとして対応。AEON Financial Serviceは決算期が2月期(3月期ではない)のためFY2026/2実績を使用(約1か月のズレ、僅少)。Japan Post Bankの純資産9,260,000は非支配株主持分等未調整の総額(自己資本の厳密値ではない)。 |
+| `7203_comps.csv` | 2026-07-29/30終値ベース（Market_Cap）、各社直近期末実績（P/L・BS） | 連結ベースで統一（DCFは自動車事業のみ、両者の乖離は既知の設計で最終レポートに明記）。FX: USD/JPY 158.75、EUR/JPY 183.44（2026-03-31時点、valutafx.com。GM/F/VOW3のBS・PL全項目にこの期末レート1本を簡便法として統一適用、プロンプト許容範囲）。`comps_fetcher.py`に`_`接頭辞コメント行のスキップ機能が無いため、CSV内へのFXコメント埋め込みは行わずこの表に記録する運用とした。Honda/SubaruはFY2026/3に関税等一過性費用で赤字/大幅減益、Suzuki実績は情報源により営業利益に約3%の差異（602.9 vs 604.6十億円、大きい方を採用）。VW時価総額は普通株(VOW)/優先株(VOW3)二種類の合算方法が情報源で一致せず、37-38EURbnの中間値37,780EURmnを近似値として採用。 |
 
 ## market_analysis ランナー設定の補足
 
@@ -117,6 +187,17 @@
   ```python
   "price_targets": {"損切り": 100, "現在": 200, "第1利確": 300},
   ```
+
+## 生成物の自動検証（2026-07-31〜）
+
+- `scripts/generate_dcf.py` は生成後に **Excel COM で recalc → `scripts/validate_output.py`** を
+  自動実行する。FAIL があれば **exit 1**（生成物ファイルは削除せず残す）。
+  `--no-recalc` / `--no-validate` で個別にスキップ可。
+- 単体実行: `python scripts/validate_output.py <xlsx>`（FAIL で exit 1、
+  `<xlsx>_validation.txt` にレポート出力）。判定は FAIL / WARN / SKIP / PASS。
+- 検証の根拠は xlsx 内の **`Adjustments Log` シート**下部 `Pipeline Metadata` ブロック
+  （生成時の LTM 3成分・C5/C18 の算出根拠・年度突合の結果・自社行/peer 行番号等）。
+  **このブロックは手で編集しないこと**（手修正の記録は同シート上部の表に書く）。
 
 ## 実行フロー上の注意
 - 生成完了時に「Effective WACC inputs」と Comps 5社名がコンソールに出る。**必ず目視照合する**こと

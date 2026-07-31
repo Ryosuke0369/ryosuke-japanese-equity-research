@@ -1881,7 +1881,7 @@ def generate_dcf_workbook(config, output_path=None):
             for s in C["segments"]
         )
         if not _has_seg_growth:
-            print("WARNING: segments lack 'revenue_growth' — falling back to legacy mode")
+            print("WARNING: segments lack 'revenue_growth' - falling back to legacy mode")
             has_segments = False  # disable segment-linked mode
 
     seg_info = None
@@ -2070,7 +2070,7 @@ def generate_dcf_workbook(config, output_path=None):
     _risk_cells = _render_block(C["key_risks"])
     if _unresolved:
         print(f"  WARNING: narrative token(s) {sorted(_unresolved)} have no cell to "
-              f"reference in this model (no comps subject row?) — rendered as plain text.")
+              f"reference in this model (no comps subject row?) - rendered as plain text.")
 
     c = set_cell(ws1, 23, 2, "Key Investment Thesis", font=SUB_FONT)
     c.fill = LIGHT_FILL
@@ -2283,7 +2283,7 @@ def generate_dcf_workbook(config, output_path=None):
         else:
             _capex_label = "Capex / Revenue (fallback)"
             print("  WARNING: capex_method=direct but no historical capex/revenue "
-                  "pairs — C5 falls back to the capex_pct assumption.")
+                  "pairs - C5 falls back to the capex_pct assumption.")
     if _da_method == "direct":
         if _da_hist3 is not None:
             _da_pct_display = round(_da_hist3, 4)
@@ -2292,7 +2292,7 @@ def generate_dcf_workbook(config, output_path=None):
         else:
             _da_label = "D&A / Revenue (fallback)"
             print("  WARNING: da_method=direct but no historical D&A/revenue "
-                  "pairs — C18 falls back to the da_pct assumption.")
+                  "pairs - C18 falls back to the da_pct assumption.")
 
     # Keep the python-side sensitivity helpers on the same fallback ratio as the sheet
     C["capex_pct"] = _capex_pct_display
@@ -3283,10 +3283,10 @@ def generate_dcf_workbook(config, output_path=None):
         is_subject = (i == subject_idx)
         eb = comp.get("ebitda")
         oi = comp.get("op_income")
-        da_missing = (
-            not is_subject
-            and isinstance(eb, (int, float)) and isinstance(oi, (int, float))
-            and eb == oi and eb > 0
+        da_missing = not is_subject and (
+            eb is None
+            or (isinstance(eb, (int, float)) and isinstance(oi, (int, float))
+                and eb == oi and eb > 0)
         )
         stale = bool(comp.get("exclude_from_stats")) and not is_subject
         notes = []
@@ -3305,7 +3305,7 @@ def generate_dcf_workbook(config, output_path=None):
     _stale_names = [c["name"] for c, f in zip(comps, comp_flags) if f["stale"]]
     if _da_missing_names:
         print(f"  [Comps] WARNING: EBITDA == Operating Income (D&A not added back) for: "
-              f"{', '.join(_da_missing_names)} — excluded from EV/EBITDA statistics.")
+              f"{', '.join(_da_missing_names)} - excluded from EV/EBITDA statistics.")
     if _stale_names:
         print(f"  [Comps] WARNING: excluded from all statistics (stale/delisted): "
               f"{', '.join(_stale_names)}")
@@ -3418,7 +3418,7 @@ def generate_dcf_workbook(config, output_path=None):
             set_cell(ws4, r, 17, flags["note"], font=GREY_FONT)
 
     if _no_book_value:
-        print(f"  [Comps] WARNING: no Book Value for {', '.join(_no_book_value)} — "
+        print(f"  [Comps] WARNING: no Book Value for {', '.join(_no_book_value)} - "
               f"PBR/ROE left blank for those rows (add Book_Value to the comps CSV).")
 
     last_comp_row = 5 + len(comps) - 1
@@ -3455,7 +3455,7 @@ def generate_dcf_workbook(config, output_path=None):
     EV_EBITDA_INVALID = (not USE_EV_SALES) and n_ev_ebitda < 3
     if EV_EBITDA_INVALID:
         print(f"  [Comps] WARNING: only {n_ev_ebitda} peer(s) with usable EBITDA "
-              f"(<3) — EV/EBITDA implied price marked INVALID and excluded from "
+              f"(<3) - EV/EBITDA implied price marked INVALID and excluded from "
               f"the Target Price average.")
 
     def _rows_to_ref(letter, rows):
