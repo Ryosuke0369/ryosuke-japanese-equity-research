@@ -78,6 +78,8 @@ class NarrativeInput:
     def __post_init__(self):
         """Validate inputs."""
         for name, val in [
+            # bool is a subclass of int, so True would pass `val in (0, 1, 2)`
+            # as 1 and score a silent +1 on that axis.
             ('axis_1_label_status', self.axis_1_label_status),
             ('axis_2a_catalyst_potential', self.axis_2a_catalyst_potential),
             ('axis_2b_catalyst_realization', self.axis_2b_catalyst_realization),
@@ -85,9 +87,9 @@ class NarrativeInput:
             ('axis_4_earnings_materiality', self.axis_4_earnings_materiality),
             ('axis_5_narrative_durability', self.axis_5_narrative_durability),
         ]:
-            if val not in (0, 1, 2):
+            if isinstance(val, bool) or val not in (0, 1, 2):
                 raise ValueError(
-                    f"{name} must be 0, 1, or 2 (got {val})"
+                    f"{name} must be 0, 1, or 2 (got {val!r})"
                 )
 
 
@@ -112,6 +114,13 @@ class NarrativeResult:
     # Sum and applied rules (for audit)
     total_score: int
     earnings_cap_applied: bool  # True if axis 4 == 0 triggered cap
+
+    # What the stage would have been WITHOUT the axis-4 cap, and why.
+    # The cap overwrites rate_limiting_axis/reason, so without these the
+    # original binding constraint is lost — you can see that a cap fired but
+    # not what it capped. None when no cap was applied.
+    stage_pre_cap: Optional[Stage] = None
+    pre_cap_reason: str = ""
 
     # Companion metric
     earnings_impact_oku: Optional[float] = None  # TAM * share * OPM
@@ -147,13 +156,22 @@ STAGE_LABELS = {
 }
 
 
-def _determine_stage(inp: NarrativeInput) -> tuple[Stage, str, str, bool]:
+def _determine_stage(inp: NarrativeInput) -> tuple[Stage, str, str, bool,
+                                                   Optional[Stage], str]:
     """
     Determine narrative stage. REACH (axis 3) is the primary gate; catalyst
     realization (axis 2B) refines it. Axis 1 does NOT move the stage.
 
     Returns:
-        (stage, rate_limiting_axis_name, reason, earnings_cap_applied)
+        (stage, rate_limiting_axis_name, reason, earnings_cap_applied,
+         stage_pre_cap, pre_cap_reason)
+
+    **Rule precedence (intentional, not incidental):** the Stage-0 test
+    (axis_1 == 0 AND axis_2a == 0) is evaluated FIRST, before the reach gate.
+    A name with no spark and no fuel is Stage 0 even if axis_3 == 2 — reach
+    without any label rewrite or catalyst source is treated as noise, not as
+    diffusion. This ordering is deliberate; changing it is a framework design
+    decision, not a bug fix.
 
     Stage determination grid:
       axis_3=0, axis_2b<=1  -> Stage 1
@@ -175,10 +193,12 @@ def _determine_stage(inp: NarrativeInput) -> tuple[Stage, str, str, bool]:
     a4 = inp.axis_4_earnings_materiality
     a5 = inp.axis_5_narrative_durability
 
-    # Stage 0: no spark and no fuel
+    # Stage 0: no spark and no fuel (evaluated before the reach gate -- see
+    # the precedence note in the docstring)
     if a1 == 0 and a2a == 0:
         return (0, "axis_1 + axis_2a",
-                "ラベル変化なし(火種なし)、触媒源泉も存在しない(燃料なし)", False)
+                "ラベル変化なし(火種なし)、触媒源泉も存在しない(燃料なし)",
+                False, None, "")
 
     # Stage 4: peer group rewritten (all axes maxed)
     if (a1 >= 2 and a2a >= 2 and a2b >= 2
@@ -217,13 +237,18 @@ def _determine_stage(inp: NarrativeInput) -> tuple[Stage, str, str, bool]:
     # Exception: cap at Stage 2 if Earnings Materiality == 0.
     # This only ever LOWERS the stage; it cannot push a Stage 1 up to 2.
     earnings_cap_applied = False
+    stage_pre_cap = None
+    pre_cap_reason = ""
     if a4 == 0 and stage_raw > 2:
+        stage_pre_cap = stage_raw
+        pre_cap_reason = f"{limiting}: {reason}"
         stage_raw = 2
         limiting = "axis_4 (Earnings Materiality)"
         reason = "業績寄与=0のため Stage 上限 2 に制限(物語先行リスク)"
         earnings_cap_applied = True
 
-    return (stage_raw, limiting, reason, earnings_cap_applied)
+    return (stage_raw, limiting, reason, earnings_cap_applied,
+            stage_pre_cap, pre_cap_reason)
 
 
 # ============================================================================
@@ -366,7 +391,8 @@ def assess(inp: NarrativeInput) -> NarrativeResult:
     Returns:
         NarrativeResult with stage, verdict, and audit fields.
     """
-    stage, limiting, reason, cap_applied = _determine_stage(inp)
+    (stage, limiting, reason, cap_applied,
+     stage_pre_cap, pre_cap_reason) = _determine_stage(inp)
     impact, uplift, impact_note = _calc_earnings_impact(inp)
     headroom_signal, headroom_note = _assess_headroom(inp)
     verdict, verdict_rationale = _determine_verdict(
@@ -390,6 +416,8 @@ def assess(inp: NarrativeInput) -> NarrativeResult:
         rate_limiting_reason=reason,
         total_score=total,
         earnings_cap_applied=cap_applied,
+        stage_pre_cap=stage_pre_cap,
+        pre_cap_reason=pre_cap_reason,
         earnings_impact_oku=impact,
         earnings_uplift_ratio=uplift,
         earnings_impact_note=impact_note,

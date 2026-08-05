@@ -31,14 +31,16 @@ def find_latest_dcf_model(project_root, ticker):
 
 
 def read_dcf_crosscheck(dcf_path):
-    """Read fair values from DCF model's Executive Summary sheet.
+    """Read fair values from a DCF model's Executive Summary sheet.
 
-    Uses win32com to open Excel and evaluate formulas, then reads:
-      Row 16 C = DCF Perpetuity Growth
-      Row 17 C = DCF Exit Multiple
-      Row 18 C = Comps EV/EBITDA
-      Row 19 C = Comps PER
-    Falls back gracefully if Excel is unavailable.
+    Uses win32com so formulas are evaluated even when the workbook was never
+    recalculated (openpyxl alone would see empty cells).
+
+    Rows are matched by their column-B LABELS, not by position: rows 16-19 are
+    only the plain-DCF layout, and a bank-type model (8410: DDM / Residual
+    Income) rebuilds its Valuation Summary — a positional read would import one
+    method's number under another method's name. Falls back gracefully when
+    Excel is unavailable.
     """
     result = {}
     try:
@@ -49,12 +51,26 @@ def read_dcf_crosscheck(dcf_path):
         wb = excel.Workbooks.Open(os.path.abspath(dcf_path), ReadOnly=True)
         wb.Application.CalculateFull()
         ws = wb.Sheets("Executive Summary")
-        result["pgm_fair_value"] = ws.Cells(16, 3).Value
-        result["exit_fair_value"] = ws.Cells(17, 3).Value
-        result["comps_ev_ebitda"] = ws.Cells(18, 3).Value
-        result["comps_per"] = ws.Cells(19, 3).Value
+
+        # Matching rules live in sotp_template so the COM path and the openpyxl
+        # path can never disagree about which row is which method.
+        sys.path.insert(0, os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "templates"))
+        from sotp_template import DCF_CROSSCHECK_MATCHERS, match_crosscheck_key
+
+        taken = set()
+        for row in range(1, 61):
+            label = ws.Cells(row, 2).Value
+            key = match_crosscheck_key(label, taken)
+            if key is None:
+                continue
+            result[key] = ws.Cells(row, 3).Value
+            taken.add(key)
         wb.Close(SaveChanges=False)
         excel.Quit()
+        missing = [k for k, _ in DCF_CROSSCHECK_MATCHERS if k not in taken]
+        if missing:
+            print(f"  WARNING: no Executive Summary row matched {', '.join(missing)}")
         # Convert float values to int for clean display
         for k, v in result.items():
             if isinstance(v, float):

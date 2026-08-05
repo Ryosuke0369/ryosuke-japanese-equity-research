@@ -400,8 +400,33 @@ def compute_hybrid_ltm(merged_data, yf_quarters, gap_info):
     ltm["total_debt"] = round(st_debt + lt_debt, 1)
     ltm["net_debt"] = round(st_debt + lt_debt - cash, 1)
 
+    # Record the three components behind LTM revenue so the number in C20 can be
+    # re-derived (and re-checked) instead of having to be trusted:
+    #   LTM = last full FY actual - prior-year same-quarters cumulative
+    #                             + current-year cumulative
+    _fy_rev = fy_data.get("revenue")
+    _cur_rev = current_cumulative.get("revenue")
+    _pri_rev = prior_cumulative.get("revenue")
+    if _fy_rev is not None and _cur_rev is not None:
+        _pri = _pri_rev if _pri_rev is not None else 0
+        ltm["_ltm_revenue_components"] = {
+            "fy_key": latest_fy_key,
+            "fy_revenue_mn": _fy_rev,
+            "prior_cum_revenue_mn": _pri,
+            "current_cum_revenue_mn": _cur_rev,
+            "quarters_used": current_q_count,
+            "latest_quarter_end": str(latest_yf_date),
+            "result_mn": round(_fy_rev + _cur_rev - _pri, 1),
+        }
+        print(f"  [LTM] Revenue = FY({latest_fy_key}) {_fy_rev:,.1f} "
+              f"- prior {current_q_count}Q cum {_pri:,.1f} "
+              f"+ current {current_q_count}Q cum {_cur_rev:,.1f} "
+              f"= {_fy_rev + _cur_rev - _pri:,.1f} JPY mn")
+        print(f"  [LTM]   (yfinance raw JPY -> JPY mn: values above are already "
+              f"divided by 1,000,000; e.g. {(_fy_rev + _cur_rev - _pri) * 1000:,.0f} 千円)")
+
     # Validate minimum required keys
-    if not all(ltm.get(k) for k in REQUIRED_KEYS):
+    if not all(ltm.get(k) for k in REQUIRED_KEYS if not k.startswith("_")):
         print("  WARNING: Hybrid LTM missing required keys (revenue/operating_income). Skipping.")
         return None, None
 

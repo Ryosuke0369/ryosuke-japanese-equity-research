@@ -1,3 +1,98 @@
+# DCFパイプライン テンプレート恒久修正 (2026-07-31)
+
+Branch: `template-hardening-20260731` / 仕様書: ユーザー提供「ClaudeCode実行仕様書」
+
+## A群: テンプレート本体
+- [x] A1 シナリオ切替 D27 を MATCH 式に統一（segments 有無で分岐しない）
+- [x] A2 Comps 統計範囲から subject company を自動除外（動的行算出）
+- [x] A3 Comps 時価総額/EV/PBR/ROE 数式化 + Book Value 列 + Peer prices as-of 注記
+
+## B群: データ整合
+- [x] B1 FS の OCF/現金/有利子負債を年度キー突合で割当（位置ベース廃止）
+- [x] B2 C5/C18 を実績3年平均ベースに（予測からの逆算を廃止）
+- [x] B3 C20 LTM Revenue の3成分ログ出力 + `ltm_revenue` override
+- [x] B4 D&A欠損 peer を EV/EBITDA 統計から自動除外（有効 n<3 で INVALID）
+- [x] B5 thesis/key_risks のトークン→数式化
+
+## C群: 自動検証層
+- [x] C1 `scripts/validate_output.py` 新規（13チェック）+ generate_dcf からの自動呼出
+- [x] C2 validator 追加チェック（配列長・トークン・ターミナルcapex）+ peer 鮮度チェック
+- [x] C3 Adjustments Log シートの標準生成
+
+## 回帰テスト
+- [x] 3687 再生成 → validate FAIL 0 / WARN 2
+- [x] 285A 再生成 → validate FAIL 0 / WARN 0、D27=MATCH、自社除外、Downside 2 実動
+
+## Review（2026-07-31）
+
+### コード変更の影響（main ワークツリーでの A/B、同一入力・同日）
+`git worktree add ../_ctrl_main main` に同じ `data/` を置き 3687 を生成して全セル比較。
+差分は **71セルのみ**で、すべて意図した修正:
+
+| 箇所 | main | 新 | 由来 |
+|---|---|---|---|
+| Comps 統計 15-17行・C27/C28 | 自社込み 1,519 / 1,835 | **1,256 / 1,737** | A2 自社除外 |
+| Comps D5/E5/J5-M5 | 静的 67,054 | 数式 67,053.69 | A3 |
+| Comps P列 Book Value / Q列 Note / B3 as-of | なし | 追加 | A3 |
+| FS 19/21/22/26/27/28行 | 3年ズレ | 年度一致 | B1 |
+| DCF C5 / C18 とラベル | 2.786% / 2.547% | 1.25% / 1.83% | B2 |
+| Adjustments Log シート | なし | 追加 | C3 |
+| NWC Schedule / Sensitivity / WACC / PGM / Exit | — | **完全一致** | 影響なし |
+
+### 不変6値の照合
+`size_premium` を 0.03 に戻した検証ランで **WACC 11.54% / Comps EV-EBITDA 1,256 /
+PER 1,737 が完全一致**。PGM 970→1,017・Exit 1,559→1,638・Target 1,381→1,412 の差は
+**main コードでも同値**（1,017 / 1,638）であり、原因は `stub_fraction` 1.0→0.5
+（当日の LTM が 2Q 進行）。**コード起因の valuation 変化はゼロ**。
+なお現行 `data/overrides/3687_overrides.json` の `size_premium` は 0.025 のため、
+そのまま生成すると WACC は 11.04% になる（overrides 側の値、要確認）。
+
+### 285A
+validate FAIL 0 / WARN 0。D27=`MATCH(C27,B69:B73,0)`、Comps 中位 EV/EBITDA **16.86x**
+（自社除外）、FS の OCF は FY2024/3 に **195,111**。ドロップダウン実動確認:
+Base 9,121 → Upside 15,181 → Management 30,952 → Downside 1 3,442 → **Downside 2 188**（PGM）。
+
+### 残メモ
+- 3687 FY2025/9 の有利子負債は EDINET に無く**空欄**（旧モデルは FY2024 の 2,085 が
+  誤って入っていた）。埋めるなら overrides に `hist_debt` を入れる。
+- 仕様書 §6-4 の WARN 期待（285A の terminal capex / Exit 乖離）は現行 overrides では
+  発火しない（exit_multiple が 14.0 → 5.0 に、terminal capex/D&A も 0.98x に更新済み）。
+  両チェックは 3687（0.86x / 1.94x 乖離）および 7203・8267 の overrides 事前警告で発火を確認。
+- `reports/2359_market_analysis_20260509_v2.xlsx` は本作業前から未コミット変更あり（未関与）。
+
+---
+
+## 追補: 姉妹テンプレート修正（2026-07-31）
+
+- [x] M1 `_read_comps_stats` のラベルベース化 + 自社除外（p25/中央値/p75 も peer から再計算）
+- [x] M2 Block 3 補間式に IFERROR + alpha-scan 単調性チェック + NOPATフロア注記
+- [x] M3 DCF 読取のラベル探索化（WACC/g/tax/net debt/shares/stub/PGM/Exit/行42-44）+ フォールバック警告
+- [x] M4 Scorecard Factor 3 の空欄→中立0化、C9 を C36 と同じ買/売に統一
+- [x] M5 Narrative Stage の擬似入力セルを OUTPUT 化 + 再生成注記（案A採用、案Bは将来課題）
+- [x] M6 fallback パスのエラー明確化 / `market_alpha_cell` 必須化 / price_points 先頭検証 /
+      Block 4 を `alpha (proxy)` 表記化 / デモ出力を reports→tmp へ
+- [x] S1 `_read_dcf_crosscheck` ラベルベース化（scripts/generate_sotp.py の COM 版も同様に修正）
+- [x] S2 IHI 固有文言を config 供給化 / segment key デフォルト廃止（未指定はエラー停止）
+- [x] S3 単位契約の明文化 + `shares_outstanding > 1e8` でエラー停止
+- [x] S4 Table2 の割引率をセル参照化 / 行レイアウト先決め / Cover 行番号 return 化 /
+      as-of 注記 / float 等値比較を許容誤差比較へ
+- [x] N stage_pre_cap + pre_cap_reason 追加、bool 弾き、Stage 0 優先順位を docstring 明記
+- [x] validate_output にチェック 14-20 追加（シート名で種別自動判別）
+
+### 検証結果
+- `test_narrative_stage.py`: **5/5 PASS**（新規2アサーション追加後も既存期待値は不変）
+- 3687 market_analysis（新DCF入力）: validate **FAIL 0 / PASS 5**、
+  peer 5社 [6-10] を使用（旧実装は rows 5..9 = 自社込み4社で **5社目を取りこぼし**）、
+  peer-only 中央値と DCF シート統計セルが**完全一致**（NOTE なし）、alpha=1.0 = PGM 1,064（-0.02%）
+- 2359 / 4192 デモ（旧DCF入力）: 完走。peer-only 中央値が旧DCFの自社込み中央値と食い違う旨を
+  NOTE で明示（4192: 3.3227 vs 3.5818 → justified price 502 vs C27 538）。**旧DCFを再生成すれば解消**
+- 7013 SOTP 再生成: validate **FAIL 0 / PASS 4**、Fair Value **3,072.064691736476 で修正前と完全一致**、
+  Sensitivity C27 も一致。単位ガード / segment key 必須化とも意図どおりエラー停止を確認
+- 8410（銀行型）read-only 読取テスト: ラベル探索で 389/431/505/196 を正しく取得
+  （当該ファイルの Exec Summary は結局 16-19 のままだったが、ラベル読取でも同値）
+
+---
+
 # Fix: 株価更新 + Comps時価総額の固定化 + 旧成果物整理 (2026-06-12 夕)
 
 ## TODO

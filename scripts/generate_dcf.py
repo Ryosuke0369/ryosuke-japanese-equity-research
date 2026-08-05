@@ -10,10 +10,20 @@ Usage:
 import argparse
 import json
 import os
+import subprocess
 import sys
 import re
 from datetime import datetime
 from collections import OrderedDict
+
+# The Windows console is cp932 here: a single un-encodable character (an em dash
+# in a warning) would raise UnicodeEncodeError and kill an otherwise good run.
+# Degrade those characters instead of the process.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(errors="replace")
+    except (AttributeError, ValueError):
+        pass
 
 # Ensure imports work from project root
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -67,6 +77,23 @@ def merged_data_to_config(company_info, merged_data, forecast_data=None):
     hist_capex = [_val(merged_data[k], "capex") for k in fy_keys_oldest_first]
     hist_cash = [_val(merged_data[k], "cash") for k in fy_keys_oldest_first]
     hist_debt = [_val(merged_data[k], "total_debt") for k in fy_keys_oldest_first]
+    hist_depreciation = [_val(merged_data[k], "depreciation") for k in fy_keys_oldest_first]
+
+    # Keep the EDINET series keyed by fiscal year, not by position. hist_years is
+    # frequently replaced wholesale by overrides (different labels, different
+    # count) while these series are not — copying them positionally is what put
+    # FY2022 operating cash flow under the FY2025 column. align_hist_to_years()
+    # re-attaches them by year key after the overrides are applied.
+    edinet_fs_by_year = {
+        k: {
+            "hist_ocf": merged_data[k].get("operating_cf"),
+            "hist_cash": merged_data[k].get("cash"),
+            "hist_debt": merged_data[k].get("total_debt"),
+            "hist_capex": merged_data[k].get("capex"),
+            "hist_depreciation": merged_data[k].get("depreciation"),
+        }
+        for k in fy_keys_oldest_first
+    }
 
     # Handle None COGS: reverse-calculate from revenue - operating_income
     for i in range(len(hist_cogs)):
@@ -296,6 +323,7 @@ def merged_data_to_config(company_info, merged_data, forecast_data=None):
     stub_fraction = 1.0  # default: no stub (full year ahead)
     stub_months_elapsed = 0
     ltm_revenue = base_year_revenue  # fallback to latest FY
+    ltm_components = None
 
     if ltm_label:
         # Parse quarter number from LTM label like "LTM(2Q 2025-09)"
@@ -312,6 +340,7 @@ def merged_data_to_config(company_info, merged_data, forecast_data=None):
                 stub_months_elapsed = 0
 
         ltm_revenue = _val(merged_data[ltm_label], "revenue", base_year_revenue)
+        ltm_components = merged_data[ltm_label].get("_ltm_revenue_components")
 
     # ── Projection Start FY Label ──
     # Derive next FY label from latest FY key
@@ -347,6 +376,8 @@ def merged_data_to_config(company_info, merged_data, forecast_data=None):
         "hist_capex": hist_capex,
         "hist_cash": hist_cash,
         "hist_debt": hist_debt,
+        "hist_depreciation": hist_depreciation,
+        "_edinet_fs_by_year": edinet_fs_by_year,
 
         # DCF Assumptions
         "scenarios": scenarios,
@@ -367,6 +398,14 @@ def merged_data_to_config(company_info, merged_data, forecast_data=None):
         "stub_fraction": stub_fraction,
         "stub_months_elapsed": stub_months_elapsed,
         "ltm_revenue": ltm_revenue,
+        "_ltm_revenue_auto": ltm_revenue,
+        "_ltm_revenue_components": (
+            "; ".join(f"{k}={v}" for k, v in ltm_components.items())
+            if ltm_components else None
+        ),
+        "_ltm_revenue_source": ("hybrid LTM (FY - prior cum + current cum)"
+                                if ltm_components else
+                                ("LTM row" if ltm_label else "latest FY (no LTM)")),
         "projection_start_fy": projection_start_fy,
 
         # Base Year Values
@@ -405,6 +444,206 @@ def merged_data_to_config(company_info, merged_data, forecast_data=None):
     }
 
     return config
+
+
+# =====================================================================
+# FISCAL-YEAR KEY ALIGNMENT (bug B1)
+# =====================================================================
+# EDINET-derived cash-flow / balance-sheet series were copied into the
+# Financial Statements columns by POSITION. When overrides replace hist_years
+# with a different label set (or a different number of years), position n stops
+# meaning the same fiscal year in both lists, and the value lands under someone
+# else's year header — silently, and by up to 3 years in the July 2026 models.
+# Values are now attached by fiscal-year KEY; a year with no match is left blank.
+
+_FS_SERIES = ("hist_ocf", "hist_cash", "hist_debt", "hist_capex", "hist_depreciation")
+
+
+def _fy_key_parts(label):
+    """Split a fiscal-year label into (year, month) strings.
+
+    'FY2024/3(12m)' -> ('2024', '3'); 'FY2024' -> ('2024', None).
+    """
+    s = str(label)
+    m = re.search(r"FY\s*(\d{4})", s)
+    if not m:
+        return (None, None)
+    year = m.group(1)
+    m2 = re.search(r"FY\s*\d{4}\s*[/-]\s*(\d{1,2})", s)
+    return (year, m2.group(1).lstrip("0") if m2 else None)
+
+
+def _resolve_year_keys(hist_years, source_keys):
+    """Map each hist_years label to a source key, or None when it cannot match.
+
+    Resolution ladder (each step must be unambiguous, else no match):
+      1. identical label
+      2. same fiscal year AND same fiscal-year-end month
+      3. same fiscal year, when that year is unique on BOTH sides
+    Anything else stays unmatched — no shifting, no padding, no "closest year".
+    """
+    resolved = {}
+    remaining = list(source_keys)
+
+    for lbl in hist_years:
+        if lbl in remaining:
+            resolved[lbl] = lbl
+            remaining.remove(lbl)
+
+    src_parts = {k: _fy_key_parts(k) for k in remaining}
+    for lbl in hist_years:
+        if lbl in resolved:
+            continue
+        ly, lm = _fy_key_parts(lbl)
+        if ly is None:
+            resolved[lbl] = None
+            continue
+        if lm is not None:
+            exact = [k for k, (sy, sm) in src_parts.items() if sy == ly and sm == lm]
+            if len(exact) == 1:
+                resolved[lbl] = exact[0]
+                src_parts.pop(exact[0])
+                continue
+        same_year_src = [k for k, (sy, _) in src_parts.items() if sy == ly]
+        same_year_dst = [l for l in hist_years if _fy_key_parts(l)[0] == ly]
+        if len(same_year_src) == 1 and len(same_year_dst) == 1:
+            resolved[lbl] = same_year_src[0]
+            src_parts.pop(same_year_src[0])
+        else:
+            resolved[lbl] = None
+    return resolved
+
+
+def align_hist_series_to_years(config, override_keys):
+    """Re-attach the EDINET CF/BS series to config['hist_years'] by year key.
+
+    Series supplied explicitly in overrides always win and are left untouched.
+    Returns a human-readable coverage string (also written into the workbook).
+    """
+    hist_years = config.get("hist_years") or []
+    source = config.get("_edinet_fs_by_year") or {}
+    resolved = _resolve_year_keys(hist_years, list(source.keys()))
+
+    overridden = [s for s in _FS_SERIES if s in override_keys]
+    aligned = [s for s in _FS_SERIES if s not in override_keys]
+
+    for series in aligned:
+        config[series] = [
+            (source.get(resolved.get(lbl)) or {}).get(series) if resolved.get(lbl) else None
+            for lbl in hist_years
+        ]
+
+    # Coverage is reported PER SERIES on OCF/Cash/Debt — the three the FS sheet
+    # shows and the ones that were mis-shifted. Counting a year as covered when
+    # any one of the three is present would hide a series-specific hole (3687's
+    # FY2025/9 debt), which is precisely the kind of gap this check exists for.
+    n_years = len(hist_years)
+    per_series = {}
+    for s in ("hist_ocf", "hist_cash", "hist_debt"):
+        if s in overridden:
+            per_series[s] = n_years  # supplied wholesale by the analyst
+        else:
+            per_series[s] = sum(1 for v in (config.get(s) or []) if v is not None)
+    covered = min(per_series.values()) if per_series else n_years
+    coverage = (f"OCF {per_series['hist_ocf']}/{n_years}, "
+                f"Cash {per_series['hist_cash']}/{n_years}, "
+                f"Debt {per_series['hist_debt']}/{n_years}")
+
+    # Per-year audit trail: which source year each column came from, and which of
+    # OCF/Cash/Debt actually carry a value. validate_output.py asserts the sheet
+    # matches this exactly, cell for cell.
+    _short = {"hist_ocf": "ocf", "hist_cash": "cash", "hist_debt": "debt"}
+    entries = []
+    for i, lbl in enumerate(hist_years):
+        filled = [
+            _short[s] for s in ("hist_ocf", "hist_cash", "hist_debt")
+            if (config.get(s) or [None] * n_years)[i] is not None
+        ]
+        entries.append(f"{lbl}<-{resolved.get(lbl) or 'BLANK'}[{'+'.join(filled)}]")
+    year_map = "; ".join(entries)
+    config["_fs_series_coverage"] = per_series
+    config["_fs_year_coverage"] = coverage
+    config["_fs_year_map"] = year_map
+    config["_fs_year_sources"] = (
+        f"overrides: {', '.join(overridden) or 'none'} | "
+        f"EDINET year-key match: {', '.join(aligned) or 'none'}"
+    )
+
+    print(f"  [FS align] hist_years <- EDINET: {year_map}")
+    print(f"  [FS align] overrides supplied: {', '.join(overridden) or 'none'}")
+    if covered < n_years:
+        print(f"  WARNING: OCF/Cash/Debt coverage {coverage} - verify against 短信 "
+              f"(unmatched years left BLANK; set hist_ocf / hist_cash / hist_debt "
+              f"in overrides to fill them)")
+    return coverage, covered, n_years
+
+
+# =====================================================================
+# PEER FRESHNESS (bug C2)
+# =====================================================================
+PEER_STALE_DAYS = 45
+
+
+def check_peer_freshness(comps, subject_ticker, max_age_days=PEER_STALE_DAYS):
+    """Flag peers whose last traded price is stale (delisted / wrong ticker).
+
+    8267 carried three peers that had been delisted for months; their frozen
+    market caps kept feeding the medians. A peer whose last quote is older than
+    `max_age_days` is marked so the template keeps the row (with a note) but
+    drops it from every statistic.
+
+    Safety rail: if more than half the lookups fail, the problem is the network
+    or the yfinance install, not the peer set — nothing is excluded in that case.
+    """
+    try:
+        import yfinance as yf
+    except ImportError:
+        print("  [Peers] yfinance not installed - freshness check skipped.")
+        return
+
+    def _subj(t):
+        return str(t or "").strip().upper().split(".")[0]
+
+    subject_key = _subj(subject_ticker)
+    today = datetime.now().date()
+    flagged, failures, checked = [], [], 0
+
+    for comp in comps:
+        if _subj(comp.get("ticker")) == subject_key:
+            continue
+        checked += 1
+        tkr = str(comp.get("ticker", "")).strip()
+        try:
+            hist = yf.Ticker(tkr).history(period="3mo")
+            if hist is None or hist.empty:
+                raise ValueError("no price history")
+            last_date = hist.index[-1].date()
+            age = (today - last_date).days
+            if age > max_age_days:
+                comp["exclude_from_stats"] = True
+                comp["exclude_reason"] = f"(last quote {last_date}, {age}d old)"
+                flagged.append(f"{comp['name']} [{tkr}] {comp['exclude_reason']}")
+            else:
+                print(f"  [Peers] {tkr}: last quote {last_date} ({age}d) OK")
+        except Exception as e:
+            failures.append((comp, f"{type(e).__name__}: {e}"))
+
+    if checked and len(failures) > checked / 2:
+        print(f"  [Peers] WARNING: {len(failures)}/{checked} price lookups failed - "
+              f"treating this as an environment problem, NOT as delistings. "
+              f"No peer excluded. Re-run with network access to validate.")
+    else:
+        for comp, err in failures:
+            comp["exclude_from_stats"] = True
+            comp["exclude_reason"] = "(price unavailable — delisted or wrong ticker?)"
+            flagged.append(f"{comp['name']} [{comp.get('ticker')}] price fetch failed: {err}")
+
+    if flagged:
+        print("  [Peers] WARNING: excluded from statistics (stale/unavailable):")
+        for f in flagged:
+            print(f"    - {f}")
+    elif checked:
+        print(f"  [Peers] All {checked} peer quotes are within {max_age_days} days.")
 
 
 # =====================================================================
@@ -525,6 +764,14 @@ def main():
     parser.add_argument("--no-comps", action="store_true",
                         help="Explicitly generate without comparable companies "
                              "(otherwise a missing comps CSV is an error)")
+    parser.add_argument("--no-peer-check", action="store_true",
+                        help="Skip the yfinance peer price-freshness check "
+                             "(offline runs)")
+    parser.add_argument("--no-recalc", action="store_true",
+                        help="Do not recalculate the workbook via Excel COM before "
+                             "validation (formula-value checks are then skipped)")
+    parser.add_argument("--no-validate", action="store_true",
+                        help="Skip the post-generation validate_output.py run")
     args = parser.parse_args()
 
     ticker_code = args.ticker.strip()
@@ -568,7 +815,7 @@ def main():
     has_fundamentals_override = bool(_overrides) and any(
         re.match(r"fundamentals_fy\d{4}$", k) for k in _overrides
     )
-    print(f"\n[Step 1/7] Fetching {num_years} years of financial data from EDINET...")
+    print(f"\n[Step 1/9] Fetching {num_years} years of financial data from EDINET...")
     try:
         company_info, merged_data = fetch_and_parse_multi_year(
             ticker_code, num_years, fiscal_year_end_month=fy_end_month
@@ -593,7 +840,7 @@ def main():
         merged_data = _inject_latest_fy_from_overrides(merged_data, _overrides)
 
     # Step 2: Check LTM coverage, yfinance fallback if needed
-    print(f"\n[Step 2/7] Checking LTM data coverage...")
+    print(f"\n[Step 2/9] Checking LTM data coverage...")
     ticker_4digit = re.sub(r"0$", "", (company_info.get("securities_code") or ticker_code)[:5])
     config_ticker_str = f"{ticker_4digit}.T"
     fiscal_year_end = company_info.get("fiscal_year_end")
@@ -602,7 +849,7 @@ def main():
     )
 
     # Step 3: Extract company guidance/forecast data (業績予想)
-    print(f"\n[Step 3/7] Extracting company guidance (業績予想)...")
+    print(f"\n[Step 3/9] Extracting company guidance (業績予想)...")
     forecast_data = None
     try:
         from scripts.edinet_parser import parse_xbrl_file, extract_forecast_data
@@ -645,7 +892,7 @@ def main():
             print("  Management scenario will use CAGR-based estimate.")
 
     # Step 4: Convert to config
-    print(f"\n[Step 4/7] Building DCF configuration...")
+    print(f"\n[Step 4/9] Building DCF configuration...")
     config = merged_data_to_config(company_info, merged_data, forecast_data=forecast_data)
 
     # Step 4.5: Apply manual overrides if provided
@@ -692,6 +939,40 @@ def main():
             config.pop("cogs_pct", None)
             print("  [Segments] Removed cogs_pct - COGS will be back-calculated from segment EBIT")
 
+    # Step 4.6: Attach the EDINET CF/BS series to the FINAL hist_years by year
+    # key (must run after overrides, which may replace hist_years wholesale).
+    print(f"\n[Step 4.6] Aligning OCF / Cash / Debt to fiscal-year keys...")
+    _override_keys = set(_overrides.keys()) if _overrides else set()
+    _fs_coverage, _fs_covered, _fs_n_years = align_hist_series_to_years(config, _override_keys)
+    final_warnings = []
+    if _fs_covered < _fs_n_years:
+        final_warnings.append(
+            f"WARNING: OCF/Cash/Debt coverage {_fs_coverage} — verify against 短信"
+        )
+
+    # LTM Revenue (C20): report the construction and honour an explicit override.
+    if config.get("_ltm_revenue_components"):
+        print(f"  [LTM] components: {config['_ltm_revenue_components']}")
+    else:
+        print(f"  [LTM] source: {config.get('_ltm_revenue_source')} "
+              f"(no quarterly decomposition available)")
+    if _overrides and _overrides.get("ltm_revenue") is not None:
+        _auto = config.get("_ltm_revenue_auto")
+        config["ltm_revenue"] = _overrides["ltm_revenue"]
+        config["_ltm_revenue_overridden"] = True
+        print(f"  [LTM] override applied: {config['ltm_revenue']:,.1f} mn "
+              f"(auto-constructed value was {(_auto or 0):,.1f} mn)")
+        if _auto:
+            _dev = abs(config["ltm_revenue"] - _auto) / abs(_auto)
+            if _dev > 0.20:
+                _msg = (f"WARNING: ltm_revenue override deviates {_dev:.1%} from the "
+                        f"auto-constructed LTM ({config['ltm_revenue']:,.0f} vs "
+                        f"{_auto:,.0f} mn) — confirm the scope is intentional")
+                print(f"  {_msg}")
+                final_warnings.append(_msg)
+    print(f"  [LTM] C20 = {config.get('ltm_revenue', 0):,.1f} JPY mn "
+          f"({'override' if config.get('_ltm_revenue_overridden') else 'auto'})")
+
     # Guard: re-calculate core_ebitda if overrides set it to None
     if config.get("core_ebitda") is None:
         _oi = config.get("hist_operating_income", [])
@@ -707,7 +988,7 @@ def main():
         config["ticker"] = f"{_t[:4]}.T"
 
     # Step 5: Fetch live market data via yfinance (price, shares, beta)
-    print(f"\n[Step 5/7] Fetching market data...")
+    print(f"\n[Step 5/9] Fetching market data...")
     ticker_str = config["ticker"]
     config["current_price"], config["shares_outstanding"], live_beta = get_live_market_data(
         ticker_str, config["current_price"], config["shares_outstanding"]
@@ -747,7 +1028,7 @@ def main():
     print(f"  Raw Beta: {config['beta']:.2f}, D/E Ratio: {config['de_ratio']:.4f}, Mkt Cap: {market_cap:,.0f} mn")
 
     # Step 5: Load comparable companies data
-    print(f"\n[Step 6/7] Loading comparable companies...")
+    print(f"\n[Step 6/9] Loading comparable companies...")
     # Resolve comps CSV path: --comps-csv > data/comps/<ticker>_comps.csv
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     if args.comps_csv:
@@ -774,18 +1055,22 @@ def main():
                   f"--no-comps to generate without comps.")
             sys.exit(1)
         print(f"  Loaded {len(config['comps'])} comps from {comps_csv_path}")
+        if args.no_peer_check:
+            print("  --no-peer-check: peer price freshness check skipped.")
+        else:
+            check_peer_freshness(config["comps"], config.get("ticker", ticker_code))
     else:
         print(f"\nERROR: No comps CSV found at: {comps_csv_path}")
         txt_sibling = os.path.splitext(comps_csv_path)[0] + ".txt"
         if os.path.isfile(txt_sibling):
-            print(f"  Found {txt_sibling} — the pipeline only reads the .csv path. "
+            print(f"  Found {txt_sibling} - the pipeline only reads the .csv path. "
                   f"Rename it to {os.path.basename(comps_csv_path)}.")
         print(f"  Create the CSV (data/comps/{ticker_code}_comps.csv), pass --comps-csv PATH,")
         print(f"  or pass --no-comps to explicitly generate without comparable companies.")
         sys.exit(1)
 
     # Step 6: Generate Excel
-    print(f"\n[Step 7/7] Generating DCF workbook...")
+    print(f"\n[Step 7/9] Generating DCF workbook...")
     os.makedirs(args.output_dir, exist_ok=True)
     date_str = datetime.now().strftime("%Y%m%d")
     output_path = os.path.join(args.output_dir, f"{ticker_code}_DCF_Model_{date_str}.xlsx")
@@ -795,6 +1080,16 @@ def main():
         print(f"   Use --force to overwrite, or rename/move the existing file.")
         print(f"   Tip: Move finalized models to reports/ directory to protect them.")
         sys.exit(1)
+
+    # Stamp the template revision into the workbook's Adjustments Log so a model
+    # can be traced back to the code that produced it.
+    try:
+        _rev = subprocess.run(["git", "rev-parse", "--short", "HEAD"],
+                              cwd=project_root, capture_output=True, text=True,
+                              timeout=15)
+        config["_template_rev"] = (_rev.stdout or "").strip() or datetime.now().strftime("%Y-%m-%d")
+    except Exception:
+        config["_template_rev"] = datetime.now().strftime("%Y-%m-%d")
 
     saved_path = generate_dcf_workbook(config, output_path)
 
@@ -828,8 +1123,57 @@ def main():
     if config["comps"]:
         comp_names = ", ".join(c["name"] for c in config["comps"])
         print(f"\nComps ({len(config['comps'])}): {comp_names}")
+        _excluded = [c["name"] for c in config["comps"] if c.get("exclude_from_stats")]
+        if _excluded:
+            print(f"  Excluded from statistics (stale/unavailable): {', '.join(_excluded)}")
+            final_warnings.append(
+                f"WARNING: peers excluded from statistics: {', '.join(_excluded)}"
+            )
     else:
         print(f"\nComps: NONE (--no-comps)")
+
+    # ── Step 8: recalculate, then machine-validate the workbook ──
+    # A generated workbook has formulas but no computed values, so the checks
+    # that need numbers (formula errors, terminal capex ratio, PGM sanity) only
+    # mean something after a recalc. Excel COM is best-effort: without it the
+    # validator still runs and reports those checks as "needs recalc".
+    if not args.no_recalc:
+        print(f"\n[Step 8/9] Recalculating via Excel COM...")
+        try:
+            _rc = subprocess.run(
+                [sys.executable, os.path.join(project_root, "scripts", "recalc_excel_com.py"),
+                 saved_path],
+                capture_output=True, text=True, timeout=600,
+            )
+            print((_rc.stdout or "").strip() or "  (no output)")
+            if _rc.returncode != 0:
+                print(f"  WARNING: recalc failed (exit {_rc.returncode}). "
+                      f"{(_rc.stderr or '').strip()[:300]}")
+                print(f"  Continuing - value-level checks will be reported as "
+                      f"'needs recalc'.")
+        except Exception as e:
+            print(f"  WARNING: recalc skipped ({type(e).__name__}: {e}).")
+
+    validation_failed = False
+    if not args.no_validate:
+        print(f"\n[Step 9/9] Validating output...")
+        try:
+            from scripts.validate_output import validate_workbook
+        except ImportError:
+            from validate_output import validate_workbook
+        result = validate_workbook(saved_path, write_report=True)
+        validation_failed = result.failed
+
+    if final_warnings:
+        print("\n" + "=" * 60)
+        for w in final_warnings:
+            print(w)
+        print("=" * 60)
+
+    if validation_failed:
+        print(f"\nERROR: validate_output.py reported FAIL for {saved_path}.")
+        print(f"  The file was NOT deleted - inspect it and the *_validation.txt report.")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

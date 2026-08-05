@@ -112,7 +112,7 @@ def get_comps_data(csv_path):
         if has_mkt_cap_col:
             print("[Comps] Market cap source: CSV (static)")
         else:
-            print("[Comps] WARNING: Market cap source: yfinance live — 出力は実行時点で"
+            print("[Comps] WARNING: Market cap source: yfinance live - 出力は実行時点で"
                   "変動する（再現性が必要なら Market_Cap 列を記入）")
 
         for row in reader:
@@ -123,7 +123,11 @@ def get_comps_data(csv_path):
             row = {k.strip(): v.strip() for k, v in row.items()}
 
             revenue = float(row["Revenue"])
-            ebitda = float(row["EBITDA"])
+            # EBITDA may be left blank when D&A is unavailable for that peer —
+            # the contract is "blank, never EBIT", because a copied EBIT silently
+            # becomes an EV/EBIT multiple inside the EV/EBITDA median.
+            _ebitda_raw = (row.get("EBITDA") or "").strip()
+            ebitda = float(_ebitda_raw) if _ebitda_raw else None
             op_income = float(row.get("Operating_Income") or row.get("Operating Income", "0"))
             net_income = float(row.get("Net_Income") or row.get("Net Income", "0"))
             book_value = float(row.get("Book_Value") or row.get("Book Value", "0"))
@@ -163,9 +167,22 @@ def get_comps_data(csv_path):
                 "ebitda": ebitda,
                 "op_income": op_income,
                 "net_income": net_income,
+                # Book value is carried through so the template can write PBR and
+                # ROE as formulas off a visible Book Value column instead of
+                # freezing the ratios computed here.
+                "book_value": book_value if book_value != 0 else None,
                 "pbr": pbr,
                 "roe": roe,
             })
+
+            if ebitda is not None and ebitda == op_income and ebitda > 0:
+                print(f"  [Comps] WARNING: {ticker} ({name}) has EBITDA == Operating "
+                      f"Income - D&A was not added back. It will be excluded from "
+                      f"EV/EBITDA statistics. (EBITDA = 営業利益 + 減価償却費; leave "
+                      f"the cell blank if D&A is unavailable.)")
+            if not book_value:
+                print(f"  [Comps] WARNING: {ticker} ({name}) has no Book_Value - "
+                      f"PBR/ROE will be blank for this row.")
 
             status = f"mkt_cap={mkt_cap}" if mkt_cap is not None else "mkt_cap=N/A"
             print(f"  [Comps] {ticker} ({name}): {status}")

@@ -122,6 +122,7 @@ ALLOWED_KEYS = {
     "base_year_cogs": _NUM,
     "core_ebitda": _NUM,
     "core_net_income": _NUM,
+    "book_value": _NUM,                    # 自社の純資産（Comps の PBR/ROE 数式用）
     # Historical arrays
     "hist_years": (list,),
     "hist_revenue": (list,),
@@ -216,6 +217,85 @@ def _validate_scenarios(scenarios, projection_years, errors, extra_array_keys=()
                 )
 
 
+# Historical arrays that must line up column-for-column with hist_years.
+# A short/long array used to be copied in positionally, putting one year's cash
+# flow under another year's header (bug B1) — length is now part of the contract.
+HIST_ARRAY_KEYS = (
+    "hist_revenue", "hist_operating_income", "hist_net_income", "hist_cogs",
+    "hist_sga", "hist_ocf", "hist_capex", "hist_cash", "hist_debt",
+    "hist_depreciation", "hist_nwc_pct",
+)
+
+# Tokens the template can resolve inside investment_thesis / key_risks.
+# Keep in sync with NARRATIVE_TOKEN_FORMATS in templates/dcf_comps_template.py.
+NARRATIVE_TOKENS = ("price", "target_price", "upside_pct", "pb", "per", "wacc")
+_NARRATIVE_TOKEN_RE = re.compile(r"\{([a-zA-Z_][a-zA-Z0-9_]*)\}")
+
+
+def _validate_hist_lengths(overrides, errors):
+    years = overrides.get("hist_years")
+    if not isinstance(years, list):
+        return
+    n = len(years)
+    for key in HIST_ARRAY_KEYS:
+        val = overrides.get(key)
+        if isinstance(val, list) and len(val) != n:
+            errors.append(
+                f"{key}: length {len(val)} != hist_years length ({n}). Historical "
+                f"arrays are matched to hist_years column-by-column; a mismatched "
+                f"array would put values under the wrong fiscal year."
+            )
+
+
+def _validate_narrative_tokens(overrides, errors):
+    for key in ("investment_thesis", "key_risks"):
+        lines = overrides.get(key)
+        if not isinstance(lines, list):
+            continue
+        for i, line in enumerate(lines):
+            if not isinstance(line, str):
+                continue
+            for m in _NARRATIVE_TOKEN_RE.finditer(line):
+                name = m.group(1)
+                if name not in NARRATIVE_TOKENS:
+                    errors.append(
+                        f"{key}[{i}]: unknown narrative token '{{{name}}}'. "
+                        f"Allowed: {', '.join('{' + t + '}' for t in NARRATIVE_TOKENS)}. "
+                        f"(A typo would otherwise be printed literally in the report.)"
+                    )
+
+
+def _warn_terminal_capex(overrides):
+    """Pre-flight version of validate_output.py check #9 (warning only).
+
+    A perpetuity growth model assumes the terminal year repeats forever. With
+    g <= 1.5% and terminal capex far above D&A, the model quietly reinvests more
+    than it depreciates for eternity (8267: PGM went negative). This is an
+    analyst call, so it is never auto-corrected — but it should be visible
+    BEFORE generation, not after.
+    """
+    g = overrides.get("terminal_growth")
+    if not isinstance(g, (int, float)) or g > 0.015:
+        return
+    capex = (overrides.get("capex_direct") or {}).get("projections") or []
+    da = (overrides.get("da_direct") or {}).get("projections") or []
+    if not capex or not da:
+        capex_pct, da_pct = overrides.get("capex_pct"), overrides.get("da_pct")
+        if not (isinstance(capex_pct, (int, float)) and isinstance(da_pct, (int, float))
+                and da_pct):
+            return
+        ratio = capex_pct / da_pct
+    else:
+        if not da[-1]:
+            return
+        ratio = capex[-1] / da[-1]
+    if not (0.90 <= ratio <= 1.15):
+        print(f"  [overrides] WARNING: terminal capex / D&A = {ratio:.2f}x with "
+              f"terminal_growth {g:.2%} (outside [0.90, 1.15]). A perpetuity at "
+              f"this reinvestment rate can drive PGM negative - confirm it is "
+              f"intentional (not auto-corrected).")
+
+
 def validate_overrides(overrides, source_path="<overrides>", allow_unconfirmed=False):
     """Validate an overrides dict against the template contract.
 
@@ -290,6 +370,10 @@ def validate_overrides(overrides, source_path="<overrides>", allow_unconfirmed=F
     if isinstance(overrides.get("shares"), dict):
         if "fully_diluted_shares" not in overrides["shares"]:
             errors.append("shares: must contain 'fully_diluted_shares'")
+
+    _validate_hist_lengths(overrides, errors)
+    _validate_narrative_tokens(overrides, errors)
+    _warn_terminal_capex(overrides)
 
     confirms = _find_confirm_placeholders(
         {k: v for k, v in overrides.items() if not k.startswith("_")}
