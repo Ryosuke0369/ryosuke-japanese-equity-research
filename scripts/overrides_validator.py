@@ -138,6 +138,7 @@ ALLOWED_KEYS = {
     "hist_nwc_pct": (list,),
     # Structured blocks
     "scenarios": (dict,),
+    "reverse_dcf": (dict,),                # consumed by templates/reverse_dcf_sheet.py
     "segments": (list,),
     "sotp": (dict,),                       # consumed by generate_sotp.py
     "cost_structure": (dict,),             # consumed by SOTP/segment runs
@@ -173,6 +174,55 @@ def _find_confirm_placeholders(node, path=""):
 
 
 NWC_METHODS = ("days", "revenue_pct", "itemized")
+
+# reverse_dcf sub-keys: everything else in that block is derived from the
+# hist_* arrays. Anything unrecognised here would be silently dropped, which is
+# exactly the failure mode this validator exists to prevent.
+REVERSE_DCF_KEYS = {
+    "enabled": (bool,),
+    "op0": (int, float),
+    "op0_label": (str,),
+    "peak_op": (int, float),
+    "peak_label": (str,),
+    "peak_opm": (int, float),
+    "opm_grid": (list,),
+    "n_years": (list,),
+    "benchmark_ticker": (str, int),
+    "deal_note": (list,),
+}
+
+
+def _validate_reverse_dcf(block, errors):
+    for k, v in block.items():
+        if k.startswith("_"):
+            continue
+        if k not in REVERSE_DCF_KEYS:
+            errors.append(
+                f"reverse_dcf.{k}: unknown key (would be silently ignored). "
+                f"Allowed: {', '.join(sorted(REVERSE_DCF_KEYS))}"
+            )
+            continue
+        if v is None:
+            continue
+        types = REVERSE_DCF_KEYS[k]
+        if types != (bool,) and isinstance(v, bool):
+            errors.append(f"reverse_dcf.{k}: expected {_type_name(types)}, got bool")
+        elif not isinstance(v, types):
+            errors.append(
+                f"reverse_dcf.{k}: expected {_type_name(types)}, got "
+                f"{type(v).__name__} ({v!r})"
+            )
+    if isinstance(block.get("opm_grid"), list):
+        for i, m in enumerate(block["opm_grid"]):
+            if m is not None and (isinstance(m, bool) or not isinstance(m, (int, float))):
+                errors.append(f"reverse_dcf.opm_grid[{i}]: must be a number or null "
+                              f"(null = the live cycle-peak OPM cell)")
+    if isinstance(block.get("n_years"), list):
+        if not block["n_years"]:
+            errors.append("reverse_dcf.n_years: must not be empty")
+        for i, n in enumerate(block["n_years"]):
+            if isinstance(n, bool) or not isinstance(n, int) or n < 1:
+                errors.append(f"reverse_dcf.n_years[{i}]: must be a positive integer")
 NWC_ITEM_REQUIRED = ("label", "base_value", "scenario_key", "side", "denom")
 
 
@@ -370,6 +420,9 @@ def validate_overrides(overrides, source_path="<overrides>", allow_unconfirmed=F
     if isinstance(overrides.get("shares"), dict):
         if "fully_diluted_shares" not in overrides["shares"]:
             errors.append("shares: must contain 'fully_diluted_shares'")
+
+    if isinstance(overrides.get("reverse_dcf"), dict):
+        _validate_reverse_dcf(overrides["reverse_dcf"], errors)
 
     _validate_hist_lengths(overrides, errors)
     _validate_narrative_tokens(overrides, errors)

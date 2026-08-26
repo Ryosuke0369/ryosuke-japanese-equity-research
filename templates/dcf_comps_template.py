@@ -1744,6 +1744,17 @@ def _driver_subscription(ws, seg, hist, proj, n_hist, proj_years, cur_row):
 # =====================================================================
 # BUILD WORKBOOK
 # =====================================================================
+def _reverse_dcf_api():
+    """Import the Reverse DCF builder lazily (it imports styles back from here)."""
+    try:
+        from templates.reverse_dcf_sheet import (
+            resolve_params, build_reverse_dcf_sheet, place_after)
+    except ImportError:                                          # flat sys.path
+        from reverse_dcf_sheet import (
+            resolve_params, build_reverse_dcf_sheet, place_after)
+    return resolve_params, build_reverse_dcf_sheet, place_after
+
+
 def generate_dcf_workbook(config, output_path=None):
     """Generate DCF/Comps Excel workbook from config dict.
 
@@ -1775,6 +1786,8 @@ def generate_dcf_workbook(config, output_path=None):
     R_CMP_NETDEBT = 24 + _comps_row_shift
     R_CMP_IMPL_MULT = 27 + _comps_row_shift   # EV/EBITDA (or EV/Sales) implied
     R_CMP_IMPL_PER = 28 + _comps_row_shift    # PER implied
+    R_STAT_SEC = 14 + _comps_row_shift        # "Statistics" section header
+    R_STAT_MEDIAN = R_STAT_SEC + 2            # 25th / MEDIAN / 75th
 
     # ── Locate the subject company's own row in the comps table ──────────
     # The comps CSV carries the subject as its first row (for display), but its
@@ -1939,6 +1952,9 @@ def generate_dcf_workbook(config, output_path=None):
             "nwc_scenario_rows": _nwc_scenario_rows,
         }
 
+    (_rdcf_resolve_params, _build_reverse_dcf_sheet,
+     _rdcf_place_after) = _reverse_dcf_api()
+
     wb = openpyxl.Workbook()
 
     # =====================================================================
@@ -1976,18 +1992,27 @@ def generate_dcf_workbook(config, output_path=None):
     set_cell(ws1, 9, 2, "Current Price", font=BOLD_FONT)
     set_cell(ws1, 9, 3, C["current_price"], font=BLUE_FONT, fmt=FMT_YEN)
 
-    # Target Price = average of the valid methods in C16:C19 (excluded methods
-    # hold the text "N/A", which AVERAGE skips)
+    # Target Price (Mid) = the average of the TWO DCF legs only (C16:C17).
+    # Comps (C18:C19) are reference marks, never Target inputs: the standard
+    # (docs/DCFフォーマット標準メモ §2, established on 3905 / 5726) is that a
+    # peer median prices the market's mood, not the business, so mixing it into
+    # the target silently turns a DCF into a half-comps blend. Excluded DCF legs
+    # hold the text "INVALID ..." / "N/A", which AVERAGE skips; COUNT guards the
+    # case where BOTH legs are excluded (otherwise AVERAGE returns #DIV/0!).
     set_cell(ws1, 10, 2, "Target Price (Mid)", font=BOLD_FONT)
-    set_cell(ws1, 10, 3, "=ROUND(AVERAGE(C16:C19),0)", font=BLACK_FONT, fmt=FMT_YEN)
+    set_cell(ws1, 10, 3, '=IF(COUNT(C16:C17)=0,"N/A",ROUND(AVERAGE(C16:C17),0))',
+             font=BLACK_FONT, fmt=FMT_YEN)
 
     # Recommendation
     set_cell(ws1, 11, 2, "Recommendation", font=BOLD_FONT)
-    set_cell(ws1, 11, 3, '=IF(C12>0.15,"BUY",IF(C12>0.05,"HOLD","SELL"))', font=BLACK_FONT)
+    set_cell(ws1, 11, 3,
+             '=IF(NOT(ISNUMBER(C12)),"N/A",'
+             'IF(C12>0.15,"BUY",IF(C12>0.05,"HOLD","SELL")))', font=BLACK_FONT)
 
     # Upside / Downside
     set_cell(ws1, 12, 2, "Upside / Downside", font=BOLD_FONT)
-    set_cell(ws1, 12, 3, "=(C10-C9)/C9", font=BLACK_FONT, fmt=FMT_PCT)
+    set_cell(ws1, 12, 3, '=IF(ISNUMBER(C10),(C10-C9)/C9,"N/A")',
+             font=BLACK_FONT, fmt=FMT_PCT)
 
     # Valuation Summary section
     c = set_cell(ws1, 14, 2, "Valuation Summary", font=SUB_FONT)
@@ -2011,38 +2036,53 @@ def generate_dcf_workbook(config, output_path=None):
     set_cell(ws1, 16, 4, '=IF(ISNUMBER(C16),(C16-C9)/C9,"N/A")', font=BLACK_FONT, fmt=FMT_PCT)
 
     # DCF - Exit Multiple
+    # The PGM leg has carried the EV < net debt guard since 8267; the Exit leg
+    # had none, so a Downside scenario whose exit EV falls below net debt kept a
+    # NEGATIVE implied price as a plain number and dragged the Target average
+    # down (5726 Downside 2: Exit -558 survived while PGM was already INVALID).
     set_cell(ws1, 17, 2, "DCF - Exit Multiple")
-    set_cell(ws1, 17, 3, f"='DCF Model'!C{R_PRICE_EXIT}", font=GREEN_FONT, fmt=FMT_YEN)
-    set_cell(ws1, 17, 4, "=(C17-C9)/C9", font=BLACK_FONT, fmt=FMT_PCT)
+    set_cell(ws1, 17, 3,
+             f"=IF('DCF Model'!C{R_EV_EXIT}<'DCF Model'!C16,"
+             f"\"INVALID (EV < net debt)\",'DCF Model'!C{R_PRICE_EXIT})",
+             font=GREEN_FONT, fmt=FMT_YEN)
+    set_cell(ws1, 17, 4, '=IF(ISNUMBER(C17),(C17-C9)/C9,"N/A")',
+             font=BLACK_FONT, fmt=FMT_PCT)
 
-    # Comps
+    # Comps — reference marks only. The label says so on the sheet so a reader
+    # cannot mistake them for Target inputs.
     if USE_EV_SALES:
-        set_cell(ws1, 18, 2, "Comps - EV/Sales Median")
+        set_cell(ws1, 18, 2, "Comps - EV/Sales Median [参考・Target不算入]")
     else:
-        set_cell(ws1, 18, 2, "Comps - EV/EBITDA Median")
+        set_cell(ws1, 18, 2, "Comps - EV/EBITDA Median [参考・Target不算入]")
     set_cell(ws1, 18, 3, f"='Comps Analysis'!C{R_CMP_IMPL_MULT}", font=GREEN_FONT, fmt=FMT_YEN)
     set_cell(ws1, 18, 4, '=IF(ISNUMBER(C18),(C18-C9)/C9,"N/A")', font=BLACK_FONT, fmt=FMT_PCT)
 
-    set_cell(ws1, 19, 2, "Comps - PER Median")
+    set_cell(ws1, 19, 2, "Comps - PER Median [参考・Target不算入]")
     set_cell(ws1, 19, 3, f"='Comps Analysis'!C{R_CMP_IMPL_PER}", font=GREEN_FONT, fmt=FMT_YEN)
     set_cell(ws1, 19, 4, '=IF(ISNUMBER(C19),(C19-C9)/C9,"N/A")', font=BLACK_FONT, fmt=FMT_PCT)
 
-    # Disclose excluded methods explicitly — never drop one silently
-    _excluded_methods = []
+    # Disclose the Target's composition and any excluded method explicitly —
+    # never drop one silently, and never leave the reader to guess whether the
+    # comps rows fed the average.
+    _excluded_methods = ["Target Mid は DCF 2法（PGM / Exit）の平均のみ。"
+                         "Comps 2法は [参考] で Target 不算入"]
     if PER_EXCLUDED:
         _excluded_methods.append("PER法は赤字（純利益≦0）のため除外")
     if EBITDA_EXCLUDED:
         _excluded_methods.append("EV/EBITDA法はEBITDA≦0のため除外")
-    if _excluded_methods:
-        set_cell(ws1, 20, 2,
-                 "Note: " + "；".join(_excluded_methods)
-                 + "（Target Mid / Range は有効手法のみで算出）",
-                 font=GREY_FONT)
-        ws1.merge_cells("B20:E20")
+    set_cell(ws1, 20, 2,
+             "Note: " + "；".join(_excluded_methods)
+             + "（EV<ネットデットで株式価値が負になる手法は INVALID として平均から除外）",
+             font=GREY_FONT)
+    ws1.merge_cells("B20:E20")
 
-    # Integrated Valuation Range
-    set_cell(ws1, 21, 2, "Integrated Valuation Range", font=BOLD_FONT)
-    set_cell(ws1, 21, 3, '=MIN(C16:C19)&" - "&MAX(C16:C19)', font=BLACK_FONT)
+    # Integrated Valuation Range — spans ALL four methods (this is the reference
+    # spread, not the target), but MIN/MAX over an all-text range returns 0, so
+    # the row reports "N/A" rather than a fabricated "0 - 0".
+    set_cell(ws1, 21, 2, "Integrated Valuation Range (全4手法・参考)", font=BOLD_FONT)
+    set_cell(ws1, 21, 3,
+             '=IF(COUNT(C16:C19)=0,"N/A",MIN(C16:C19)&" - "&MAX(C16:C19))',
+             font=BLACK_FONT)
 
     # ── Investment Thesis / Key Risks (token-aware) ──
     # Cell addresses are taken from where this template just wrote each value,
@@ -2183,7 +2223,11 @@ def generate_dcf_workbook(config, output_path=None):
     # ── Balance Sheet Highlights ──
     section_title(ws2, 25, 2, "Balance Sheet Highlights")
     set_cell(ws2, 26, 2, "Cash & Deposits", font=BOLD_FONT)
-    set_cell(ws2, 27, 2, "Short-term Debt", font=BOLD_FONT)
+    # generate_dcf.py feeds this row from EDINET's `total_debt` (short-term +
+    # long-term borrowings + bonds + lease obligations), never the short-term
+    # line alone. The old "Short-term Debt" label understated the balance by the
+    # whole long-term leg to anyone reading the sheet.
+    set_cell(ws2, 27, 2, "Total Interest-bearing Debt (short + long)", font=BOLD_FONT)
     set_cell(ws2, 28, 2, "Net Debt (Cash)", font=BOLD_FONT)
 
     for i in range(n_hist):
@@ -3427,12 +3471,12 @@ def generate_dcf_workbook(config, output_path=None):
     # Rows kept at 14-17 for backward compatibility (Executive Summary and
     # market_analysis_template read C27/C28 below); shifted down only when a
     # large comps set would otherwise overlap them.
-    stat_sec_row = 14 + _comps_row_shift
+    stat_sec_row = R_STAT_SEC
     section_title(ws4, stat_sec_row, 2, "Statistics")
 
     stat_labels = ["25th Percentile", "Median (50th)", "75th Percentile"]
     stat_rows = [stat_sec_row + 1, stat_sec_row + 2, stat_sec_row + 3]
-    R_STAT_MEDIAN = stat_rows[1]
+    assert stat_rows[1] == R_STAT_MEDIAN
 
     stat_col_map = [
         (4, 10),  # EV/EBITDA
@@ -3710,6 +3754,50 @@ def generate_dcf_workbook(config, output_path=None):
              font=GREY_FONT)
     ws5.merge_cells(start_row=_note_row, start_column=2,
                     end_row=_note_row, end_column=9)
+
+    # =====================================================================
+    # SHEET 4 (position): Reverse DCF
+    # =====================================================================
+    # Built last, placed 4th. It reads the other sheets, so it is written once
+    # every row constant it cites is settled, then moved into place — the
+    # standard 8-sheet order is Exec / FS / DCF Model / Reverse DCF / NWC /
+    # Comps / Sensitivity / Adjustments Log (docs/DCFフォーマット標準メモ §1).
+    _rdcf_params, _rdcf_skip = _rdcf_resolve_params(C)
+    if _rdcf_params is None:
+        _meta["reverse_dcf_sheet"] = f"skipped ({_rdcf_skip})"
+        print(f"  WARNING: Reverse DCF sheet skipped - {_rdcf_skip}")
+    else:
+        _bench_row = None
+        _bench_key = _tkr_key(_rdcf_params.get("benchmark_ticker"))
+        if _bench_key:
+            for _i, _comp in enumerate(C.get("comps") or []):
+                if _tkr_key(_comp.get("ticker")) == _bench_key:
+                    _bench_row = 5 + _i
+                    break
+            if _bench_row is None:
+                print(f"  WARNING: reverse_dcf.benchmark_ticker "
+                      f"{_rdcf_params['benchmark_ticker']!r} is not in the comps "
+                      f"table - Block E (transaction benchmark) omitted.")
+        _build_reverse_dcf_sheet(
+            wb, C, _rdcf_params,
+            {
+                "proj_last_col": col_letter(3 + C["projection_years"] - 1),
+                "r_revenue": R_REVENUE,
+                "r_da": R_DA,
+                "r_ev_pgm": R_EV_PGM,
+                "cmp_subject_row": R_CMP_SUBJECT,
+                "cmp_stat_median_row": R_STAT_MEDIAN,
+                "cmp_benchmark_row": _bench_row,
+            },
+        )
+        _rdcf_place_after(wb, "DCF Model")
+        _meta["reverse_dcf_sheet"] = (
+            f"op0={_rdcf_params['op0']:,.0f}({_rdcf_params['op0_label']}) "
+            f"peak={_rdcf_params['peak_op']:,.0f}({_rdcf_params['peak_label']}) "
+            f"peak_opm={_rdcf_params['peak_opm']:.4f} "
+            f"N={'/'.join(str(n) for n in _rdcf_params['n_years'])}"
+            + (f" benchmark_row={_bench_row}" if _bench_row else "")
+        )
 
     # =====================================================================
     # SHEET 7 & 8: Segment / Driver Analysis (optional)

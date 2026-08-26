@@ -35,8 +35,9 @@ for _stream in (sys.stdout, sys.stderr):
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from templates.dcf_comps_template import (  # noqa: E402
-    SCENARIO_NAMES, R_DA, R_CAPEX, R_TV_PGM, R_EV_PGM, R_YR5_EBITDA,
+    SCENARIO_NAMES, R_DA, R_CAPEX, R_TV_PGM, R_EV_PGM, R_EV_EXIT, R_YR5_EBITDA,
 )
+from templates.reverse_dcf_sheet import SHEET_NAME as REVERSE_DCF_SHEET  # noqa: E402
 
 FAIL, WARN, PASS, SKIP = "FAIL", "WARN", "PASS", "SKIP"
 
@@ -447,6 +448,97 @@ def check_pgm_negative_equity(res, wbf, wbv, has_values):
                 f"the Target Price")
 
 
+def check_target_excludes_comps(res, wbf):
+    """#14 Target Price (Mid) must average the two DCF legs ONLY.
+
+    The standard (docs/DCFフォーマット標準メモ §2) is that comps are a reference
+    mark, not a target input. The old formula averaged C16:C19, so every model
+    silently shipped a half-comps target — a violation nobody could see on the
+    sheet because the cell just shows a number.
+    """
+    if "Executive Summary" not in wbf.sheetnames:
+        res.add(14, SKIP, "Target Price averages DCF legs only", "no Executive Summary")
+        return
+    f = wbf["Executive Summary"]["C10"].value
+    if not isinstance(f, str) or not f.startswith("="):
+        res.add(14, FAIL, "Target Price averages DCF legs only",
+                f"C10 is not a formula ({f!r}) — a hardcoded target cannot track "
+                f"a price or scenario change")
+        return
+    refs = set(re.findall(r"C1[6-9]", f)) | set(
+        m for m in re.findall(r"C1[6-9]:C1[6-9]", f))
+    comps_refs = [r for r in refs if "18" in r or "19" in r]
+    if comps_refs:
+        res.add(14, FAIL, "Target Price averages DCF legs only",
+                f"C10 = {f} references the comps rows ({', '.join(sorted(comps_refs))}) "
+                f"— comps must stay [参考] and out of the Target average")
+    elif "C16:C17" not in f:
+        res.add(14, WARN, "Target Price averages DCF legs only",
+                f"C10 = {f} does not average C16:C17 — verify the Target composition")
+    else:
+        res.add(14, PASS, "Target Price averages DCF legs only",
+                "C10 averages C16:C17 (PGM + Exit); comps rows excluded")
+
+
+def check_exit_negative_equity(res, wbf, wbv, has_values):
+    """#15 The Exit leg needs the same EV < net debt guard as the PGM leg.
+
+    Found on 5726: under Downside 2 the PGM leg correctly went INVALID while the
+    Exit leg's -558 stayed a plain number and dragged the Target average down.
+    """
+    if not has_values:
+        res.add(15, SKIP, "Exit implied price sanity", "needs recalc")
+        return
+    wsv = wbv["DCF Model"]
+    ev = _num(wsv.cell(row=R_EV_EXIT, column=3).value)
+    nd = _num(wsv["C16"].value)
+    if ev is None or nd is None:
+        res.add(15, SKIP, "Exit implied price sanity", "no cached EV / net debt")
+        return
+    if ev >= nd:
+        res.add(15, PASS, "Exit implied price sanity",
+                f"EV {ev:,.0f} >= net debt {nd:,.0f} mn")
+        return
+    label = wbv["Executive Summary"]["C17"].value
+    if isinstance(label, str) and "INVALID" in label.upper():
+        res.add(15, PASS, "Exit implied price sanity",
+                f"EV {ev:,.0f} < net debt {nd:,.0f} and the method is labelled "
+                f"{label!r} (text -> skipped by AVERAGE)")
+    else:
+        res.add(15, FAIL, "Exit implied price sanity",
+                f"EV {ev:,.0f} < net debt {nd:,.0f} but Executive Summary C17 = "
+                f"{label!r} — a negative-equity artefact is being averaged into "
+                f"the Target Price")
+
+
+def check_reverse_dcf_sheet(res, wbf, meta):
+    """#16 'Reverse DCF' is a standard sheet, placed 4th, and fully live."""
+    note = meta.get("reverse_dcf_sheet", "")
+    if REVERSE_DCF_SHEET not in wbf.sheetnames:
+        if note.startswith("skipped"):
+            res.add(16, WARN, "Reverse DCF sheet present",
+                    f"not generated — {note}")
+        else:
+            res.add(16, FAIL, "Reverse DCF sheet present",
+                    "the standard 8-sheet layout requires a 'Reverse DCF' sheet "
+                    "(regenerate, or record why it was skipped)")
+        return
+    ws = wbf[REVERSE_DCF_SHEET]
+    n_f = sum(1 for row in ws.iter_rows() for c in row
+              if isinstance(c.value, str) and c.value.startswith("="))
+    pos = wbf.sheetnames.index(REVERSE_DCF_SHEET)
+    detail = f"{n_f} live formulas, sheet position {pos + 1}"
+    if n_f < 50:
+        res.add(16, FAIL, "Reverse DCF sheet present",
+                f"only {n_f} live formulas — the sheet must be formula-driven, "
+                f"not a snapshot of values")
+    elif "DCF Model" in wbf.sheetnames and pos != wbf.sheetnames.index("DCF Model") + 1:
+        res.add(16, WARN, "Reverse DCF sheet present",
+                f"{detail} — expected directly after 'DCF Model'")
+    else:
+        res.add(16, PASS, "Reverse DCF sheet present", detail)
+
+
 def check_implied_exit_multiple(res, wbf, wbv, has_values):
     if not has_values:
         res.add(11, SKIP, "PGM-implied vs assumed exit multiple", "needs recalc")
@@ -753,6 +845,9 @@ def validate_workbook(path, write_report=True):
         check_implied_exit_multiple(res, wbf, wbv, has_values)
         check_peer_ebitda_equals_ebit(res, wbf, wbv, meta, has_values)
         check_adjustments_log(res, wbf)
+        check_target_excludes_comps(res, wbf)
+        check_exit_negative_equity(res, wbf, wbv, has_values)
+        check_reverse_dcf_sheet(res, wbf, meta)
     elif kind == 'market_analysis':
         check_formula_errors(res, wbv, has_values)
         check_interp_iferror(res, wbf)

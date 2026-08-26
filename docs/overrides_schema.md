@@ -128,6 +128,29 @@ Comps Analysis の自社行 Book Value 列（P列）に使う純資産。未指�
 ### fundamentals_fy<YYYY>（決算短信由来の最新期実績）
 `revenue` 必須。`operating_income` / `net_income` / `ebitda` / `net_assets` / `total_assets` / `total_liabilities` 等。EDINET 未掲載の最新期を**EDINETより優先で**注入する。D&A は `EBITDA − OI` で逆算。
 
+### reverse_dcf（逆算DCFシート・2026-08-26〜）
+`Reverse DCF` は**標準8シートの4枚目**として毎回生成される。全キー任意 — 省略すると
+`hist_operating_income` / `hist_revenue` / `hist_years` から自動導出される。
+
+| キー | 型 | 意味 |
+|---|---|---|
+| `enabled` | bool | `false` でシート生成をスキップ（既定 true） |
+| `op0` / `op0_label` | number / str | ランプ開始の営業利益と年度ラベル（既定: 実績最終年） |
+| `peak_op` / `peak_label` | number / str | サイクルピーク営業利益と年度ラベル（既定: 実績の最大値の年） |
+| `peak_opm` | number | ピーク営業利益率（小数。既定: ピーク年の OP÷売上） |
+| `opm_grid` | list | Block C の定常OPM列。`null` を混ぜるとその行が**ピークOPMセルへの生き参照**になる（既定: ピークOPM×0.5/0.75/live/1.25/1.5） |
+| `n_years` | list[int] | Block B の到達年数（既定 `[3,5,7,10]`。2番目が Block C / Block F の見出し値） |
+| `benchmark_ticker` | str | Block E（取引ベンチマーク）に使う **comps CSV 上のティッカー**。表に無ければ Block E を出さずに警告 |
+| `deal_note` | list[str] | Block E に添える取引条件の注記 |
+
+**自動導出できないときはシートを作らない**（実績営業利益が無い／ピークが赤字／ピークOPMが
+負）。理由は `Adjustments Log` の Pipeline Metadata `reverse_dcf_sheet` に残り、
+validate_output のチェック16が WARN で報告する。ゼロ埋めのシートは作らない。
+
+既存ブック（この変更以前に生成したもの）への後付けは
+`python scripts/add_reverse_dcf_sheet.py <xlsx> [--benchmark-ticker ...]` →
+`recalc_excel_com.py` → `validate_output.py`。実装は同じモジュールを呼ぶ。
+
 ### segments / sotp / cost_structure
 従来どおり（CLAUDE.md の Segment / Driver Analysis 節、SOTP仕様参照）。`segments` 定義時は `cogs_pct` がセグメントEBITからの逆算に切り替わる。
 
@@ -244,7 +267,10 @@ Executive Summary の**列Bラベル**（`Perpetuity` / `Exit` / `EV/EBITDA` / `
 - 単体実行: `python scripts/validate_output.py <xlsx>`（FAIL で exit 1、
   `<xlsx>_validation.txt` にレポート出力）。判定は FAIL / WARN / SKIP / PASS。
 - **対象ファイル種別はシート名で自動判別**する:
-  - DCF（`DCF Model`）: チェック 1-13
+  - DCF（`DCF Model`）: チェック 1-16
+    （14: Target Mid が C16:C17 のDCF2法のみで Comps 行を参照していない、
+    15: Exit 法にも EV<ネットデットの INVALID ガードがある、
+    16: `Reverse DCF` シートが `DCF Model` の直後に存在し生きた数式である）
   - market_analysis（`Implied Growth Analysis`）: 1, 14（Block3 の IFERROR）,
     15（逆算Comps に自社が混入していない）, 16（implied price が昇順）, 20（「N社」表記の整合）
   - SOTP（`SOTP Valuation`）: 1, 17（D&A 按分 Check = OK）, 18（Cover の SOTP 行が
