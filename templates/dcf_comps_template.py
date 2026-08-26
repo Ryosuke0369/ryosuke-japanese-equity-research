@@ -1831,6 +1831,68 @@ def generate_dcf_workbook(config, output_path=None):
         else:
             C["size_premium"] = 0.03
 
+    # ── Cost of debt: use the ACTUAL rate when the inputs are supplied ──
+    # The template default (2.8% pre-tax) is a JGB-plus-spread guess. When the
+    # filing gives interest expense and the debt balances, the realised rate is
+    # a fact, not an estimate — 5726 moved from an assumed 2.80% to an actual
+    # 0.85% pre-tax, which is 0.4pt of WACC. The average balance defaults to the
+    # last two hist_debt years (opening + closing of the latest FY).
+    _cod_default_at = C.get("cost_of_debt_at")
+    _cod_actual = None
+    if C.get("interest_expense") is not None:
+        _interest = float(C["interest_expense"]) + float(C.get("loan_fees") or 0)
+        _d_beg, _d_end = C.get("debt_beginning"), C.get("debt_ending")
+        _basis = "debt_beginning/debt_ending"
+        if _d_beg is None or _d_end is None:
+            _hd = [d for d in (C.get("hist_debt") or [])
+                   if isinstance(d, (int, float)) and not isinstance(d, bool)]
+            if len(_hd) >= 2:
+                _d_beg, _d_end = _hd[-2], _hd[-1]
+                _basis = "hist_debt[-2:]"
+        if _d_beg and _d_end and (_d_beg + _d_end) > 0:
+            _avg_debt = (_d_beg + _d_end) / 2.0
+            _kd_pre = _interest / _avg_debt
+            # Rounded to 4dp for the same reason C5/C18 are: the sheet shows a
+            # rate, and an unrounded tail invites false precision.
+            _kd_at = round(_kd_pre * (1 - C["tax_rate"]), 4)
+            C["cost_of_debt_at"] = _kd_at
+            _cod_actual = {
+                "interest": _interest,
+                "interest_expense": float(C["interest_expense"]),
+                "loan_fees": float(C.get("loan_fees") or 0),
+                "avg_debt": _avg_debt,
+                "debt_beginning": _d_beg,
+                "debt_ending": _d_end,
+                "basis": _basis,
+                "kd_pretax": _kd_pre,
+                "kd_after_tax": _kd_at,
+                "default_after_tax": _cod_default_at,
+            }
+            print(f"  [WACC] Actual cost of debt: {_interest:,.0f} / "
+                  f"{_avg_debt:,.0f} = {_kd_pre:.4%} pre-tax -> {_kd_at:.4%} "
+                  f"after-tax (was {(_cod_default_at or 0):.4%}; basis {_basis})")
+        else:
+            print("  WARNING: interest_expense supplied but no usable debt "
+                  "balances (set debt_beginning / debt_ending, or give at least "
+                  "two hist_debt years) - falling back to cost_of_debt_at.")
+    _meta["cost_of_debt_basis"] = "actual" if _cod_actual else "assumption"
+    if _cod_actual:
+        _meta["cost_of_debt_actual"] = (
+            f"interest {_cod_actual['interest']:,.0f} "
+            f"(expense {_cod_actual['interest_expense']:,.0f} + fees "
+            f"{_cod_actual['loan_fees']:,.0f}) / avg debt "
+            f"{_cod_actual['avg_debt']:,.0f} ({_cod_actual['basis']}) = "
+            f"{_cod_actual['kd_pretax']:.6f} pre-tax -> "
+            f"{_cod_actual['kd_after_tax']:.6f} after-tax"
+        )
+        # Structured copies so validate_output can re-derive the rate instead of
+        # parsing prose out of the note above.
+        _meta["cost_of_debt_interest"] = _cod_actual["interest"]
+        _meta["cost_of_debt_avg_debt"] = _cod_actual["avg_debt"]
+        _meta["cost_of_debt_pretax"] = _cod_actual["kd_pretax"]
+    _meta["cost_of_debt_at_c11"] = C.get("cost_of_debt_at")
+    _meta["tax_rate_c6"] = C.get("tax_rate")
+
     # Restore flat arrays from Base scenario
     _base = C["scenarios"]["Base"]
     if "revenue_growth" in _base:
@@ -3621,6 +3683,47 @@ def generate_dcf_workbook(config, output_path=None):
                  f"=ROUND(C{_r_ni}*F{_r_med}*1000000/C{R_CMP_SHARES},0)",
                  font=BLACK_FONT, fmt=FMT_YEN, border=TOP_BOTTOM)
 
+    # ── Normalised net income reference rows (標準メモ §1: Comps は正常化純利益の
+    # 参考行を持つ) ──
+    # A denominator distorted by one-off charges (5726's JPY2.6bn of 特別損失)
+    # makes the reported PER read as 39x when the underlying business is nearer
+    # 23x. The rule is "残置 + 除外 + 理由記録", so the distorted PER stays as the
+    # Target-side number and the normalised read sits next to it as [参考], never
+    # in the Target average.
+    _norm = C.get("normalized_net_income")
+    if _norm is not None:
+        _r_norm = R_CMP_IMPL_PER + 1
+        _r_norm_price = _r_norm + 1
+        if isinstance(_norm, dict):
+            _pretax = _norm.get("pretax")
+            _addbacks = _norm.get("addbacks") or 0
+            _label = _norm.get("label")
+            if _pretax is not None:
+                # Live off the tax-rate cell so the row follows a tax change.
+                _norm_formula = (f"=ROUND(({_pretax:g}+{_addbacks:g})"
+                                 f"*(1-'DCF Model'!C6),0)")
+                _label = _label or (f"Net Income normalized (pretax {_pretax:,.0f}"
+                                    f" + addbacks {_addbacks:,.0f}, tax rate C6)")
+            else:
+                _norm_formula = _norm.get("value")
+                _label = _label or "Net Income normalized (参考)"
+        else:
+            _norm_formula = _norm
+            _label = "Net Income normalized (参考)"
+        set_cell(ws4, _r_norm, 2, _label, font=BOLD_FONT)
+        set_cell(ws4, _r_norm, 3, _norm_formula, font=BLACK_FONT, fmt=FMT_YEN)
+        if not PER_EXCLUDED and peer_rows:
+            set_cell(ws4, _r_norm_price, 2,
+                     "Via PER (Median, normalized NI) [参考・Target不算入]",
+                     font=BOLD_FONT)
+            set_cell(ws4, _r_norm_price, 3,
+                     f"=ROUND(C{_r_norm}*F{_r_med}*1000000/C{R_CMP_SHARES},0)",
+                     font=BLACK_FONT, fmt=FMT_YEN)
+            _meta["comps_normalized_per_row"] = _r_norm_price
+        if isinstance(_norm, dict) and _norm.get("note"):
+            set_cell(ws4, _r_norm, 4, _norm["note"], font=GREY_FONT)
+        _meta["comps_normalized_ni_row"] = _r_norm
+
     _meta["comps_ev_ebitda_invalid"] = "yes" if EV_EBITDA_INVALID else "no"
     _meta["comps_impl_mult_row"] = R_CMP_IMPL_MULT
     _meta["comps_impl_per_row"] = R_CMP_IMPL_PER
@@ -3755,6 +3858,114 @@ def generate_dcf_workbook(config, output_path=None):
     ws5.merge_cells(start_row=_note_row, start_column=2,
                     end_row=_note_row, end_column=9)
 
+    # ── Table 3: FX sensitivity (export-exposed names only) ──
+    # Off by default: for a domestic name a currency grid is noise. Turned on
+    # with fx_sensitivity.enabled, it answers the one question a yen move raises
+    # for an exporter — how much operating profit moves per 1 JPY — by netting
+    # the USD-linked share of revenue against the USD-linked share of COGS, so a
+    # yen appreciation is not scored as pure downside for an importer of feed.
+    _fx = C.get("fx_sensitivity") or {}
+    _fx_rows = None
+    if _fx.get("enabled"):
+        _missing = [k for k in ("assumption_rate", "usd_revenue_ratio", "usd_cogs_ratio")
+                    if _fx.get(k) is None]
+        if _missing:
+            print(f"  WARNING: fx_sensitivity.enabled but {', '.join(_missing)} "
+                  f"missing - Table 3 skipped.")
+            _meta["fx_sensitivity"] = f"skipped (missing {','.join(_missing)})"
+        else:
+            _pair = _fx.get("currency_pair", "USD/JPY")
+            _cur = _pair.split("/")[0]
+            _offsets = list(_fx.get("offsets") or (-20, -10, -5, 0, 5, 10, 20))
+            _est = _fx.get("estimated", True)
+            _est_tag = "（推定）" if _est else ""
+            _yr = C.get("projection_start_fy") or "Year 1"
+
+            T3 = _note_row + 2
+            T3_RATE = T3 + 1
+            T3_REV_R = T3 + 2
+            T3_COGS_R = T3 + 3
+            T3_REV = T3 + 4
+            T3_COGS = T3 + 5
+            T3_OP = T3 + 6
+            T3_SENS = T3 + 7
+            T3_HDR = T3 + 9
+            T3_OP_ROW = T3 + 10
+            T3_OPM = T3 + 11
+            T3_NOTE = T3 + 12
+
+            _title = f"Table 3: FX Sensitivity - {_yr} Operating Income"
+            if _est:
+                _title += f"（{_cur}連動比率は推定・会社開示なし・要確認）"
+            c = section_title(ws5, T3, 2, _title)
+            _src = _fx.get("assumption_source")
+            set_cell(ws5, T3_RATE, 2,
+                     f"Company FX assumption ({_pair}{', ' + _src if _src else ''})",
+                     font=BOLD_FONT)
+            set_cell(ws5, T3_RATE, 3, _fx["assumption_rate"], font=BLUE_FONT,
+                     fmt="#,##0.00", border=INPUT_BORDER)
+            set_cell(ws5, T3_REV_R, 2, f"{_cur}-linked revenue ratio{_est_tag}",
+                     font=BOLD_FONT)
+            set_cell(ws5, T3_REV_R, 3, _fx["usd_revenue_ratio"], font=BLUE_FONT,
+                     fmt=FMT_PCT, border=INPUT_BORDER)
+            set_cell(ws5, T3_COGS_R, 2, f"{_cur}-linked COGS ratio{_est_tag}",
+                     font=BOLD_FONT)
+            set_cell(ws5, T3_COGS_R, 3, _fx["usd_cogs_ratio"], font=BLUE_FONT,
+                     fmt=FMT_PCT, border=INPUT_BORDER)
+
+            # Live off the DCF Model's Year-1 column, so the table follows the
+            # active scenario instead of freezing the Base case.
+            set_cell(ws5, T3_REV, 2, f"{_yr} Revenue - active scenario", font=BOLD_FONT)
+            set_cell(ws5, T3_REV, 3, f"='DCF Model'!C{R_REVENUE}", font=BLACK_FONT, fmt=FMT_YEN)
+            set_cell(ws5, T3_COGS, 2, f"{_yr} COGS - active scenario", font=BOLD_FONT)
+            set_cell(ws5, T3_COGS, 3, f"='DCF Model'!C{R_COGS}", font=BLACK_FONT, fmt=FMT_YEN)
+            set_cell(ws5, T3_OP, 2, f"{_yr} Operating Income - active scenario",
+                     font=BOLD_FONT)
+            set_cell(ws5, T3_OP, 3, f"='DCF Model'!C{R_EBIT}", font=BLACK_FONT, fmt=FMT_YEN)
+
+            set_cell(ws5, T3_SENS, 2,
+                     f"OP sensitivity per +/-1 JPY per {_cur} (JPY mn)", font=BOLD_FONT)
+            set_cell(ws5, T3_SENS, 3,
+                     f"=(C{T3_REV}*C{T3_REV_R}-C{T3_COGS}*C{T3_COGS_R})/C{T3_RATE}",
+                     font=BLACK_FONT, fmt=FMT_YEN, fill=LIGHT_GREEN)
+
+            set_cell(ws5, T3_HDR, 2, f"{_pair} rate", font=HEADER_FONT, fill=HEADER_FILL)
+            set_cell(ws5, T3_OP_ROW, 2, f"Implied {_yr} OP (JPY mn)", font=BOLD_FONT)
+            set_cell(ws5, T3_OPM, 2, "Implied OPM", font=BOLD_FONT)
+            for j, off in enumerate(_offsets):
+                col = 3 + j
+                cl = col_letter(col)
+                set_cell(ws5, T3_HDR, col,
+                         f"=$C${T3_RATE}" if off == 0 else f"=$C${T3_RATE}{off:+g}",
+                         font=HEADER_FONT, fmt="#,##0.0", fill=HEADER_FILL,
+                         alignment=Alignment(horizontal="center"))
+                set_cell(ws5, T3_OP_ROW, col,
+                         f"=$C${T3_OP}+({cl}{T3_HDR}-$C${T3_RATE})*$C${T3_SENS}",
+                         font=BLACK_FONT, fmt=FMT_YEN, border=THIN_BORDER)
+                set_cell(ws5, T3_OPM, col,
+                         f'=IFERROR({cl}{T3_OP_ROW}/$C${T3_REV},"N/A")',
+                         font=BLACK_FONT, fmt=FMT_PCT, border=THIN_BORDER)
+
+            _fx_note = _fx.get("note") or (
+                f"Revenue is assumed {_fx['usd_revenue_ratio']:.0%} {_cur}-linked and "
+                f"COGS {_fx['usd_cogs_ratio']:.0%}; the table shows the NET effect. "
+                f"Volumes and prices are held at the active scenario."
+            )
+            set_cell(ws5, T3_NOTE, 2, _fx_note, font=GREY_FONT)
+            ws5.merge_cells(start_row=T3_NOTE, start_column=2,
+                            end_row=T3_NOTE, end_column=9)
+
+            _fx_rows = {"title": T3, "rate": T3_RATE, "sens": T3_SENS,
+                        "note": T3_NOTE, "estimated": _est}
+            _meta["fx_sensitivity"] = (
+                f"rows {T3}-{T3_NOTE}; {_pair} @ {_fx['assumption_rate']}; "
+                f"rev_ratio={_fx['usd_revenue_ratio']} cogs_ratio={_fx['usd_cogs_ratio']}; "
+                f"offsets={','.join(str(o) for o in _offsets)}; "
+                f"{'estimated' if _est else 'disclosed'}"
+            )
+    else:
+        _meta["fx_sensitivity"] = "not enabled"
+
     # =====================================================================
     # SHEET 4 (position): Reverse DCF
     # =====================================================================
@@ -3846,6 +4057,56 @@ def generate_dcf_workbook(config, output_path=None):
     set_cell(ws_log, 5, 6, "-")
     set_cell(ws_log, 5, 7, "generated")
 
+    # ── Auto-recorded derivations (row 6 onward) ──
+    # Anything the pipeline DERIVED rather than took at face value is written
+    # here, so the reader sees the basis without opening the overrides. Manual
+    # entries (scripts/fill_adjustments_log.py) are appended below these.
+    _auto_log = []
+    _today = _dt.datetime.now().strftime("%Y-%m-%d")
+    if _cod_actual:
+        _a = _cod_actual
+        _auto_log.append((
+            f"DCF Model!C11",
+            f"After-tax Cost of Debt = {_a['kd_after_tax']:.2%} (実績ベース)",
+            f"実績Kd = 支払利息{_a['interest_expense']:,.0f}"
+            + (f" + 手数料{_a['loan_fees']:,.0f}" if _a['loan_fees'] else "")
+            + f" ÷ 平均有利子負債{_a['avg_debt']:,.0f}"
+            f"(期首{_a['debt_beginning']:,.0f}/期末{_a['debt_ending']:,.0f}、{_a['basis']}) "
+            f"= 税引前{_a['kd_pretax']:.2%} × (1−{C['tax_rate']:.1%}) = {_a['kd_after_tax']:.2%}。"
+            f"【マージナルコスト注記】これは既存借入の実績平均コストであり、"
+            f"新規調達の限界コストではない。テンプレ既定(税引前2.8% = 税引後"
+            f"{(_cod_default_at if _cod_default_at is not None else 0.0194):.2%})は"
+            f"10年JGB+スプレッドの推定値で、金利上昇局面での借換え・増額調達には"
+            f"既定値に近い水準を当てるべき。WACCは実績Kd採用で低下する（＝保守的でない方向）",
+            (f"テンプレ既定/overrides {_cod_default_at:.2%}(税引後)"
+             if _cod_default_at is not None else "テンプレ既定"),
+            "確定(実績)",
+        ))
+    if _fx_rows:
+        _auto_log.append((
+            f"Sensitivity!C{_fx_rows['rate']}:C{_fx_rows['rate'] + 2}",
+            f"為替感応度 Table 3 を生成（{C['fx_sensitivity'].get('currency_pair', 'USD/JPY')} "
+            f"{C['fx_sensitivity']['assumption_rate']}円、売上連動比率"
+            f"{C['fx_sensitivity']['usd_revenue_ratio']:.0%}、原価連動比率"
+            f"{C['fx_sensitivity']['usd_cogs_ratio']:.0%}）",
+            "輸出型フラグ(fx_sensitivity.enabled)がONのため生成。"
+            + ("【推定・要確認】連動比率は会社開示が無く推定値。青字入力セルであり、"
+               "開示または IR 確認が取れ次第上書きすること。感応度 = (売上×売上連動比率 "
+               "− COGS×原価連動比率) ÷ 前提レート で、原価側の連動が円高メリットを"
+               "一部相殺する構造を織り込んでいる。"
+               if _fx_rows["estimated"] else "連動比率は会社開示値。"),
+            "-",
+            "推定・要確認" if _fx_rows["estimated"] else "確定",
+        ))
+    for _i, _rec in enumerate(_auto_log):
+        _r = 6 + _i
+        set_cell(ws_log, _r, 2, _today)
+        set_cell(ws_log, _r, 3, _rec[0], font=BOLD_FONT)
+        for _j, _v in enumerate(_rec[1:], start=4):
+            set_cell(ws_log, _r, _j, _v)
+        ws_log.row_dimensions[_r].height = 30
+    _meta["auto_log_entries"] = len(_auto_log)
+
     _meta.setdefault("template_rev", _template_rev)
     _meta["generated_at"] = _dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     _meta["company_name"] = C.get("company_name")
@@ -3855,7 +4116,7 @@ def generate_dcf_workbook(config, output_path=None):
         if C.get(_k) is not None:
             _meta[_k.lstrip("_")] = C[_k]
 
-    _meta_start = 12
+    _meta_start = max(12, 6 + len(_auto_log) + 2)
     c = section_title(ws_log, _meta_start, 2,
                       "Pipeline Metadata (do not edit — read by scripts/validate_output.py)")
     c.fill = LIGHT_FILL

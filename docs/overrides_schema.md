@@ -128,6 +128,52 @@ Comps Analysis の自社行 Book Value 列（P列）に使う純資産。未指�
 ### fundamentals_fy<YYYY>（決算短信由来の最新期実績）
 `revenue` 必須。`operating_income` / `net_income` / `ebitda` / `net_assets` / `total_assets` / `total_liabilities` 等。EDINET 未掲載の最新期を**EDINETより優先で**注入する。D&A は `EBITDA − OI` で逆算。
 
+### 実績ベース負債コスト（オプション・2026-08-26〜）
+
+`interest_expense` を与えると、C11（税引後負債コスト）が**推定値から実績値に切り替わる**。
+
+| キー | 型 | 意味 |
+|---|---|---|
+| `interest_expense` | number | 支払利息（JPY mn） |
+| `loan_fees` | number | ローン関連手数料（任意、利息に加算） |
+| `debt_beginning` / `debt_ending` | number | 有利子負債の期首・期末。**省略時は `hist_debt` の直近2年の平均**を使う |
+
+`実績Kd(税引前) = (支払利息 + 手数料) ÷ 平均有利子負債`、`C11 = 実績Kd × (1 − tax_rate)`（小数4桁に丸め、C5/C18 と同じ規約）。
+`interest_expense` を与えたのに債務残高が特定できない場合は**エラー停止**する（黙って既定値に落ちない）。
+
+導出内容は Adjustments Log の自動行と Pipeline Metadata（`cost_of_debt_basis` /
+`cost_of_debt_interest` / `cost_of_debt_avg_debt` / `cost_of_debt_pretax`）に記録され、
+**マージナルコスト注記**（実績は既存借入の平均コストであり新規調達の限界コストではない）が併記される。
+validate_output のチェック17 が C11 と記録済み導出の整合を機械検証する。
+
+### fx_sensitivity（為替感応度 Table 3・オプション・2026-08-26〜）
+
+輸出型銘柄のみ。`enabled: true` で Sensitivity シートに Table 3 を生成する（既定は非生成）。
+
+| キー | 型 | 意味 |
+|---|---|---|
+| `enabled` | bool | 輸出型フラグ。false / 未指定なら Table 3 は作られない |
+| `assumption_rate` | number | 会社の為替前提（例 150）。**必須**・0より大 |
+| `usd_revenue_ratio` | number | 売上のUSD連動比率（小数 0〜1）。**必須** |
+| `usd_cogs_ratio` | number | 売上原価のUSD連動比率（小数 0〜1）。**必須** |
+| `currency_pair` | str | 既定 `"USD/JPY"` |
+| `assumption_source` | str | 前提の出所（例 `"H2 guidance"`）。ラベルに付記される |
+| `offsets` | list | レート格子（既定 `[-20,-10,-5,0,5,10,20]`、前提レートからの円差） |
+| `estimated` | bool | 既定 true。比率が推定であることを表題・ラベルに明示し、Adjustments Log に「推定・要確認」で記録する |
+| `note` | str | 表の下の注記 |
+
+`感応度 = (売上 × 売上連動比率 − COGS × 原価連動比率) ÷ 前提レート`。原価側の連動が円高メリットを
+一部相殺する構造を織り込む。売上・COGS・営業利益は `DCF Model` の Year 1 列への生き参照なので、
+**シナリオ切替に追随**する。比率と前提レートは青字入力セル。
+validate_output のチェック18 が「前提レートの列が DCF Model の Year 1 営業利益を再現するか」を検証する。
+
+### normalized_net_income（Comps 正常化純利益の参考行・2026-08-26〜）
+
+特損等で分母が歪んだ PER の隣に、正常化後の参考行を置く（標準メモ §1 / §2「残置＋除外＋理由記録」）。
+`{"pretax": 3814, "addbacks": 2619, "label": "...", "note": "..."}` で
+`=ROUND((pretax + addbacks) × (1 − 'DCF Model'!C6), 0)` を書く（税率セルへの生き参照）。
+`{"value": 4465}` または素の数値でも可。**Target には入らない**（行ラベルに `[参考・Target不算入]`）。
+
 ### reverse_dcf（逆算DCFシート・2026-08-26〜）
 `Reverse DCF` は**標準8シートの4枚目**として毎回生成される。全キー任意 — 省略すると
 `hist_operating_income` / `hist_revenue` / `hist_years` から自動導出される。
@@ -267,7 +313,9 @@ Executive Summary の**列Bラベル**（`Perpetuity` / `Exit` / `EV/EBITDA` / `
 - 単体実行: `python scripts/validate_output.py <xlsx>`（FAIL で exit 1、
   `<xlsx>_validation.txt` にレポート出力）。判定は FAIL / WARN / SKIP / PASS。
 - **対象ファイル種別はシート名で自動判別**する:
-  - DCF（`DCF Model`）: チェック 1-16
+  - DCF（`DCF Model`）: チェック 1-18
+    （17: C11 が記録済みの負債コスト導出と整合、
+    18: 為替感応度 Table 3 の前提レート列が Year 1 営業利益を再現）
     （14: Target Mid が C16:C17 のDCF2法のみで Comps 行を参照していない、
     15: Exit 法にも EV<ネットデットの INVALID ガードがある、
     16: `Reverse DCF` シートが `DCF Model` の直後に存在し生きた数式である）

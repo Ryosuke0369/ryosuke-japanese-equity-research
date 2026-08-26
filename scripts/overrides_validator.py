@@ -91,6 +91,12 @@ ALLOWED_KEYS = {
     "size_premium": _NUM,
     "cost_of_debt_at": _NUM,
     "tax_rate": _NUM,
+    # Actual cost of debt (optional): supplying interest_expense switches C11
+    # from the assumed rate to interest / average interest-bearing debt.
+    "interest_expense": _NUM,
+    "loan_fees": _NUM,
+    "debt_beginning": _NUM,
+    "debt_ending": _NUM,
     # Terminal value / exit
     "terminal_growth": _NUM,
     "exit_multiple": _NUM,
@@ -139,6 +145,8 @@ ALLOWED_KEYS = {
     # Structured blocks
     "scenarios": (dict,),
     "reverse_dcf": (dict,),                # consumed by templates/reverse_dcf_sheet.py
+    "fx_sensitivity": (dict,),             # Sensitivity Table 3 (export-exposed names)
+    "normalized_net_income": (dict,) + _NUM,   # Comps 正常化純利益の参考行
     "segments": (list,),
     "sotp": (dict,),                       # consumed by generate_sotp.py
     "cost_structure": (dict,),             # consumed by SOTP/segment runs
@@ -190,6 +198,81 @@ REVERSE_DCF_KEYS = {
     "benchmark_ticker": (str, int),
     "deal_note": (list,),
 }
+
+
+FX_SENSITIVITY_KEYS = {
+    "enabled": (bool,),
+    "assumption_rate": (int, float),
+    "assumption_source": (str,),
+    "usd_revenue_ratio": (int, float),
+    "usd_cogs_ratio": (int, float),
+    "currency_pair": (str,),
+    "offsets": (list,),
+    "estimated": (bool,),
+    "note": (str,),
+}
+
+NORMALIZED_NI_KEYS = {
+    "pretax": (int, float),
+    "addbacks": (int, float),
+    "value": (int, float),
+    "label": (str,),
+    "note": (str,),
+}
+
+
+def _validate_subblock(name, block, allowed, errors):
+    for k, v in block.items():
+        if k.startswith("_"):
+            continue
+        if k not in allowed:
+            errors.append(
+                f"{name}.{k}: unknown key (would be silently ignored). "
+                f"Allowed: {', '.join(sorted(allowed))}"
+            )
+            continue
+        if v is None:
+            continue
+        types = allowed[k]
+        if types != (bool,) and isinstance(v, bool):
+            errors.append(f"{name}.{k}: expected {_type_name(types)}, got bool")
+        elif not isinstance(v, types):
+            errors.append(f"{name}.{k}: expected {_type_name(types)}, got "
+                          f"{type(v).__name__} ({v!r})")
+
+
+def _validate_fx_sensitivity(block, errors):
+    _validate_subblock("fx_sensitivity", block, FX_SENSITIVITY_KEYS, errors)
+    if not block.get("enabled"):
+        return
+    for k in ("assumption_rate", "usd_revenue_ratio", "usd_cogs_ratio"):
+        if block.get(k) is None:
+            errors.append(f"fx_sensitivity.{k}: required when enabled is true")
+    rate = block.get("assumption_rate")
+    if isinstance(rate, (int, float)) and not isinstance(rate, bool) and rate <= 0:
+        errors.append("fx_sensitivity.assumption_rate: must be > 0 "
+                      "(it is the divisor of the sensitivity formula)")
+    for k in ("usd_revenue_ratio", "usd_cogs_ratio"):
+        v = block.get(k)
+        if isinstance(v, (int, float)) and not isinstance(v, bool) and not 0 <= v <= 1:
+            errors.append(f"fx_sensitivity.{k}: must be a decimal share in [0, 1], "
+                          f"got {v!r}")
+    if isinstance(block.get("offsets"), list):
+        if not block["offsets"]:
+            errors.append("fx_sensitivity.offsets: must not be empty")
+        for i, o in enumerate(block["offsets"]):
+            if isinstance(o, bool) or not isinstance(o, (int, float)):
+                errors.append(f"fx_sensitivity.offsets[{i}]: must be a number "
+                              f"(JPY offset from the assumption rate)")
+
+
+def _validate_normalized_ni(block, errors):
+    if not isinstance(block, dict):
+        return
+    _validate_subblock("normalized_net_income", block, NORMALIZED_NI_KEYS, errors)
+    if block.get("pretax") is None and block.get("value") is None:
+        errors.append("normalized_net_income: needs either 'pretax' (+ optional "
+                      "'addbacks', taxed at the model rate) or a ready 'value'")
 
 
 def _validate_reverse_dcf(block, errors):
@@ -423,6 +506,25 @@ def validate_overrides(overrides, source_path="<overrides>", allow_unconfirmed=F
 
     if isinstance(overrides.get("reverse_dcf"), dict):
         _validate_reverse_dcf(overrides["reverse_dcf"], errors)
+
+    if isinstance(overrides.get("fx_sensitivity"), dict):
+        _validate_fx_sensitivity(overrides["fx_sensitivity"], errors)
+
+    if isinstance(overrides.get("normalized_net_income"), dict):
+        _validate_normalized_ni(overrides["normalized_net_income"], errors)
+
+    # interest_expense drives C11; without a debt base it silently does nothing.
+    if overrides.get("interest_expense") is not None:
+        _has_explicit = (overrides.get("debt_beginning") is not None
+                         and overrides.get("debt_ending") is not None)
+        _hd = overrides.get("hist_debt")
+        _n_hd = len([d for d in _hd if isinstance(d, (int, float))]) if isinstance(_hd, list) else 0
+        if not _has_explicit and _n_hd < 2:
+            errors.append(
+                "interest_expense: needs a debt base — set debt_beginning and "
+                "debt_ending, or supply at least two numeric hist_debt years "
+                "(the average of the last two is used)"
+            )
 
     _validate_hist_lengths(overrides, errors)
     _validate_narrative_tokens(overrides, errors)

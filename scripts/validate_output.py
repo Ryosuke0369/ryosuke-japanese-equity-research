@@ -108,6 +108,17 @@ def read_metadata(wbf):
     return meta
 
 
+def _meta_num(meta, key):
+    """Metadata is written as text; coerce a numeric entry back to a float."""
+    v = meta.get(key)
+    if isinstance(v, (int, float)) and not isinstance(v, bool):
+        return float(v)
+    try:
+        return float(str(v).strip())
+    except (TypeError, ValueError):
+        return None
+
+
 def _cells_in_ranges(expr):
     """Yield (col, row) pairs for every cell covered by a formula's ranges."""
     cells = set()
@@ -539,6 +550,113 @@ def check_reverse_dcf_sheet(res, wbf, meta):
         res.add(16, PASS, "Reverse DCF sheet present", detail)
 
 
+def check_cost_of_debt(res, wbf, wbv, meta, has_values):
+    """#17 C11 must equal what the generator says it derived.
+
+    The actual-cost-of-debt module rewrites C11 from interest / average debt.
+    A model whose C11 no longer matches its own recorded derivation has been
+    hand-edited without a log entry — which is exactly the drift the
+    Adjustments Log exists to prevent.
+    """
+    basis = str(meta.get("cost_of_debt_basis") or "").strip()
+    if not basis:
+        res.add(17, SKIP, "Cost of debt basis", "no metadata (pre-2026-08 model)")
+        return
+    stated = _meta_num(meta, "cost_of_debt_at_c11")
+    cell = _num(wbf["DCF Model"]["C11"].value)
+    if cell is None or stated is None:
+        res.add(17, SKIP, "Cost of debt basis", "C11 or metadata not numeric")
+        return
+    if abs(cell - stated) > 1e-9:
+        res.add(17, FAIL, "Cost of debt basis",
+                f"C11 = {cell:.4%} but the generator recorded {stated:.4%} — "
+                f"the cell was edited without updating the Adjustments Log")
+        return
+    if basis != "actual":
+        res.add(17, PASS, "Cost of debt basis",
+                f"{cell:.4%} after-tax (assumption; supply interest_expense + "
+                f"debt balances to derive the actual rate)")
+        return
+    interest = _meta_num(meta, "cost_of_debt_interest")
+    avg_debt = _meta_num(meta, "cost_of_debt_avg_debt")
+    pretax = _meta_num(meta, "cost_of_debt_pretax")
+    tax = _meta_num(meta, "tax_rate_c6")
+    if None in (interest, avg_debt, pretax, tax) or not avg_debt:
+        res.add(17, WARN, "Cost of debt basis",
+                f"basis=actual but the derivation inputs are missing from the "
+                f"metadata; C11 = {cell:.4%}")
+        return
+    if not _close(interest / avg_debt, pretax, tol=1e-6):
+        res.add(17, FAIL, "Cost of debt basis",
+                f"recorded pre-tax {pretax:.6f} != interest {interest:,.0f} / "
+                f"avg debt {avg_debt:,.0f} = {interest / avg_debt:.6f}")
+        return
+    expected = round(pretax * (1 - tax), 4)
+    if abs(expected - cell) > 1e-9:
+        res.add(17, FAIL, "Cost of debt basis",
+                f"C11 = {cell:.4%} but pre-tax {pretax:.4%} x (1-{tax:.1%}) "
+                f"rounds to {expected:.4%}")
+    else:
+        res.add(17, PASS, "Cost of debt basis",
+                f"actual: {interest:,.0f} / {avg_debt:,.0f} = {pretax:.4%} "
+                f"pre-tax -> {cell:.4%} after-tax")
+
+
+def check_fx_sensitivity(res, wbf, wbv, meta, has_values):
+    """#18 Table 3's centre column must reproduce the model's own Year-1 OP."""
+    note = str(meta.get("fx_sensitivity") or "")
+    if not note:
+        res.add(18, SKIP, "FX sensitivity Table 3", "no metadata (pre-2026-08 model)")
+        return
+    if note == "not enabled":
+        res.add(18, PASS, "FX sensitivity Table 3",
+                "not enabled (domestic name) — no table expected")
+        return
+    if note.startswith("skipped"):
+        res.add(18, FAIL, "FX sensitivity Table 3",
+                f"enabled but not generated — {note}")
+        return
+    m = re.search(r"rows (\d+)-(\d+)", note)
+    if not m or "Sensitivity Analysis" not in wbf.sheetnames:
+        res.add(18, WARN, "FX sensitivity Table 3", f"cannot locate the table ({note})")
+        return
+    top = int(m.group(1))
+    wsf = wbf["Sensitivity Analysis"]
+    sens_cell = wsf.cell(row=top + 7, column=3).value
+    if not (isinstance(sens_cell, str) and sens_cell.startswith("=")):
+        res.add(18, FAIL, "FX sensitivity Table 3",
+                f"the per-1-JPY sensitivity at C{top + 7} is {sens_cell!r}, not a "
+                f"formula — a hardcoded sensitivity stops tracking the scenario")
+        return
+    if not has_values:
+        res.add(18, SKIP, "FX sensitivity Table 3", "needs recalc")
+        return
+    wsv = wbv["Sensitivity Analysis"]
+    rate = _num(wsv.cell(row=top + 1, column=3).value)
+    op_model = _num(wsv.cell(row=top + 6, column=3).value)
+    sens = _num(wsv.cell(row=top + 7, column=3).value)
+    # The column whose header equals the assumption rate must return the
+    # unshifted operating income; anything else means the grid is off-centre.
+    centre = None
+    for col in range(3, 12):
+        hdr = _num(wsv.cell(row=top + 9, column=col).value)
+        if hdr is not None and rate is not None and abs(hdr - rate) < 1e-9:
+            centre = _num(wsv.cell(row=top + 10, column=col).value)
+            break
+    if centre is None or op_model is None:
+        res.add(18, WARN, "FX sensitivity Table 3",
+                "no cached grid values to check the centre column against")
+        return
+    if not _close(centre, op_model):
+        res.add(18, FAIL, "FX sensitivity Table 3",
+                f"at the assumption rate the grid shows OP {centre:,.0f} but the "
+                f"DCF Model's Year-1 OP is {op_model:,.0f}")
+    else:
+        res.add(18, PASS, "FX sensitivity Table 3",
+                f"centre column reproduces Year-1 OP {op_model:,.0f}; "
+                f"sensitivity {sens:,.0f} JPY mn per 1 JPY of rate")
+
+
 def check_implied_exit_multiple(res, wbf, wbv, has_values):
     if not has_values:
         res.add(11, SKIP, "PGM-implied vs assumed exit multiple", "needs recalc")
@@ -846,6 +964,8 @@ def validate_workbook(path, write_report=True):
         check_peer_ebitda_equals_ebit(res, wbf, wbv, meta, has_values)
         check_adjustments_log(res, wbf)
         check_target_excludes_comps(res, wbf)
+        check_cost_of_debt(res, wbf, wbv, meta, has_values)
+        check_fx_sensitivity(res, wbf, wbv, meta, has_values)
         check_exit_negative_equity(res, wbf, wbv, has_values)
         check_reverse_dcf_sheet(res, wbf, meta)
     elif kind == 'market_analysis':
