@@ -1,0 +1,198 @@
+{
+  "_source": "決算短信 セグメント情報 / 主要顧客注記。旧 scripts/add_segment_bridge.py に埋め込まれていた Fixstars 固有の定数を移設（2026-08-26）",
+  "_ticker": "3687 Fixstars",
+  "_note_normalisation": "旧スクリプトにあった Normalization ブロック（CVC評価損の戻し・SaaS営業損失の戻し）は extra_tables の 'Normalization' として保持。分母の売上 9,618 は FY2025/9 実績、7,995 は FY2024/9 実績。",
+  "title": "Segment Bridge - Fixstars (3687): Solution vs SaaS vs Other (CVC)",
+  "intro": [
+    "Only 2 fiscal years of segment data are disclosed (FY2024/9, FY2025/9) - too few for the main DCF's 4-year hist_years array, hence this separate sheet rather than a 'segments' override block.",
+    "Consolidated operating margin (26.8%) understates the Solution segment's profitability (35.3%) because of two below-the-line drags: a SaaS segment still running losses, and a one-off CVC securities writedown sitting in cost of sales."
+  ],
+  "periods": [
+    "FY2024/9",
+    "FY2025/9"
+  ],
+  "segments": [
+    {
+      "label": "Solution  ソリューション",
+      "revenue": [
+        7680,
+        9171
+      ],
+      "profit": [
+        2458,
+        3236
+      ],
+      "da": [
+        122,
+        127
+      ]
+    },
+    {
+      "label": "SaaS",
+      "revenue": [
+        315,
+        446
+      ],
+      "profit": [
+        -151,
+        -424
+      ],
+      "da": [
+        24,
+        40
+      ]
+    },
+    {
+      "label": "Other (incl. CVC)  その他",
+      "profit": [
+        -3,
+        -234
+      ]
+    }
+  ],
+  "consolidated": {
+    "profit": [
+      2304,
+      2578
+    ],
+    "profit_note": "Disclosed consolidated operating income. Segment revenue does not sum to consolidated revenue (7,995 / 9,618) because 'Other' revenue is not disclosed separately."
+  },
+  "show_margin_table": false,
+  "show_ebitda_row": false,
+  "extra_tables": [
+    {
+      "title": "Normalization (FY2025/9, JPY mn)",
+      "headers": [
+        "",
+        "FY2025/9"
+      ],
+      "formats": [
+        "text",
+        "yen"
+      ],
+      "rows": [
+        [
+          "Consolidated Operating Income",
+          {
+            "formula": "={c1}{profit_cons}"
+          }
+        ],
+        [
+          "+ CVC securities writedown (one-off, in COGS)",
+          232
+        ],
+        [
+          "Normalized OI (ex-CVC only)",
+          {
+            "formula": "=C{r0}+C{r1}",
+            "bold": true
+          }
+        ],
+        [
+          "  as % of revenue (9,618)",
+          {
+            "formula": "=C{r2}/9618",
+            "fmt": "pct"
+          }
+        ],
+        [
+          "+ SaaS operating loss (strategic investment)",
+          {
+            "formula": "=-{c1}{profit_r1}"
+          }
+        ],
+        [
+          "Fully Normalized OI (ex-CVC, ex-SaaS loss)",
+          {
+            "formula": "=C{r2}+C{r4}",
+            "bold": true,
+            "highlight": true
+          }
+        ],
+        [
+          "  as % of revenue (9,618)",
+          {
+            "formula": "=C{r5}/9618",
+            "fmt": "pct",
+            "bold": true,
+            "highlight": true
+          }
+        ]
+      ],
+      "data_rows": 2,
+      "note": "Revenue denominators are FY2025/9 actuals (9,618). The CVC writedown is a one-off charge inside cost of sales; the SaaS operating loss is a deliberate investment. Both are live links to the segment block above, not restated constants."
+    },
+    {
+      "title": "Customer Concentration (disclosed 10%+ customers only)",
+      "headers": [
+        "Customer",
+        "FY2024/9",
+        "% of Rev",
+        "FY2025/9",
+        "% of Rev"
+      ],
+      "formats": [
+        "text",
+        "yen",
+        "pct",
+        "yen",
+        "pct"
+      ],
+      "rows": [
+        [
+          "Kioxia Corporation",
+          1613,
+          {
+            "formula": "=C{row}/7995"
+          },
+          1647,
+          {
+            "formula": "=E{row}/9618"
+          }
+        ],
+        [
+          "Renesas Electronics Corp.",
+          1275,
+          {
+            "formula": "=C{row}/7995"
+          },
+          null,
+          null
+        ],
+        [
+          "Nexty Electronics Corp.",
+          807,
+          {
+            "formula": "=C{row}/7995"
+          },
+          1119,
+          {
+            "formula": "=E{row}/9618"
+          }
+        ],
+        [
+          "Disclosed customers, total",
+          {
+            "formula": "=SUM(C{first}:C{last})"
+          },
+          {
+            "formula": "=C{row}/7995"
+          },
+          {
+            "formula": "=SUM(E{first}:E{last})"
+          },
+          {
+            "formula": "=E{row}/9618"
+          }
+        ]
+      ],
+      "data_rows": 3,
+      "note": "Disclosure threshold is 10% of revenue; Renesas fell below 10% in FY2025/9 and became non-disclosed - this does not necessarily mean the relationship ended, only that it dropped below the reporting threshold. Kioxia alone is 17.1% of FY2025/9 revenue and is a NAND-memory cyclical: a memory downcycle transmits directly into Fixstars' Solution-segment revenue via reduced customer R&D spend."
+    }
+  ],
+  "notes": [
+    "The gap between consolidated margin (26.8%) and Solution-segment margin (35.3%) is the sum of a deliberate investment (SaaS loss) and a one-off charge (CVC writedown), not core-business deterioration.",
+    "The investment case reduces to two questions: (a) when does the 424 SaaS operating loss shrink or turn positive, and (b) does the CVC writedown recur. Neither is knowable from FY2025/9 data alone.",
+    "This sheet is informational; no cell on the DCF Model sheet references it."
+  ]
+}

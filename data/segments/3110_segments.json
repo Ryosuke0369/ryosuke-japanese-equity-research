@@ -1,0 +1,54 @@
+{
+  "_source": "決算短信 / 有価証券報告書 セグメント注記。旧 scripts/add_segment_bridge_3110.py の埋め込み定数をそのまま移設（2026-08-26）",
+  "_ticker": "3110 日東紡績",
+  "title": "Segment Bridge - Nitto Boseki (3110)",
+  "intro": [
+    "Segment profit total less corporate costs / eliminations reconciled to consolidated operating profit. All figures JPY mn.",
+    "Only 2 full FYs plus Q1 are disclosed on a comparable basis - too few for the 3-year hist_years array - hence this separate sheet rather than a 'segments' override block.",
+    "Consolidated operating margin is driven almost entirely by Electronic Materials (low-dielectric glass cloth for AI servers): 84% of total segment profit in FY2026/3 at a 31.6% segment margin, against four of the other five segments at or below 4%."
+  ],
+  "periods": ["FY2025/3", "FY2026/3", "Q1 FY2027/3"],
+  "segments": [
+    {"label": "Electronic Materials  電子材料", "revenue": [52093, 61418, 18082], "profit": [13880, 19391, 7036], "da": [null, 7229, null]},
+    {"label": "Medical  メディカル", "revenue": [13619, 13935, 3853], "profit": [2381, 2431, 705], "da": [null, 751, null]},
+    {"label": "Composite Materials  複合材", "revenue": [14520, 14457, 4093], "profit": [-900, -122, 0], "da": [null, 180, null]},
+    {"label": "Capital & Chemicals  資本・ケミカル", "revenue": [11968, 11726, 3142], "profit": [839, 588, 222], "da": [null, 261, null]},
+    {"label": "Insulation  断熱材", "revenue": [15352, 15165, 4399], "profit": [693, 202, 251], "da": [null, 614, null]},
+    {"label": "Other  その他", "revenue": [19586, 22128, 6784], "profit": [409, 488, 203], "da": [null, 47, null]}
+  ],
+  "adjustment": {
+    "revenue": "derive",
+    "revenue_note": "Derived as a residual - the disclosed segment note quantifies the profit adjustment only.",
+    "profit": [-858, -2160, -486],
+    "da": [null, 259, null]
+  },
+  "consolidated": {
+    "revenue": [109035, 118229, 34033],
+    "revenue_note": "Q1 revenue 34,033 is the same figure used in the LTM bridge (118,229 - 28,231 + 34,033 = 124,031).",
+    "profit": [16445, 20819, 7943],
+    "da": [null, 9301, null],
+    "da_note": "CF statement, disclosed. The segment D&A breakdown does not tie exactly; the variance is shown, not forced."
+  },
+  "show_margin_table": true,
+  "show_ebitda_row": true,
+  "notes": [
+    "Segment profit is the disclosed segment operating profit; the adjustment row carries corporate costs and inter-segment eliminations.",
+    "Revenue adjustment is derived as (consolidated revenue - segment total) because the disclosed note quantifies the profit adjustment only.",
+    "Q1 FY2027/3 is a single quarter and is not annualised anywhere in this workbook.",
+    "This sheet is informational; no cell on the DCF Model sheet references it."
+  ],
+  "open_items": [
+    ["2026-08-22", "'DCF Model'!C5",
+     "capex_pct = 8.5% (single value) applied to all 5 projection years",
+     "overrides_validator の ALLOWED_KEYS で capex_pct は数値スカラーのみ(配列は契約違反)。プロンプト指定の年次テーパー [0.15,0.13,0.10,0.085,0.080] を表現できず、ターミナル整合(capex/D&A = 1.02x)を優先して Y5 近傍の単一値を採用した。",
+     "-", "未解決"],
+    ["2026-08-22", "'DCF Model'!C43 (Y1-Y2)",
+     "Y1-Y2 の capex が実勢(FY2026/3 実績 売上比17.4%、建設仮勘定12,067)を大幅に過小評価",
+     "単一値8.5%のため増産投資期の初期2年の投資額が約半分になり、その分だけ Y1-Y2 の FCF が過大に出る。PGM/Exit いずれの Target も上振れ方向のバイアスを持つ。年次配列が必要なら capex_method='direct' への切替をスキーマ側で再検討すること。",
+     "-", "未解決"],
+    ["2026-08-22", "'Segment Bridge' Variance 行",
+     "Segment Bridge の tie-out 差異: Q1営業利益 -12、FY2026/3 D&A +40",
+     "開示セグメント数値(百万円丸め)の積上げと連結開示値の差。ゼロに強制せず差異行として表示。",
+     "-", "未解決"]
+  ]
+}

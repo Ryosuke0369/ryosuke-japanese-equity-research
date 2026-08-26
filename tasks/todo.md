@@ -70,10 +70,13 @@
 
 ## Phase 2: 構造リファクタ (標準メモ §3-5)
 
-- [ ] 7. `add_segment_bridge.py` を汎用化 (銘柄固有データは `data/segments/<ticker>_segments.json`)
-- [ ] 8. `fill_adjustments_log_5726.py` を汎用 `fill_adjustments_log.py` + JSON 化して削除
-- [ ] 9. 銘柄コード入りスクリプトの新規作成を機械的に禁止するガードを追加
-- [ ] 10. CLAUDE.md / 手順書v2 に運用ルールを明記
+- [x] 7. `add_segment_bridge.py` を設定ファイル駆動に全面書き換え
+      (`data/segments/<ticker>_segments.json`)。3110 と 3687 の両方を設定で再現し、
+      `add_segment_bridge_3110.py` を削除
+- [x] 8. `fill_adjustments_log.py` を新設 (`data/adjustments/<ticker>_adjustments.json`)。
+      5726 の21件を移設して `fill_adjustments_log_5726.py` を削除
+- [x] 9. `scripts/check_script_naming.py` を追加。generate_dcf.py が起動時に警告として実行
+- [x] 10. CLAUDE.md / 手順書v2 に運用ルールを明記
 
 ## Review
 
@@ -115,3 +118,49 @@
 **未対応（意図的）**:
 - 標準メモ §3 の「任意」3件（実績ベース負債コスト、セグメントブリッジ、為替感応度Table3）は
   オプションモジュール扱いのため Phase 1 の範囲外。
+
+### Phase 2 (2026-08-26)
+
+**問題**: `scripts/` に動くコードの銘柄別コピーが生まれ始めていた
+(`add_segment_bridge_3110.py` / `fill_adjustments_log_5726.py`)。コピーはロジックごと
+分岐するので、片方に入れた修正がもう片方に届かない。放置すれば次の銘柄で3つ目が生まれる。
+
+**方針**: 「汎用スクリプト + 銘柄固有は `data/` 配下の設定ファイル」に統一した。
+
+| 対象 | 変更 |
+|---|---|
+| `scripts/add_segment_bridge.py` | 設定ファイル駆動に全面書き換え。セグメント売上／利益／D&A の各ブロックを共通ビルダーで生成し、連結値へのブリッジと tie-out 差異行を出す。自由形式の追加表 (`extra_tables`) は `{profit_r1}` `{c1}` 等の名前付きアンカーで上のブロックへ生き参照できる |
+| `data/segments/3110_segments.json` | 旧 `add_segment_bridge_3110.py` の埋め込み定数を無改変で移設 |
+| `data/segments/3687_segments.json` | 旧 `add_segment_bridge.py` (Fixstars 固有) の定数を移設。Normalization ブロックは定数の再掲ではなくセグメント行への生き参照に改善 |
+| `scripts/fill_adjustments_log.py` | 新設。5/6フィールドのエントリ配列を読み、Pipeline Metadata 帯の**上**に挿入 |
+| `data/adjustments/5726_adjustments.json` | 旧 `fill_adjustments_log_5726.py` の21件を無改変で移設 |
+| `scripts/check_script_naming.py` | 新設。`scripts/` `templates/` の .py 名に銘柄コードがあれば exit 1。既存の `run_*` 系10本は grandfathered (リストは閉じている) |
+| `scripts/generate_dcf.py` | 起動時に上記チェックを**警告として**実行（モデル生成自体は止めない） |
+| CLAUDE.md / 手順書v2 | 運用ルールを明記 |
+
+**設計判断**:
+- 旧 `add_segment_bridge.py` にあった `patch_comps_exclude_self()` は移植しなかった。
+  Comps 統計から自社行を除外するのはテンプレート本体の役目で（commit f61d242 以降、
+  validate のチェック3が検証している）、この関数は「自社=5行目・統計=固定行」を仮定して
+  数式を上書きする旧世代の後付けだった。今適用すると正しい数式を壊す。
+- 開示のない期間には SUM を書かない。空セルの SUM は「0」という確定値に見えるが、
+  正しくは「未開示」である（3110 のセグメント D&A は FY2026/3 のみ開示）。
+- マージン表はセグメントを**ラベルで突合**する。売上非開示のセグメント
+  （3687 の "Other (incl. CVC)"）が、位置合わせで別のセグメントと組まされないようにするため。
+
+**検証**:
+- `models/3110_DCF_Model_20260822.xlsx` のコピーに新スクリプトを適用 → recalc:
+  エラーセル 0。tie-out 差異は Q1営業利益 **-12**、FY2026/3 D&A **+40** で、
+  旧スクリプトが Adjustments Log に書き残していた値と一致。
+  電子材料の FY2026/3 セグメント利益シェア 84%・セグメントマージン 31.6% も一致。
+- `models/3687_DCF_Model_20260731.xlsx` のコピーに適用 → recalc: エラーセル 0。
+  Solution マージン FY2025/9 = 35.3%、Normalized OI (ex-CVC) 2,810 = 29.2%、
+  Fully Normalized 3,234 = 33.6%、顧客集中 Kioxia 17.1% — いずれも旧実装の記述と一致。
+- `fill_adjustments_log.py` の出力を旧スクリプトの `ROWS` 定数と全21件×6列で突合: **差分0**。
+  Pipeline Metadata 帯も無傷。
+- `check_script_naming.py`: 削除前は2件を正しく検出して exit 1、削除後は exit 0。
+
+**未対応（意図的）**:
+- 既存の `run_market_analysis_<ticker>.py` 系10本は grandfathered。これらは
+  「1銘柄の入力を汎用テンプレに渡すだけ」の薄いドライバでロジックの fork ではないため、
+  今回の目的（分岐の解消）には該当しない。許可リストは閉じてあり、新規追加はできない。

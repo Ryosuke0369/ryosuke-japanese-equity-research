@@ -53,9 +53,32 @@
 | `data/comps/<ticker>_comps.csv` | 類似企業。**このパス・この拡張子のみ読まれる**(.txtは無視される) |
 | `scripts/overrides_validator.py` | 実行前の契約チェック(未知キー/ネスト/独自シナリオ名/配列長/`__CONFIRM__`残存/未定義トークン/ターミナルcapex事前警告でエラー・警告) |
 | `docs/overrides_schema.md` | **契約の正本。プロンプトと食い違ったらスキーマが勝つ** |
+| `scripts/add_segment_bridge.py` | セグメントブリッジシート。銘柄固有値は `data/segments/<ticker>_segments.json` |
+| `scripts/fill_adjustments_log.py` | Adjustments Log の記入。記入内容は `data/adjustments/<ticker>_adjustments.json` |
+| `scripts/check_script_naming.py` | **銘柄コード入りスクリプト名の検出**(generate_dcf.py が起動時に警告として実行) |
 | `scripts/validate_output.py` | 生成後セルフチェック。DCF/market_analysis/SOTPをシート名で自動判別。**FAIL(exit 1)/WARN/PASS**の3段階。結果は `<xlsx名>_validation.txt` にも出る |
 | `models/` | 出力先。上書き可 |
 | `reports/` | **絶対に上書き・削除しない** |
+
+### 標準シート構成(2026-08-26〜・8枚)
+
+`Executive Summary / Financial Statements / DCF Model / **Reverse DCF** / NWC Schedule /
+Comps Analysis / Sensitivity Analysis / Adjustments Log`。
+**Reverse DCF は generate_dcf.py が毎回自動生成する**(overrides の `reverse_dcf` ブロックは
+全キー任意。省略時は hist 配列から自動導出)。ad-hoc スクリプトでの後付けは不要になった。
+詳細は `docs/DCFフォーマット標準メモ_20260826.md` §1、契約は `docs/overrides_schema.md`。
+
+### Target Price の構成(規約)
+
+**Target Mid は DCF 2法(PGM / Exit)の平均のみ。Comps 2法は [参考] で Target 不算入。**
+EV < ネットデットで株式価値が負になる手法は `INVALID` テキスト化され平均から自動除外される
+(PGM/Exit 両方に実装、2026-08-26〜)。validate_output のチェック14/15 が機械的に検出する。
+
+### 銘柄コード入りスクリプトの禁止(2026-08-26〜)
+
+`scripts/` と `templates/` の .py ファイル名に銘柄コードを入れない。銘柄固有の値は
+`data/overrides/` `data/segments/` `data/adjustments/` `data/comps/` の設定ファイルで供給する。
+検査は `python scripts/check_script_naming.py`。詳細は CLAUDE.md の同名節。
 
 ### overridesの契約(破ってはいけない)
 

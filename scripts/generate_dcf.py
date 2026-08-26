@@ -805,6 +805,15 @@ def main():
     print(f"DCF Model Generator - Ticker: {ticker_code}")
     print(f"{'=' * 60}")
 
+    # Repo hygiene: a ticker code in a script filename means somebody forked
+    # the logic instead of adding a config file. Warn here (visible in the
+    # normal workflow) rather than only in a standalone check nobody runs.
+    try:
+        from scripts.check_script_naming import check as _check_script_naming
+    except ImportError:
+        from check_script_naming import check as _check_script_naming
+    _check_script_naming(warn_only=True)
+
     # Step 1: EDINET fetch + parse
     # Pull FY-end month from overrides so the fetcher searches the correct
     # filing season for non-standard fiscal years (e.g. November-FY companies
