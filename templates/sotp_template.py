@@ -1033,6 +1033,14 @@ def generate_sotp_excel(sotp, output_path, dcf_excel_path=None):
         for key in ["pgm_fair_value", "exit_fair_value", "comps_ev_ebitda", "comps_per"]:
             if dcf_values.get(key) is not None:
                 existing[key] = dcf_values[key]
+        # The matched labels and the source filename were read but never merged,
+        # so the Cover fell back to generic method names and printed
+        # "from no DCF workbook" in the as-of line even when a DCF was read.
+        if dcf_values.get("labels"):
+            existing["labels"] = {**(existing.get("labels") or {}),
+                                  **dcf_values["labels"]}
+        if dcf_values.get("source_file"):
+            existing["source_file"] = dcf_values["source_file"]
         sotp["dcf_crosscheck"] = existing
 
     # Sheet 1: Cover & Thesis (returns the row its SOTP value sits on)

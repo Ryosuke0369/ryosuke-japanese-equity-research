@@ -1,9 +1,23 @@
 # 5726 大阪チタニウムテクノロジーズ DCFモデル生成 (2026-08-26)
 
-> ⚠️ 復元メモ: 2026-08-26 のテンプレート修正作業の冒頭で、このファイルの未コミット版を
-> 上書きしてしまった。以下は上書き直前に読み取れていた範囲の復元。末尾にあった
-> 「## Review (2026-08-26)」本文は復元できていない（実質的な内容は xlsx の
-> Adjustments Log と docs/DCFフォーマット標準メモ_20260826.md に残っている）。
+> ⚠️ **復元メモ (2026-08-26 incident — クローズ済み)**
+> 2026-08-26 のテンプレート修正作業の冒頭で、このファイルの未コミット版を全文上書きした。
+> 以下「銘柄型判定」〜「設計判断」は上書き直前に読み取れていた範囲の**逐語復元**。
+> 末尾にあった「## Review (2026-08-26)」本文は **lost (2026-08-26 incident)** ——
+> 逐語では復元不能と最終判断した（復元経路の確認結果は下記）。
+> 代わりに、一次情報から再構成できる内容を「### Review 再構成」に書き戻した。
+>
+> **確認した復元経路（すべて空振り）**
+> | 経路 | 結果 |
+> |---|---|
+> | `git reflog` | 当該状態のコミットは存在しない（e5effd6 の次は e26b801） |
+> | `git stash list` | 空 |
+> | `git fsck --dangling` の blob 全走査 | todo.md の内容を含む blob なし（一度も `git add` されていない） |
+> | VS Code ローカル履歴 (`AppData/Roaming/Code/User/History`) | 10件、いずれも本リポジトリ外 |
+> | Windows File History | 未構成 |
+> | OneDrive バージョン履歴 | 本リポジトリは OneDrive 配下ではない |
+> | JetBrains / Notepad++ / Sublime のバックアップ | いずれも不在 |
+> | VSS シャドウコピー (`vssadmin list shadows`) | **管理者権限が必要で本セッションからは確認不可**。復元を試みる場合は管理者権限のコンソールで `vssadmin list shadows` → 該当時点のスナップショットから `tasks/todo.md` を取り出すこと（これが唯一未確認の経路） |
 
 出力: `models/5726_DCF_Model_20260826.xlsx` (DRAFT — ユーザー検証後にFINAL化)
 手順書: docs/DCFパイプライン標準運用手順書.md (v2) / 契約正本: docs/overrides_schema.md
@@ -37,6 +51,32 @@
 - **NWC は days方式**: 棚卸資産がFY2026/3で380日(COGS基準)と異常に膨張。
   歴史平均240日への正常化速度をシナリオの主要ドライバーにする。
 - **Reverse DCF が最重要**: 定常OP逆算 / FY25ピーク比 / 到達年数感応度。
+
+### Review 再構成 (2026-08-26, 逐語ではない)
+
+逐語の Review 本文は失われたため、`models/5726_DCF_Model_20260826.xlsx` の
+Adjustments Log 21件と `docs/DCFフォーマット標準メモ_20260826.md` から再構成した。
+**この節は一次情報からの再構成であり、当時書かれた文章そのものではない。**
+
+- **納品状態**: DRAFT。validate_output は FAIL 0 / WARN 0。FINAL 化は未実施（手順書v2 §6-3）。
+- **結論値**: 現値 2,727 / Target(DCF Mid) 379 / PGM 200 / Exit 558 / SELL / WACC 9.06%。
+  Comps は EV/EBITDA 1,582・PER 2,247 だが Target 不算入。
+- **逆算DCF（本件の最重要成果物）**: 現値は定常営業利益 18,466百万円（FY2025/3 ピーク
+  10,088 の 1.83倍）を5年で到達し永続することを織り込んだ価格。ランプ無し（Block A）でも
+  15,919（ピーク比 1.58倍）が必要。ベースケースが説明できる EV は 53,209 にとどまり、
+  1株あたり 2,527円 が中期economicsで説明できない。
+- **確定した推定・設計判断**（Adjustments Log 参照）: risk_free 2.90%（財務省 jgbcm.csv）/
+  beta 1.55（1306.T 回帰、相関0.442）/ size_premium 1.5%（閾値の直上0.3%）/
+  de_ratio 0.4568（ネット基準を採用）/ terminal_growth 1.5% / exit_multiple 8.0x（国内素材ピア水準）/
+  capex・D&A は direct 方式 / NWC は days 方式（DIH 260〜420日がFCF最大のスイング）。
+- **未解決として残した項目**: 増設分の稼働時期・能力増分・売上寄与が未開示 /
+  FY2027/3 Q1進捗率34%と会社計画の保守性 / core_net_income 2,576 が特損2,619で歪んだ分母
+  （正常化なら約4,465、PER 約23倍）。
+- **重要な外部事実**: 5727 東邦チタニウムは 2026-05-28 上場廃止（JX金属が株式交換0.70で
+  完全子会社化）。国内唯一の直接比較対象を失ったため海外ピア3社を追加した。
+- **当時テンプレ課題として報告した2件は、その後 e26b801 で恒久修正済み**:
+  Target Mid が Comps を含む AVERAGE(C16:C19) だった件 / Exit 法に負値ガードが無く
+  Downside 2 で負の株価が平均に残った件。
 
 ---
 
@@ -164,3 +204,74 @@
 - 既存の `run_market_analysis_<ticker>.py` 系10本は grandfathered。これらは
   「1銘柄の入力を汎用テンプレに渡すだけ」の薄いドライバでロジックの fork ではないため、
   今回の目的（分岐の解消）には該当しない。許可リストは閉じてあり、新規追加はできない。
+
+---
+
+# フォローアップ: 残タスク3件 (2026-08-26)
+
+前回作業 (Phase 1: e26b801 / Phase 2: 3d2e453) の未達・要確認3件。タスクごとに別コミット。
+
+## タスク1: オプションモジュール2件 — commit fe67463
+
+- [x] 実装状態の確認 → **両件とも未着手**だった (grep で interest_expense / fx 系の
+      実装が scripts/ templates/ のどこにも無いことを確認)
+- [x] 実績ベース負債コスト: overrides `interest_expense` / `loan_fees`、平均有利子負債は
+      `debt_beginning`/`debt_ending` か hist_debt 直近2年平均。C11 を実績値に差し替え、
+      Adjustments Log にマージナルコスト注記を併記
+- [x] 為替感応度 Table 3: `fx_sensitivity.enabled` でのみ生成。5726手修正版 Sensitivity
+      28-40行を参照実装とした
+- [x] あわせて標準メモ §1 の「Comps は正常化純利益の参考行」を `normalized_net_income` で実装
+- [x] 検収: 合成config 4通り (フラグON/OFF × overrides有無) で発動条件どおり。
+      validate_output にチェック17/18 を追加し、改ざん版で FAIL することも確認
+
+## タスク2: 5726 の真の回帰テスト — commit 7460fbc
+
+- [x] 新テンプレで EDINET からゼロ再生成 → `models/5726_DCF_Model_20260826_regen.xlsx`
+      (手修正版は上書きせず温存)
+- [x] `scripts/diff_models.py` を新規追加し主要46セルを突合 → **differences: 0**
+- [x] 全セル走査で見つかった実差2件はテンプレ側を参照実装に合わせた
+      (Valuation Range を DCF 2法に / C10 ラベル)
+- [x] 期待値の食い違い (Block A 16,811 / B-3 19,643) は**入力差**と特定 ——
+      負債コスト修正前 WACC 9.48% の値。閉形式で再現して確認
+- [x] 標準メモ §1-2 に回帰テスト完了を追記
+
+## タスク3: todo.md 上書きインシデントの後始末 — 本コミット
+
+- [x] 復元可否の最終判断 → **逐語復元は不能**。確認した経路は本ファイル冒頭の表のとおり。
+      唯一未確認は VSS シャドウコピー (管理者権限が必要)。
+      再構成できる内容は「### Review 再構成」として書き戻し、逐語部分は
+      `lost (2026-08-26 incident)` と明記してクローズ
+- [x] `tasks/lessons.md` をコミット (2026-08-23 の 2962 `=` 事故 + 今回の上書き事故)
+- [x] 本作業前からの未コミット変更3件を判定 (下記 Review)
+
+## Review — フォローアップ
+
+### 本作業前からの未コミット変更3件の判定
+
+| ファイル | 何の変更か | 判定 |
+|---|---|---|
+| `templates/sotp_template.py` | `dcf_crosscheck` の `labels` / `source_file` が読まれていたのにマージされず、Cover が汎用の手法名と「from no DCF workbook」を表示していたバグの修正 (+8行) | **コミットする**。extract_dcf_data (L103-104) が生成し L248/L284 が消費するキーで、マージ漏れは明らかなバグ。`templates/test_dcf_crosscheck_matcher.py` 17/17 PASS で回帰なしを確認 |
+| `tasks/lessons.md` | 2026-08-23 の 2962 事故 (`=` 始まりのラベルで Excel が開けなくなる) + 今回の上書き事故の再発防止ルール | **コミットする**。どちらも再発防止の資産 |
+| `reports/2359_market_analysis_20260509_v2.xlsx` | 新しい market_analysis テンプレでの**再生成物**。`Implied Multiple Analysis` と `Narrative Stage` の2シートが増えている。共有2シートの差分は数式の float 表記のみ (`14366101.0`→`14366101`、`0.10`→`0.1`) で**値の変化なし**。ただし `B3 "Price Data Date: Manual"` が消えている | **判断不能 — 触らず報告のみ**。CLAUDE.md の File Protection Rules は `reports/` を「絶対に上書きしない」と定めており、この上書きが意図的な差し替えなのか runner の事故なのかは外形から判別できない。内容としては B3 を除き上位互換。**ユーザーの判断待ち**: コミットするなら B3 の日付ラベルを復元してから、破棄するなら `git restore reports/2359_market_analysis_20260509_v2.xlsx` |
+
+### 意図的に残す差分
+
+- `reports/2359_market_analysis_20260509_v2.xlsx` (上記のとおりユーザー判断待ち)
+- `data/` `models/` `reports/` 配下の未追跡ファイル群 (本作業以前から未追跡。
+  今回追跡対象にしたのは回帰テストに必要な `data/overrides/5726_overrides.json` と
+  `models/5726_DCF_Model_20260826_regen.xlsx` のみ)
+
+### regen が手修正版の完全な置き換えではない点 (既知・意図的)
+
+`_regen` の Adjustments Log には自動記録2行しか無く、手記入21件は入っていない
+(`scripts/fill_adjustments_log.py` を当てていない)。当てなかった理由は、21件のうち3件が
+テンプレ修正で**陳腐化**しているため:
+
+1. `DCF Model!C11 = 1.94%(推定・未解決)` → 実績 0.59% に置き換わった
+2. `Reverse DCF シートを add_reverse_dcf_sheet.py で追加 / テンプレ標準7シート` → 標準8枚目になった
+3. `Target Mid = AVERAGE(C16:C19) のシナリオ依存挙動 (未解決・テンプレ課題)` → e26b801 で解消
+
+`_regen` は回帰テストのベースラインであって納品物ではない。納品物として使うなら、
+上記3件を `data/adjustments/5726_adjustments.json` で更新してから
+`fill_adjustments_log.py` を当てること。
+

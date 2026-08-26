@@ -134,3 +134,50 @@ scenarios and WACC inputs were silently ignored.
 the template's hard-coded `SCENARIO_NAMES` and the top-level config keys —
 mismatched names are dropped without error. Surface these to the user rather
 than renaming (which would misrepresent their intent).
+
+---
+
+## 2026-08-23 — 「ラベルを `=` で始めない」を自分で踏んだ(2962)
+
+**何が起きたか**: Adjustments Log の「元の値」列に `='Comps Analysis'!C28 => -69` と書いた。
+openpyxl はこれを**数式として保存**し(`<f>'Comps Analysis'!C28 =&gt; -69</f>`)、Excel が
+ブックを一切開けなくなった(`Workbooks.Open` が com_error -2146827284)。openpyxl では
+読めるため、検証を openpyxl だけで済ませていると**気づけない**。
+
+**なぜ踏んだか**: 手順書 §5-5-1 と §7-1 に明記されている罠なのに、「ラベル」= 表示用の
+見出しだけの話だと読んでいた。実際は**セルに入る全ての文字列**が対象。「元の値」「変更前」
+のような、数式を記録するための列がいちばん危ない。
+
+**ルール**:
+1. openpyxl でセルに文字列を書く箇所は、**書き込みループ内で `assert not str(v).startswith('=')`**
+   を必ず入れる。1〜2セルだけ手で確認するのでは足りない(今回まさに2セルだけ assert していて、
+   ループ内の6行×6列は素通りした)。
+2. 数式を記録したいときは `formula: ...` / `旧: ...` のように**必ず非 `=` の接頭辞**を付ける。
+3. **手修正の直後に Excel COM で開けることを確認する**。openpyxl で読めることは無傷の証明に
+   ならない。`recalc_excel_com.py` が com_error で落ちたら、まず疑うのはこの罠。
+4. 切り分けは「行単位で消して Excel Open を試す」二分探索が速い。今回は6行→2行→F列と
+   3ステップで特定できた。
+
+**手修正の順序**: 生成 → (recalc なしで) openpyxl 手修正 → recalc → validate が安全。
+Excel が保存し直したブックを openpyxl で書き戻す往復を減らせる。
+
+---
+
+## 2026-08-26 — 未コミットのファイルを読まずに上書きした (tasks/todo.md)
+
+**何が起きたか**: テンプレート修正作業の冒頭で `tasks/todo.md` に新しい計画を書いた。
+このファイルには前セッション(5726)の**未コミットの作業ログ**が入っていて、`git diff` の
+統計 (329行変更) は見ていたのに中身は先頭40行しか読まずに全文を上書きした。
+末尾の「Review (2026-08-26)」本文は git にも無く、復元できなかった。
+
+**なぜ踏んだか**: 「todo.md はタスクごとに書き換えるファイル」という思い込み。
+`git status` で ` M tasks/todo.md` を見た時点で、HEAD にも無い内容が working tree に
+だけ存在することは確定していた。
+
+**ルール**:
+1. **上書きの前に `git status` を見る。` M` が付いていたら working tree の内容が唯一の
+   コピーである** — HEAD に戻しても復元できない。読むか、退避するか、追記にする。
+2. 既存ファイルへの Write は、全文を読んでいないなら**追記**にする。特に
+   `tasks/todo.md` `tasks/lessons.md` のような「積み上げ型」のファイル。
+3. 作業前に `git stash create` か `cp` で退避すれば1コマンドで守れる。
+
