@@ -2061,7 +2061,7 @@ def generate_dcf_workbook(config, output_path=None):
     # the target silently turns a DCF into a half-comps blend. Excluded DCF legs
     # hold the text "INVALID ..." / "N/A", which AVERAGE skips; COUNT guards the
     # case where BOTH legs are excluded (otherwise AVERAGE returns #DIV/0!).
-    set_cell(ws1, 10, 2, "Target Price (Mid)", font=BOLD_FONT)
+    set_cell(ws1, 10, 2, "Target Price (DCF Mid)", font=BOLD_FONT)
     set_cell(ws1, 10, 3, '=IF(COUNT(C16:C17)=0,"N/A",ROUND(AVERAGE(C16:C17),0))',
              font=BLACK_FONT, fmt=FMT_YEN)
 
@@ -2138,12 +2138,14 @@ def generate_dcf_workbook(config, output_path=None):
              font=GREY_FONT)
     ws1.merge_cells("B20:E20")
 
-    # Integrated Valuation Range — spans ALL four methods (this is the reference
-    # spread, not the target), but MIN/MAX over an all-text range returns 0, so
-    # the row reports "N/A" rather than a fabricated "0 - 0".
-    set_cell(ws1, 21, 2, "Integrated Valuation Range (全4手法・参考)", font=BOLD_FONT)
+    # Valuation Range — the SAME two methods the target averages. Spanning all
+    # four put the excluded comps back in through the side door: 5726 read
+    # "200 - 2,247" while the DCF said 200-558, which is not a range anyone
+    # should quote. MIN/MAX over an all-text range returns 0, so the row reports
+    # "N/A" rather than a fabricated "0 - 0".
+    set_cell(ws1, 21, 2, "DCF Valuation Range (PGM - Exit)", font=BOLD_FONT)
     set_cell(ws1, 21, 3,
-             '=IF(COUNT(C16:C19)=0,"N/A",MIN(C16:C19)&" - "&MAX(C16:C19))',
+             '=IF(COUNT(C16:C17)=0,"N/A",MIN(C16:C17)&" - "&MAX(C16:C17))',
              font=BLACK_FONT)
 
     # ── Investment Thesis / Key Risks (token-aware) ──
@@ -3878,7 +3880,7 @@ def generate_dcf_workbook(config, output_path=None):
             _cur = _pair.split("/")[0]
             _offsets = list(_fx.get("offsets") or (-20, -10, -5, 0, 5, 10, 20))
             _est = _fx.get("estimated", True)
-            _est_tag = "（推定）" if _est else ""
+            _est_tag = " (推定)" if _est else ""
             _yr = C.get("projection_start_fy") or "Year 1"
 
             T3 = _note_row + 2
@@ -3896,7 +3898,7 @@ def generate_dcf_workbook(config, output_path=None):
 
             _title = f"Table 3: FX Sensitivity - {_yr} Operating Income"
             if _est:
-                _title += f"（{_cur}連動比率は推定・会社開示なし・要確認）"
+                _title += f" ({_cur}連動比率は推定・会社開示なし・要確認)"
             c = section_title(ws5, T3, 2, _title)
             _src = _fx.get("assumption_source")
             set_cell(ws5, T3_RATE, 2,

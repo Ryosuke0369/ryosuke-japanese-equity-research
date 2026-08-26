@@ -36,5 +36,10 @@ venv/
 ~$*.xls
 
 # Generated models (regenerable via generate_dcf.py; may sit next to personal files)
-models/
+models/*
+# ...except the regression baselines: *_regen.xlsx is the output of re-generating
+# a reference model with the current template, and the whole point of keeping it
+# is that scripts/diff_models.py can be re-run against it after a template change.
+!models/*_regen.xlsx
+!models/*_regen_validation.txt
 
