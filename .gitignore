@@ -43,3 +43,25 @@ models/*
 !models/*_regen.xlsx
 !models/*_regen_validation.txt
 
+
+# Screener data directory — blanket ignore, no exceptions.
+#   raw/    TDnet 短信PDF + EDINET 生XBRL。短信は各社の著作物、J-Quants 規約は
+#           取得データの再配布を禁止 → 公開リポジトリに置けない。
+#   cache/  J-Quants の refreshToken / idToken キャッシュ(認証情報そのもの)。
+#   logs/   実行ログ(取得先URL・件数などの運用痕跡)。
+#   *.db    スクリーナーDB(上記 raw の派生物なので同じ制約がかかる)。
+# screener/ 配下の設定・スキーマ・コードは data/ の外にあるので従来どおり追跡される。
+screener/data/
+
+
+# Databases anywhere in the tree (screener DB, ad-hoc SQLite scratch DBs).
+# These are derivatives of TDnet/EDINET raw data — same redistribution limits.
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# Env files of every flavour (.env itself is listed above; these are the variants).
+.env.*
+!.env.example
