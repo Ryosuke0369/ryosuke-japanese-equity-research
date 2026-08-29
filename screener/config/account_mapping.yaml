@@ -1,0 +1,274 @@
+# screener/config/account_mapping.yaml
+# 短信XBRL(tse-ed-t / jppfs_cor / jpigp_cor / jpcrp_cor)タグ → 内部項目名。仕様書 §3-1。
+#
+# 読み方
+#   items:  内部項目名 → その項目を意味するXBRL要素名のリスト（名前空間接頭辞込み）。
+#           **並び順が優先順位**。先に一致したタグを採用する。
+#           会社間のゆらぎ（「原材料及び貯蔵品」vs「原材料」、J-GAAP vs IFRS、
+#           建設業・不動産業の業種別要素）はここで吸収する。
+#   suffix_aliases: 業種別タクソノミ（tse-qcedjpfr-XXXXX: など会社別接頭辞）は
+#           接頭辞を無視して要素名(ローカル名)だけで再照合する。
+#
+# 規約: ここに載っていないタグは捨てず unknown_tags に頻度を積む（仕様書 §3-1
+#       「マッピング不能タグは unknown として記録し、頻度上位を定期レビュー」）。
+#       頻度上位を見て、実際に使う項目だけをこのファイルに足していく。
+
+version: 1
+updated: "2026-08-29"
+
+# ローカル名だけで照合してよい（= 名前空間接頭辞を無視する）。
+# 会社別接頭辞 tse-qcedjpfr-61180: などを拾うために必要。
+match_localname_when_prefix_unknown: true
+
+items:
+
+  # ---------------- PL ----------------
+  revenue:
+    - tse-ed-t:NetSales
+    - tse-ed-t:SalesIFRS
+    - tse-ed-t:OperatingRevenues
+    - tse-ed-t:NetSalesIFRS
+    - jppfs_cor:NetSales
+    - jppfs_cor:OperatingRevenue
+    - jppfs_cor:OperatingRevenue1
+    - jppfs_cor:NetSalesOfCompletedConstructionContracts
+    - jpigp_cor:RevenueIFRS
+    - jpigp_cor:NetSalesIFRS
+    - jpigp_cor:SalesIFRS
+
+  cogs:
+    - jppfs_cor:CostOfSales
+    - jppfs_cor:CostOfSalesOfCompletedConstructionContracts
+    - jppfs_cor:CostOfSalesOfCompletedConstructionContractsCNS
+    - jpigp_cor:CostOfSalesIFRS
+
+  gross_profit:
+    - jppfs_cor:GrossProfit
+    - jppfs_cor:GrossProfitOnCompletedConstructionContracts
+    - jpigp_cor:GrossProfitIFRS
+
+  sga:
+    - jppfs_cor:SellingGeneralAndAdministrativeExpenses
+    - jpigp_cor:SellingGeneralAndAdministrativeExpensesIFRS
+
+  operating_income:
+    - tse-ed-t:OperatingIncome
+    - tse-ed-t:OperatingIncomeIFRS
+    - jppfs_cor:OperatingIncome
+    - jpigp_cor:OperatingProfitLossIFRS
+    - jpigp_cor:OperatingIncomeIFRS
+
+  ordinary_income:
+    - tse-ed-t:OrdinaryIncome
+    - jppfs_cor:OrdinaryIncome
+    # IFRS に経常利益は無い。税引前で代用する場合は profit_before_tax を使う。
+
+  profit_before_tax:
+    - tse-ed-t:ProfitBeforeTaxIFRS
+    - jppfs_cor:IncomeBeforeIncomeTaxes
+    - jpigp_cor:ProfitLossBeforeTaxIFRS
+
+  net_income_parent:
+    - tse-ed-t:NetIncome
+    - tse-ed-t:ProfitAttributableToOwnersOfParent
+    - tse-ed-t:ProfitAttributableToOwnersOfParentIFRS
+    - jppfs_cor:ProfitLossAttributableToOwnersOfParent
+    - jpigp_cor:ProfitLossAttributableToOwnersOfParentIFRS
+
+  # ---------------- BS: 運転資本と「売上の在庫」 ----------------
+  # 仕様書 §0: BSに積まれた売上の在庫がPLに変換される直前・直後を捉える。
+  cash_and_deposits:
+    - jppfs_cor:CashAndDeposits
+    - jppfs_cor:CashAndCashEquivalents
+    - jpigp_cor:CashAndCashEquivalentsIFRS
+
+  trade_receivables:
+    - jppfs_cor:NotesAndAccountsReceivableTrade
+    - jppfs_cor:NotesAndAccountsReceivableTradeAndContractAssets
+    - jppfs_cor:AccountsReceivableTrade
+    - jppfs_cor:NotesReceivableTrade
+    - jppfs_cor:NotesReceivableAccountsReceivableFromCompletedConstructionContractsAndOtherCA
+    - jpigp_cor:TradeAndOtherReceivablesCAIFRS
+
+  electronically_recorded_claims:
+    - jppfs_cor:ElectronicallyRecordedMonetaryClaimsOperatingCA
+
+  contract_assets:
+    - jppfs_cor:ContractAssetsCA
+    - jppfs_cor:ContractAssets
+    - jpigp_cor:ContractAssetsCAIFRS
+
+  merchandise_and_finished_goods:
+    - jppfs_cor:MerchandiseAndFinishedGoods
+    - jppfs_cor:FinishedGoods
+    - jppfs_cor:Merchandise
+
+  work_in_process:
+    - jppfs_cor:WorkInProcess
+    - jppfs_cor:CostsOnUncompletedConstructionContracts
+
+  raw_materials_and_supplies:
+    # 会社間ゆらぎの代表例。「原材料及び貯蔵品」/「原材料」/「貯蔵品」を1項目に寄せる。
+    - jppfs_cor:RawMaterialsAndSupplies
+    - jppfs_cor:RawMaterials
+    - jppfs_cor:Supplies
+
+  inventories_total:
+    # 【2026-08-29 実測】84本の短信で jppfs_cor:Inventories が出たのは2本だけ(3%)。
+    # J-GAAPの短信は棚卸資産を「商品及び製品/仕掛品/原材料及び貯蔵品」に分解して
+    # 出すのが通例で、合計行はタグ化されない。したがって inventories_total は
+    # 読むのではなく **構成要素の合算で導出する** のが正しい(P2 quarterly_builder
+    # で実装)。ここのタグは合計行を出す会社(IFRS等)を拾うための保険。
+    - jppfs_cor:Inventories
+    - jpigp_cor:InventoriesIFRS
+
+  # S3 の主役。稼働前投資 → 振替 → 稼働開始 の証拠。
+  construction_in_progress:
+    - jppfs_cor:ConstructionInProgress
+    - jppfs_cor:ConstructionInProgressNet
+    - jpigp_cor:ConstructionInProgressIFRS
+
+  machinery_and_equipment:
+    - jppfs_cor:MachineryAndEquipment
+    - jppfs_cor:MachineryAndEquipmentNet
+    - jppfs_cor:MachineryEquipmentAndVehicles
+    - jppfs_cor:MachineryEquipmentAndVehiclesNet
+
+  property_plant_and_equipment:
+    - jppfs_cor:PropertyPlantAndEquipment
+    - jpigp_cor:PropertyPlantAndEquipmentIFRS
+
+  # S4 の主役。顧客コミットの現金証拠。
+  contract_liabilities:
+    - jppfs_cor:ContractLiabilities
+    - jppfs_cor:ContractLiabilitiesCL
+    - jpigp_cor:ContractLiabilitiesCLIFRS
+
+  advances_received:
+    - jppfs_cor:AdvancesReceived
+    - jppfs_cor:AdvancesReceivedCL
+    - jppfs_cor:AdvancesReceivedOnUncompletedConstructionContracts
+
+  trade_payables:
+    - jppfs_cor:NotesAndAccountsPayableTrade
+    - jppfs_cor:AccountsPayableTrade
+    - jppfs_cor:NotesPayableTrade
+    - jpigp_cor:TradeAndOtherPayablesCLIFRS
+
+  electronically_recorded_obligations:
+    - jppfs_cor:ElectronicallyRecordedObligationsOperatingCL
+
+  short_term_loans:
+    - jppfs_cor:ShortTermLoansPayable
+    - jppfs_cor:ShortTermBorrowings
+
+  current_portion_long_term_loans:
+    - jppfs_cor:CurrentPortionOfLongTermLoansPayable
+
+  long_term_loans:
+    - jppfs_cor:LongTermLoansPayable
+    - jppfs_cor:LongTermBorrowings
+
+  lease_obligations_current:
+    - jppfs_cor:LeaseObligationsCL
+  lease_obligations_noncurrent:
+    - jppfs_cor:LeaseObligationsNCL
+
+  treasury_stock:
+    - jppfs_cor:TreasuryStock
+
+  total_assets:
+    - tse-ed-t:TotalAssets
+    - tse-ed-t:TotalAssetsIFRS
+    - jppfs_cor:Assets
+    - jpigp_cor:TotalAssetsIFRS
+
+  net_assets:
+    - tse-ed-t:NetAssets
+    - tse-ed-t:TotalEquityIFRS
+    - jppfs_cor:NetAssets
+    - jpigp_cor:EquityIFRS
+
+  owners_equity:
+    - tse-ed-t:OwnersEquity
+    - tse-ed-t:EquityAttributableToOwnersOfParentIFRS
+
+  # ---------------- CF ----------------
+  operating_cf:
+    - tse-ed-t:CashFlowsFromOperatingActivities
+    - tse-ed-t:CashFlowsFromOperatingActivitiesIFRS
+    - jppfs_cor:NetCashProvidedByUsedInOperatingActivities
+  investing_cf:
+    - tse-ed-t:CashFlowsFromInvestingActivities
+    - tse-ed-t:CashFlowsFromInvestingActivitiesIFRS
+    - jppfs_cor:NetCashProvidedByUsedInInvestingActivities
+  financing_cf:
+    - tse-ed-t:CashFlowsFromFinancingActivities
+    - tse-ed-t:CashFlowsFromFinancingActivitiesIFRS
+    - jppfs_cor:NetCashProvidedByUsedInFinancingActivities
+
+  # ---------------- 株数 ----------------
+  shares_issued:
+    - tse-ed-t:NumberOfIssuedAndOutstandingSharesAtTheEndOfFiscalYearIncludingTreasuryStock
+  shares_treasury:
+    - tse-ed-t:NumberOfTreasuryStockAtTheEndOfFiscalYear
+  shares_average:
+    - tse-ed-t:AverageNumberOfShares
+
+  # --- unknown_tags 頻度レビュー(2026-08-29 第1回)で追加した項目 ---
+  # 追加根拠: 3営業日分25本の短信で出現上位に入り、かつ意味が確定しているもの。
+  profit_loss_total:
+    # 非支配株主持分を含む当期純利益。親会社帰属との差でNCIの規模が見える。
+    - jppfs_cor:ProfitLoss
+    - jpigp_cor:ProfitLossIFRS
+  eps:
+    - tse-ed-t:NetIncomePerShare
+    - tse-ed-t:BasicEarningsPerShareIFRS
+  # セグメント注記。S3(建仮→機械の振替)を事業単位で見るために必要。
+  segment_revenue_external:
+    - jpcrp_cor:RevenuesFromExternalCustomers
+  segment_intersegment:
+    - jpcrp_cor:TransactionsWithOtherSegments
+  segment_depreciation:
+    - jpcrp_cor:DepreciationSegmentInformation
+  segment_capex:
+    - jpcrp_cor:IncreaseInPropertyPlantAndEquipmentAndIntangibleAssets
+
+# 通期会社予想は「別のタグ」ではなく **同じタグ + ForecastMember コンテキスト** で表現される。
+# 例: tse-ed-t:OperatingIncome @ NextYearDuration_ConsolidatedMember_ForecastMember
+# よって予想の抽出は contexts: のロール判定で行い、items: には予想専用の項目を作らない。
+contexts:
+  # contextRef を (年の相対位置, 四半期, 連結/単体, ロール) に分解する規則。
+  year_rel:
+    CurrentYearDuration: current
+    CurrentYearInstant: current
+    PriorYearDuration: prior
+    PriorYearInstant: prior
+    NextYearDuration: next
+    NextYearInstant: next
+    Prior2YearDuration: prior2
+    Prior2YearInstant: prior2
+  quarter:
+    FirstQuarterMember: 1
+    SecondQuarterMember: 2
+    ThirdQuarterMember: 3
+    YearEndMember: 4
+  consolidation:
+    ConsolidatedMember: consolidated
+    NonConsolidatedMember: nonconsolidated
+  role:
+    ResultMember: result
+    ForecastMember: forecast
+    UpperMember: forecast_upper
+    LowerMember: forecast_lower
+  # 連結・単体の両方が載っている短信では連結を優先する（DCFパイプラインと同じ規約）。
+  prefer_consolidation: consolidated
+
+# unknown_tags のレビュー時に「そもそも財務数値ではない」ものを騒がせないための除外。
+# 除外してもカウントは残す（is_noise フラグとして扱う）——黙って捨てるのとは違う。
+noise_prefixes:
+  - tse-ed-t:DividendPerShare          # 配当の明細。項目化は P2 の配当シグナルで行う
+  - tse-ed-t:ChangeIn                  # 前年比%（値ではなく比率）
+  - tse-ed-t:AmountChange              # 増減額
+  - jppfs_cor:TotalChangesOfItemsDuringThePeriod
+  - jppfs_cor:NetChangesOfItemsOtherThanShareholdersEquity

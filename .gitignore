@@ -43,3 +43,12 @@ models/*
 !models/*_regen.xlsx
 !models/*_regen_validation.txt
 
+
+# Screener archives and DB (large, and TDnet raw is re-fetchable only for ~1 month
+# — the archive is a local asset, not a repo artefact). Config/schema/code ARE tracked.
+screener/data/raw/
+screener/data/cache/
+screener/data/logs/
+screener/data/*.db
+screener/data/*.db-wal
+screener/data/*.db-shm
