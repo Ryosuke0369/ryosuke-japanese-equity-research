@@ -7,7 +7,11 @@
                      時価総額と20日平均売買代金が取れるので **ユニバース条件を
                      完全に判定できる**。無料プランは12週遅延だが、規模・流動性の
                      判定には仕様書 §2-3 のとおり許容。
-                     .env の JQUANTS_REFRESH_TOKEN を使う。
+                     認証は .env の JQUANTS_MAIL / JQUANTS_PASSWORD から
+                     refreshToken → idToken を自動更新する(トークンは
+                     data/cache/ にキャッシュ。refresh 1週間 / id 24時間)。
+                     貼り付け済みの JQUANTS_REFRESH_TOKEN があればそれも使えるが、
+                     1週間で失効し自動更新できないため補助扱い。
 
   --source jpx       JPX「東証上場銘柄一覧」(data_j.xls)。コード・銘柄名・市場区分・
                      33業種が取れる。**時価総額と売買代金は無い**ので、規模・流動性の
@@ -43,30 +47,136 @@ SOURCE = "jquants"
 
 
 # ------------------------------------------------------------------ jquants
-def jq_id_token(fetcher: "C.Fetcher") -> str:
-    """refresh token → id token.
+TOKEN_CACHE = os.path.join(C.CACHE_DIR, "jquants_token.json")
 
-    A 403 here means the stored refresh token is invalid or expired (J-Quants
-    refresh tokens last one week). The message says so explicitly, because
-    'Forbidden' on its own has previously been mistaken for a plan/permission
-    problem.
+# J-Quants の有効期間。refresh token 1週間 / id token 24時間。
+# 週次運用でトークンを手で貼り替え続けるのは続かないので、mail+password から
+# 自動更新する経路を主とし、貼り付け済みの refresh token は補助に回す。
+REFRESH_TTL_H = 24 * 6          # 7日の手前で取り直す
+ID_TTL_H = 20                   # 24時間の手前で取り直す
+
+
+def _cache_read() -> dict:
+    import json
+    try:
+        with open(TOKEN_CACHE, encoding="utf-8") as fh:
+            return json.load(fh)
+    except (OSError, ValueError):
+        return {}
+
+
+def _cache_write(d: dict) -> None:
+    """Tokens are credentials. They live under screener/data/cache/, which is
+    git-ignored, and the file is created 0600 where the OS honours it."""
+    import json
+    os.makedirs(C.CACHE_DIR, exist_ok=True)
+    tmp = TOKEN_CACHE + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        json.dump(d, fh)
+    try:
+        os.chmod(tmp, 0o600)
+    except OSError:
+        pass
+    os.replace(tmp, TOKEN_CACHE)
+
+
+def _age_hours(iso: str | None) -> float:
+    from datetime import datetime
+    if not iso:
+        return 1e9
+    try:
+        return (datetime.now() - datetime.fromisoformat(iso)).total_seconds() / 3600
+    except ValueError:
+        return 1e9
+
+
+def jq_refresh_token(force: bool = False) -> str:
+    """mail+password → refreshToken, cached.
+
+    Falls back to a hand-pasted JQUANTS_REFRESH_TOKEN only when no credentials
+    are configured — and says so, rather than silently using a stale token.
     """
     import requests
-    token = C.require_env("JQUANTS_REFRESH_TOKEN")
-    r = requests.post(f"{JQ}/token/auth_refresh",
-                      params={"refreshtoken": token}, timeout=60)
-    if r.status_code != 200:
+    C.load_env()
+    cache = _cache_read()
+    if not force and cache.get("refresh_token") and \
+            _age_hours(cache.get("refresh_at")) < REFRESH_TTL_H:
+        return cache["refresh_token"]
+
+    mail = os.environ.get("JQUANTS_MAIL")
+    password = os.environ.get("JQUANTS_PASSWORD")
+    if mail and password:
+        r = requests.post(f"{JQ}/token/auth_user",
+                          json={"mailaddress": mail, "password": password},
+                          timeout=60)
+        if r.status_code != 200:
+            raise SystemExit(
+                f"ERROR: J-Quants auth_user returned HTTP {r.status_code} "
+                f"({r.text[:160]}).\n"
+                f"  JQUANTS_MAIL / JQUANTS_PASSWORD in .env were rejected. "
+                f"Check them at https://application.jpx-jquants.com/ .")
+        token = r.json()["refreshToken"]
+        from datetime import datetime
+        cache.update({"refresh_token": token,
+                      "refresh_at": datetime.now().isoformat()})
+        _cache_write(cache)
+        C.log("J-Quants: refresh token renewed from JQUANTS_MAIL/PASSWORD")
+        return token
+
+    token = os.environ.get("JQUANTS_REFRESH_TOKEN")
+    if token:
+        C.log("J-Quants: using the pasted JQUANTS_REFRESH_TOKEN "
+              "(JQUANTS_MAIL/JQUANTS_PASSWORD are not set, so it cannot be "
+              "auto-renewed and will stop working within a week)")
+        return token
+
+    raise SystemExit(
+        "ERROR: no J-Quants credentials.\n"
+        "  Preferred (auto-renewing) — add to .env:\n"
+        "      JQUANTS_MAIL=you@example.com\n"
+        "      JQUANTS_PASSWORD=...\n"
+        "  Or paste a refresh token (expires after one week):\n"
+        "      JQUANTS_REFRESH_TOKEN=...\n"
+        "  Sign-up / credentials: https://application.jpx-jquants.com/")
+
+
+def jq_id_token(fetcher: "C.Fetcher | None" = None, force: bool = False) -> str:
+    """refreshToken → idToken, cached for ID_TTL_H hours.
+
+    A 403 on auth_refresh means the refresh token is dead; with mail+password
+    configured we take one automatic retry with a freshly minted refresh token
+    before giving up, because a week-old token expiring is the normal case, not
+    an exceptional one.
+    """
+    import requests
+    from datetime import datetime
+
+    cache = _cache_read()
+    if not force and cache.get("id_token") and \
+            _age_hours(cache.get("id_at")) < ID_TTL_H:
+        return cache["id_token"]
+
+    for attempt in (1, 2):
+        token = jq_refresh_token(force=(attempt == 2))
+        r = requests.post(f"{JQ}/token/auth_refresh",
+                          params={"refreshtoken": token}, timeout=60)
+        if r.status_code == 200:
+            idt = r.json()["idToken"]
+            cache.update({"id_token": idt, "id_at": datetime.now().isoformat()})
+            _cache_write(cache)
+            return idt
+        if attempt == 1 and os.environ.get("JQUANTS_MAIL"):
+            C.log(f"J-Quants: auth_refresh HTTP {r.status_code} — the cached "
+                  f"refresh token is stale; re-authenticating with "
+                  f"JQUANTS_MAIL/PASSWORD")
+            continue
         raise SystemExit(
             f"ERROR: J-Quants auth_refresh returned HTTP {r.status_code} "
-            f"({r.text[:120]}).\n"
-            f"  JQUANTS_REFRESH_TOKEN in .env is {len(token)} characters long. "
-            f"A real refresh token is a JWT of several hundred characters, and "
-            f"it expires after one week.\n"
-            f"  Get a fresh one:  POST {JQ}/token/auth_user "
-            f'{{"mailaddress": "...", "password": "..."}}  → refreshToken\n'
-            f"  then put it in .env as JQUANTS_REFRESH_TOKEN=..."
-        )
-    return r.json()["idToken"]
+            f"({r.text[:160]}).\n"
+            f"  The refresh token is invalid or expired (they last one week).\n"
+            f"  Set JQUANTS_MAIL / JQUANTS_PASSWORD in .env so the token can be "
+            f"renewed automatically, or paste a fresh JQUANTS_REFRESH_TOKEN.")
+    raise SystemExit("unreachable")
 
 
 def jq_get(fetcher, path: str, token: str, **params):
@@ -91,7 +201,7 @@ def jq_get(fetcher, path: str, token: str, **params):
 
 
 def build_from_jquants(con, fetcher, price_days: int = 40) -> dict:
-    token = jq_id_token(fetcher)
+    token = jq_id_token()
     fetcher.s.headers["Authorization"] = f"Bearer {token}"
 
     C.log("J-Quants: /listed/info")
@@ -279,9 +389,15 @@ def main(argv=None) -> int:
     p.add_argument("--build", action="store_true")
     p.add_argument("--report", action="store_true")
     p.add_argument("--price-days", type=int, default=40)
+    p.add_argument("--check-auth", action="store_true",
+                   help="J-Quants の認証だけ試して終了する")
     a = p.parse_args(argv)
 
     con = C.init_db()
+    if a.check_auth:
+        tok = jq_id_token(force=True)
+        C.log(f"J-Quants auth OK (idToken {len(tok)} chars)")
+        return 0
     if a.build:
         run_id = C.start_run(con, f"universe_{a.source}", date.today().isoformat())
         fetcher = C.Fetcher(min_interval=0.4)
