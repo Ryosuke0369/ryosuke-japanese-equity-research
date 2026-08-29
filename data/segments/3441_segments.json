@@ -1,0 +1,80 @@
+{
+  "_source": "EDINET 有価証券報告書 セグメント情報注記。FY2025/7期 docID S100WWVN(CurrentYearDuration / Prior1YearDuration の JapanReportableSegmentsMember・PhilippinesReportableSegmentsMember コンテキストから直接抽出、2026-08-29取得)。全て百万円(原典は円単位)。",
+  "_ticker": "3441 山王",
+  "title": "Segment Bridge - SANNO (3441)",
+  "intro": [
+    "Reportable segments are geographic: Japan (the Ohta and Chiba plants) and the Philippines (SANNO Philippines Manufacturing Corp., SPMC). All figures JPY mn, from the FY7/25 annual securities report segment note.",
+    "The point of this sheet: the FY7/25 profit step-up was a JAPAN event, not a Philippine / weak-yen event. Japan swung from a JPY188mn operating loss to a JPY509mn profit (+697) while the Philippines went the other way, from JPY348mn to JPY243mn (-104). Of the three candidate drivers for the gross-margin step - (1) precious-metal price pass-through and spread, (2) semiconductor / connector volume recovery, (3) the weak yen lifting the Philippine subsidiary - driver (3) is ruled out by this table.",
+    "Only two comparable fiscal years are disclosed on this basis, which is why segment data sits here rather than in a `segments` override block (that block would switch the DCF COGS line to a segment-EBIT back-solve on two data points).",
+    "This sheet is informational: no cell on the DCF Model sheet references it."
+  ],
+  "periods": ["FY2024/7", "FY2025/7"],
+  "segments": [
+    {
+      "label": "Japan  日本",
+      "revenue": [5892.4, 7652.9],
+      "profit": [-188.2, 508.9],
+      "da": [386.6, 378.9],
+      "note": "External sales. Inter-segment sales of 6.3 (FY7/24) and 59.1 (FY7/25) are excluded here and appear in the revenue adjustment row."
+    },
+    {
+      "label": "Philippines  フィリピン (SPMC)",
+      "revenue": [2909.7, 3177.5],
+      "profit": [347.7, 243.3],
+      "da": [75.5, 69.4],
+      "note": "29.3% of FY7/25 consolidated revenue. No inter-segment sales disclosed."
+    }
+  ],
+  "adjustment": {
+    "revenue": "derive",
+    "revenue_note": "Derived as (consolidated - segment total). Zero because the segment revenue rows above are already external-customer sales.",
+    "profit": [73.5, 44.0],
+    "profit_label": "Adjustment  調整額 (全社費用・セグメント間消去)",
+    "da": [0.0, 0.0],
+    "da_label": "Adjustment  調整額 (D&A)",
+    "da_note": "The disclosed segment D&A total equals consolidated D&A in both years, so the adjustment is nil."
+  },
+  "consolidated": {
+    "revenue": [8802.1, 10830.4],
+    "revenue_note": "Ties to the Financial Statements sheet (FY2024/7, FY2025/7 columns).",
+    "profit": [233.0, 796.2],
+    "profit_note": "Disclosed consolidated operating profit. The adjustment row is the disclosed 調整額, so the bridge closes exactly.",
+    "da": [462.2, 448.3],
+    "da_note": "CF-statement depreciation, disclosed. Equals the segment total in both years."
+  },
+  "show_margin_table": true,
+  "show_ebitda_row": true,
+  "extra_tables": [
+    {
+      "title": "Capital Intensity and Headcount by Segment",
+      "headers": ["Item", "FY2024/7", "FY2025/7", "Note"],
+      "formats": ["text", "yen", "yen", "text"],
+      "rows": [
+        ["Capex  設備投資 - Japan", 177.3, 629.1, "Segment note 有形固定資産及び無形固定資産の増加額"],
+        ["Capex  設備投資 - Philippines", 26.7, 209.6, "Philippine capex went from negligible to 209.6"],
+        ["Capex  設備投資 - segment total", 204.0, 838.7, "Consolidated per segment note: 204.0 / 784.8; FY7/25 adjustment -53.9"],
+        ["Segment assets  資産 - Japan", 10495.0, 11956.1, "Period end"],
+        ["Segment assets  資産 - Philippines", 3416.3, 2963.8, "Period end; fell despite the weaker yen"],
+        ["Employees  従業員数 - Japan", null, 320, "Plus 12 average temporary workers (FY7/25)"],
+        ["Employees  従業員数 - Philippines", null, 83, "Plus 122 average temporary workers (FY7/25)"]
+      ],
+      "note": "FY7/25 capex more than quadrupled in Japan (177 -> 629) in the same year Japan swung to profit. Philippine segment assets FELL (3,416 -> 2,964) even though the cumulative translation adjustment rose from 763 (FY7/25 end) to 996 (Apr-26), which further argues that the weak yen is not what produced the earnings step."
+    }
+  ],
+  "notes": [
+    "Segment profit is disclosed segment operating profit; the adjustment row carries corporate costs and inter-segment eliminations and is disclosed, not derived, so the profit bridge closes to zero variance in both years.",
+    "Japan segment operating margin: -3.2% (FY7/24) -> +6.6% (FY7/25). Philippine segment operating margin: +11.9% -> +7.7%. The Philippine unit is still the higher-margin business but is no longer the growth engine.",
+    "No segment data is disclosed for the FY7/26 interim or third quarter, so the Japan / Philippines split of the 24.2% nine-month gross margin cannot be verified. This is the single most useful disclosure to look for in the mid-September FY7/26 results.",
+    "Cumulative translation adjustment 為替換算調整勘定: 763 at FY7/25 end -> 996 at Apr-26 (+233). This flows through other comprehensive income and equity, not through operating profit, and is therefore not part of the margin story on this sheet."
+  ],
+  "open_items": [
+    ["2026-08-29", "'Segment Bridge' Capex rows",
+     "設備投資の定義が2系統ある: セグメント注記の『有形固定資産及び無形固定資産の増加額』(FY7/25 セグメント計838.7 / 連結784.8)と、CF計算書の『有形固定資産の取得による支出』(FY7/25 580.0)",
+     "本シートは発生ベースのセグメント注記値を表示し、DCF Model の hist_capex は CF ベース(580.0)を使う。両者は約205百万乖離するが、これは未払計上・無形資産分・調整額-53.9の差であり、どちらかが誤りではない。DCF は現金支出ベースを採るのが正しい。",
+     "-", "設計判断"],
+    ["2026-08-29", "'Segment Bridge' FY7/26 columns",
+     "FY2026/7期(半期・第3四半期)のセグメント別売上・利益が未取得",
+     "半期報告書(S100XQSL)にセグメント情報の開示があるかを確認しきれておらず、本シートは通期2期のみで構成した。粗利率24.2%の日本/フィリピン別内訳が判明すれば、シナリオ分岐軸(貴金属スプレッド vs 数量 vs 為替)の判定精度が上がる。",
+     "-", "未解決"]
+  ]
+}
