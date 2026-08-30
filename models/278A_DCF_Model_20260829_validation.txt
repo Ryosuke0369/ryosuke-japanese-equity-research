@@ -1,0 +1,24 @@
+validate_output.py — 278A_DCF_Model_20260829.xlsx
+==============================================================================
+[PASS]  1. No formula errors                     0 error cells in all sheets
+[PASS]  2. Scenario index is MATCH               D27 = =MATCH(C27,B69:B73,0)
+[PASS]  3. Comps stats exclude subject row       subject row 5 excluded from all MEDIAN/PERCENTILE ranges
+[PASS]  4. Subject Mkt Cap / EV are formulas     D5=='Executive Summary'!C9*C23/1000000 / E5==D5+C24
+[PASS]  5. Scenario names are the fixed 5        B69:B73 = ['Base', 'Upside', 'Management', 'Downside 1', 'Downside 2']
+[PASS]  6. C20 LTM Revenue matches generator     4,845.6 mn (source: override)
+[PASS]  7. C5 Capex/Revenue basis                7.50% (explicit assumption, not a back-solve; basis=assumption)
+[PASS]  7. C18 D&A/Revenue basis                 7.00% (explicit assumption, not a back-solve; basis=assumption)
+[PASS]  8. FS OCF/Cash/Debt year alignment       3 year column(s) match the source year keys cell-for-cell
+[PASS]  9. Terminal-year capex / D&A ratio       g=2.00% > 1.5% — steady-state test not applicable (ratio 1.07x)
+[PASS] 10. PGM implied price sanity              EV -1,639 >= net debt -2,257 mn
+[WARN] 11. PGM-implied vs assumed exit multiple  PGM implies 0.45x vs assumed 2.00x (4.44x apart) — the two DCF legs disagree on terminal value
+[PASS] 12. Peer EBITDA != EBIT                   no peer row where EBITDA equals operating income
+[PASS] 13. Adjustments Log sheet present         
+[PASS] 14. Target Price averages DCF legs only   C10 averages C16:C17 (PGM + Exit); comps rows excluded
+[PASS] 15. Exit implied price sanity             EV 8,130 >= net debt -2,257 mn
+[PASS] 16. Reverse DCF sheet present             121 live formulas, sheet position 4
+[PASS] 17. Cost of debt basis                    1.4000% after-tax (assumption; supply interest_expense + debt balances to derive the actual rate)
+[PASS] 18. FX sensitivity Table 3                not enabled (domestic name) — no table expected
+==============================================================================
+FAIL 0 / WARN 1 / SKIP 0 / PASS 18
+VERDICT: PASS

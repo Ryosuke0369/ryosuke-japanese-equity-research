@@ -1,0 +1,9 @@
+validate_output.py — 3905_SOTP_20260822_diluted.xlsx
+==============================================================================
+[PASS]  1. No formula errors                       0 error cells in all sheets
+[PASS] 17. D&A allocation sums to 100%             E13 = OK
+[PASS] 18. Cover SOTP value is a live link         C12 = ='SOTP Valuation'!C27
+[PASS] 19. SOTP fair value per share is plausible  JPY 3,198
+==============================================================================
+FAIL 0 / WARN 0 / SKIP 0 / PASS 4
+VERDICT: PASS

@@ -30,18 +30,14 @@ venv/
 *.lnk
 # Published research reports are the exception to the PDF rule
 !reports/*.pdf
+!models/reports/*.pdf
 
 # Excel lock/owner files
 ~$*.xlsx
 ~$*.xls
 
-# Generated models (regenerable via generate_dcf.py; may sit next to personal files)
-models/*
-# ...except the regression baselines: *_regen.xlsx is the output of re-generating
-# a reference model with the current template, and the whole point of keeping it
-# is that scripts/diff_models.py can be re-run against it after a template change.
-!models/*_regen.xlsx
-!models/*_regen_validation.txt
+# models/ は通常追跡。分析成果物(DCF/SOTP/market_analysis の xlsx・validation txt・
+# レポートPDF)は DRAFT 含めて公開する方針。個人ファイル(CV等)は models/ に置かない。
 
 
 # Screener data directory — blanket ignore, no exceptions.

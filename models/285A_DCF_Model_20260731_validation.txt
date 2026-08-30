@@ -1,0 +1,19 @@
+validate_output.py — 285A_DCF_Model_20260731.xlsx
+==============================================================================
+[PASS]  1. No formula errors                     0 error cells in all sheets
+[PASS]  2. Scenario index is MATCH               D27 = =MATCH(C27,B69:B73,0)
+[PASS]  3. Comps stats exclude subject row       subject row 5 excluded from all MEDIAN/PERCENTILE ranges
+[PASS]  4. Subject Mkt Cap / EV are formulas     D5=='Executive Summary'!C9*C23/1000000 / E5==D5+C24
+[PASS]  5. Scenario names are the fixed 5        B69:B73 = ['Base', 'Upside', 'Management', 'Downside 1', 'Downside 2']
+[PASS]  6. C20 LTM Revenue matches generator     2,219,365.0 mn (source: LTM row)
+[PASS]  7. C5 Capex/Revenue basis                17.90% = mean of last 3 historical years
+[PASS]  7. C18 D&A/Revenue basis                 21.28% = mean of last 3 historical years
+[PASS]  8. FS OCF/Cash/Debt year alignment       3 year column(s) match the source year keys cell-for-cell
+[PASS]  9. Terminal-year capex / D&A ratio       0.98x within [0.90, 1.15] at g=1.00%
+[PASS] 10. PGM implied price sanity              EV 5,773,617 >= net debt 782,482 mn
+[PASS] 11. PGM-implied vs assumed exit multiple  PGM implies 4.84x vs assumed 5.00x (1.03x)
+[PASS] 12. Peer EBITDA != EBIT                   no peer row where EBITDA equals operating income
+[PASS] 13. Adjustments Log sheet present         
+==============================================================================
+FAIL 0 / WARN 0 / SKIP 0 / PASS 14
+VERDICT: PASS

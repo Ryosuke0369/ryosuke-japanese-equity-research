@@ -1,0 +1,10 @@
+validate_output.py — 6521_market_analysis_20260821.xlsx
+==============================================================================
+[PASS]  1. No formula errors                    0 error cells in all sheets
+[PASS] 14. Block 3 interpolation guards #N/A    all 5 interpolation formula(s) wrap MATCH in IFERROR
+[PASS] 15. 逆算Comps excludes the subject         'Oxide Corporation' not present among the distribution inputs
+[PASS] 16. alpha-scan is ascending              -326 -> 417 across 18 alphas
+[PASS] 20. Peer-count caption matches the data  7 peer row(s), caption says [7]社
+==============================================================================
+FAIL 0 / WARN 0 / SKIP 0 / PASS 5
+VERDICT: PASS
