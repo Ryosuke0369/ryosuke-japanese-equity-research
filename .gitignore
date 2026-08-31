@@ -61,3 +61,10 @@ screener/data/
 # Env files of every flavour (.env itself is listed above; these are the variants).
 .env.*
 !.env.example
+
+# --- 別枠 earnings_screener (Kimi 由来の参照実装) -------------------------
+# 統合引継ぎ書 v1.1 §1「モックのバックテスト数値は移植しない・git管理外推奨」。
+# data/ は (1) 相関を人工注入したモック世界の数値であり実績と誤読される、
+# (2) 生成スクリプトから再現できる、の2点で追跡しない。
+# コード・PROVENANCE.md・tests/ は追跡する。
+Kimi_Agent_Bモジュール進行/**/data/
