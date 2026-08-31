@@ -364,6 +364,32 @@ class TestEdinetXbrlParsing(unittest.TestCase):
         # fy_end が無ければ従来どおり開示日から推定する(短信の経路)
         self.assertEqual(self.X.period_label(row, {"year_rel": "current"}), "FY2026")
 
+    def test_fiscal_year_comes_from_dei_not_the_filing_date(self):
+        """会計年度を提出日から推定してはいけない。3月期の会社が8月に出す
+        第1四半期短信は「2027年3月期」で、提出年(2026)ではない。
+
+        提出日推定だと FY2026 とラベルされ、EDINET由来の FY2026(上期・下期)と
+        衝突して**別の会計年度どうしを引き算する**。3905 で粗利率115.3%という
+        あり得ない値が出て発覚した(2026-08-31)。短信も有報も DEI に期末日を
+        持っているので、推定する理由が最初から無かった。
+        """
+        row = {"date": "2026-08-14", "code": "3905"}
+        self.assertEqual(
+            self.X.period_label(row, {"year_rel": "current"}, "2027-03-31"), "FY2027")
+        self.assertEqual(
+            self.X.period_label(row, {"year_rel": "prior"}, "2027-03-31"), "FY2026")
+        # DEI が無いときだけ提出日にフォールバックする
+        self.assertEqual(self.X.period_label(row, {"year_rel": "current"}), "FY2026")
+
+    def test_fy_end_is_read_from_tdnet_too(self):
+        """fy_end の抽出を EDINET 限定にしていたのが上のバグの原因。
+        短信は tse-ed-t:FiscalYearEnd と jpdei_cor:CurrentFiscalYearEndDateDEI の
+        両方を持つ。どちらの綴りでも拾えること。"""
+        for tag in ("jpdei_cor:CurrentFiscalYearEndDateDEI", "tse-ed-t:FiscalYearEnd"):
+            self.assertTrue(
+                any(tag.endswith(k) or tag == k for k in self.X._FY_END_TAGS),
+                f"{tag} を拾えない")
+
     def test_only_publicdoc_ixbrl_is_read(self):
         """EDINET は `_ixbrl.htm`(アンダースコア)。AuditDoc は監査報告書で
         財務数値を持たず、読むと監査文言が unknown を無意味に膨らませる。"""

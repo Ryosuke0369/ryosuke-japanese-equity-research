@@ -156,26 +156,38 @@ def _ixbrl_members(names: list[str], source: str) -> list[tuple[str, str]]:
     return out
 
 
-def edinet_fy_end(zip_path: str) -> str | None:
-    """EDINET の DEI から当期の決算期末日 (YYYY-MM-DD) を取る。
+_FY_END_TAGS = (":CurrentFiscalYearEndDateDEI", "tse-ed-t:FiscalYearEnd")
 
-    短信は会計期間をファクトとして持たないので提出日から推定するしかないが、
-    EDINET は jpdei_cor:CurrentFiscalYearEndDateDEI を持っている。12月期・
-    11月期の会社は提出年と会計年度がずれるので、推定ではなく実値を使う。
+
+def fy_end_from_zip(zip_path: str, source: str = "edinet") -> str | None:
+    """DEI から当期の決算期末日 (YYYY-MM-DD) を取る。**TDnet短信にもある**。
+
+    当初これを EDINET 限定にしていたのは誤りだった。短信も
+    jpdei_cor:CurrentFiscalYearEndDateDEI と tse-ed-t:FiscalYearEnd を持つ。
+    提出日から会計年度を推定すると、3月期の会社が8月に出す第1四半期短信
+    (2027年3月期)が FY2026 とラベルされ、**EDINET由来の FY2026 と衝突して
+    別の会計年度どうしを引き算する**。3905 で粗利率115.3%という
+    あり得ない値が出て発覚した(2026-08-31)。
     """
     try:
         with zipfile.ZipFile(zip_path) as z:
-            for name, _ in _ixbrl_members(z.namelist(), "edinet"):
+            for name, _ in _ixbrl_members(z.namelist(), source):
                 soup = BeautifulSoup(z.read(name).decode("utf-8", "replace"),
                                      "lxml-xml")
                 for t in soup.find_all("nonNumeric"):
-                    if (t.get("name") or "").endswith(
-                            ":CurrentFiscalYearEndDateDEI"):
+                    q = t.get("name") or ""
+                    if any(q.endswith(k) or q == k for k in _FY_END_TAGS):
                         v = t.get_text(strip=True)
-                        return v[:10] if v else None
+                        if v:
+                            return v[:10]
     except Exception:
         return None
     return None
+
+
+# 旧名。EDINET 限定だった頃の呼び出しを壊さないために残す。
+def edinet_fy_end(zip_path: str) -> str | None:
+    return fy_end_from_zip(zip_path, "edinet")
 
 
 # ---------------------------------------------------------------- 次元(軸)
@@ -451,7 +463,8 @@ def parse_archive(con, mapping: Mapping, where_sql: str, params: tuple,
                 samples.setdefault((f"{source}_{f['part']}", f["tag"]), f["raw"])
         # EDINET は会計期間を DEI に持っている。開示日からの推定だと 12月期・
         # 11月期の会社で1年ずれるので、1書類につき一度だけ読んで渡す。
-        fy_end = edinet_fy_end(path) if source == "edinet" else None
+        # 会計年度は提出日から推定しない。短信・有報とも DEI が実値を持つ。
+        fy_end = fy_end_from_zip(path, source)
         got = store_filing(con, mapping, r, facts, unknown, unknown_files,
                            source, fy_end, filing_quarter(facts, r))
         for k in ("cum", "guidance", "unknown", "noise", "dimensional",
