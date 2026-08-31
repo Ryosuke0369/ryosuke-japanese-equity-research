@@ -1,4 +1,4 @@
-<#
+﻿<#
     screener/run_edinet_full.ps1 - 確定ユニバース x N年 の EDINET 一括取得
     (仕様書 §2-2)。夜間に一度流す想定で、TDnet の run_daily.ps1 とは別物。
 
@@ -32,6 +32,12 @@ $ErrorActionPreference = "Stop"
 $repo = Split-Path -Parent $PSScriptRoot
 Set-Location $repo
 
+# Python 側は stdout を UTF-8 に固定している。PowerShell 5.1 の既定は
+# コンソールのコードページ(日本語環境では cp932)なので、明示的に合わせないと
+# ログとサマリの日本語が全部化ける —— 読めないレポートは無いのと同じ。
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+
 if (-not $PythonExe) {
     $PythonExe = (Get-Command python -ErrorAction SilentlyContinue).Source
 }
@@ -59,20 +65,25 @@ public static extern uint SetThreadExecutionState(uint esFlags);
     try {
         $p = Add-Type -MemberDefinition $sig -Name Power -Namespace Win32 -PassThru
         [void]$p::SetThreadExecutionState([uint32]"0x80000001")
-        "sleep suppressed for the duration of this run" | Tee-Object -FilePath $log -Append
+        "sleep suppressed for the duration of this run" |
+            Out-File -FilePath $log -Append -Encoding utf8
     } catch {
         "WARNING: could not suppress sleep ($_). PC が寝ると取得が中断します。" |
-            Tee-Object -FilePath $log -Append
+            Out-File -FilePath $log -Append -Encoding utf8
     }
 }
 
+function Write-Log([string]$text) {
+    Write-Host $text
+    $text | Out-File -FilePath $log -Append -Encoding utf8
+}
+
 function Invoke-Step([string]$label, [string[]]$stepArgs) {
-    "=== $label  $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') ===" |
-        Tee-Object -FilePath $log -Append
+    Write-Log "=== $label  $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') ==="
     & $PythonExe -m screener.fetch.edinet_bulk @stepArgs 2>&1 |
-        Tee-Object -FilePath $log -Append
+        ForEach-Object { Write-Log ([string]$_) }
     if ($LASTEXITCODE -ne 0) {
-        "FAILED: $label (exit $LASTEXITCODE)" | Tee-Object -FilePath $log -Append
+        Write-Log "FAILED: $label (exit $LASTEXITCODE)"
         throw "$label failed with exit code $LASTEXITCODE"
     }
 }
@@ -86,16 +97,16 @@ try {
         Invoke-Step "download" @("--download")
     }
 } catch {
-    "RUN ABORTED: $_" | Tee-Object -FilePath $log -Append
+    Write-Log "RUN ABORTED: $_"
     $exit = 1
 }
 
 # サマリは中断時も書く。途中まで何が取れたかが分からないほうが困る。
 "=== summary  $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') ===" |
-    Tee-Object -FilePath $summary
+    Out-File -FilePath $summary -Encoding utf8
 & $PythonExe -m screener.report.edinet_coverage 2>&1 |
-    Tee-Object -FilePath $summary -Append
-Get-Content $summary | Tee-Object -FilePath $log -Append | Out-Null
+    ForEach-Object { [string]$_ | Out-File -FilePath $summary -Append -Encoding utf8 }
+Get-Content $summary -Encoding UTF8 | ForEach-Object { Write-Log $_ }
 
 "log:     $log"
 "summary: $summary"
