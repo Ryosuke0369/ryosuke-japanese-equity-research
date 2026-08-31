@@ -198,6 +198,19 @@ CREATE TABLE IF NOT EXISTS prices (
     adv20           REAL,                      -- 20日平均売買代金 JPY mn
     -- 【§5拡張】
     turnover_value  REAL,                      -- 当日売買代金 JPY
+    -- 【§5拡張・2026-08-31】始値と調整後株価。J-Quants は5年ローリングで、
+    -- 窓から落ちた日付は二度と取得できない。取れるうちに全部取る。
+    --   open   出口ルール「翌日寄り指値」(v1.1 §5-5)の再現に必須
+    --   adj_*  株式分割の調整。未調整だと分割が偽の -50% リターンになる
+    --          (86970 の 2022-01-04 は C=2518.5 / AdjC=1259.3)
+    --   mktcap 日次時価総額。ユニバース条件の時点再現に使える
+    open            REAL,
+    high            REAL,
+    low             REAL,
+    adj_factor      REAL,
+    adj_close       REAL,
+    adj_volume      REAL,
+    mktcap          REAL,                      -- JPY mn
     PRIMARY KEY (code, date)
 );
 

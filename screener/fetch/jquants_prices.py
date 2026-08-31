@@ -55,8 +55,11 @@ def _days(start: date, end: date):
 
 def backfill_prices(con, fetcher, start: date, end: date, codes: set | None) -> dict:
     """日次四本値を1日1リクエストで埋める。既に入っている日は飛ばす。"""
+    # 既に取得済みでも、調整後株価などの新しい列が NULL の日は取り直す。
+    # 「行がある」と「必要な列が埋まっている」は違う。
     have = {r["date"] for r in con.execute(
-        "SELECT DISTINCT date FROM prices")}
+        "SELECT date FROM prices GROUP BY date "
+        "HAVING SUM(CASE WHEN adj_close IS NULL THEN 1 ELSE 0 END) = 0")}
     todo = [d for d in _days(start, end) if d.isoformat() not in have]
     C.log(f"株価バックフィル {start}..{end}: 対象 {len(todo)} 営業日 "
           f"(取得済み {len(have)} 日はスキップ)")
@@ -80,10 +83,16 @@ def backfill_prices(con, fetcher, start: date, end: date, codes: set | None) -> 
             c = r.get("C")
             if c is None:
                 continue
-            buf.append((code, d.isoformat(), c, r.get("Vo"), r.get("Va")))
+            # API が返すものは全部取る。5年ローリングで窓から落ちた日付は
+            # 二度と取得できないので、「今は使わない」列も落とさない。
+            buf.append((code, d.isoformat(), c, r.get("Vo"), r.get("Va"),
+                        r.get("O"), r.get("H"), r.get("L"),
+                        r.get("AdjFactor"), r.get("AdjC"), r.get("AdjVo"),
+                        r.get("MktCap")))
         con.executemany(
-            "INSERT OR REPLACE INTO prices (code, date, close, volume, turnover_value) "
-            "VALUES (?,?,?,?,?)", buf)
+            "INSERT OR REPLACE INTO prices (code, date, close, volume, "
+            " turnover_value, open, high, low, adj_factor, adj_close, "
+            " adj_volume, mktcap) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", buf)
         n_rows += len(buf)
         n_days += 1
         if i % 25 == 0 or i == len(todo):
