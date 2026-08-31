@@ -355,3 +355,30 @@ class TestEdinetXbrlParsing(unittest.TestCase):
         td = ["XBRL/Summary/a-ixbrl.htm", "XBRL/Attachment/b-ixbrl.htm"]
         self.assertEqual([p for _, p in self.X._ixbrl_members(td, "tdnet")],
                          ["summary", "attachment"])
+
+
+class TestEdinetCoverageReport(_DbCase):
+    """索引をユニバース非依存にした結果、「未取得」の多くは設計どおりの
+    対象外になった。これを失敗として数えると本物の失敗が埋もれる。"""
+
+    def test_out_of_scope_documents_are_not_counted_as_failures(self):
+        from screener.report import edinet_coverage as R
+        self.add("2962", mktcap=20000, adv20=800)      # ユニバース内
+        self.add("9999", mktcap=20000, adv20=1)        # 流動性で除外
+        U.apply_universe_rules(self.con)
+        for code, doc, ok in (("2962", "S1", 1), ("9999", "S2", 0)):
+            self.con.execute(
+                "INSERT INTO filings (code, date, type, source, doc_id, xbrl_ok, path) "
+                "VALUES (?,?,?,?,?,?,?)",
+                (code, "2026-06-01", "有報", "edinet", doc, ok,
+                 "raw/x.zip" if ok else None))
+        self.con.commit()
+        logged = []
+        orig, C.log = C.log, lambda m: logged.append(str(m))
+        try:
+            R.failures(self.con, 10)
+        finally:
+            C.log = orig
+        joined = "\n".join(logged)
+        self.assertIn("取得対象なのに XBRL が取れていない書類: 0 件", joined)
+        self.assertIn("失敗ではない", joined)
