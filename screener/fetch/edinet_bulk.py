@@ -98,7 +98,7 @@ def index_day(con, fetcher, d: date, codes: set[str] | None) -> dict:
         # 索引はユニバースに依存させない。ここで codes で絞ると、あとで
         # ユニバース条件を広げたときに「走査済みの日」に載っている新規銘柄の
         # 書類が永久に入らず、日付単位の全再走査でしか回復できなくなる
-        # （2026-08-30 の上限拡大 600億→1,000億 で +249社 が出た）。
+        # （2026-08-31 の上限拡大 600億→1,000億 で +249社 が出た）。
         # 索引は全上場銘柄の有報/半期を持ち、絞るのは download_pending 側。
         con.execute(
             "INSERT INTO filings (code, date, type, source, path, xbrl_ok, doc_id, "

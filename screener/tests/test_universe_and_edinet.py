@@ -55,7 +55,7 @@ class TestUniverseRules(_DbCase):
     def test_too_big_and_too_small(self):
         # 閾値は universe_rules.yaml が正。ここに数字を書き写すと、上限を
         # 動かすたびにテストが「仕様変更」ではなく「破損」として落ちる
-        # (2026-08-30 の 600億->1,000億 で実際に落ちた)。yaml から境界を取る。
+        # (2026-08-31 の 600億->1,000億 で実際に落ちた)。yaml から境界を取る。
         size = C.load_yaml("universe_rules.yaml")["size"]
         self.add("1111", mktcap=size["mktcap_min_mn"] - 1, adv20=80)
         self.add("2222", mktcap=size["mktcap_max_mn"] + 1, adv20=80)
