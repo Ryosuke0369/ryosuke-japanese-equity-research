@@ -86,7 +86,7 @@ def index_day(con, fetcher, d: date, codes: set[str] | None) -> dict:
         return {"status": "failed", "listed": 0, "target": 0}
 
     docs = payload.get("results") or []
-    n_target = 0
+    n_indexed = n_target = 0
     for doc in docs:
         if doc.get("docTypeCode") not in DOC_TYPES:
             continue
@@ -95,8 +95,11 @@ def index_day(con, fetcher, d: date, codes: set[str] | None) -> dict:
         code = C.normalise_code(doc.get("secCode"))
         if not code:
             continue                                     # 非上場の提出者
-        if codes is not None and code not in codes:
-            continue
+        # 索引はユニバースに依存させない。ここで codes で絞ると、あとで
+        # ユニバース条件を広げたときに「走査済みの日」に載っている新規銘柄の
+        # 書類が永久に入らず、日付単位の全再走査でしか回復できなくなる
+        # （2026-08-30 の上限拡大 600億→1,000億 で +249社 が出た）。
+        # 索引は全上場銘柄の有報/半期を持ち、絞るのは download_pending 側。
         con.execute(
             "INSERT INTO filings (code, date, type, source, path, xbrl_ok, doc_id, "
             " title, disclosed_at, subtype, company_name, fetched_at) "
@@ -105,12 +108,15 @@ def index_day(con, fetcher, d: date, codes: set[str] | None) -> dict:
             (code, d.isoformat(), DOC_TYPES[doc["docTypeCode"]], SOURCE,
              doc.get("docID"), doc.get("docDescription"), d.isoformat(),
              doc.get("docTypeCode"), doc.get("filerName")))
-        n_target += 1
+        n_indexed += 1
+        if codes is None or code in codes:
+            n_target += 1                                # 現ユニバースでの内数
     con.commit()
     C.finish_run(con, run_id, "ok" if docs else "empty",
                  n_listed=len(docs), n_target=n_target,
-                 note="index pass (no download)")
-    return {"status": "ok", "listed": len(docs), "target": n_target}
+                 note=f"index pass (no download); indexed={n_indexed}")
+    return {"status": "ok", "listed": len(docs),
+            "indexed": n_indexed, "target": n_target}
 
 
 def index_range(con, fetcher, start: date, end: date,
@@ -118,27 +124,42 @@ def index_range(con, fetcher, start: date, end: date,
     days = list(weekdays(start, end))
     C.log(f"EDINET index sweep {start} .. {end} ({len(days)} weekdays), "
           f"target codes: {'all listed' if codes is None else len(codes)}")
-    tot = {"days": 0, "listed": 0, "target": 0, "failed": 0}
+    tot = {"days": 0, "listed": 0, "indexed": 0, "target": 0, "failed": 0}
     for i, d in enumerate(days, 1):
         res = index_day(con, fetcher, d, codes)
         tot["days"] += 1
         tot["listed"] += res["listed"]
+        tot["indexed"] += res.get("indexed", 0)
         tot["target"] += res["target"]
         tot["failed"] += 1 if res["status"] == "failed" else 0
         if i % 25 == 0 or i == len(days):
             C.log(f"  [{i}/{len(days)}] {d}  cumulative: {tot['listed']} docs seen, "
-                  f"{tot['target']} in scope, {tot['failed']} failed day(s)")
+                  f"{tot['indexed']} indexed, {tot['target']} in current universe, "
+                  f"{tot['failed']} failed day(s)")
     return tot
 
 
 # ------------------------------------------------------------------ pass 2
-def download_pending(con, fetcher, limit: int | None = None) -> dict:
+def download_pending(con, fetcher, limit: int | None = None,
+                     codes: set[str] | None = None) -> dict:
+    """未取得の書類を落とす。取得対象の絞り込みは**ここ**で行う。
+
+    索引は全上場銘柄を持っているので、codes を渡さないと対象外の会社まで
+    落としにいく。逆に、ユニバースを広げたときは codes が広がるだけで、
+    既に xbrl_ok=1 の行は WHERE から外れるため再取得は起きない ——
+    「既取得分は無効にせず差分のみ追加取得」がこの1か所で成立する。
+    """
     rows = con.execute(
         "SELECT id, code, date, doc_id, type FROM filings "
         "WHERE source='edinet' AND (xbrl_ok=0 OR path IS NULL) "
-        "ORDER BY date DESC" + (f" LIMIT {int(limit)}" if limit else "")
-    ).fetchall()
-    C.log(f"EDINET download: {len(rows)} pending document(s)")
+        "ORDER BY date DESC").fetchall()
+    n_all = len(rows)
+    if codes is not None:
+        rows = [r for r in rows if r["code"] in codes]
+    if limit:
+        rows = rows[:int(limit)]
+    C.log(f"EDINET download: {len(rows)} pending document(s) "
+          f"(索引済みの未取得 {n_all} 件のうち、取得対象は {len(rows)} 件)")
     ok = failed = 0
     for i, r in enumerate(rows, 1):
         dest = os.path.join(C.RAW_DIR, SOURCE, r["date"], f"{r['doc_id']}.zip")
@@ -233,6 +254,9 @@ def main(argv=None) -> int:
     p.add_argument("--years", type=float, default=1.0)
     p.add_argument("--trial-extra", type=int, default=50)
     p.add_argument("--limit", type=int, help="download pass の上限")
+    p.add_argument("--all-codes", action="store_true",
+                   help="索引済みの全銘柄を取得対象にする（既定は現ユニバース）。"
+                        "索引は全上場銘柄を持つので、指定すると数万件になる")
     p.add_argument("--min-interval", type=float, default=1.2,
                    help="EDINETへの最短リクエスト間隔(秒)。既定1.2は "
                         "仕様書 §2-2『レート制限に注意して間隔を空ける』の実装")
@@ -247,19 +271,24 @@ def main(argv=None) -> int:
     start = (C.parse_date_arg(a.dfrom) if a.dfrom
              else end - timedelta(days=int(365 * a.years)))
 
-    codes = None
     if a.trial:
         codes = trial_codes(con, a.trial_extra)
         C.log(f"trial: {len(codes)} code(s) = 検証8銘柄 + {a.trial_extra}社")
-    elif a.full:
+    elif a.all_codes:
+        codes = None
+        C.log("all-codes: 索引済みの全銘柄を取得対象にする")
+    else:
+        # --full でも素の --index/--download でも既定は現ユニバース。
+        # 既定を None(全銘柄) にすると、索引が全上場銘柄を持つように
+        # なった以上、--download 単独実行が数万件を落としにいく。
         codes = universe_codes(con)
-        C.log(f"full: {len(codes)} code(s) = ユニバース候補 ∪ 検証8銘柄")
+        C.log(f"target: {len(codes)} code(s) = ユニバース候補 ∪ 検証8銘柄")
 
     fetcher = C.Fetcher(min_interval=a.min_interval, headers=_headers())
     if a.trial or a.full or a.index:
         index_range(con, fetcher, start, end, codes)
     if a.trial or a.full or a.download:
-        download_pending(con, fetcher, a.limit)
+        download_pending(con, fetcher, a.limit, codes)
     report(con)
     C.log(f"HTTP requests this run: {fetcher.n_requests}")
     return 0

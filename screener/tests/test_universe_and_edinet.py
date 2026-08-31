@@ -53,8 +53,12 @@ class TestUniverseRules(_DbCase):
         self.assertIsNone(row["exclude_reason"])
 
     def test_too_big_and_too_small(self):
-        self.add("1111", mktcap=4000, adv20=80)           # 40億 < 50億
-        self.add("2222", mktcap=90000, adv20=80)          # 900億 > 600億
+        # 閾値は universe_rules.yaml が正。ここに数字を書き写すと、上限を
+        # 動かすたびにテストが「仕様変更」ではなく「破損」として落ちる
+        # (2026-08-30 の 600億->1,000億 で実際に落ちた)。yaml から境界を取る。
+        size = C.load_yaml("universe_rules.yaml")["size"]
+        self.add("1111", mktcap=size["mktcap_min_mn"] - 1, adv20=80)
+        self.add("2222", mktcap=size["mktcap_max_mn"] + 1, adv20=80)
         U.apply_universe_rules(self.con)
         for code in ("1111", "2222"):
             row = self.con.execute("SELECT universe_flag, exclude_reason "
@@ -223,6 +227,49 @@ class TestEdinetSelection(_DbCase):
         self.assertEqual(E.trial_codes(self.con, extra=10),
                          E.trial_codes(self.con, extra=10),
                          "試走の対象がランで変わると本番の見積りにならない")
+
+    def _pending(self, code, doc_id, ok=0):
+        """ok=1 は取得済み。path も入れる —— download_pending の pending 判定は
+        `xbrl_ok=0 OR path IS NULL` なので、path が空だと取得済みにならない。"""
+        self.con.execute(
+            "INSERT INTO filings (code, date, type, source, doc_id, xbrl_ok, path) "
+            "VALUES (?,?,?,?,?,?,?)",
+            (code, "2026-06-01", "有報", "edinet", doc_id, ok,
+             f"raw/edinet/2026-06-01/{doc_id}.zip" if ok else None))
+        self.con.commit()
+
+    def test_download_is_filtered_by_codes_not_the_index(self):
+        """索引は全上場銘柄を持ち、絞り込みはダウンロード側で行う。
+        索引時に絞ると、あとでユニバースを広げたとき『走査済みの日』に載って
+        いる新規銘柄の書類が永久に入らなくなる。"""
+        self._pending("2962", "S100AAAA")      # ユニバース内
+        self._pending("9999", "S100BBBB")      # 対象外
+        calls = []
+
+        class _F:
+            def download(self, url, dest):
+                calls.append(url)
+                raise RuntimeError("ネットワークは踏まない")
+
+        E.download_pending(self.con, _F(), codes={"2962"})
+        self.assertEqual(len(calls), 1, "対象外の銘柄まで落としにいっている")
+        self.assertIn("S100AAAA", calls[0])
+
+    def test_widening_the_universe_does_not_refetch_what_is_already_there(self):
+        """ユニバースを広げても既取得分は再取得しない。差分だけが対象になる
+        —— これが『既取得分を無効にせず差分のみ追加取得』の実体。"""
+        self._pending("2962", "S100AAAA", ok=1)   # 取得済み
+        self._pending("278A", "S100CCCC", ok=0)   # 上限拡大で新たに対象化
+        calls = []
+
+        class _F:
+            def download(self, url, dest):
+                calls.append(url)
+                raise RuntimeError("ネットワークは踏まない")
+
+        E.download_pending(self.con, _F(), codes={"2962", "278A"})
+        self.assertEqual(len(calls), 1, "取得済みを取り直している")
+        self.assertIn("S100CCCC", calls[0])
 
     def test_weekday_sweep_skips_weekends(self):
         from datetime import date
