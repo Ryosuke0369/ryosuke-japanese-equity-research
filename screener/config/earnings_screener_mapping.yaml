@@ -1,0 +1,98 @@
+# screener/config/earnings_screener_mapping.yaml
+# 別枠 earnings_screener (Kimi 由来) の item_key ↔ 本体 account_mapping.yaml の item。
+# 統合引継ぎ書 v1.1 §3-1 / §4-6、docs/adapter_design.md C-2。
+#
+# status の意味:
+#   verified   実データで値の意味が一致することを確認済み。投影層が返す
+#   unverified 名前は近いが意味が一致するか未確認。**投影層は返さない**
+#              （推測で繋ぐと、間違った数字が静かに流れる方が発覚しない分たちが悪い）
+#   missing    本体に該当項目が無い。account_mapping.yaml への追加が先
+#
+# unverified / missing の item_key を要求されたら、投影層は空を返し
+# 「なぜ返せないか」をログに出す。黙って 0 や None を返さない。
+
+version: 1
+updated: "2026-08-31"
+
+items:
+  accounts_receivable:
+    item: trade_receivables
+    status: verified
+    note: 本体は契約資産を除外済み(contract_assets が別項目)。別枠のDSO計算と整合
+
+  contract_liabilities:
+    item: contract_liabilities
+    status: verified
+    note: 同名
+
+  construction_in_progress:
+    item: construction_in_progress
+    status: verified
+    note: 同名
+
+  machinery:
+    item: machinery_and_equipment
+    status: verified
+    note: 同名の別表記
+
+  inventory:
+    item: inventories_total
+    status: verified
+    note: 本体は商品/仕掛/原材料も個別に保持するが、別枠が見るのは合計のみ
+
+  deposits_received:
+    item: advances_received
+    status: unverified
+    note: >-
+      別枠は「預り金」、本体は「前受金」。会計上は別物になり得る。
+      本体の advances_received が拾う実タグ(jppfs_cor:AdvancesReceived 等)と
+      別枠の想定を実データで突合するまで繋がない。
+
+  shares_outstanding:
+    item: shares_issued
+    status: unverified
+    note: >-
+      本体 shares_issued は発行済株式総数。別枠 shares_outstanding が
+      自己株控除後(流通株式数)を想定している場合、S11 の希薄化率が
+      分母違いでずれる。自己株数(treasury_stock)との関係を確認するまで繋がない。
+
+  advances_paid:
+    item: null
+    status: missing
+    note: 前渡金。本体 account_mapping.yaml に該当項目が無い。追加が必要
+
+  rev_over_time:
+    item: null
+    status: missing
+    note: >-
+      一定期間にわたり移転する収益。S10(収益認識パターン変化)に必須。
+      本体に項目が無い。IFRS/日本基準とも注記での開示が中心で、
+      四半期開示されない会社が多い点も要確認。
+
+  rev_point_in_time:
+    item: null
+    status: missing
+    note: 一時点で移転する収益。rev_over_time と対。S10 に必須
+
+  diluted_shares:
+    item: null
+    status: missing
+    note: 潜在株式調整後の株式数。S11(希薄化リスク)に必須。本体に項目が無い
+
+# 四半期表現の写像 (本体 q_no → 別枠 quarter_type)。
+# fiscal_year は本体の period(FY2027)から取る。提出日から推定してはいけない
+# —— 8月提出の「2027年3月期第1四半期」が FY2026 になって別の会計年度と
+# 引き算される事故を実際に起こした(2026-08-31 修正済み)。
+quarter_type:
+  1: "1Q"
+  2: "2Q"
+  3: "3Q"
+  4: "FY"
+
+# 別枠へ渡してよい span_q。既定は 1(真の四半期単独値)のみ。
+# span_q=2(半期粒度)は別枠に対応概念が無く、渡すと6ヶ月の値を四半期として
+# 扱う。明示的に allow_span を広げたときだけ is_half=True 付きで渡す。
+allowed_span_q: [1]
+
+# 単位。本体は「円」、別枠は「百万円」。投影層で割る。
+unit_divisor: 1000000

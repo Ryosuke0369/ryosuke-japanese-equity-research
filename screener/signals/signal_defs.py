@@ -23,6 +23,8 @@ except ImportError:                                     # pragma: no cover
         os.path.dirname(os.path.abspath(__file__)))))
     from screener import common as C
 
+from screener.projection import pit
+
 SIGNAL_IDS = ("S1", "S2", "S3", "S3b", "S4", "S5")
 
 
@@ -33,6 +35,19 @@ class Signal:
     fired: bool
     evidence: str
     direction: int = 1          # +1 = 加点 / -1 = 減点(逆シグナル)
+    # 別枠 earnings_screener との互換用。-1..+1 に正規化した無次元の強度。
+    # value を流用しないのは、value の単位が指標ごとに違う(S1はpt、S2は%、
+    # S5はpt)ため。そのまま平均すると単位の違う数を足すことになる。
+    # 正規化の分母は signal_thresholds.yaml の発火閾値から導くので、
+    # 魔法の数字を新しく増やさない。docs/adapter_design.md C-4。
+    strength: float | None = None
+
+
+def _strength(value: float | None, fire_pt: float) -> float | None:
+    """発火閾値の2倍で飽和する線形正規化。閾値ちょうどで ±0.5。"""
+    if value is None or not fire_pt:
+        return None
+    return max(-1.0, min(value / (2.0 * abs(fire_pt)), 1.0))
 
 
 def load_thresholds() -> dict:
@@ -53,19 +68,43 @@ class Series:
     読んでしまう —— それを防ぐために valid_flag がある。
     """
 
-    def __init__(self, con, code: str):
+    def __init__(self, con, code: str, as_of=None, mode: str = "strict",
+                 allow_span=(1, 2)):
+        """DBを直接叩かず投影層(projection.pit)を経由する。
+
+        経由を強制する理由は2つ。(1) as_of を渡し忘れた瞬間に未来を見る。
+        (2) 一時収入の調整が効かなくなる —— 3905 の FY2027Q1 は調整前だと
+        粗利率90.9%で S1 が +63.3pt の買いシグナルを誤発火するが、
+        一時収入を除くと粗利は前年割れ。tests/test_projection.py の P4 が
+        この経由を機械的に強制している。
+        """
         self.code = code
         self.data: dict[str, dict[tuple[int, int], float]] = {}
         # span は (item, 期) 単位で持つ。期だけをキーにすると、同じ四半期の
         # ストック項目(span=1)がフロー項目(span=2)を上書きし、6ヶ月の値を
         # 「単独」と表示してしまう。
         self.span: dict[tuple[str, tuple[int, int]], int] = {}
-        for r in con.execute(
-                "SELECT period, q_no, item, value, span_q FROM financials_q "
-                "WHERE code=? AND valid_flag=1 AND value IS NOT NULL", (code,)):
+        self.adjusted: set = set()
+        self._con = con
+        self._as_of = as_of
+        self._mode = mode
+        rows = pit.visible_q(con, code, as_of, mode, allow_span=allow_span)
+        for r in rows:
             k = quarter_key(r["period"], r["q_no"])
             self.data.setdefault(r["item"], {})[k] = r["value"]
             self.span[(r["item"], k)] = r["span_q"] or 1
+
+        # 一時収入の控除。売上と、既定仮定(OPに全額フロー)で営業利益にも効かせる。
+        for (period, q_no), d in pit.visible_adjustments(
+                con, code, as_of, mode).items():
+            k = quarter_key(period, q_no)
+            one = d.get("one_time_revenue", 0.0)
+            if not one:
+                continue
+            for item in ("revenue", "gross_profit", "operating_income"):
+                if k in self.data.get(item, {}):
+                    self.data[item][k] -= one
+                    self.adjusted.add(k)
 
     def span_label(self, item: str, key) -> str:
         """その値が何ヶ月ぶんかを言う。span=2 を『Q単独』と呼ぶと、3ヶ月と
@@ -141,16 +180,20 @@ def s1_gross_margin_slope(s: Series, th: dict) -> Signal:
                       f"FY{k[0]}Q{k[1]} {s.span_label('revenue', k)}粗利率 {cur:.1f}% "
                       f"(比較対象の四半期が無い)")
     best = max(moves, key=abs)
-    parts = [f"FY{k[0]}Q{k[1]} {s.span_label('revenue', k)}粗利率 {cur:.1f}%"]
+    parts = [f"FY{k[0]}Q{k[1]} {s.span_label('revenue', k)}粗利率 {cur:.1f}%"
+             + ("(一時収入控除後)" if k in s.adjusted else "")]
     if qoq is not None:
         parts.append(f"前Q比 {qoq:+.1f}pt")
     if yoy is not None:
         parts.append(f"前年同Q比 {yoy:+.1f}pt")
     if best >= cfg["fire_pt"]:
-        return Signal("S1", best, True, " / ".join(parts), 1)
+        return Signal("S1", best, True, " / ".join(parts), 1,
+                      _strength(best, cfg["fire_pt"]))
     if best <= cfg["penalty_pt"]:
-        return Signal("S1", best, True, " / ".join(parts) + " ← 低下(逆シグナル)", -1)
-    return Signal("S1", best, False, " / ".join(parts))
+        return Signal("S1", best, True, " / ".join(parts) + " ← 低下(逆シグナル)",
+                      -1, _strength(best, cfg["fire_pt"]))
+    return Signal("S1", best, False, " / ".join(parts), 1,
+                  _strength(best, cfg["fire_pt"]))
 
 
 # ----------------------------------------------------------------------- S2
@@ -192,8 +235,10 @@ def s2_inventory_split(s: Series, th: dict) -> Signal:
     if not quantity_driven:
         return Signal("S2", d_inv, False, " / ".join(ev) + " ← 価格要因は発火させない")
     if accel:
-        return Signal("S2", d_inv, True, " / ".join(ev) + " ← 仕込み", 1)
-    return Signal("S2", d_inv, True, " / ".join(ev) + " ← 滞留(逆シグナル)", -1)
+        return Signal("S2", d_inv, True, " / ".join(ev) + " ← 仕込み", 1,
+                      _strength(d_inv, cfg["inventory_change_pct"]))
+    return Signal("S2", d_inv, True, " / ".join(ev) + " ← 滞留(逆シグナル)", -1,
+                  _strength(-d_inv, cfg["inventory_change_pct"]))
 
 
 # ----------------------------------------------------------------------- S3
@@ -217,7 +262,8 @@ def s3_construction_in_progress(s: Series, th: dict) -> tuple[Signal, Signal]:
                 Signal("S3b", None, False, "前四半期の建設仮勘定が無い"))
 
     base = f"FY{k[0]}Q{k[1]} 建仮 前Q比 {d_cip:+.1f}%"
-    s3 = (Signal("S3", d_cip, True, base + " ← 稼働前投資", 1)
+    s3 = (Signal("S3", d_cip, True, base + " ← 稼働前投資", 1,
+                      _strength(d_cip, cfg["surge_pct"]))
           if d_cip >= cfg["surge_pct"]
           else Signal("S3", d_cip, False, base + " (閾値未満)"))
 
@@ -257,7 +303,8 @@ def s4_contract_liabilities(s: Series, th: dict) -> Signal:
     excess = d_cl - d_rev
     if excess >= cfg["excess_over_revenue_pt"]:
         return Signal("S4", excess, True,
-                      ev + f" / 超過 {excess:+.1f}pt ← 顧客コミット", 1)
+                      ev + f" / 超過 {excess:+.1f}pt ← 顧客コミット", 1,
+                      _strength(excess, cfg["excess_over_revenue_pt"]))
     return Signal("S4", excess, False, ev + f" / 超過 {excess:+.1f}pt (閾値未満)")
 
 
@@ -285,9 +332,10 @@ def s5_turnaround_and_progress(con, s: Series, th: dict) -> Signal:
     if k is not None:
         ytd = sum(v for kk, v in s.data.get("operating_income", {}).items()
                   if kk[0] == k[0] and kk[1] <= k[1])
-        g = con.execute(
-            "SELECT value FROM guidance WHERE code=? AND item='operating_income' "
-            "ORDER BY date DESC LIMIT 1", (s.code,)).fetchone()
+        # guidance も投影層経由。ここを直に読むと as_of が効かず、
+        # 「決算後に出た修正予想」で決算前の進捗率を評価してしまう。
+        g = pit.visible_guidance(con, s.code, "operating_income",
+                                 s._as_of, s._mode)
         if g and g["value"]:
             progress = ytd / g["value"] * 100.0
             pace = k[1] / 4 * 100.0
@@ -300,13 +348,15 @@ def s5_turnaround_and_progress(con, s: Series, th: dict) -> Signal:
                 parts[-1] += " ← 死んだガイダンス"
     if not parts:
         return Signal("S5", None, False, "営業損益の単独値が無い")
-    return Signal("S5", value, fired, " / ".join(parts), 1)
+    return Signal("S5", value, fired, " / ".join(parts), 1,
+                  _strength(value, cfg["progress_excess_pt"]))
 
 
 # --------------------------------------------------------------------- 実行
-def evaluate(con, code: str, th: dict | None = None) -> list[Signal]:
+def evaluate(con, code: str, th: dict | None = None, as_of=None,
+             mode: str = "strict") -> list[Signal]:
     th = th or load_thresholds()
-    s = Series(con, code)
+    s = Series(con, code, as_of, mode)
     s3, s3b = s3_construction_in_progress(s, th)
     return [s1_gross_margin_slope(s, th), s2_inventory_split(s, th), s3, s3b,
             s4_contract_liabilities(s, th), s5_turnaround_and_progress(con, s, th)]

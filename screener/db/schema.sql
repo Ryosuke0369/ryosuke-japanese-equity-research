@@ -135,6 +135,37 @@ CREATE TABLE IF NOT EXISTS guidance (
     FOREIGN KEY (filing_id) REFERENCES filings (id) ON DELETE CASCADE
 );
 
+-- 【統合引継ぎ書 v1.1 §6-1 / docs/adapter_design.md A】
+-- 一時収入の分離層。単独値ビルダーが正しくても、一過性の売上は傾きを汚染する。
+-- 3905 の FY2027Q1 は粗利率 90.90%(前年 27.58%)で S1 が +63.3pt の買いシグナルと
+-- して誤発火するが、一時収入を除くと粗利は前年割れ。この層が無いと S1/S5 が
+-- 実銘柄で誤作動する。
+--
+-- source_note を NOT NULL + CHECK(20文字以上) にしてあるのは、「金額だけ書いて
+-- 済ませる」ことを構造的に不可能にするため。アプリ層の検証ではなくスキーマ制約に
+-- 置くのは、検証を通さない経路(手作業のSQL・別スクリプト)からの登録を防ぐため。
+-- 一過性収益の特定は機械抽出しない。注記テキスト由来で判断を要するので半手動。
+CREATE TABLE IF NOT EXISTS pl_adjustments (
+    code             TEXT NOT NULL,
+    period           TEXT NOT NULL,      -- FY2027 (本体の period 語彙)
+    q_no             INTEGER NOT NULL,
+    item_key         TEXT NOT NULL,      -- one_time_revenue / one_time_cost / one_time_gain
+    amount           REAL NOT NULL,      -- 控除する額(正値)。単位は本体と同じ「円」
+    source_note      TEXT NOT NULL,      -- 短信/有報の注記からの引用(原文ママ)
+    source_filing_id INTEGER NOT NULL,   -- 引用元の書類
+    source_locator   TEXT NOT NULL,      -- 注記の所在(例:「(セグメント情報等) 3.」)
+    confirmed_by     TEXT NOT NULL,      -- 記録した人
+    confirmed_at     TEXT NOT NULL,
+    note             TEXT,               -- 判断メモ(任意)
+    PRIMARY KEY (code, period, q_no, item_key),
+    FOREIGN KEY (source_filing_id) REFERENCES filings (id) ON DELETE CASCADE,
+    CHECK (length(trim(source_note)) >= 20),
+    CHECK (length(trim(source_locator)) > 0),
+    CHECK (length(trim(confirmed_by)) > 0),
+    CHECK (amount > 0)
+);
+CREATE INDEX IF NOT EXISTS ix_adj_code ON pl_adjustments (code, period, q_no);
+
 -- ------------------------------------------------------------------ signals
 -- §5: signals(code, eval_date, signal_id, value, fired, evidence_text)
 CREATE TABLE IF NOT EXISTS signals (
