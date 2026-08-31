@@ -93,6 +93,50 @@ class TestUniverseRules(_DbCase):
             self.assertEqual(row["universe_flag"], 0)
             self.assertIn("市場区分除外", row["exclude_reason"])
 
+    def test_v2_product_categories_are_excluded_by_market(self):
+        """J-Quants V2 の形。MktNm は「プライム」等の純粋な市場名になり、
+        REIT/ETF の別は ProdCat へ移った。_market_label が商品種別名を
+        市場名へ戻すので、除外ルールは市場名のままで効き続ける。
+        戻し忘れると REIT/ETF が黙ってユニバースに入る —— それを禁じる。"""
+        cases = {
+            "1306": {"MktNm": "その他", "ProdCat": "014"},   # ETF
+            "8951": {"MktNm": "その他", "ProdCat": "013"},   # REIT
+            "8963": {"MktNm": "プライム", "ProdCat": "012"},  # 優先出資証券
+        }
+        for code, row in cases.items():
+            self.add(code, market=U._market_label(row), sector=None,
+                     mktcap=20000, adv20=800)
+        U.apply_universe_rules(self.con)
+        for code in cases:
+            row = self.con.execute("SELECT universe_flag, exclude_reason "
+                                   "FROM companies WHERE code=?", (code,)).fetchone()
+            self.assertEqual(row["universe_flag"], 0, code)
+            self.assertIn("市場区分除外", row["exclude_reason"], code)
+
+    def test_v2_domestic_stock_keeps_a_plain_market_name(self):
+        """内国株券は商品種別を併記しない。併記すると『プライム(内国株券)』が
+        除外語に一致する事故が将来起きうるし、V1 と表示が変わって読みにくい。"""
+        self.assertEqual(U._market_label({"MktNm": "プライム", "ProdCat": "011"}),
+                         "プライム")
+        self.assertEqual(U._market_label({"MktNm": "グロース", "ProdCat": "011"}),
+                         "グロース")
+
+    def test_pro_market_is_excluded_in_either_spelling(self):
+        """'PRO Market' と書いてあった頃は、実データの 'TOKYO PRO MARKET' と
+        大小が合わず一度も一致していなかった。DB には過去の取り込み由来で
+        両方の綴りが実在するので、どちらでも除外に落ちること。
+        取りこぼすと「除外」ではなく「未判定」に化けるのが一番まずい。"""
+        self.add("9999", market="TOKYO PRO MARKET", sector=None,
+                 mktcap=20000, adv20=800)
+        self.add("9998", market="PRO Market", sector=None,
+                 mktcap=20000, adv20=800)
+        U.apply_universe_rules(self.con)
+        for code in ("9999", "9998"):
+            row = self.con.execute("SELECT universe_flag, exclude_reason "
+                                   "FROM companies WHERE code=?", (code,)).fetchone()
+            self.assertEqual(row["universe_flag"], 0, code)
+            self.assertIn("市場区分除外", row["exclude_reason"], code)
+
     def test_missing_data_is_pending_not_excluded(self):
         """核心。時価総額も売買代金も無い会社は『判定していない』であって
         『条件を満たさない』ではない。"""
@@ -151,6 +195,27 @@ class TestEdinetSelection(_DbCase):
         for c in E.VALIDATION_CODES:
             self.assertIn(c, codes, "検証8銘柄は必ず試走に含める")
         self.assertGreaterEqual(len(codes), 8)
+
+    def test_universe_codes_do_not_depend_on_the_market_name_spelling(self):
+        """J-Quants V2 で市場区分名から『（内国株式）』が消えた。市場名を
+        部分一致で見る条件は 1,093 社を 8 社まで取りこぼしていた ——
+        取得対象の抽出は exclude_reason だけで決める。"""
+        self.add("7203", market="プライム", mktcap=20000, adv20=800)      # V2 表記
+        self.add("6118", market="プライム（内国株式）", mktcap=20000, adv20=800)  # V1 表記
+        U.apply_universe_rules(self.con)
+        codes = E.universe_codes(self.con)
+        self.assertIn("7203", codes, "V2 表記の銘柄が対象から漏れている")
+        self.assertIn("6118", codes, "V1 表記の銘柄が対象から漏れている")
+
+    def test_universe_codes_include_the_validation_eight_even_when_excluded(self):
+        """検証8銘柄はユニバースの部分集合ではない(5銘柄は時価総額上限超え)。
+        和集合を取らないと 仕様書 §6 の検証データが欠ける。"""
+        self.add("285A", market="プライム", mktcap=42_690_947, adv20=2_234_589)
+        U.apply_universe_rules(self.con)
+        row = self.con.execute("SELECT universe_flag FROM companies "
+                               "WHERE code='285A'").fetchone()
+        self.assertEqual(row["universe_flag"], 0, "前提: 285A はユニバース外")
+        self.assertIn("285A", E.universe_codes(self.con))
 
     def test_trial_codes_are_deterministic(self):
         for i in range(30):

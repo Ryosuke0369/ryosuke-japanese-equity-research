@@ -78,11 +78,39 @@ screener/
 ├── report/             # P4
 ├── db/schema.sql       # 仕様書 §5。§5に無い列・表は【§5拡張】と明記
 ├── config/             # universe_rules.yaml, account_mapping.yaml
-├── data/               # raw/(取得原本) cache/ logs/ screener.db  ← 全て .gitignore
+├── db/migrations/      # 001_paths_relative_to_data_root.py
 └── tests/
 ```
 
-`data/` 配下はgit管理外。**アーカイブはリポジトリの成果物ではなくローカル資産**で、
+## データ保存先 (DATA_ROOT) — 2026-08-31 に D: へ移設
+
+取得データはリポジトリの外に置く。場所は**リポジトリルートの `.env`** で決める:
+
+```
+DATA_ROOT=D:\screener_data
+```
+
+```
+D:\screener_data\
+├── raw\tdnet\YYYYMMDD\     TDnet 短信PDF + XBRL zip
+├── raw\edinet\YYYY-MM-DD\  EDINET 生XBRL zip
+├── cache\                   J-Quants トークン (認証情報。持ち出し厳禁)
+├── logs\                    screener_YYYYMM.log / run_daily_YYYYMM.log
+└── screener.db              SQLite
+```
+
+- 解決順は `SCREENER_DATA_ROOT` > `DATA_ROOT` > `screener/data`(旧既定)。
+  実装は `common.py:_resolve_data_root()` の**1箇所だけ**。
+  他モジュールは `C.RAW_DIR` 等を使い、自前でパスを組み立てないこと。
+- `.env` から読むので、**タスクスケジューラの定義に保存先を書く必要はない**。
+  `run_daily.ps1` / `install_task.ps1` もログ先を Python に問い合わせる。
+- DB の `filings.path / pdf_path / xbrl_path` は **DATA_ROOT 相対**で保存する
+  (`C.store_path()` / `C.full_path()`)。ドライブを移してもDB書き換えは不要。
+  リポジトリ相対で書かれた旧行は `db/migrations/001_...` が変換する。
+
+移設理由: C: の空きが約5GB しかなく、EDINET 一括取得(下記見積り)が入らない。
+
+`DATA_ROOT` 配下はgit管理外。**アーカイブはリポジトリの成果物ではなくローカル資産**で、
 消すと(1ヶ月より前の分は)復元できない。バックアップ対象にすること。
 
 ## P1 の現状(2026-08-29)
@@ -91,9 +119,17 @@ screener/
   索引261営業日(84,382件を走査、128件が対象)→ 125件ダウンロード、失敗0。
   検証8銘柄は全社が有報1+半期1で揃った。
   全ユニバース3年の見積り: 索引16分 + ダウンロード約9.3時間 / 約12.6GB。
-- **J-Quants**: `.env` の `JQUANTS_REFRESH_TOKEN` が HTTP 403 (Forbidden)。
-  43文字で、正規のリフレッシュトークン(数百文字のJWT、有効期間1週間)ではない。
-  取得しなおして `.env` に入れれば `--source jquants --build` がそのまま通る。
+- **J-Quants**: 403 の原因は API の **V1 終了 (2026-06-01)** だった。トークンでは
+  なく世代の問題で、`/v1/token/auth_user` `/v1/token/auth_refresh` は廃止済み。
+  V2 はダッシュボード発行の API キーを `x-api-key` ヘッダーで送る方式なので、
+  `.env` に `JQUANTS_API_KEY` を置くだけでよい (`JQUANTS_MAIL` /
+  `JQUANTS_PASSWORD` / `JQUANTS_REFRESH_TOKEN` は不要)。
+  変わったのは認証だけではない —— パス (`/listed/info` → `/equities/master`、
+  `/prices/daily_quotes` → `/equities/bars/daily`)、本体キー (`data` に統一)、
+  項目名 (`CompanyName`→`CoName`、`Close`→`C`、`TurnoverValue`→`Va` 等) も総取替。
+  **レートリミットが分あたりになった** (Free 5 / Light 60 / Standard 120 /
+  Premium 500 req/min)。`--rpm` を契約プランに合わせること (既定 5)。
+  疎通確認は `python -m screener.fetch.jquants_universe --check-auth`。
 - **ユニバース骨格**: J-Quantsが無い間は JPX「東証上場銘柄一覧」で
   コード・銘柄名・市場区分・33業種まで構築済み(4,444社)。
   時価総額・売買代金が無い3,583社は `universe_flag=0` かつ

@@ -7,7 +7,7 @@ import openpyxl
 import re
 import sys
 
-WORKBOOK = r"C:\Users\ryosuke0923\Core_Corporation_2359T_Equity_Research.xlsx"
+WORKBOOK = r"<HOME>\Core_Corporation_2359T_Equity_Research.xlsx"
 
 def check_workbook(path):
     wb = openpyxl.load_workbook(path)

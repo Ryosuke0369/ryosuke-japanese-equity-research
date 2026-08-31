@@ -148,8 +148,8 @@ def download_pending(con, fetcher, limit: int | None = None) -> dict:
                 fetcher.download(f"{API}/documents/{r['doc_id']}?type=1", dest)
             con.execute("UPDATE filings SET path=?, xbrl_path=?, xbrl_ok=1, "
                         "fetched_at=? WHERE id=?",
-                        (os.path.relpath(dest, C.ROOT),
-                         os.path.relpath(dest, C.ROOT), C.utcnow(), r["id"]))
+                        (C.store_path(dest),
+                         C.store_path(dest), C.utcnow(), r["id"]))
             ok += 1
         except Exception as e:
             failed += 1
@@ -186,18 +186,35 @@ def report(con) -> None:
               f"{rows['f'] or '-'} .. {rows['l'] or '-'}")
 
 
+# ユニバース候補 = 「条件を満たす」+「まだ判定していない」。除外済みは含めない。
+# 内国株かどうかは市場区分名では判定しない —— J-Quants V2 で MarketCodeName
+# (「プライム（内国株式）」)が MktNm(「プライム」)へ変わり、'内国株式' を
+# 部分一致で探す条件は 1,093 社を 8 社まで取りこぼしていた(2026-08-31)。
+# 商品種別による除外は apply_universe_rules が exclude_reason に落とし済みなので、
+# ここで重ねて商品種別を見る必要はない。
+_CANDIDATE_SQL = ("SELECT code FROM companies "
+                  "WHERE (exclude_reason IS NULL OR exclude_reason LIKE '%未取得%')")
+
+
+def universe_codes(con) -> set[str]:
+    """取得対象 = ユニバース候補 ∪ 検証8銘柄 (仕様書 §2-3 / §6)。
+
+    検証8銘柄はユニバースの部分集合ではない。5銘柄は時価総額上限を超えていて
+    除外されるので、和集合を取らないと §6 の検証データが欠ける。
+    """
+    codes = {r["code"] for r in con.execute(_CANDIDATE_SQL)}
+    codes.update(VALIDATION_CODES)
+    return codes
+
+
 def trial_codes(con, extra: int = 50) -> set[str]:
     """検証8銘柄 + ユニバース候補から先頭 `extra` 社。
 
-    50社は「除外条件に当たらない内国株」からコード順に取る。恣意的に選ぶと
+    50社は「除外条件に当たらない銘柄」からコード順に取る。恣意的に選ぶと
     試走が本番の見積りにならないので、順序は決定的にする。
     """
     codes = set(VALIDATION_CODES)
-    rows = con.execute(
-        "SELECT code FROM companies "
-        "WHERE (exclude_reason IS NULL OR exclude_reason LIKE '%未取得%') "
-        "  AND market LIKE '%内国株式%' "
-        "ORDER BY code LIMIT ?", (extra,)).fetchall()
+    rows = con.execute(_CANDIDATE_SQL + " ORDER BY code LIMIT ?", (extra,)).fetchall()
     codes.update(r["code"] for r in rows)
     return codes
 
@@ -235,12 +252,8 @@ def main(argv=None) -> int:
         codes = trial_codes(con, a.trial_extra)
         C.log(f"trial: {len(codes)} code(s) = 検証8銘柄 + {a.trial_extra}社")
     elif a.full:
-        rows = con.execute(
-            "SELECT code FROM companies "
-            "WHERE (exclude_reason IS NULL OR exclude_reason LIKE '%未取得%') "
-            "  AND market LIKE '%内国株式%'").fetchall()
-        codes = {r["code"] for r in rows}
-        C.log(f"full: {len(codes)} code(s) from the universe candidate pool")
+        codes = universe_codes(con)
+        C.log(f"full: {len(codes)} code(s) = ユニバース候補 ∪ 検証8銘柄")
 
     fetcher = C.Fetcher(min_interval=a.min_interval, headers=_headers())
     if a.trial or a.full or a.index:

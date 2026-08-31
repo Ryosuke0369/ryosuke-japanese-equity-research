@@ -17,6 +17,9 @@ liquidity:
   # ADV を計算するのに最低限必要な観測日数。これを下回る銘柄は
   # 「流動性不足」ではなく「判定不能」として別扱いにする（黙って落とさない）。
   min_observations: 15
+  # 平均を取る営業日数。--price-days は休場日で取りこぼさないための遡行幅であって
+  # 平均の窓ではない。名前どおり 20 日で平均する。
+  adv_window_days: 20
 
 exclude_sectors:
   # 33業種名（J-Quants Sector33CodeName / JPX 業種区分）。
@@ -30,11 +33,19 @@ exclude_sectors:
     - "7050"   # 銀行業
     - "7100"   # 証券、商品先物取引業
     - "7150"   # 保険業
-  # 市場区分での除外（REIT・ETF・インフラファンドは listed/info に混在する）
+  # 市場区分での除外（REIT・ETF・インフラファンドは上場銘柄一覧に混在する）。
+  # J-Quants V2 の MktNm は「プライム」等の純粋な市場名になり、商品種別は
+  # ProdCat へ分離された。jquants_universe.PRODUCT_CATEGORY が商品種別名を
+  # 市場名に併記して戻すので、ここは商品種別名で書く。
+  # 照合は大文字化して行う（apply_universe_rules）。実データには
+  # 'TOKYO PRO MARKET'（V2 の MktNm / JPX の data_j.xls）と 'PRO Market'
+  # （過去の取り込み分）が混在し、V1 時代の 'PRO Market' というエントリは
+  # 大小が合わず一度も一致していなかった。'PRO MARKET' なら両方に当たる。
   by_market_name:
     - REIT
-    - ETF・ETN
-    - PRO Market
+    - ETF
+    - ETN
+    - PRO MARKET
     - 出資証券
 
 exclude_code_patterns:
