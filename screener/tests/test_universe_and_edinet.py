@@ -184,8 +184,13 @@ class TestEdinetSelection(_DbCase):
         self.assertEqual(E.DOC_TYPES["130"], "有報")     # 訂正
         self.assertEqual(E.DOC_TYPES["160"], "半期")
         self.assertEqual(E.DOC_TYPES["170"], "半期")     # 訂正
-        # 四半期報告書(140)は制度廃止済み。仕様書 §2-2 のとおり対象外。
-        self.assertNotIn("140", E.DOC_TYPES)
+        # 四半期報告書(140/150)は 2024-04-01 以後に開始する四半期から廃止されたが、
+        # **過去データの遡及では現役の制度**。実地確認で 2022-11-14 に996件、
+        # 2024-02-14 に907件が存在し 2024-05-15 を最後に消滅する。
+        # TDnet は約40日しか保持せず短信では遡れないので、FY2023〜FY2024 の
+        # 連続四半期はこの書類種別からしか作れない(2026-08-31)。
+        self.assertEqual(E.DOC_TYPES["140"], "四半期")
+        self.assertEqual(E.DOC_TYPES["150"], "四半期")
 
     def test_validation_eight(self):
         self.assertEqual(len(E.VALIDATION_CODES), 8)

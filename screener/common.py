@@ -7,7 +7,9 @@ Design rules inherited from the repo (docs/DCFパイプライン標準運用手�
   * no securities code in a module name — per-ticker/per-run values come from
     config files or CLI arguments;
   * a fetch that fails is RECORDED, never swallowed (see fetch_runs);
-  * anything the code could not map is kept (unknown_tags), not dropped.
+  * anything the code could not map is kept (unknown_tags), not dropped;
+  * every filesystem path is derived from DATA_DIR, which DATA_ROOT in .env
+    can point at another drive (see _resolve_data_root).
 """
 from __future__ import annotations
 
@@ -26,14 +28,71 @@ except ImportError:                                   # pragma: no cover
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PKG = os.path.join(ROOT, "screener")
-DATA_DIR = os.path.join(PKG, "data")
-RAW_DIR = os.path.join(DATA_DIR, "raw")
-CACHE_DIR = os.path.join(DATA_DIR, "cache")
 CONFIG_DIR = os.path.join(PKG, "config")
 DB_DIR = os.path.join(PKG, "db")
 SCHEMA_PATH = os.path.join(DB_DIR, "schema.sql")
-DB_PATH = os.environ.get("SCREENER_DB") or os.path.join(DATA_DIR, "screener.db")
+ENV_PATH = os.path.join(ROOT, ".env")
+
+_ENV_LOADED = False
+_DOTENV_MISSING = False
+
+
+def load_env() -> None:
+    """Load .env from the repository root. Explicit path: python-dotenv's
+    find_dotenv() walks the caller's frame and blows up under `python -c`.
+
+    Called at import time (below) because DATA_ROOT has to be resolved before
+    any path constant is computed. load_dotenv does not overwrite variables
+    already present in the process environment, so a shell override still wins
+    over the file, and calling this again later is a no-op.
+    """
+    global _ENV_LOADED, _DOTENV_MISSING
+    if _ENV_LOADED:
+        return
+    _ENV_LOADED = True
+    try:
+        from dotenv import load_dotenv
+    except ImportError:                                # pragma: no cover
+        _DOTENV_MISSING = True                         # surfaced by log() below
+        return
+    load_dotenv(ENV_PATH)
+
+
+load_env()
+
+
+def _resolve_data_root() -> str:
+    """The single place that decides where the screener writes bytes.
+
+    Everything the screener produces -- raw/, cache/, logs/, the SQLite DB --
+    hangs off this one directory, so the whole tree can be moved to another
+    drive by setting DATA_ROOT in the repo .env. That is not hypothetical: C:
+    on this machine is down to ~5 GB while the full 3-year EDINET pull alone is
+    estimated at ~12.6 GB (README, P1 現状), so the data lives on D:.
+
+    Resolution order, all explicit -- no silent fallback to a half-full drive:
+      SCREENER_DATA_ROOT   process env or .env; wins, for one-off overrides
+      DATA_ROOT            the normal setting, kept in .env
+      screener/data        the historical in-repo default
+
+    Read via load_env() rather than the process environment, so the Task
+    Scheduler job picks up the same root without the task definition carrying
+    it. No other module may join a data path from PKG -- if a path is not
+    derived from DATA_DIR it is a bug.
+    """
+    raw = (os.environ.get("SCREENER_DATA_ROOT")
+           or os.environ.get("DATA_ROOT")
+           or "").strip().strip('"').strip("'")
+    if not raw:
+        return os.path.join(PKG, "data")
+    return os.path.abspath(os.path.expandvars(os.path.expanduser(raw)))
+
+
+DATA_DIR = _resolve_data_root()
+RAW_DIR = os.path.join(DATA_DIR, "raw")
+CACHE_DIR = os.path.join(DATA_DIR, "cache")
 LOG_DIR = os.path.join(DATA_DIR, "logs")
+DB_PATH = os.environ.get("SCREENER_DB") or os.path.join(DATA_DIR, "screener.db")
 
 USER_AGENT = (
     "ryosuke-japanese-equity-research screener/1.0 "
@@ -51,24 +110,23 @@ def ensure_dirs() -> None:
         os.makedirs(d, exist_ok=True)
 
 
+_DOTENV_WARNED = False
+
+
 def log(msg: str) -> None:
+    global _DOTENV_WARNED
+    if _DOTENV_MISSING and not _DOTENV_WARNED:
+        # Deferred from import time: without dotenv, .env is never read, so a
+        # DATA_ROOT set there is silently ignored and the run would fill C:.
+        _DOTENV_WARNED = True
+        log(f"WARNING: python-dotenv not installed - {ENV_PATH} was NOT read; "
+            f"DATA_ROOT there has no effect (data root = {DATA_DIR})")
     line = f"[{utcnow()}] {msg}"
     print(line, flush=True)
     ensure_dirs()
     path = os.path.join(LOG_DIR, f"screener_{date.today():%Y%m}.log")
     with open(path, "a", encoding="utf-8") as fh:
         fh.write(line + "\n")
-
-
-def load_env() -> None:
-    """Load .env from the repository root. Explicit path: python-dotenv's
-    find_dotenv() walks the caller's frame and blows up under `python -c`."""
-    try:
-        from dotenv import load_dotenv
-    except ImportError:                                # pragma: no cover
-        log("WARNING: python-dotenv not installed - relying on process env only")
-        return
-    load_dotenv(os.path.join(ROOT, ".env"))
 
 
 def require_env(name: str) -> str:
@@ -82,6 +140,26 @@ def require_env(name: str) -> str:
             f"as `{name}=...` (the file is git-ignored)."
         )
     return v
+
+
+def store_path(abs_path: str) -> str:
+    """Absolute path -> the form stored in filings.path / pdf_path / xbrl_path.
+
+    Stored relative to DATA_DIR, deliberately not to the repo and never
+    absolute. The archive has already moved once (C: ran out of room, it now
+    lives on D:) and moves again with the next machine; a path anchored to the
+    data root survives both without a DB rewrite. See migration
+    db/migrations/001_paths_relative_to_data_root.py.
+    """
+    return os.path.relpath(abs_path, DATA_DIR)
+
+
+def full_path(stored: str) -> str:
+    """Inverse of store_path. An absolute value is returned untouched so a
+    hand-inserted row is not silently mangled into a wrong relative path."""
+    if not stored:
+        return stored
+    return stored if os.path.isabs(stored) else os.path.join(DATA_DIR, stored)
 
 
 def normalise_code(raw) -> str | None:
@@ -115,6 +193,16 @@ def connect(db_path: str | None = None) -> sqlite3.Connection:
     con = sqlite3.connect(db_path or DB_PATH, timeout=60)
     con.row_factory = sqlite3.Row
     con.execute("PRAGMA foreign_keys = ON")
+    # WAL: 読み手が書き手をブロックしない。取得(EDINET/株価)と解析と問い合わせが
+    # 同時に走るので、既定の rollback journal では database is locked で落ちる
+    # —— 実際に EDINET バックフィルが索引 400/1109 日目で落ちた(2026-08-31)。
+    # busy_timeout は connect(timeout=) と同じ 60 秒を明示しておく。
+    try:
+        con.execute("PRAGMA journal_mode = WAL")
+        con.execute("PRAGMA busy_timeout = 60000")
+        con.execute("PRAGMA synchronous = NORMAL")
+    except sqlite3.DatabaseError:                      # pragma: no cover
+        pass                                           # WAL 不可な環境でも動かす
     return con
 
 
@@ -280,5 +368,6 @@ if __name__ == "__main__":                             # smoke test
     con = init_db()
     tables = [r[0] for r in con.execute(
         "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")]
+    log(f"data root {DATA_DIR}")
     log(f"DB {DB_PATH}")
     log(f"tables: {', '.join(tables)}")
