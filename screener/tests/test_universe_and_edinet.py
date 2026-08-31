@@ -281,3 +281,77 @@ class TestEdinetSelection(_DbCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class TestEdinetXbrlParsing(unittest.TestCase):
+    """EDINET(有報/半期)の iXBRL を短信と同じ経路で読むための語彙。
+
+    かつて parse_archive は source='tdnet' 固定で、EDINET を落としても永久に
+    解析されなかった。unknown_tags が空でも「未マップが無い」のではなく
+    「一度も見ていない」だけ、という状態だった(2026-08-31 修正)。
+    """
+
+    def setUp(self):
+        from screener.extract import xbrl_parser as X
+        self.X = X
+        self.m = X.load_mapping()
+
+    def test_edinet_year_vocabulary(self):
+        """短信は Prior/Prior2、EDINET は Prior1..Prior4 と数字を必ず付ける。
+        有報の主要財務データは5期分載るので Prior4 まで実在する。"""
+        for ctx, rel in (("CurrentYearDuration", "current"),
+                         ("Prior1YearInstant", "prior"),
+                         ("Prior2YearDuration", "prior2"),
+                         ("Prior3YearInstant", "prior3"),
+                         ("Prior4YearDuration", "prior4")):
+            self.assertEqual(self.m.parse_context(ctx, "edinet")["year_rel"], rel, ctx)
+
+    def test_interim_contexts_are_half_year(self):
+        """半期報告書の Interim/YTD は期首からの2四半期累計 -> q_no=2。
+        member ではなくコンテキスト名そのものが四半期を表す。"""
+        for ctx in ("InterimDuration", "CurrentYTDDuration", "InterimInstant"):
+            d = self.m.parse_context(ctx, "edinet")
+            self.assertEqual(d["q_no"], 2, ctx)
+            self.assertEqual(d["year_rel"], "current", ctx)
+        d = self.m.parse_context("Prior1InterimDuration", "edinet")
+        self.assertEqual((d["year_rel"], d["q_no"]), ("prior", 2))
+
+    def test_edinet_consolidated_context_has_no_member(self):
+        """EDINET は連結に member を付けず、単体だけ NonConsolidatedMember が
+        付く。member 無しを連結と補わないと、連結の数字が consolidation=None に
+        なって prefer_consolidation の優先が効かなくなる。"""
+        self.assertEqual(
+            self.m.parse_context("CurrentYearDuration", "edinet")["consolidation"],
+            "consolidated")
+        self.assertEqual(
+            self.m.parse_context("CurrentYearInstant_NonConsolidatedMember",
+                                 "edinet")["consolidation"], "nonconsolidated")
+        # 短信は両方に member が付くので、この補完を適用してはいけない
+        self.assertIsNone(
+            self.m.parse_context("CurrentYearDuration", "tdnet")["consolidation"])
+
+    def test_period_label_uses_the_dei_fiscal_year_end(self):
+        """12月期・11月期の会社は提出年と会計年度がずれる。EDINET は DEI に
+        決算期末日を持っているので、開示日推定ではなくそれを使う。"""
+        row = {"date": "2026-02-24", "code": "6217"}
+        # 11月期。2026-02 提出だが当期は FY2025。
+        self.assertEqual(
+            self.X.period_label(row, {"year_rel": "current"}, "2025-11-30"), "FY2025")
+        self.assertEqual(
+            self.X.period_label(row, {"year_rel": "prior2"}, "2025-11-30"), "FY2023")
+        # fy_end が無ければ従来どおり開示日から推定する(短信の経路)
+        self.assertEqual(self.X.period_label(row, {"year_rel": "current"}), "FY2026")
+
+    def test_only_publicdoc_ixbrl_is_read(self):
+        """EDINET は `_ixbrl.htm`(アンダースコア)。AuditDoc は監査報告書で
+        財務数値を持たず、読むと監査文言が unknown を無意味に膨らませる。"""
+        names = ["XBRL/PublicDoc/0101010_honbun_x_ixbrl.htm",
+                 "XBRL/AuditDoc/jpaud-aai_ixbrl.htm",
+                 "XBRL/PublicDoc/x.xsd"]
+        got = self.X._ixbrl_members(names, "edinet")
+        self.assertEqual([n for n, _ in got],
+                         ["XBRL/PublicDoc/0101010_honbun_x_ixbrl.htm"])
+        # 短信はハイフン区切りで、Summary と Attachment を区別する
+        td = ["XBRL/Summary/a-ixbrl.htm", "XBRL/Attachment/b-ixbrl.htm"]
+        self.assertEqual([p for _, p in self.X._ixbrl_members(td, "tdnet")],
+                         ["summary", "attachment"])

@@ -248,14 +248,59 @@ contexts:
     NextYearInstant: next
     Prior2YearDuration: prior2
     Prior2YearInstant: prior2
+    # --- EDINET (有報 jpcrp030000 / 半期 jpcrp040300) の語彙 ---
+    # 短信は Prior/Prior2 だが、EDINET は Prior1..Prior4 と数字を必ず付ける。
+    # 有報の主要財務データは5期分載るので Prior4 まで実在する(実データで確認)。
+    Prior1YearDuration: prior
+    Prior1YearInstant: prior
+    Prior2YearDuration: prior2
+    Prior2YearInstant: prior2
+    Prior3YearDuration: prior3
+    Prior3YearInstant: prior3
+    Prior4YearDuration: prior4
+    Prior4YearInstant: prior4
+    # 半期報告書。Interim = 当中間期、YTD = 期首からの累計。
+    InterimDuration: current
+    InterimInstant: current
+    CurrentYTDDuration: current
+    CurrentQuarterInstant: current
+    Prior1InterimDuration: prior
+    Prior1InterimInstant: prior
+    Prior1YTDDuration: prior
   quarter:
     FirstQuarterMember: 1
     SecondQuarterMember: 2
     ThirdQuarterMember: 3
     YearEndMember: 4
+  # EDINET は四半期を member ではなくコンテキスト名そのもので表す。
+  # 半期報告書の Interim/YTD は「期首からの2四半期累計」なので q_no=2、
+  # 有報の CurrentYear* は通期なので q_no=4。
+  quarter_by_context:
+    InterimDuration: 2
+    InterimInstant: 2
+    CurrentYTDDuration: 2
+    Prior1InterimDuration: 2
+    Prior1InterimInstant: 2
+    Prior1YTDDuration: 2
+    CurrentYearDuration: 4
+    CurrentYearInstant: 4
+    Prior1YearDuration: 4
+    Prior1YearInstant: 4
+    Prior2YearDuration: 4
+    Prior2YearInstant: 4
+    Prior3YearDuration: 4
+    Prior3YearInstant: 4
+    Prior4YearDuration: 4
+    Prior4YearInstant: 4
   consolidation:
     ConsolidatedMember: consolidated
     NonConsolidatedMember: nonconsolidated
+  # EDINET は連結の文脈に member を付けない（単体だけ NonConsolidatedMember が
+  # 付く）。member 無し = 連結、と補わないと連結の数字が consolidation=None に
+  # なり、prefer_consolidation の優先が効かなくなる。短信は両方に member が
+  # 付くので、この既定は EDINET にだけ適用する。
+  default_consolidation_by_source:
+    edinet: consolidated
   role:
     ResultMember: result
     ForecastMember: forecast

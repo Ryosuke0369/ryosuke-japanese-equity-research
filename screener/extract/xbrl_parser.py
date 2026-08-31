@@ -55,6 +55,8 @@ class Mapping:
         self.ctx_cons = cx.get("consolidation") or {}
         self.ctx_role = cx.get("role") or {}
         self.prefer_cons = cx.get("prefer_consolidation", "consolidated")
+        self.ctx_q_by_ctx = cx.get("quarter_by_context") or {}
+        self.default_cons = cx.get("default_consolidation_by_source") or {}
 
     def item_for(self, qname: str) -> str | None:
         if qname in self.by_qname:
@@ -66,15 +68,23 @@ class Mapping:
     def is_noise(self, qname: str) -> bool:
         return any(qname.startswith(p) for p in self.noise)
 
-    def parse_context(self, ctx: str) -> dict:
+    def parse_context(self, ctx: str, source: str = "tdnet") -> dict:
         """contextRef → dims. Unrecognised fragments are returned in `rest` so a
-        new taxonomy shows up in review instead of being silently ignored."""
+        new taxonomy shows up in review instead of being silently ignored.
+
+        EDINET は四半期を member ではなくコンテキスト名そのもの
+        (InterimDuration / CurrentYearDuration) で表し、連結には member を
+        付けない。短信の語彙だけで読むと q_no も consolidation も None になり、
+        「読めているのに何期のものか分からない」行が量産される。
+        """
         parts = (ctx or "").split("_")
         out = {"year_rel": None, "q_no": None, "consolidation": None,
                "role": None, "rest": []}
         for p in parts:
             if p in self.ctx_year:
                 out["year_rel"] = self.ctx_year[p]
+                if out["q_no"] is None and p in self.ctx_q_by_ctx:
+                    out["q_no"] = self.ctx_q_by_ctx[p]
             elif p in self.ctx_q:
                 out["q_no"] = self.ctx_q[p]
             elif p in self.ctx_cons:
@@ -83,6 +93,8 @@ class Mapping:
                 out["role"] = self.ctx_role[p]
             else:
                 out["rest"].append(p)
+        if out["consolidation"] is None and source in self.default_cons:
+            out["consolidation"] = self.default_cons[source]
         return out
 
 
@@ -113,15 +125,54 @@ def _to_float(text: str, sign: str | None, scale: str | None):
     return v
 
 
-def facts_from_zip(zip_path: str) -> list[dict]:
-    """Every numeric iXBRL fact in a TDnet zip, tagged with which part it came
-    from (Summary = 短信サマリー, Attachment = 財務諸表本体)."""
+def _ixbrl_members(names: list[str], source: str) -> list[tuple[str, str]]:
+    """zip 内の iXBRL ファイルと、その「部位」ラベル。
+
+    TDnet: `-ixbrl.htm`。/Summary/ が短信サマリー、他が財務諸表本体。
+    EDINET: `_ixbrl.htm`(区切りがハイフンではなくアンダースコア)。
+            AuditDoc は監査報告書で財務数値を持たないので読まない ——
+            読むと監査文言のタグが unknown を無意味に膨らませる。
+    """
+    out = []
+    for n in names:
+        if source == "edinet":
+            if not n.endswith("_ixbrl.htm") or "/AuditDoc/" in n:
+                continue
+            out.append((n, "publicdoc"))
+        else:
+            if not n.endswith("-ixbrl.htm"):
+                continue
+            out.append((n, "summary" if "/Summary/" in n else "attachment"))
+    return out
+
+
+def edinet_fy_end(zip_path: str) -> str | None:
+    """EDINET の DEI から当期の決算期末日 (YYYY-MM-DD) を取る。
+
+    短信は会計期間をファクトとして持たないので提出日から推定するしかないが、
+    EDINET は jpdei_cor:CurrentFiscalYearEndDateDEI を持っている。12月期・
+    11月期の会社は提出年と会計年度がずれるので、推定ではなく実値を使う。
+    """
+    try:
+        with zipfile.ZipFile(zip_path) as z:
+            for name, _ in _ixbrl_members(z.namelist(), "edinet"):
+                soup = BeautifulSoup(z.read(name).decode("utf-8", "replace"),
+                                     "lxml-xml")
+                for t in soup.find_all("nonNumeric"):
+                    if (t.get("name") or "").endswith(
+                            ":CurrentFiscalYearEndDateDEI"):
+                        v = t.get_text(strip=True)
+                        return v[:10] if v else None
+    except Exception:
+        return None
+    return None
+
+
+def facts_from_zip(zip_path: str, source: str = "tdnet") -> list[dict]:
+    """Every numeric iXBRL fact in a zip, tagged with which part it came from."""
     out: list[dict] = []
     with zipfile.ZipFile(zip_path) as z:
-        for name in z.namelist():
-            if not name.endswith("-ixbrl.htm"):
-                continue
-            part = "summary" if "/Summary/" in name else "attachment"
+        for name, part in _ixbrl_members(z.namelist(), source):
             try:
                 soup = BeautifulSoup(z.read(name).decode("utf-8", "replace"), "lxml-xml")
             except Exception:
@@ -142,25 +193,28 @@ def facts_from_zip(zip_path: str) -> list[dict]:
     return out
 
 
-def period_label(filing_row, dims: dict) -> str:
-    """A stable period key. The 短信 does not carry the FY label as a fact, so it
-    is derived from the disclosure date and the year-relative dimension. This is
-    approximate by construction and is why financials_q carries valid_flag."""
-    year = int((filing_row["date"] or "1900-01-01")[:4])
-    rel = dims.get("year_rel")
-    if rel == "prior":
-        year -= 1
-    elif rel == "prior2":
-        year -= 2
-    elif rel == "next":
-        year += 1
-    return f"FY{year}"
+_YEAR_OFFSET = {"prior": -1, "prior2": -2, "prior3": -3, "prior4": -4,
+                "next": 1, "current": 0, None: 0}
+
+
+def period_label(filing_row, dims: dict, fy_end: str | None = None) -> str:
+    """A stable period key (FY<year>).
+
+    短信は会計期間をファクトとして持たないので開示日から推定するしかなく、
+    それが financials_q に valid_flag がある理由。EDINET は DEI に当期の
+    決算期末日を持っているので、渡されたらそちらを基準にする —— 12月期・
+    11月期の会社は提出年と会計年度がずれ、開示日推定だと1年ずれる。
+    """
+    base = fy_end or filing_row["date"] or "1900-01-01"
+    year = int(str(base)[:4])
+    return f"FY{year + _YEAR_OFFSET.get(dims.get('year_rel'), 0)}"
 
 
 # --------------------------------------------------------------- persistence
 def store_filing(con, mapping: Mapping, filing_row, facts: list[dict],
-                 unknown: Counter, unknown_files: defaultdict) -> dict:
-    n_cum = n_guid = n_unknown = n_noise = 0
+                 unknown: Counter, unknown_files: defaultdict,
+                 source: str = "tdnet", fy_end: str | None = None) -> dict:
+    n_cum = n_guid = n_unknown = n_noise = n_dim = 0
     seen_unknown_in_file = set()
 
     for f in facts:
@@ -168,7 +222,7 @@ def store_filing(con, mapping: Mapping, filing_row, facts: list[dict],
             continue
         item = mapping.item_for(f["tag"])
         if item is None:
-            src = f"tdnet_{f['part']}"
+            src = f"{source}_{f['part']}"
             if mapping.is_noise(f["tag"]):
                 n_noise += 1
             n_unknown += 1
@@ -179,7 +233,23 @@ def store_filing(con, mapping: Mapping, filing_row, facts: list[dict],
                 seen_unknown_in_file.add(key)
             continue
 
-        dims = mapping.parse_context(f["context"])
+        dims = mapping.parse_context(f["context"], source)
+
+        # 未知の ...Member が付いた文脈は「見出し数値」ではなく内訳
+        # （セグメント別、株主資本等変動計算書の資本金/利益剰余金、大株主 等）。
+        # 同じ item 名で見出しと内訳が混ざると、下流が net_assets を引いたとき
+        # に資本金や自己株式まで一緒に返る。落とすのではなく数えて報告する。
+        breakdown = [p for p in dims["rest"] if p.endswith("Member")]
+        if breakdown:
+            n_dim += 1
+            if source == "edinet":
+                # EDINET は有報の変動計算書だけで数十の内訳を持つ。見出しを
+                # 汚すので入れない。内訳自体は将来セグメント分析で使うので、
+                # 件数を残して「取り込んでいない」ことを可視にしておく。
+                continue
+            # TDnet は既存パイプライン(quarterly_builder)が現在の挙動を前提に
+            # しているため、ここでは落とさず件数だけ数える。同じ問題はあるので
+            # 別途対応する。
         # 単体しか無い会社もあるので、連結が無いときに単体を落とすことはしない。
         if dims["role"] in ("forecast", "forecast_upper", "forecast_lower"):
             con.execute(
@@ -188,7 +258,7 @@ def store_filing(con, mapping: Mapping, filing_row, facts: list[dict],
                 "ON CONFLICT(code, date, fy, item) DO UPDATE SET "
                 " value=excluded.value, filing_id=excluded.filing_id",
                 (filing_row["code"], filing_row["date"],
-                 period_label(filing_row, dims), item, f["value"],
+                 period_label(filing_row, dims, fy_end), item, f["value"],
                  "initial", filing_row["id"]),
             )
             n_guid += 1
@@ -198,11 +268,12 @@ def store_filing(con, mapping: Mapping, filing_row, facts: list[dict],
                 "(filing_id, code, period, q_no, item, value, unit, context_ref, "
                 " source_tag) VALUES (?,?,?,?,?,?,?,?,?)",
                 (filing_row["id"], filing_row["code"],
-                 period_label(filing_row, dims), dims["q_no"], item, f["value"],
+                 period_label(filing_row, dims, fy_end), dims["q_no"], item, f["value"],
                  f["unit"], f["context"], f["tag"]),
             )
             n_cum += 1
-    return {"cum": n_cum, "guidance": n_guid, "unknown": n_unknown, "noise": n_noise}
+    return {"cum": n_cum, "guidance": n_guid, "unknown": n_unknown,
+            "noise": n_noise, "dimensional": n_dim}
 
 
 def flush_unknown(con, unknown: Counter, unknown_files: defaultdict,
@@ -223,33 +294,44 @@ def flush_unknown(con, unknown: Counter, unknown_files: defaultdict,
 
 
 # --------------------------------------------------------------------- run
-def parse_archive(con, mapping: Mapping, where_sql: str, params: tuple) -> dict:
+def parse_archive(con, mapping: Mapping, where_sql: str, params: tuple,
+                  source: str = "tdnet") -> dict:
+    """source='tdnet' は短信、'edinet' は有報/半期。
+
+    かつてここは source='tdnet' に固定されていて、EDINET を落としても
+    永久に解析されなかった —— unknown_tags が空でも「未マップが無い」ので
+    はなく「一度も見ていない」だけ、という状態になっていた(2026-08-31 修正)。
+    """
     rows = con.execute(
         "SELECT id, code, date, subtype, xbrl_path FROM filings "
-        "WHERE source='tdnet' AND xbrl_ok=1 AND xbrl_path IS NOT NULL "
-        + where_sql + " ORDER BY date, code", params).fetchall()
-    C.log(f"parsing {len(rows)} filing(s) with XBRL")
+        "WHERE source=? AND xbrl_ok=1 AND xbrl_path IS NOT NULL "
+        + where_sql + " ORDER BY date, code", (source,) + params).fetchall()
+    C.log(f"parsing {len(rows)} {source} filing(s) with XBRL")
 
     unknown, unknown_files, samples = Counter(), defaultdict(int), {}
     tot = {"cum": 0, "guidance": 0, "unknown": 0, "noise": 0, "files": 0,
-           "failed": 0}
+           "failed": 0, "dimensional": 0}
     for r in rows:
-        path = os.path.join(C.ROOT, r["xbrl_path"])
+        path = C.full_path(r["xbrl_path"])
         if not os.path.exists(path):
             tot["failed"] += 1
             C.log(f"  ! missing file for filing {r['id']}: {r['xbrl_path']}")
             continue
         try:
-            facts = facts_from_zip(path)
+            facts = facts_from_zip(path, source)
         except Exception as e:
             tot["failed"] += 1
             C.log(f"  ! {r['code']} {os.path.basename(path)}: {type(e).__name__}: {e}")
             continue
         for f in facts:
             if f["value"] is not None:
-                samples.setdefault((f"tdnet_{f['part']}", f["tag"]), f["raw"])
-        got = store_filing(con, mapping, r, facts, unknown, unknown_files)
-        for k in ("cum", "guidance", "unknown", "noise"):
+                samples.setdefault((f"{source}_{f['part']}", f["tag"]), f["raw"])
+        # EDINET は会計期間を DEI に持っている。開示日からの推定だと 12月期・
+        # 11月期の会社で1年ずれるので、1書類につき一度だけ読んで渡す。
+        fy_end = edinet_fy_end(path) if source == "edinet" else None
+        got = store_filing(con, mapping, r, facts, unknown, unknown_files,
+                           source, fy_end)
+        for k in ("cum", "guidance", "unknown", "noise", "dimensional"):
             tot[k] += got[k]
         tot["files"] += 1
         con.commit()
@@ -337,6 +419,9 @@ def main(argv=None) -> int:
                    help="print the top-N unmapped tags and exit")
     p.add_argument("--coverage", action="store_true",
                    help="print §3-1 required-item coverage and exit")
+    p.add_argument("--source", choices=("tdnet", "edinet", "all"),
+                   default="tdnet",
+                   help="解析対象。tdnet=短信 / edinet=有報・半期 / all=両方")
     p.add_argument("--reset", action="store_true",
                    help="clear financials_cum / guidance / unknown_tags first")
     a = p.parse_args(argv)
@@ -362,10 +447,19 @@ def main(argv=None) -> int:
     elif not a.all:
         p.error("choose one of --all / --date / --code / --unknown-top")
 
-    tot = parse_archive(con, load_mapping(), where, params)
+    sources = ("tdnet", "edinet") if a.source == "all" else (a.source,)
+    mapping = load_mapping()
+    tot = {"files": 0, "cum": 0, "guidance": 0, "unknown": 0,
+           "noise": 0, "failed": 0, "dimensional": 0}
+    for src in sources:
+        got = parse_archive(con, mapping, where, params, src)
+        for k in tot:
+            tot[k] += got.get(k, 0)
     C.log(f"parsed {tot['files']} file(s): {tot['cum']} cum facts, "
           f"{tot['guidance']} guidance facts, {tot['unknown']} unmapped "
-          f"({tot['noise']} of them配当明細等のノイズ), {tot['failed']} failed")
+          f"({tot['noise']} of them配当明細等のノイズ), "
+          f"{tot['dimensional']} dimensional breakdown facts, "
+          f"{tot['failed']} failed")
     print_coverage(con)
     print_unknown(con, 25)
     return 0
