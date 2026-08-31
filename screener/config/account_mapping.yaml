@@ -21,6 +21,11 @@ updated: "2026-08-29"
 match_localname_when_prefix_unknown: true
 
 items:
+  # 【2026-08-31】EDINET有報の「主要な経営指標等の推移」(*SummaryOfBusinessResults)
+  # を各項目に追加した。1書類に5期分(当期+Prior1..Prior4)載るので、有報1本で
+  # 5年の時系列が埋まる —— P/L本体タグは当期+前期の2期しか持たない。
+  # 重複する当期・前期は実データで値一致を確認済み(3441で 10,830,372,000 が
+  # NetSales と NetSalesSummaryOfBusinessResults の両方で一致)。
 
   # ---------------- PL ----------------
   revenue:
@@ -35,6 +40,9 @@ items:
     - jpigp_cor:RevenueIFRS
     - jpigp_cor:NetSalesIFRS
     - jpigp_cor:SalesIFRS
+    - jpcrp_cor:NetSalesSummaryOfBusinessResults
+    - jpcrp_cor:OperatingRevenue1SummaryOfBusinessResults
+    - jpcrp_cor:RevenueIFRSSummaryOfBusinessResults
 
   cogs:
     - jppfs_cor:CostOfSales
@@ -61,6 +69,7 @@ items:
   ordinary_income:
     - tse-ed-t:OrdinaryIncome
     - jppfs_cor:OrdinaryIncome
+    - jpcrp_cor:OrdinaryIncomeLossSummaryOfBusinessResults
     # IFRS に経常利益は無い。税引前で代用する場合は profit_before_tax を使う。
 
   profit_before_tax:
@@ -182,12 +191,14 @@ items:
     - tse-ed-t:TotalAssetsIFRS
     - jppfs_cor:Assets
     - jpigp_cor:TotalAssetsIFRS
+    - jpcrp_cor:TotalAssetsSummaryOfBusinessResults
 
   net_assets:
     - tse-ed-t:NetAssets
     - tse-ed-t:TotalEquityIFRS
     - jppfs_cor:NetAssets
     - jpigp_cor:EquityIFRS
+    - jpcrp_cor:NetAssetsSummaryOfBusinessResults
 
   owners_equity:
     - tse-ed-t:OwnersEquity
@@ -198,6 +209,7 @@ items:
     - tse-ed-t:CashFlowsFromOperatingActivities
     - tse-ed-t:CashFlowsFromOperatingActivitiesIFRS
     - jppfs_cor:NetCashProvidedByUsedInOperatingActivities
+    - jpcrp_cor:NetCashProvidedByUsedInOperatingActivitiesSummaryOfBusinessResults
   investing_cf:
     - tse-ed-t:CashFlowsFromInvestingActivities
     - tse-ed-t:CashFlowsFromInvestingActivitiesIFRS
@@ -224,6 +236,10 @@ items:
   eps:
     - tse-ed-t:NetIncomePerShare
     - tse-ed-t:BasicEarningsPerShareIFRS
+    - jpcrp_cor:BasicEarningsLossPerShareSummaryOfBusinessResults
+  # ROE。EDINET有報の「主要な経営指標等の推移」にのみ載る(短信には無い)。
+  roe:
+    - jpcrp_cor:RateOfReturnOnEquitySummaryOfBusinessResults
   # セグメント注記。S3(建仮→機械の振替)を事業単位で見るために必要。
   segment_revenue_external:
     - jpcrp_cor:RevenuesFromExternalCustomers

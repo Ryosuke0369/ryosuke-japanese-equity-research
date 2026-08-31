@@ -18,6 +18,10 @@ Usage
 """
 from __future__ import annotations
 
+# EDINET有報の「主要な経営指標等の推移」の要素名接尾辞。1書類に5期分載るので
+# 有報1本で5年の時系列が埋まるが、当期・前期は財務諸表本体と重複する。
+_SUMMARY_SUFFIX = "SummaryOfBusinessResults"
+
 import argparse
 import os
 import re
@@ -214,13 +218,32 @@ def period_label(filing_row, dims: dict, fy_end: str | None = None) -> str:
 def store_filing(con, mapping: Mapping, filing_row, facts: list[dict],
                  unknown: Counter, unknown_files: defaultdict,
                  source: str = "tdnet", fy_end: str | None = None) -> dict:
-    n_cum = n_guid = n_unknown = n_noise = n_dim = 0
+    n_cum = n_guid = n_unknown = n_noise = n_dim = n_super = 0
     seen_unknown_in_file = set()
+
+    # 「主要な経営指標等の推移」(*SummaryOfBusinessResults) は財務諸表本体と
+    # 同じ item×文脈に落ちる。financials_cum の主キーは
+    # (filing_id, item, context_ref) なので、そのままだと後に書いた方が勝ち、
+    # source_tag がファクトの並び順次第で変わる。本体を正とし、推移は本体が
+    # 押さえていない期(Prior2..Prior4 等)だけを埋める。
+    # 実データ突合では重複4,607組の99.65%が一致しており、優先順位が値を
+    # 変える場面はごく僅か。それでも「どちらを採ったか」は決定的にしておく。
+    stmt_keys = set()
+    for f in facts:
+        if f["value"] is None or f["tag"].endswith(_SUMMARY_SUFFIX):
+            continue
+        it = mapping.item_for(f["tag"])
+        if it is not None:
+            stmt_keys.add((it, f["context"]))
 
     for f in facts:
         if f["value"] is None:
             continue
         item = mapping.item_for(f["tag"])
+        if (item is not None and f["tag"].endswith(_SUMMARY_SUFFIX)
+                and (item, f["context"]) in stmt_keys):
+            n_super += 1          # 本体が押さえている期。推移では上書きしない
+            continue
         if item is None:
             src = f"{source}_{f['part']}"
             if mapping.is_noise(f["tag"]):
@@ -273,7 +296,7 @@ def store_filing(con, mapping: Mapping, filing_row, facts: list[dict],
             )
             n_cum += 1
     return {"cum": n_cum, "guidance": n_guid, "unknown": n_unknown,
-            "noise": n_noise, "dimensional": n_dim}
+            "noise": n_noise, "dimensional": n_dim, "superseded": n_super}
 
 
 def flush_unknown(con, unknown: Counter, unknown_files: defaultdict,
@@ -310,7 +333,7 @@ def parse_archive(con, mapping: Mapping, where_sql: str, params: tuple,
 
     unknown, unknown_files, samples = Counter(), defaultdict(int), {}
     tot = {"cum": 0, "guidance": 0, "unknown": 0, "noise": 0, "files": 0,
-           "failed": 0, "dimensional": 0}
+           "failed": 0, "dimensional": 0, "superseded": 0}
     for r in rows:
         path = C.full_path(r["xbrl_path"])
         if not os.path.exists(path):
@@ -331,7 +354,8 @@ def parse_archive(con, mapping: Mapping, where_sql: str, params: tuple,
         fy_end = edinet_fy_end(path) if source == "edinet" else None
         got = store_filing(con, mapping, r, facts, unknown, unknown_files,
                            source, fy_end)
-        for k in ("cum", "guidance", "unknown", "noise", "dimensional"):
+        for k in ("cum", "guidance", "unknown", "noise", "dimensional",
+                  "superseded"):
             tot[k] += got[k]
         tot["files"] += 1
         con.commit()
@@ -450,7 +474,7 @@ def main(argv=None) -> int:
     sources = ("tdnet", "edinet") if a.source == "all" else (a.source,)
     mapping = load_mapping()
     tot = {"files": 0, "cum": 0, "guidance": 0, "unknown": 0,
-           "noise": 0, "failed": 0, "dimensional": 0}
+           "noise": 0, "failed": 0, "dimensional": 0, "superseded": 0}
     for src in sources:
         got = parse_archive(con, mapping, where, params, src)
         for k in tot:
@@ -459,6 +483,7 @@ def main(argv=None) -> int:
           f"{tot['guidance']} guidance facts, {tot['unknown']} unmapped "
           f"({tot['noise']} of them配当明細等のノイズ), "
           f"{tot['dimensional']} dimensional breakdown facts, "
+          f"{tot['superseded']} superseded by 本体, "
           f"{tot['failed']} failed")
     print_coverage(con)
     print_unknown(con, 25)
