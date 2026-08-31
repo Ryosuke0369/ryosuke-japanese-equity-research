@@ -1,0 +1,37 @@
+# screener/config/signal_thresholds.yaml
+# 仕様書 §4「閾値はconfigで外出し」。数字を変えたらここだけを変える。
+# 重みは signal_weights.yaml（検証§6の結果で調整してから本運用）。
+
+version: 1
+updated: "2026-08-31"
+
+s1_gross_margin:
+  # 3441型の主砲。Q単独の粗利率が前Qおよび前年同Qに対して何pt動いたか。
+  fire_pt: 1.5          # +1.5pt 以上で発火
+  penalty_pt: -1.5      # -1.5pt 以下は逆シグナルとして減点
+  # セグメント軸では粗利率が計算できない(XBRLのセグメント注記にCOGSが無い)。
+  # docs/segment_dimension_design.md のとおり営業利益率で代替する。
+  segment_metric: operating_margin
+
+s2_inventory:
+  # 在庫増は両義的。数量要因の増加×売上加速=仕込み(加点)、×売上減速=滞留(減点)。
+  # 「増えた」だけでは方向が決まらないので、必ず売上の加速/減速と掛ける。
+  inventory_change_pct: 10.0     # 棚卸資産が前Q比 +10% 以上で検討対象
+  revenue_accel_pt: 0.0          # 売上成長率が前Qより上なら「加速」
+  price_proxy_gap_pt: 5.0        # ΔCOGS% と Δ棚卸% の差がこれ未満なら価格要因寄り
+
+s3_cip:
+  # 建設仮勘定。稼働前投資と、稼働開始(振替)の検出。
+  surge_pct: 30.0                # 前Q比 +30% 以上で発火(稼働前投資)
+  transfer_cip_drop_pct: -15.0   # 建仮がこれ以下に減り
+  transfer_machinery_rise_pct: 5.0   # 機械装置がこれ以上増えたら振替(S3b)
+
+s4_contract_liabilities:
+  # 契約負債・前受金。顧客コミットの現金証拠(3905の前受金マーカーと同型)。
+  min_change_pct: 15.0           # 前Q比の増加率
+  excess_over_revenue_pt: 5.0    # 売上成長率をこれ以上上回ったら発火
+
+s5_turnaround:
+  # ①営業損益の赤字→黒字転換(Q単独) ②累計進捗率が通期予想を大幅超過
+  progress_excess_pt: 10.0       # (累計進捗% − 四半期数比%) がこれ以上で発火
+  # 3441の進捗113%型。Q3時点で四半期数比75%に対し113%なら +38pt。

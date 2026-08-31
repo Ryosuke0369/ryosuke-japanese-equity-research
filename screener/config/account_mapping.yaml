@@ -240,6 +240,12 @@ items:
   # ROE。EDINET有報の「主要な経営指標等の推移」にのみ載る(短信には無い)。
   roe:
     - jpcrp_cor:RateOfReturnOnEquitySummaryOfBusinessResults
+  # 連結子会社数。仕様書§3-2「連結範囲変更はフラグを立てて単独値を無効化」の
+  # 検出材料。期をまたいで数が変わったら連結範囲が動いており、累計の差分で
+  # 作った単独値は前四半期と比較可能ではない。
+  consolidated_subsidiaries:
+    - jpcrp_cor:NumberOfConsolidatedSubsidiaries
+    - tse-ed-t:NumberOfConsolidatedSubsidiaries
   # セグメント注記。S3(建仮→機械の振替)を事業単位で見るために必要。
   segment_revenue_external:
     - jpcrp_cor:RevenuesFromExternalCustomers
@@ -283,21 +289,33 @@ contexts:
     Prior1InterimDuration: prior
     Prior1InterimInstant: prior
     Prior1YTDDuration: prior
+    # TDnet短信サマリーは四半期を明示する。AccumulatedQ<n> は正規表現側で
+    # 四半期番号を取るので、ここでは年の相対位置だけを見る。
+    CurrentAccumulatedQ1Duration: current
+    CurrentAccumulatedQ2Duration: current
+    CurrentAccumulatedQ3Duration: current
+    CurrentAccumulatedQ4Duration: current
+    PriorAccumulatedQ1Duration: prior
+    PriorAccumulatedQ2Duration: prior
+    PriorAccumulatedQ3Duration: prior
+    PriorAccumulatedQ4Duration: prior
   quarter:
     FirstQuarterMember: 1
     SecondQuarterMember: 2
     ThirdQuarterMember: 3
     YearEndMember: 4
-  # EDINET は四半期を member ではなくコンテキスト名そのもので表す。
-  # 半期報告書の Interim/YTD は「期首からの2四半期累計」なので q_no=2、
-  # 有報の CurrentYear* は通期なので q_no=4。
+  # 四半期をコンテキスト名そのもので表す形式。ここに載せてよいのは
+  # 「文脈だけで四半期が一意に決まる」ものに限る。
+  #
+  # *YTDDuration は載せない。EDINET半期では2四半期累計だが、TDnet短信は
+  # Q1〜Q4 のどれでも CurrentYTDDuration を使う。ここに 2 と書くと短信の
+  # Q3 の数字が q_no=2 として記録される(2026-08-31 に実際に埋め込んだ)。
+  # 短信の四半期は AccumulatedQ<n>Duration か、無ければ書類側から決める。
   quarter_by_context:
     InterimDuration: 2
     InterimInstant: 2
-    CurrentYTDDuration: 2
     Prior1InterimDuration: 2
     Prior1InterimInstant: 2
-    Prior1YTDDuration: 2
     CurrentYearDuration: 4
     CurrentYearInstant: 4
     Prior1YearDuration: 4

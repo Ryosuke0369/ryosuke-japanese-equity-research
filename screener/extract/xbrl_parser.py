@@ -22,6 +22,9 @@ from __future__ import annotations
 # 有報1本で5年の時系列が埋まるが、当期・前期は財務諸表本体と重複する。
 _SUMMARY_SUFFIX = "SummaryOfBusinessResults"
 
+# TDnet短信サマリーの「当期第n四半期累計」。文脈名が四半期を明示する。
+_ACCUM_Q = __import__("re").compile(r"AccumulatedQ(\d)")
+
 import argparse
 import os
 import re
@@ -89,6 +92,9 @@ class Mapping:
                 out["year_rel"] = self.ctx_year[p]
                 if out["q_no"] is None and p in self.ctx_q_by_ctx:
                     out["q_no"] = self.ctx_q_by_ctx[p]
+                mq = _ACCUM_Q.search(p)
+                if mq:
+                    out["q_no"] = int(mq.group(1))   # AccumulatedQ3 -> 3
             elif p in self.ctx_q:
                 out["q_no"] = self.ctx_q[p]
             elif p in self.ctx_cons:
@@ -172,6 +178,77 @@ def edinet_fy_end(zip_path: str) -> str | None:
     return None
 
 
+# ---------------------------------------------------------------- 次元(軸)
+# docs/segment_dimension_design.md
+_ENTITY_PREFIX = re.compile(r"^jp[a-z]+\d*-[a-z0-9]+_E\d+-\d+")
+_EQUITY_MEMBER = re.compile(
+    r"(CapitalStock|CapitalSurplus|RetainedEarnings|TreasuryStock|"
+    r"ShareholdersEquity|ValuationAndTranslation|ValuationDifference|"
+    r"NonControllingInterests|SubscriptionRights|Remeasurements|"
+    r"ForeignCurrencyTranslation|DeferredGainsOrLosses)")
+
+
+def classify_member(raw: str) -> tuple[str, str]:
+    """Member 文字列 → (axis, 正規化後の member 名)。
+
+    axis を分けるのは、報告セグメント計を個別セグメントと同じ軸に置くと
+    S1 のセグメント別集計で全社ぶんがもう一度足されるため。
+    """
+    name = _ENTITY_PREFIX.sub("", raw)
+    if raw in ("ReportableSegmentsMember", "TotalOfReportableSegmentsAndOthersMember"):
+        return "segment_total", name
+    if "ReconcilingItems" in raw:
+        return "adjustment", name
+    if _EQUITY_MEMBER.search(raw):
+        return "equity_component", name
+    if "ReportableSegments" in raw or "OperatingSegments" in raw:
+        # 個別セグメント。接頭辞(EDINET企業コード)と接尾辞を剥がして
+        # 'Japan' 'Philippines' の形にする。member_raw は必ず残す。
+        n = re.sub(r"(ReportableSegments|OperatingSegments).*Member$", "", name)
+        n = re.sub(r"Member$", "", n)
+        return "segment", n or name
+    return "other", name
+
+
+def dims_of(context: str, mapping: "Mapping", source: str) -> list[tuple[str, str, str]]:
+    """文脈から (axis, member, member_raw) を取り出す。見出しなら空リスト。"""
+    rest = mapping.parse_context(context, source)["rest"]
+    out = []
+    for p in rest:
+        if p.endswith("Member"):
+            axis, name = classify_member(p)
+            out.append((axis, name, p))
+    return out
+
+
+def filing_quarter(facts: list[dict], filing_row) -> int | None:
+    """この書類が「第何四半期の累計」を語っているかを1つ決める。
+
+    短信本体(jppfs_cor)は CurrentYTDDuration としか言わず、四半期番号を持たない。
+    サマリー(tse-ed-t)側の CurrentAccumulatedQ<n>Duration が唯一の手がかりなので、
+    書類全体から拾って YTD 行に配る。ここを取り違えると Q3 の数字が Q2 として
+    積まれ、単独値(当期累計−前四半期累計)が丸ごと狂う。
+
+    見つからなければ None を返す。推測しない —— 四半期が確定しない書類は
+    quarterly_builder 側で valid_flag=0 にする。
+    """
+    seen = set()
+    for f in facts:
+        ctx = f.get("context") or ""
+        m = _ACCUM_Q.search(ctx)
+        if not m:
+            continue
+        # 予想は数えない。Q1短信は「Q1実績」と同時に「中間期(Q2累計)予想」を
+        # 載せるので、予想を混ぜると第1四半期の短信が q=2 と判定される
+        # (8117 の 2027年3月期第1四半期短信で実際に踏んだ)。
+        if any(k in ctx for k in ("Forecast", "Upper", "Lower")):
+            continue
+        seen.add(int(m.group(1)))
+    if len(seen) == 1:
+        return seen.pop()
+    return None                 # 割れたら推測しない。builder 側で無効扱いにする
+
+
 def facts_from_zip(zip_path: str, source: str = "tdnet") -> list[dict]:
     """Every numeric iXBRL fact in a zip, tagged with which part it came from."""
     out: list[dict] = []
@@ -217,8 +294,10 @@ def period_label(filing_row, dims: dict, fy_end: str | None = None) -> str:
 # --------------------------------------------------------------- persistence
 def store_filing(con, mapping: Mapping, filing_row, facts: list[dict],
                  unknown: Counter, unknown_files: defaultdict,
-                 source: str = "tdnet", fy_end: str | None = None) -> dict:
+                 source: str = "tdnet", fy_end: str | None = None,
+                 filing_q: int | None = None) -> dict:
     n_cum = n_guid = n_unknown = n_noise = n_dim = n_super = 0
+    n_equity = n_dim_saved = 0
     seen_unknown_in_file = set()
 
     # 「主要な経営指標等の推移」(*SummaryOfBusinessResults) は財務諸表本体と
@@ -257,22 +336,41 @@ def store_filing(con, mapping: Mapping, filing_row, facts: list[dict],
             continue
 
         dims = mapping.parse_context(f["context"], source)
+        if dims["q_no"] is None and filing_q is not None:
+            dims["q_no"] = filing_q      # YTD 行に書類全体の四半期を配る
 
         # 未知の ...Member が付いた文脈は「見出し数値」ではなく内訳
         # （セグメント別、株主資本等変動計算書の資本金/利益剰余金、大株主 等）。
         # 同じ item 名で見出しと内訳が混ざると、下流が net_assets を引いたとき
-        # に資本金や自己株式まで一緒に返る。落とすのではなく数えて報告する。
-        breakdown = [p for p in dims["rest"] if p.endswith("Member")]
+        # に資本金や自己株式まで一緒に返る。financials_cum には入れず、
+        # financials_dim へ軸を分けて入れる (docs/segment_dimension_design.md)。
+        # TDnet/EDINET 共通 —— TDnet はこれまで cum に混入させていた。
+        breakdown = dims_of(f["context"], mapping, source)
         if breakdown:
             n_dim += 1
-            if source == "edinet":
-                # EDINET は有報の変動計算書だけで数十の内訳を持つ。見出しを
-                # 汚すので入れない。内訳自体は将来セグメント分析で使うので、
-                # 件数を残して「取り込んでいない」ことを可視にしておく。
+            axis, member, raw = breakdown[0]
+            if len(breakdown) > 1:
+                # 複数軸が乗った文脈(セグメント×四半期など)。個別セグメントが
+                # あればそれを主軸に採る。取り違えると集計が壊れるので raw に
+                # 全部残す。
+                for a, m, rr in breakdown:
+                    if a == "segment":
+                        axis, member, raw = a, m, rr
+                        break
+                raw = "|".join(x[2] for x in breakdown)
+            if axis == "equity_component":
+                n_equity += 1          # 保存対象外。S1〜S8で使わず約40万行になる
                 continue
-            # TDnet は既存パイプライン(quarterly_builder)が現在の挙動を前提に
-            # しているため、ここでは落とさず件数だけ数える。同じ問題はあるので
-            # 別途対応する。
+            con.execute(
+                "INSERT OR REPLACE INTO financials_dim "
+                "(filing_id, code, period, q_no, item, axis, member, member_raw, "
+                " value, unit, context_ref, source_tag) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                (filing_row["id"], filing_row["code"],
+                 period_label(filing_row, dims, fy_end), dims["q_no"], item,
+                 axis, member, raw, f["value"], f["unit"], f["context"], f["tag"]))
+            n_dim_saved += 1
+            continue
         # 単体しか無い会社もあるので、連結が無いときに単体を落とすことはしない。
         if dims["role"] in ("forecast", "forecast_upper", "forecast_lower"):
             con.execute(
@@ -296,7 +394,8 @@ def store_filing(con, mapping: Mapping, filing_row, facts: list[dict],
             )
             n_cum += 1
     return {"cum": n_cum, "guidance": n_guid, "unknown": n_unknown,
-            "noise": n_noise, "dimensional": n_dim, "superseded": n_super}
+            "noise": n_noise, "dimensional": n_dim, "superseded": n_super,
+            "dim_saved": n_dim_saved, "equity_skipped": n_equity}
 
 
 def flush_unknown(con, unknown: Counter, unknown_files: defaultdict,
@@ -333,7 +432,8 @@ def parse_archive(con, mapping: Mapping, where_sql: str, params: tuple,
 
     unknown, unknown_files, samples = Counter(), defaultdict(int), {}
     tot = {"cum": 0, "guidance": 0, "unknown": 0, "noise": 0, "files": 0,
-           "failed": 0, "dimensional": 0, "superseded": 0}
+           "failed": 0, "dimensional": 0, "superseded": 0,
+           "dim_saved": 0, "equity_skipped": 0}
     for r in rows:
         path = C.full_path(r["xbrl_path"])
         if not os.path.exists(path):
@@ -353,15 +453,56 @@ def parse_archive(con, mapping: Mapping, where_sql: str, params: tuple,
         # 11月期の会社で1年ずれるので、1書類につき一度だけ読んで渡す。
         fy_end = edinet_fy_end(path) if source == "edinet" else None
         got = store_filing(con, mapping, r, facts, unknown, unknown_files,
-                           source, fy_end)
+                           source, fy_end, filing_quarter(facts, r))
         for k in ("cum", "guidance", "unknown", "noise", "dimensional",
-                  "superseded"):
+                  "superseded", "dim_saved", "equity_skipped"):
             tot[k] += got[k]
         tot["files"] += 1
         con.commit()
 
     flush_unknown(con, unknown, unknown_files, samples)
+    flag_segment_changes(con)
     return tot
+
+
+def flag_segment_changes(con) -> dict:
+    """セグメント区分が変わった期の行を valid_flag=0 にする。
+
+    会社は報告セグメントの区分を変更する。member が変われば時系列は切れて
+    おり、そこで前期比を取ると**存在しない変化を検出する**。前期に同一
+    member が無い期は「前期比が取れない」として無効化する。
+
+    行は消さない。「区分が変わった」と「まだ判定していない」を混同しないため
+    —— このリポジトリが一貫して守っている区別と同じ。
+    新設セグメントと区分変更は区別しない。どちらも前期比は取れない。
+    """
+    con.execute("UPDATE financials_dim SET valid_flag=1, invalid_reason=NULL "
+                "WHERE axis='segment'")
+    rows = con.execute(
+        "SELECT DISTINCT code, member, period FROM financials_dim "
+        "WHERE axis='segment' AND period IS NOT NULL").fetchall()
+    have = {}
+    for r in rows:
+        have.setdefault(r["code"], {}).setdefault(r["period"], set()).add(r["member"])
+
+    n = 0
+    for code, by_period in have.items():
+        periods = sorted(by_period)                 # FY2023 < FY2024 < ...
+        for i, p in enumerate(periods):
+            if i == 0:
+                continue                            # 最初の期は比較相手が無い
+            prev = by_period[periods[i - 1]]
+            for m in by_period[p] - prev:
+                con.execute(
+                    "UPDATE financials_dim SET valid_flag=0, "
+                    "invalid_reason='セグメント区分変更(前期に同一memberなし)' "
+                    "WHERE code=? AND member=? AND period=? AND axis='segment'",
+                    (code, m, p))
+                n += 1
+    con.commit()
+    C.log(f"セグメント区分変更ガード: {n} 件の (銘柄×member×期) を無効化")
+    return {"invalidated": n}
+
 
 
 def unknown_report(con, top: int = 30, source: str | None = None) -> list[dict]:
@@ -474,7 +615,8 @@ def main(argv=None) -> int:
     sources = ("tdnet", "edinet") if a.source == "all" else (a.source,)
     mapping = load_mapping()
     tot = {"files": 0, "cum": 0, "guidance": 0, "unknown": 0,
-           "noise": 0, "failed": 0, "dimensional": 0, "superseded": 0}
+           "noise": 0, "failed": 0, "dimensional": 0, "superseded": 0,
+           "dim_saved": 0, "equity_skipped": 0}
     for src in sources:
         got = parse_archive(con, mapping, where, params, src)
         for k in tot:
@@ -482,7 +624,8 @@ def main(argv=None) -> int:
     C.log(f"parsed {tot['files']} file(s): {tot['cum']} cum facts, "
           f"{tot['guidance']} guidance facts, {tot['unknown']} unmapped "
           f"({tot['noise']} of them配当明細等のノイズ), "
-          f"{tot['dimensional']} dimensional breakdown facts, "
+          f"{tot['dimensional']} dimensional ({tot['dim_saved']} saved to "
+          f"financials_dim, {tot['equity_skipped']} equity-component skipped), "
           f"{tot['superseded']} superseded by 本体, "
           f"{tot['failed']} failed")
     print_coverage(con)

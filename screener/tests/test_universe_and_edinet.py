@@ -307,14 +307,36 @@ class TestEdinetXbrlParsing(unittest.TestCase):
             self.assertEqual(self.m.parse_context(ctx, "edinet")["year_rel"], rel, ctx)
 
     def test_interim_contexts_are_half_year(self):
-        """半期報告書の Interim/YTD は期首からの2四半期累計 -> q_no=2。
+        """半期報告書の Interim* は期首からの2四半期累計 -> q_no=2。
         member ではなくコンテキスト名そのものが四半期を表す。"""
-        for ctx in ("InterimDuration", "CurrentYTDDuration", "InterimInstant"):
+        for ctx in ("InterimDuration", "InterimInstant"):
             d = self.m.parse_context(ctx, "edinet")
             self.assertEqual(d["q_no"], 2, ctx)
             self.assertEqual(d["year_rel"], "current", ctx)
         d = self.m.parse_context("Prior1InterimDuration", "edinet")
         self.assertEqual((d["year_rel"], d["q_no"]), ("prior", 2))
+
+    def test_ytd_context_does_not_claim_a_quarter(self):
+        """*YTDDuration から四半期を決めてはいけない。EDINET半期では2四半期
+        累計だが、TDnet短信は Q1〜Q4 のどれでも CurrentYTDDuration を使う。
+        ここで 2 を返すと短信の Q3 が q_no=2 として積まれ、単独値(累計の差分)が
+        丸ごと狂う —— 2026-08-31 に実際に埋め込んで踏んだ。"""
+        for src in ("edinet", "tdnet"):
+            d = self.m.parse_context("CurrentYTDDuration", src)
+            self.assertIsNone(d["q_no"], f"{src}: YTD が四半期を主張している")
+            self.assertEqual(d["year_rel"], "current")
+
+    def test_accumulated_quarter_context_gives_the_quarter(self):
+        """短信サマリーの AccumulatedQ<n> は四半期を明示する唯一の手がかり。"""
+        for n in (1, 2, 3):
+            d = self.m.parse_context(
+                f"CurrentAccumulatedQ{n}Duration_ConsolidatedMember_ResultMember",
+                "tdnet")
+            self.assertEqual(d["q_no"], n)
+            self.assertEqual(d["year_rel"], "current")
+        d = self.m.parse_context("PriorAccumulatedQ3Duration_ConsolidatedMember_"
+                                 "ResultMember", "tdnet")
+        self.assertEqual((d["year_rel"], d["q_no"]), ("prior", 3))
 
     def test_edinet_consolidated_context_has_no_member(self):
         """EDINET は連結に member を付けず、単体だけ NonConsolidatedMember が
@@ -382,3 +404,52 @@ class TestEdinetCoverageReport(_DbCase):
         joined = "\n".join(logged)
         self.assertIn("取得対象なのに XBRL が取れていない書類: 0 件", joined)
         self.assertIn("失敗ではない", joined)
+
+
+class TestSegmentDimension(_DbCase):
+    """docs/segment_dimension_design.md —— 次元付きファクトを軸を分けて持つ。"""
+
+    def setUp(self):
+        super().setUp()
+        from screener.extract import xbrl_parser as X
+        self.X = X
+
+    def test_member_classification_separates_totals_from_individual_segments(self):
+        """報告セグメント計を個別セグメントと同じ軸に置くと、セグメント別集計で
+        全社ぶんがもう一度足される。軸を分けることでそれを防ぐ。"""
+        f = self.X.classify_member
+        self.assertEqual(f("jpcrp030000-asr_E02121-000JapanReportableSegmentsMember"),
+                         ("segment", "Japan"))
+        self.assertEqual(f("ReportableSegmentsMember")[0], "segment_total")
+        self.assertEqual(f("TotalOfReportableSegmentsAndOthersMember")[0], "segment_total")
+        self.assertEqual(f("ReconcilingItemsMember")[0], "adjustment")
+        self.assertEqual(f("RetainedEarningsMember")[0], "equity_component")
+        self.assertEqual(f("No1MajorShareholdersMember")[0], "other")
+
+    def test_segment_change_invalidates_but_does_not_delete(self):
+        """区分変更で時系列が切れた期は valid_flag=0。行は消さない ——
+        『区分が変わった』と『まだ判定していない』を混同しないため。"""
+        rows = [("FY2024", "Japan"), ("FY2024", "Philippines"),
+                ("FY2025", "Japan"), ("FY2025", "Asia")]   # Asia が新設
+        for i, (period, member) in enumerate(rows):
+            # financials_dim.filing_id は filings への外部キー。親行を作る。
+            cur = self.con.execute(
+                "INSERT INTO filings (code, date, type, source, doc_id) "
+                "VALUES (?,?,?,?,?)",
+                ("3441", "2026-06-01", "有報", "edinet", f"D{i}"))
+            self.con.execute(
+                "INSERT INTO financials_dim (filing_id, code, period, item, axis, "
+                " member, member_raw, value, context_ref) "
+                "VALUES (?,?,?,?,?,?,?,?,?)",
+                (cur.lastrowid, "3441", period, "revenue", "segment", member,
+                 member + "Member", 100.0, f"ctx{i}"))
+        self.con.commit()
+        self.X.flag_segment_changes(self.con)
+        got = {(r["period"], r["member"]): r["valid_flag"] for r in self.con.execute(
+            "SELECT period, member, valid_flag FROM financials_dim")}
+        self.assertEqual(got[("FY2025", "Asia")], 0, "新設セグメントが有効のまま")
+        self.assertEqual(got[("FY2025", "Japan")], 1, "継続セグメントを無効にしている")
+        self.assertEqual(got[("FY2024", "Japan")], 1, "最初の期は比較相手が無い")
+        self.assertEqual(self.con.execute(
+            "SELECT COUNT(*) c FROM financials_dim").fetchone()["c"], 4,
+            "行を消している")

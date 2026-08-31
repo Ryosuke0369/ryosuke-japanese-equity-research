@@ -73,6 +73,32 @@ CREATE TABLE IF NOT EXISTS financials_cum (
 );
 CREATE INDEX IF NOT EXISTS ix_cum_code_item ON financials_cum (code, item);
 
+-- 【§5拡張・docs/segment_dimension_design.md】
+-- 次元(セグメント等)付きファクト。financials_cum は「見出し数値だけ」という
+-- 不変条件を保ちたいので別テーブルにする。cum に segment 列を足すと、全ての
+-- 既存クエリが WHERE segment IS NULL を要求するようになり、書き忘れた瞬間に
+-- 集計が黙って2〜3倍になる。分けておけばその間違いは構造的に起こらない。
+CREATE TABLE IF NOT EXISTS financials_dim (
+    filing_id       INTEGER,
+    code            TEXT,
+    period          TEXT,
+    q_no            INTEGER,
+    item            TEXT,                      -- account_mapping.yaml の内部項目名
+    axis            TEXT,                      -- segment / segment_total / adjustment / other
+    member          TEXT,                      -- 正規化後 (Japan / Philippines)
+    member_raw      TEXT,                      -- 元文字列。正規化を後から検証できる
+    value           REAL,
+    unit            TEXT,
+    context_ref     TEXT,
+    source_tag      TEXT,
+    valid_flag      INTEGER DEFAULT 1,         -- 0 = セグメント区分変更で時系列が切れている
+    invalid_reason  TEXT,
+    PRIMARY KEY (filing_id, item, context_ref),
+    FOREIGN KEY (filing_id) REFERENCES filings (id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS ix_dim_code_item ON financials_dim (code, item, member);
+CREATE INDEX IF NOT EXISTS ix_dim_axis ON financials_dim (axis);
+
 -- ------------------------------------------------------------- financials_q
 -- §5: financials_q(code, period, q_no, item, value, valid_flag) — 単独値(生成)
 CREATE TABLE IF NOT EXISTS financials_q (
@@ -84,6 +110,11 @@ CREATE TABLE IF NOT EXISTS financials_q (
     valid_flag      INTEGER DEFAULT 1,         -- 0 = 決算期変更/遡及修正/連結範囲変更で無効
     -- 【§5拡張】
     invalid_reason  TEXT,
+    -- この単独値が何四半期ぶんか。1 = 真の四半期単独値。
+    -- 短信が揃っていない会社は EDINET の有報(q4累計)と半期(q2累計)しか無く、
+    -- 差分は「下期6ヶ月」になる。それを四半期と名乗らせないための列 ——
+    -- 3ヶ月と6ヶ月を同じ土俵に載せると傾きの大きさが二重になる。
+    span_q          INTEGER DEFAULT 1,
     built_at        TEXT,
     PRIMARY KEY (code, period, q_no, item)
 );
