@@ -1,0 +1,123 @@
+{
+  "input": {
+    "ticker": "4192",
+    "company_name": "SpiderPlus & Co.",
+    "date": "2026-06-03",
+    "axis_1_label_status": 1,
+    "axis_2a_catalyst_potential": 2,
+    "axis_2b_catalyst_realization": 1,
+    "axis_3_diffusion_stage": 1,
+    "axis_4_earnings_materiality": 2,
+    "axis_5_narrative_durability": 2,
+    "axis_1_note": "建設DX/SaaSラベルは既に付与。ただし黒字化初期で高収益SaaSへの書き換えは途上",
+    "axis_2a_note": "建設2024年問題(時間外規制)・技能者不足・ゼネコンDX。ARR積み上げ構造が燃料",
+    "axis_2b_note": "FY2026 1Qで営業黒字転換(+5百万)。ただし株価は底ばい(234-293円)で決定的点火に至らず",
+    "axis_3_note": "BNYメロン7.6%等の海外機関は保有も、超小型でアナリストカバー薄く認識は限定的",
+    "axis_4_note": "建設現場DX TAM1,250億(2030,矢野)〜建築ConTech 3,042億。シェア10-13%・OPM20-25%で成熟時25-99億の営業利益創出余地。現営業益ほぼゼロ・時価総額104億に対し十分大",
+    "axis_5_note": "月次解約率0.9%(高スイッチングコスト)、ARRストック、建設DXは一過性でなく構造的トレンド",
+    "tam_oku_jpy": 1250.0,
+    "expected_share_pct": 13.0,
+    "segment_opm_pct": 22.0,
+    "current_operating_profit_oku": 0.5
+  },
+  "results": {
+    "BUY": {
+      "ticker": "4192",
+      "company_name": "SpiderPlus & Co.",
+      "date": "2026-06-03",
+      "stage": 1,
+      "stage_label": "Stage 1 (萌芽期)",
+      "rate_limiting_axis": "axis_2b (Catalyst Realization)",
+      "rate_limiting_reason": "触媒実現度 = 1 ≤ 1 で本格発火に至らず、拡散進行度(reach) = 1、萌芽期",
+      "total_score": 9,
+      "earnings_cap_applied": false,
+      "earnings_impact_oku": 35.75,
+      "earnings_uplift_ratio": 71.5,
+      "earnings_impact_note": "営業利益インパクト ≈ 35.8億円 / 現状営利 0億円 = 71.50倍化余地",
+      "headroom_signal": "BALANCED",
+      "headroom_note": "軸1(置換)=1 = 軸3(到達)=1: 置換と到達が歩調を揃えている",
+      "final_verdict": "STRONG_BUY",
+      "verdict_rationale": "ファンダ的に割安 × ナラティブStage 0-1 = ダブルバガー本命ゾーン",
+      "axis_scores": {
+        "1_label_status": 1,
+        "2a_catalyst_potential": 2,
+        "2b_catalyst_realization": 1,
+        "3_diffusion_stage": 1,
+        "4_earnings_materiality": 2,
+        "5_narrative_durability": 2
+      },
+      "axis_notes": {
+        "1_label_status": "建設DX/SaaSラベルは既に付与。ただし黒字化初期で高収益SaaSへの書き換えは途上",
+        "2a_catalyst_potential": "建設2024年問題(時間外規制)・技能者不足・ゼネコンDX。ARR積み上げ構造が燃料",
+        "2b_catalyst_realization": "FY2026 1Qで営業黒字転換(+5百万)。ただし株価は底ばい(234-293円)で決定的点火に至らず",
+        "3_diffusion_stage": "BNYメロン7.6%等の海外機関は保有も、超小型でアナリストカバー薄く認識は限定的",
+        "4_earnings_materiality": "建設現場DX TAM1,250億(2030,矢野)〜建築ConTech 3,042億。シェア10-13%・OPM20-25%で成熟時25-99億の営業利益創出余地。現営業益ほぼゼロ・時価総額104億に対し十分大",
+        "5_narrative_durability": "月次解約率0.9%(高スイッチングコスト)、ARRストック、建設DXは一過性でなく構造的トレンド"
+      }
+    },
+    "CAUTION": {
+      "ticker": "4192",
+      "company_name": "SpiderPlus & Co.",
+      "date": "2026-06-03",
+      "stage": 1,
+      "stage_label": "Stage 1 (萌芽期)",
+      "rate_limiting_axis": "axis_2b (Catalyst Realization)",
+      "rate_limiting_reason": "触媒実現度 = 1 ≤ 1 で本格発火に至らず、拡散進行度(reach) = 1、萌芽期",
+      "total_score": 9,
+      "earnings_cap_applied": false,
+      "earnings_impact_oku": 35.75,
+      "earnings_uplift_ratio": 71.5,
+      "earnings_impact_note": "営業利益インパクト ≈ 35.8億円 / 現状営利 0億円 = 71.50倍化余地",
+      "headroom_signal": "BALANCED",
+      "headroom_note": "軸1(置換)=1 = 軸3(到達)=1: 置換と到達が歩調を揃えている",
+      "final_verdict": "AVOID",
+      "verdict_rationale": "ファンダ的に割高 × Stage 0-1、機会費用を回避",
+      "axis_scores": {
+        "1_label_status": 1,
+        "2a_catalyst_potential": 2,
+        "2b_catalyst_realization": 1,
+        "3_diffusion_stage": 1,
+        "4_earnings_materiality": 2,
+        "5_narrative_durability": 2
+      },
+      "axis_notes": {
+        "1_label_status": "建設DX/SaaSラベルは既に付与。ただし黒字化初期で高収益SaaSへの書き換えは途上",
+        "2a_catalyst_potential": "建設2024年問題(時間外規制)・技能者不足・ゼネコンDX。ARR積み上げ構造が燃料",
+        "2b_catalyst_realization": "FY2026 1Qで営業黒字転換(+5百万)。ただし株価は底ばい(234-293円)で決定的点火に至らず",
+        "3_diffusion_stage": "BNYメロン7.6%等の海外機関は保有も、超小型でアナリストカバー薄く認識は限定的",
+        "4_earnings_materiality": "建設現場DX TAM1,250億(2030,矢野)〜建築ConTech 3,042億。シェア10-13%・OPM20-25%で成熟時25-99億の営業利益創出余地。現営業益ほぼゼロ・時価総額104億に対し十分大",
+        "5_narrative_durability": "月次解約率0.9%(高スイッチングコスト)、ARRストック、建設DXは一過性でなく構造的トレンド"
+      }
+    }
+  },
+  "tam_sensitivity": [
+    {
+      "tam_oku": 1250.0,
+      "share_pct": 10.0,
+      "opm_pct": 22.0,
+      "impact_oku": 27.5,
+      "uplift_ratio": 55.0
+    },
+    {
+      "tam_oku": 1250.0,
+      "share_pct": 13.0,
+      "opm_pct": 22.0,
+      "impact_oku": 35.75,
+      "uplift_ratio": 71.5
+    },
+    {
+      "tam_oku": 3042.0,
+      "share_pct": 10.0,
+      "opm_pct": 22.0,
+      "impact_oku": 66.92,
+      "uplift_ratio": 133.8
+    },
+    {
+      "tam_oku": 3042.0,
+      "share_pct": 13.0,
+      "opm_pct": 22.0,
+      "impact_oku": 87.0,
+      "uplift_ratio": 174.0
+    }
+  ]
+}

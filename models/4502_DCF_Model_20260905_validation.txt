@@ -1,0 +1,27 @@
+validate_output.py — 4502_DCF_Model_20260905.xlsx
+==============================================================================
+[PASS]  1. No formula errors                      0 error cells in all sheets
+[PASS]  2. Scenario index is MATCH                D27 = =MATCH(C27,B69:B73,0)
+[PASS]  3. Comps stats exclude subject row        subject row 5 excluded from all MEDIAN/PERCENTILE ranges
+[PASS]  4. Subject Mkt Cap / EV are formulas      D5=='Executive Summary'!C9*C23/1000000 / E5==D5+C24
+[PASS]  5. Scenario names are the fixed 5         B69:B73 = ['Base', 'Upside', 'Management', 'Downside 1', 'Downside 2']
+[PASS]  6. C20 LTM Revenue matches generator      4,618,935.0 mn (source: hybrid LTM (FY - prior cum + current cum))
+[PASS]  7. C5 Capex/Revenue basis                 9.20% (explicit assumption, not a back-solve; basis=assumption)
+[PASS]  7. C18 D&A/Revenue basis                  16.57% = mean of last 3 historical years
+[PASS]  8. FS OCF/Cash/Debt year alignment        4 year column(s) match the source year keys cell-for-cell
+[PASS]  9. Terminal-year capex / D&A ratio        0.96x within [0.90, 1.15] at g=1.00%
+[PASS] 10. PGM implied price sanity               EV 8,129,460 >= net debt 4,478,986 mn
+[PASS] 11. PGM-implied vs assumed exit multiple   PGM implies 7.57x vs assumed 11.40x (1.51x)
+[PASS] 12. Peer EBITDA != EBIT                    no peer row where EBITDA equals operating income
+[PASS] 13. Adjustments Log sheet present          
+[PASS] 14. Target Price averages DCF legs only    C10 averages C16:C17 (PGM + Exit); comps rows excluded
+[PASS] 15. Exit implied price sanity              EV 11,030,704 >= net debt 4,478,986 mn
+[PASS] 16. Reverse DCF sheet present              121 live formulas, sheet position 4
+[PASS] 17. Cost of debt basis                     actual: 148,123 / 4,698,552 = 3.1525% pre-tax -> 2.3600% after-tax
+[PASS] 18. FX sensitivity Table 3                 not enabled (domestic name) — no table expected
+[SKIP] 19. Subject EBITDA vs operating income     no latest_operating_income in metadata
+[PASS] 20. Comps reference prices in a sane band  EV/EBITDA=5,684 ok; PER='N/A' (text - method excluded)
+[FAIL] 99. All checks executed                    1 check(s) SKIPped - the workbook is NOT verified. Recalculate it (python scripts/recalc_excel_com.py <xlsx>) and re-validate, or pass --allow-skip if partial validation is deliberate.
+==============================================================================
+FAIL 1 / WARN 0 / SKIP 1 / PASS 20
+VERDICT: FAIL

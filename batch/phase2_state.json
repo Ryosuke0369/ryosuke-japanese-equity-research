@@ -1,0 +1,1611 @@
+{
+ "1801": {
+  "exit": 0,
+  "seconds": 112.9,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\1801.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-06 (net_income=151,000mn, operating_income=188,000mn, revenue=2,420,000mn)",
+  "beta_line": "1.091 -> adjusted 1.061 -> adopted 1.061",
+  "wacc": "10.03",
+  "warnings": [
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: No current-FY quarters found on yfinance. Cannot build LTM.",
+   "WARNING: base-year BS items absent from EDINET: accounts_receivable, inventories, accounts_payable - treated as 0 for the NWC day counts. Set base_year_ar / base_year_inv / base_year_ap in overrides i"
+  ]
+ },
+ "1812": {
+  "exit": 0,
+  "seconds": 120.2,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\1812.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-05 (net_income=170,000mn, operating_income=200,000mn, revenue=2,900,000mn)",
+  "beta_line": "0.970 -> adjusted 0.980 -> adopted 0.980",
+  "wacc": "9.08",
+  "warnings": [
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: No current-FY quarters found on yfinance. Cannot build LTM.",
+   "WARNING: base-year BS items absent from EDINET: inventories, accounts_payable - treated as 0 for the NWC day counts. Set base_year_ar / base_year_inv / base_year_ap in overrides if the working-capital"
+  ]
+ },
+ "1802": {
+  "exit": 0,
+  "seconds": 127.7,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\1802.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-07 (net_income=157,000mn, operating_income=180,000mn, revenue=2,945,000mn)",
+  "beta_line": "0.778 -> adjusted 0.851 -> adopted 0.851",
+  "wacc": "9.50",
+  "warnings": [
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: No current-FY quarters found on yfinance. Cannot build LTM.",
+   "WARNING: base-year BS items absent from EDINET: accounts_payable - treated as 0 for the NWC day counts. Set base_year_ar / base_year_inv / base_year_ap in overrides if the working-capital bridge matte"
+  ]
+ },
+ "2267": {
+  "exit": 0,
+  "seconds": 100.5,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\2267.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-07-31 (net_income=46,500mn, operating_income=44,000mn, revenue=527,000mn)",
+  "beta_line": "0.129 -> adjusted 0.417 -> adopted 0.417",
+  "wacc": "6.68",
+  "warnings": [
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "2269": {
+  "exit": 0,
+  "seconds": 97.7,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\2269.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-05 (net_income=62,500mn, operating_income=100,000mn, revenue=1,212,000mn)",
+  "beta_line": "0.124 -> adjusted 0.413 -> adopted 0.413",
+  "wacc": "6.56",
+  "warnings": [
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "2502": {
+  "exit": 0,
+  "seconds": 326.2,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\2502.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2026 disclosed 2026-08-14 (net_income=194,000mn, operating_income=297,000mn, revenue=3,220,000mn)",
+  "beta_line": "0.441 -> adjusted 0.626 -> adopted 0.626",
+  "wacc": "5.52",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters."
+  ]
+ },
+ "2587": {
+  "exit": 0,
+  "seconds": 339.4,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\2587.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2026 disclosed 2026-08-06 (net_income=89,000mn, operating_income=155,000mn, revenue=1,826,000mn)",
+  "beta_line": "0.291 -> adjusted 0.525 -> adopted 0.525",
+  "wacc": "7.38",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: base-year BS items absent from EDINET: accounts_receivable, accounts_payable - treated as 0 for the NWC day counts. Set base_year_ar / base_year_inv / base_year_ap in overrides if the working"
+  ]
+ },
+ "2503": {
+  "exit": 0,
+  "seconds": 346.1,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\2503.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2026 disclosed 2026-08-07 (net_income=160,000mn, revenue=2,480,000mn)",
+  "beta_line": "0.383 -> adjusted 0.587 -> adopted 0.587",
+  "wacc": "6.38",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters."
+  ]
+ },
+ "2801": {
+  "exit": 0,
+  "seconds": 107.2,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\2801.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-05 (net_income=61,300mn, operating_income=78,800mn, revenue=799,100mn)",
+  "beta_line": "0.337 -> adjusted 0.556 -> adopted 0.556",
+  "wacc": "7.58",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 - verify against 短信 (unmatched years left BLANK; set hist_ocf / hist_cash / hist_debt in overrides to fill them)",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 — verify against 短信",
+   "WARNING: net_debt could not be determined from EDINET (total_debt=None, cash=111770.0). It must be supplied in overrides.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "2897": {
+  "exit": 0,
+  "seconds": 103.4,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\2897.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-04 (net_income=48,000mn, operating_income=69,500mn, revenue=860,000mn)",
+  "beta_line": "0.383 -> adjusted 0.587 -> adopted 0.587",
+  "wacc": "7.25",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 3/4 - verify against 短信 (unmatched years left BLANK; set hist_ocf / hist_cash / hist_debt in overrides to fill them)",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 3/4 — verify against 短信",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "2871": {
+  "exit": 0,
+  "seconds": 105.7,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\2871.log",
+  "beta_line": "0.033 -> adjusted 0.352 -> adopted 0.352",
+  "wacc": "5.61",
+  "no_guidance": "NO GUIDANCE - Management scenario falls back",
+  "warnings": [
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: no 会社予想 obtained - the Management scenario is the CAGR estimate, not company guidance (screener DB: newest guidance is FY2026 (disclosed 2026-08-07) but the latest actual FY is FY2026 - that ",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "2802": {
+  "exit": 0,
+  "seconds": 111.3,
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "pass": 21,
+  "log": "batch\\logs_phase2\\2802.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-06 (net_income=123,500mn, revenue=1,732,000mn)",
+  "beta_line": "1.099 -> adjusted 1.067 -> adopted 1.067",
+  "wacc": "10.38",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2018, FY2019, FY2020, FY2021, FY2022, FY2023, FY2024, FY2025, FY2026 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 - verify against 短信 (unmatched years left BLANK; set hist_ocf / hist_cash / hist_debt in overrides to fill them)",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 — verify against 短信",
+   "WARNING: base-year BS items absent from EDINET: accounts_receivable, accounts_payable - treated as 0 for the NWC day counts. Set base_year_ar / base_year_inv / base_year_ap in overrides if the working",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "3099": {
+  "exit": 0,
+  "seconds": 110.3,
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "pass": 21,
+  "log": "batch\\logs_phase2\\3099.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-13 (net_income=63,000mn, operating_income=84,000mn, revenue=562,000mn)",
+  "beta_line": "1.291 -> adjusted 1.195 -> adopted 1.195",
+  "wacc": "11.74",
+  "warnings": [
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: base-year BS items absent from EDINET: accounts_receivable - treated as 0 for the NWC day counts. Set base_year_ar / base_year_inv / base_year_ap in overrides if the working-capital bridge ma",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "3289": {
+  "exit": 0,
+  "seconds": 119.6,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\3289.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-06 (net_income=100,000mn, operating_income=190,000mn, revenue=1,400,000mn)",
+  "beta_line": "0.647 -> adjusted 0.764 -> adopted 0.764",
+  "wacc": "3.81",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2021, FY2022, FY2023, FY2024, FY2025, FY2026 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: base-year BS items absent from EDINET: accounts_receivable - treated as 0 for the NWC day counts. Set base_year_ar / base_year_inv / base_year_ap in overrides if the working-capital bridge ma",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "3407": {
+  "exit": 0,
+  "seconds": 100.0,
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "pass": 21,
+  "log": "batch\\logs_phase2\\3407.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-07-31 (net_income=160,000mn, operating_income=248,000mn, revenue=3,254,000mn)",
+  "beta_line": "1.008 -> adjusted 1.006 -> adopted 1.006",
+  "wacc": "8.52",
+  "warnings": [
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "3086": {
+  "exit": 0,
+  "seconds": 288.8,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\3086.log",
+  "beta_line": "0.699 -> adjusted 0.798 -> adopted 0.798",
+  "wacc": "6.77",
+  "no_guidance": "NO GUIDANCE - Management scenario falls back",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: no 会社予想 obtained - the Management scenario is the CAGR estimate, not company guidance (screener DB: no guidance row for code=3086 in the TDnet archive | EDINET XBRL: 5 cached EDINET XBRL file",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "3861": {
+  "exit": 0,
+  "seconds": 101.2,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\3861.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-05 (net_income=35,000mn, operating_income=60,000mn, revenue=1,940,000mn)",
+  "beta_line": "0.537 -> adjusted 0.690 -> adopted 0.690",
+  "wacc": "4.36",
+  "warnings": [
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "3405": {
+  "exit": 0,
+  "seconds": 357.6,
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "pass": 21,
+  "log": "batch\\logs_phase2\\3405.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2026 disclosed 2026-08-07 (net_income=40,000mn, operating_income=70,000mn, revenue=880,000mn)",
+  "beta_line": "0.761 -> adjusted 0.840 -> adopted 0.840",
+  "wacc": "7.33",
+  "warnings": []
+ },
+ "3863": {
+  "exit": 0,
+  "seconds": 101.0,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\3863.log",
+  "beta_line": "0.533 -> adjusted 0.687 -> adopted 0.687",
+  "wacc": "3.45",
+  "no_guidance": "NO GUIDANCE - Management scenario falls back",
+  "warnings": [
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: no 会社予想 obtained - the Management scenario is the CAGR estimate, not company guidance (screener DB: no guidance row for code=3863 in the TDnet archive | EDINET XBRL: 5 cached EDINET XBRL file",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "4005": {
+  "exit": 0,
+  "seconds": 110.3,
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "pass": 21,
+  "log": "batch\\logs_phase2\\4005.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-04 (net_income=70,000mn, operating_income=177,000mn, revenue=2,360,000mn)",
+  "beta_line": "1.106 -> adjusted 1.071 -> adopted 1.071",
+  "wacc": "7.50",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "3659": {
+  "exit": 0,
+  "seconds": 360.4,
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "pass": 21,
+  "log": "batch\\logs_phase2\\3659.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2026 disclosed 2026-08-13 (net_income=112,505mn, operating_income=121,716mn, revenue=406,746mn)",
+  "beta_line": "0.859 -> adjusted 0.905 -> adopted 0.905",
+  "wacc": "9.86",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 - verify against 短信 (unmatched years left BLANK; set hist_ocf / hist_cash / hist_debt in overrides to fill them)",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 — verify against 短信",
+   "WARNING: base-year BS items absent from EDINET: inventories, accounts_payable - treated as 0 for the NWC day counts. Set base_year_ar / base_year_inv / base_year_ap in overrides if the working-capital",
+   "WARNING: net_debt could not be determined from EDINET (total_debt=None, cash=546102.0). It must be supplied in overrides."
+  ]
+ },
+ "4063": {
+  "exit": 0,
+  "seconds": 105.6,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\4063.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-07-24 (net_income=525,000mn, operating_income=700,000mn, revenue=2,700,000mn)",
+  "beta_line": "1.044 -> adjusted 1.029 -> adopted 1.029",
+  "wacc": "10.66",
+  "warnings": [
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: No current-FY quarters found on yfinance. Cannot build LTM.",
+   "WARNING: base-year BS items absent from EDINET: accounts_receivable - treated as 0 for the NWC day counts. Set base_year_ar / base_year_inv / base_year_ap in overrides if the working-capital bridge ma"
+  ]
+ },
+ "4091": {
+  "exit": 0,
+  "seconds": 104.8,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\4091.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-06 (net_income=131,000mn, operating_income=215,000mn, revenue=1,380,000mn)",
+  "beta_line": "0.711 -> adjusted 0.806 -> adopted 0.806",
+  "wacc": "7.55",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: base-year BS items absent from EDINET: accounts_receivable, accounts_payable - treated as 0 for the NWC day counts. Set base_year_ar / base_year_inv / base_year_ap in overrides if the working",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "4183": {
+  "exit": 0,
+  "seconds": 97.1,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\4183.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-05 (net_income=45,000mn, operating_income=83,000mn, revenue=1,900,000mn)",
+  "beta_line": "1.106 -> adjusted 1.071 -> adopted 1.071",
+  "wacc": "7.14",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: base-year BS items absent from EDINET: accounts_receivable, accounts_payable - treated as 0 for the NWC day counts. Set base_year_ar / base_year_inv / base_year_ap in overrides if the working",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "4188": {
+  "exit": 0,
+  "seconds": 116.4,
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "pass": 21,
+  "log": "batch\\logs_phase2\\4188.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-07 (net_income=127,000mn, operating_income=300,000mn, revenue=3,800,000mn)",
+  "beta_line": "1.138 -> adjusted 1.092 -> adopted 1.092",
+  "wacc": "6.77",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: No current-FY quarters found on yfinance. Cannot build LTM.",
+   "WARNING: base-year BS items absent from EDINET: accounts_receivable, accounts_payable - treated as 0 for the NWC day counts. Set base_year_ar / base_year_inv / base_year_ap in overrides if the working"
+  ]
+ },
+ "4205": {
+  "exit": 0,
+  "seconds": 109.5,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\4205.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-07-29 (net_income=36,000mn, operating_income=38,000mn, revenue=405,000mn)",
+  "beta_line": "0.852 -> adjusted 0.901 -> adopted 0.901",
+  "wacc": "9.83",
+  "warnings": [
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "4502": {
+  "exit": 0,
+  "seconds": 103.3,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\4502.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-07-30 (net_income=166,000mn, operating_income=420,000mn, revenue=4,640,000mn)",
+  "beta_line": "0.295 -> adjusted 0.527 -> adopted 0.527",
+  "wacc": "5.75",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: core_ebitda unavailable (operating_income=6217.0, depreciation=None for the latest FY). Set core_ebitda in overrides, or the Comps EV/EBITDA leg is N/A."
+  ]
+ },
+ "4307": {
+  "exit": 0,
+  "seconds": 108.4,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\4307.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-07-30 (net_income=119,000mn, operating_income=175,000mn, revenue=850,000mn)",
+  "beta_line": "0.587 -> adjusted 0.723 -> adopted 0.723",
+  "wacc": "8.42",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: base-year BS items absent from EDINET: inventories - treated as 0 for the NWC day counts. Set base_year_ar / base_year_inv / base_year_ap in overrides if the working-capital bridge matters fo",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "4151": {
+  "exit": 0,
+  "seconds": 370.9,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\4151.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2026 disclosed 2026-08-03 (revenue=520,000mn)",
+  "beta_line": "0.471 -> adjusted 0.646 -> adopted 0.646",
+  "wacc": "8.17",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2018, FY2019, FY2020, FY2021, FY2022, FY2023, FY2024, FY2025 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if t",
+   "WARNING: EDINET has no sga for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 - verify against 短信 (unmatched years left BLANK; set hist_ocf / hist_cash / hist_debt in overrides to fill them)",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 — verify against 短信",
+   "WARNING: core_ebitda unavailable (operating_income=None, depreciation=None for the latest FY). Set core_ebitda in overrides, or the Comps EV/EBITDA leg is N/A.",
+   "WARNING: net_debt could not be determined from EDINET (total_debt=None, cash=265083.0). It must be supplied in overrides."
+  ]
+ },
+ "4503": {
+  "exit": 0,
+  "seconds": 100.2,
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "pass": 21,
+  "log": "batch\\logs_phase2\\4503.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-05 (net_income=300,000mn, operating_income=395,000mn, revenue=2,220,000mn)",
+  "beta_line": "0.723 -> adjusted 0.815 -> adopted 0.815",
+  "wacc": "8.78",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: base-year BS items absent from EDINET: accounts_receivable, accounts_payable - treated as 0 for the NWC day counts. Set base_year_ar / base_year_inv / base_year_ap in overrides if the working",
+   "WARNING: core_ebitda unavailable (operating_income=382633.0, depreciation=None for the latest FY). Set core_ebitda in overrides, or the Comps EV/EBITDA leg is N/A.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "4507": {
+  "exit": 0,
+  "seconds": 101.1,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\4507.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-03 (net_income=210,000mn, operating_income=220,000mn, revenue=700,000mn)",
+  "beta_line": "0.365 -> adjusted 0.574 -> adopted 0.574",
+  "wacc": "7.70",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 1/4 - verify against 短信 (unmatched years left BLANK; set hist_ocf / hist_cash / hist_debt in overrides to fill them)",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 1/4 — verify against 短信",
+   "WARNING: base-year BS items absent from EDINET: accounts_receivable, accounts_payable - treated as 0 for the NWC day counts. Set base_year_ar / base_year_inv / base_year_ap in overrides if the working",
+   "WARNING: core_ebitda unavailable (operating_income=166725.0, depreciation=None for the latest FY). Set core_ebitda in overrides, or the Comps EV/EBITDA leg is N/A.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "4523": {
+  "exit": 0,
+  "seconds": 97.4,
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "pass": 21,
+  "log": "batch\\logs_phase2\\4523.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-03 (net_income=52,300mn, operating_income=70,000mn, revenue=883,500mn)",
+  "beta_line": "0.801 -> adjusted 0.867 -> adopted 0.867",
+  "wacc": "9.60",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: No current-FY quarters found on yfinance. Cannot build LTM.",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 - verify against 短信 (unmatched years left BLANK; set hist_ocf / hist_cash / hist_debt in overrides to fill them)",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 — verify against 短信",
+   "WARNING: net_debt could not be determined from EDINET (total_debt=None, cash=245423.0). It must be supplied in overrides."
+  ]
+ },
+ "4528": {
+  "exit": 0,
+  "seconds": 102.0,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\4528.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-07-31 (net_income=71,000mn, operating_income=94,000mn, revenue=455,000mn)",
+  "beta_line": "0.472 -> adjusted 0.646 -> adopted 0.646",
+  "wacc": "8.17",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 - verify against 短信 (unmatched years left BLANK; set hist_ocf / hist_cash / hist_debt in overrides to fill them)",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 — verify against 短信",
+   "WARNING: base-year BS items absent from EDINET: accounts_receivable, accounts_payable - treated as 0 for the NWC day counts. Set base_year_ar / base_year_inv / base_year_ap in overrides if the working",
+   "WARNING: core_ebitda unavailable (operating_income=92236.0, depreciation=None for the latest FY). Set core_ebitda in overrides, or the Comps EV/EBITDA leg is N/A.",
+   "WARNING: net_debt could not be determined from EDINET (total_debt=None, cash=237046.0). It must be supplied in overrides.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "4543": {
+  "exit": 0,
+  "seconds": 105.3,
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "pass": 21,
+  "log": "batch\\logs_phase2\\4543.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-07 (net_income=193,100mn, operating_income=257,500mn, revenue=1,239,000mn)",
+  "beta_line": "0.578 -> adjusted 0.717 -> adopted 0.717",
+  "wacc": "8.42",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "4568": {
+  "exit": 0,
+  "seconds": 75.1,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\4568.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-07-31 (net_income=260,000mn, operating_income=315,000mn, revenue=2,280,000mn)",
+  "beta_line": "0.607 -> adjusted 0.737 -> adopted 0.737",
+  "wacc": "8.76",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "4661": {
+  "exit": 0,
+  "seconds": 88.8,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\4661.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-07-30 (net_income=113,797mn, operating_income=160,776mn, revenue=724,312mn)",
+  "beta_line": "0.306 -> adjusted 0.535 -> adopted 0.535",
+  "wacc": "7.45",
+  "warnings": [
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "4901": {
+  "exit": 0,
+  "seconds": 93.4,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\4901.log",
+  "beta_line": "0.881 -> adjusted 0.920 -> adopted 0.920",
+  "wacc": "8.26",
+  "no_guidance": "NO GUIDANCE - Management scenario falls back",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2021, FY2022, FY2023, FY2024, FY2025, FY2026 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: No current-FY quarters found on yfinance. Cannot build LTM.",
+   "WARNING: OCF/Cash/Debt coverage OCF 0/4, Cash 4/4, Debt 4/4 - verify against 短信 (unmatched years left BLANK; set hist_ocf / hist_cash / hist_debt in overrides to fill them)",
+   "WARNING: OCF/Cash/Debt coverage OCF 0/4, Cash 4/4, Debt 4/4 — verify against 短信",
+   "WARNING: base-year BS items absent from EDINET: inventories, accounts_payable - treated as 0 for the NWC day counts. Set base_year_ar / base_year_inv / base_year_ap in overrides if the working-capital",
+   "WARNING: no 会社予想 obtained - the Management scenario is the CAGR estimate, not company guidance (screener DB: no guidance row for code=4901 in the TDnet archive | EDINET XBRL: 5 cached EDINET XBRL file"
+  ]
+ },
+ "4578": {
+  "exit": 0,
+  "seconds": 352.9,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\4578.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2026 disclosed 2026-07-31 (net_income=355,000mn, operating_income=469,000mn, revenue=2,725,000mn)",
+  "beta_line": "0.664 -> adjusted 0.775 -> adopted 0.775",
+  "wacc": "9.00",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: base-year BS items absent from EDINET: accounts_receivable, accounts_payable - treated as 0 for the NWC day counts. Set base_year_ar / base_year_inv / base_year_ap in overrides if the working"
+  ]
+ },
+ "5401": {
+  "exit": 0,
+  "seconds": 109.2,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\5401.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-04 (net_income=290,000mn, revenue=11,200,000mn)",
+  "beta_line": "0.679 -> adjusted 0.785 -> adopted 0.785",
+  "wacc": "5.06",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 - verify against 短信 (unmatched years left BLANK; set hist_ocf / hist_cash / hist_debt in overrides to fill them)",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 — verify against 短信",
+   "WARNING: net_debt could not be determined from EDINET (total_debt=None, cash=461262.0). It must be supplied in overrides.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "5108": {
+  "exit": 0,
+  "seconds": 368.4,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\5108.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2026 disclosed 2026-08-07 (net_income=340,000mn, revenue=4,500,000mn)",
+  "beta_line": "0.839 -> adjusted 0.892 -> adopted 0.892",
+  "wacc": "9.64",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters."
+  ]
+ },
+ "5201": {
+  "exit": 0,
+  "seconds": 355.0,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\5201.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2026 disclosed 2026-08-04 (net_income=77,000mn, operating_income=150,000mn, revenue=2,200,000mn)",
+  "beta_line": "1.019 -> adjusted 1.013 -> adopted 1.013",
+  "wacc": "7.77",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 - verify against 短信 (unmatched years left BLANK; set hist_ocf / hist_cash / hist_debt in overrides to fill them)",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 — verify against 短信",
+   "WARNING: base-year BS items absent from EDINET: accounts_receivable, accounts_payable - treated as 0 for the NWC day counts. Set base_year_ar / base_year_inv / base_year_ap in overrides if the working",
+   "WARNING: net_debt could not be determined from EDINET (total_debt=None, cash=87570.0). It must be supplied in overrides."
+  ]
+ },
+ "5802": {
+  "exit": 0,
+  "seconds": 97.9,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\5802.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-07-31 (net_income=340,000mn, operating_income=450,000mn, revenue=5,400,000mn)",
+  "beta_line": "2.047 -> adjusted 1.701 -> adopted 1.701",
+  "wacc": "14.23",
+  "warnings": [
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: No current-FY quarters found on yfinance. Cannot build LTM."
+  ]
+ },
+ "6146": {
+  "exit": 0,
+  "seconds": 98.3,
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "pass": 21,
+  "log": "batch\\logs_phase2\\6146.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-07-23 (net_income=73,800mn, operating_income=104,900mn, revenue=242,800mn)",
+  "beta_line": "1.195 -> adjusted 1.131 -> adopted 1.131",
+  "wacc": "11.32",
+  "warnings": [
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 - verify against 短信 (unmatched years left BLANK; set hist_ocf / hist_cash / hist_debt in overrides to fill them)",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 — verify against 短信",
+   "WARNING: net_debt could not be determined from EDINET (total_debt=None, cash=284575.0). It must be supplied in overrides.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "6098": {
+  "exit": 0,
+  "seconds": 103.2,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\6098.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-07 (net_income=755,000mn, operating_income=945,000mn, revenue=4,230,000mn)",
+  "beta_line": "0.943 -> adjusted 0.962 -> adopted 0.962",
+  "wacc": "10.22",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 2/4 - verify against 短信 (unmatched years left BLANK; set hist_ocf / hist_cash / hist_debt in overrides to fill them)",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 2/4 — verify against 短信",
+   "WARNING: base-year BS items absent from EDINET: inventories - treated as 0 for the NWC day counts. Set base_year_ar / base_year_inv / base_year_ap in overrides if the working-capital bridge matters fo",
+   "WARNING: net_debt could not be determined from EDINET (total_debt=None, cash=725578.0). It must be supplied in overrides.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "6273": {
+  "exit": 0,
+  "seconds": 102.3,
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "pass": 21,
+  "log": "batch\\logs_phase2\\6273.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-07 (net_income=170,000mn, operating_income=219,000mn, revenue=1,000,000mn)",
+  "beta_line": "1.482 -> adjusted 1.323 -> adopted 1.323",
+  "wacc": "12.57",
+  "warnings": [
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: No current-FY quarters found on yfinance. Cannot build LTM."
+  ]
+ },
+ "6479": {
+  "exit": 0,
+  "seconds": 104.1,
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "pass": 21,
+  "log": "batch\\logs_phase2\\6479.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-05 (net_income=87,000mn, operating_income=120,000mn, revenue=1,690,000mn)",
+  "beta_line": "1.476 -> adjusted 1.319 -> adopted 1.319",
+  "wacc": "10.82",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "6367": {
+  "exit": 0,
+  "seconds": 106.1,
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "pass": 21,
+  "log": "batch\\logs_phase2\\6367.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-04 (net_income=278,000mn, operating_income=436,000mn, revenue=5,150,000mn)",
+  "beta_line": "0.828 -> adjusted 0.885 -> adopted 0.885",
+  "wacc": "9.53",
+  "warnings": [
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "6501": {
+  "exit": 0,
+  "seconds": 110.2,
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "pass": 21,
+  "log": "batch\\logs_phase2\\6501.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-07-29 (net_income=900,000mn, operating_income=1,408,000mn, revenue=11,700,000mn)",
+  "beta_line": "1.474 -> adjusted 1.317 -> adopted 1.317",
+  "wacc": "12.53",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2018, FY2019, FY2020, FY2021, FY2022, FY2023, FY2024, FY2025, FY2026 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overri",
+   "WARNING: EDINET has no sga for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 - verify against 短信 (unmatched years left BLANK; set hist_ocf / hist_cash / hist_debt in overrides to fill them)",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 — verify against 短信",
+   "WARNING: base-year BS items absent from EDINET: accounts_receivable, accounts_payable - treated as 0 for the NWC day counts. Set base_year_ar / base_year_inv / base_year_ap in overrides if the working",
+   "WARNING: core_ebitda unavailable (operating_income=None, depreciation=457973.0 for the latest FY). Set core_ebitda in overrides, or the Comps EV/EBITDA leg is N/A.",
+   "WARNING: net_debt could not be determined from EDINET (total_debt=None, cash=1323480.0). It must be supplied in overrides.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "6503": {
+  "exit": 0,
+  "seconds": 104.7,
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "pass": 21,
+  "log": "batch\\logs_phase2\\6503.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-07-31 (net_income=495,000mn, revenue=6,270,000mn)",
+  "beta_line": "1.372 -> adjusted 1.249 -> adopted 1.249",
+  "wacc": "12.09",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: No current-FY quarters found on yfinance. Cannot build LTM.",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 - verify against 短信 (unmatched years left BLANK; set hist_ocf / hist_cash / hist_debt in overrides to fill them)",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 — verify against 短信",
+   "WARNING: base-year BS items absent from EDINET: accounts_receivable, accounts_payable - treated as 0 for the NWC day counts. Set base_year_ar / base_year_inv / base_year_ap in overrides if the working",
+   "WARNING: net_debt could not be determined from EDINET (total_debt=None, cash=731609.0). It must be supplied in overrides."
+  ]
+ },
+ "6701": {
+  "exit": 0,
+  "seconds": 106.1,
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "pass": 21,
+  "log": "batch\\logs_phase2\\6701.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-07-29 (revenue=3,540,000mn)",
+  "beta_line": "0.866 -> adjusted 0.910 -> adopted 0.910",
+  "wacc": "9.89",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "6645": {
+  "exit": 0,
+  "seconds": 119.9,
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "pass": 21,
+  "log": "batch\\logs_phase2\\6645.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-05 (net_income=40,500mn, operating_income=80,000mn, revenue=880,000mn)",
+  "beta_line": "1.524 -> adjusted 1.351 -> adopted 1.351",
+  "wacc": "12.08",
+  "warnings": [
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: OCF/Cash/Debt coverage OCF 0/4, Cash 4/4, Debt 3/4 - verify against 短信 (unmatched years left BLANK; set hist_ocf / hist_cash / hist_debt in overrides to fill them)",
+   "WARNING: OCF/Cash/Debt coverage OCF 0/4, Cash 4/4, Debt 3/4 — verify against 短信",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "6506": {
+  "exit": 0,
+  "seconds": 275.1,
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "pass": 21,
+  "log": "batch\\logs_phase2\\6506.log",
+  "beta_line": "2.056 -> adjusted 1.707 -> adopted 1.707",
+  "wacc": "14.40",
+  "no_guidance": "NO GUIDANCE - Management scenario falls back",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: base-year BS items absent from EDINET: accounts_receivable, accounts_payable - treated as 0 for the NWC day counts. Set base_year_ar / base_year_inv / base_year_ap in overrides if the working",
+   "WARNING: no 会社予想 obtained - the Management scenario is the CAGR estimate, not company guidance (screener DB: no guidance row for code=6506 in the TDnet archive | EDINET XBRL: 5 cached EDINET XBRL file",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "6702": {
+  "exit": 0,
+  "seconds": 104.3,
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "pass": 21,
+  "log": "batch\\logs_phase2\\6702.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-07-30 (net_income=310,000mn, operating_income=415,000mn, revenue=3,510,000mn)",
+  "beta_line": "0.793 -> adjusted 0.861 -> adopted 0.861",
+  "wacc": "9.57",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 - verify against 短信 (unmatched years left BLANK; set hist_ocf / hist_cash / hist_debt in overrides to fill them)",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 — verify against 短信",
+   "WARNING: base-year BS items absent from EDINET: accounts_receivable, accounts_payable - treated as 0 for the NWC day counts. Set base_year_ar / base_year_inv / base_year_ap in overrides if the working",
+   "WARNING: net_debt could not be determined from EDINET (total_debt=None, cash=450366.0). It must be supplied in overrides.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "6752": {
+  "exit": 0,
+  "seconds": 93.7,
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "pass": 21,
+  "log": "batch\\logs_phase2\\6752.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-07-30 (net_income=450,000mn, operating_income=590,000mn, revenue=7,800,000mn)",
+  "beta_line": "1.393 -> adjusted 1.264 -> adopted 1.264",
+  "wacc": "11.38",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: No current-FY quarters found on yfinance. Cannot build LTM.",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 - verify against 短信 (unmatched years left BLANK; set hist_ocf / hist_cash / hist_debt in overrides to fill them)",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 — verify against 短信",
+   "WARNING: base-year BS items absent from EDINET: accounts_receivable, accounts_payable - treated as 0 for the NWC day counts. Set base_year_ar / base_year_inv / base_year_ap in overrides if the working",
+   "WARNING: net_debt could not be determined from EDINET (total_debt=None, cash=770179.0). It must be supplied in overrides."
+  ]
+ },
+ "6762": {
+  "exit": 0,
+  "seconds": 102.7,
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "pass": 21,
+  "log": "batch\\logs_phase2\\6762.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-07-31 (net_income=225,000mn, operating_income=295,000mn, revenue=2,580,000mn)",
+  "beta_line": "1.764 -> adjusted 1.512 -> adopted 1.512",
+  "wacc": "13.80",
+  "warnings": [
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: base-year BS items absent from EDINET: accounts_receivable, accounts_payable - treated as 0 for the NWC day counts. Set base_year_ar / base_year_inv / base_year_ap in overrides if the working",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "6861": {
+  "exit": 0,
+  "seconds": 88.3,
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "pass": 21,
+  "log": "batch\\logs_phase2\\6861.log",
+  "beta_line": "1.044 -> adjusted 1.029 -> adopted 1.029",
+  "wacc": "10.66",
+  "no_guidance": "NO GUIDANCE - Management scenario falls back",
+  "warnings": [
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: No current-FY quarters found on yfinance. Cannot build LTM.",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 - verify against 短信 (unmatched years left BLANK; set hist_ocf / hist_cash / hist_debt in overrides to fill them)",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 — verify against 短信",
+   "WARNING: net_debt could not be determined from EDINET (total_debt=None, cash=596976.0). It must be supplied in overrides.",
+   "WARNING: no 会社予想 obtained - the Management scenario is the CAGR estimate, not company guidance (screener DB: no guidance row for code=6861 in the TDnet archive | EDINET XBRL: 5 cached EDINET XBRL file"
+  ]
+ },
+ "6857": {
+  "exit": 0,
+  "seconds": 98.8,
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "pass": 21,
+  "log": "batch\\logs_phase2\\6857.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-07-29 (net_income=660,000mn, operating_income=846,000mn, revenue=1,714,000mn)",
+  "beta_line": "1.776 -> adjusted 1.520 -> adopted 1.520",
+  "wacc": "13.85",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: No current-FY quarters found on yfinance. Cannot build LTM.",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 - verify against 短信 (unmatched years left BLANK; set hist_ocf / hist_cash / hist_debt in overrides to fill them)",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 — verify against 短信",
+   "WARNING: net_debt could not be determined from EDINET (total_debt=None, cash=339966.0). It must be supplied in overrides."
+  ]
+ },
+ "6902": {
+  "exit": 0,
+  "seconds": 96.4,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\6902.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-07-31 (net_income=382,000mn, operating_income=500,000mn, revenue=7,750,000mn)",
+  "beta_line": "1.094 -> adjusted 1.063 -> adopted 1.063",
+  "wacc": "10.88",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "6954": {
+  "exit": 0,
+  "seconds": 97.3,
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "pass": 21,
+  "log": "batch\\logs_phase2\\6954.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-07-31 (net_income=198,000mn, operating_income=218,000mn, revenue=948,100mn)",
+  "beta_line": "1.645 -> adjusted 1.432 -> adopted 1.432",
+  "wacc": "13.28",
+  "warnings": [
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: No current-FY quarters found on yfinance. Cannot build LTM.",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 - verify against 短信 (unmatched years left BLANK; set hist_ocf / hist_cash / hist_debt in overrides to fill them)",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 — verify against 短信",
+   "WARNING: net_debt could not be determined from EDINET (total_debt=None, cash=718071.0). It must be supplied in overrides."
+  ]
+ },
+ "6976": {
+  "exit": 0,
+  "seconds": 96.3,
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "pass": 21,
+  "log": "batch\\logs_phase2\\6976.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-05 (net_income=29,000mn, operating_income=45,000mn, revenue=424,000mn)",
+  "beta_line": "2.144 -> adjusted 1.767 -> adopted 1.767",
+  "wacc": "14.62",
+  "warnings": [
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "7012": {
+  "exit": 0,
+  "seconds": 62.1,
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "pass": 21,
+  "log": "batch\\logs_phase2\\7012.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-07 (net_income=115,000mn, revenue=2,560,000mn)",
+  "beta_line": "2.280 -> adjusted 1.858 -> adopted 1.858",
+  "wacc": "12.35",
+  "warnings": [
+   "WARNING: EDINET has no operating_income for FY2023, FY2024, FY2025, FY2026 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 - verify against 短信 (unmatched years left BLANK; set hist_ocf / hist_cash / hist_debt in overrides to fill them)",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 — verify against 短信",
+   "WARNING: core_ebitda unavailable (operating_income=None, depreciation=103816.0 for the latest FY). Set core_ebitda in overrides, or the Comps EV/EBITDA leg is N/A.",
+   "WARNING: net_debt could not be determined from EDINET (total_debt=None, cash=115414.0). It must be supplied in overrides.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "6981": {
+  "exit": 0,
+  "seconds": 112.8,
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "pass": 21,
+  "log": "batch\\logs_phase2\\6981.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-07-31 (net_income=338,000mn, operating_income=430,000mn, revenue=2,110,000mn)",
+  "beta_line": "1.968 -> adjusted 1.648 -> adopted 1.648",
+  "wacc": "14.68",
+  "warnings": [
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: No current-FY quarters found on yfinance. Cannot build LTM.",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 3/4 - verify against 短信 (unmatched years left BLANK; set hist_ocf / hist_cash / hist_debt in overrides to fill them)",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 3/4 — verify against 短信",
+   "WARNING: base-year BS items absent from EDINET: accounts_receivable, accounts_payable - treated as 0 for the NWC day counts. Set base_year_ar / base_year_inv / base_year_ap in overrides if the working",
+   "WARNING: net_debt could not be determined from EDINET (total_debt=None, cash=653701.0). It must be supplied in overrides."
+  ]
+ },
+ "7011": {
+  "exit": 0,
+  "seconds": 107.4,
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "pass": 21,
+  "log": "batch\\logs_phase2\\7011.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-04 (net_income=380,000mn, revenue=5,400,000mn)",
+  "beta_line": "1.638 -> adjusted 1.428 -> adopted 1.428",
+  "wacc": "13.25",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2018, FY2019, FY2020, FY2021, FY2022, FY2023, FY2024, FY2025, FY2026 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overri",
+   "WARNING: EDINET has no sga for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 - verify against 短信 (unmatched years left BLANK; set hist_ocf / hist_cash / hist_debt in overrides to fill them)",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 — verify against 短信",
+   "WARNING: core_ebitda unavailable (operating_income=None, depreciation=121488.0 for the latest FY). Set core_ebitda in overrides, or the Comps EV/EBITDA leg is N/A.",
+   "WARNING: net_debt could not be determined from EDINET (total_debt=None, cash=1334874.0). It must be supplied in overrides.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "7013": {
+  "exit": 0,
+  "seconds": 93.6,
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "pass": 21,
+  "log": "batch\\logs_phase2\\7013.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-05 (net_income=172,000mn, operating_income=250,000mn, revenue=1,840,000mn)",
+  "beta_line": "1.746 -> adjusted 1.500 -> adopted 1.500",
+  "wacc": "12.39",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: No current-FY quarters found on yfinance. Cannot build LTM."
+  ]
+ },
+ "7259": {
+  "exit": 0,
+  "seconds": 100.1,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\7259.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-07-31 (net_income=150,000mn, operating_income=235,000mn, revenue=5,250,000mn)",
+  "beta_line": "1.191 -> adjusted 1.128 -> adopted 1.128",
+  "wacc": "10.76",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "7550": {
+  "exit": 0,
+  "seconds": 93.1,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\7550.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-07 (net_income=54,000mn, operating_income=102,000mn, revenue=1,402,000mn)",
+  "beta_line": "0.566 -> adjusted 0.710 -> adopted 0.710",
+  "wacc": "7.68",
+  "warnings": [
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "7733": {
+  "exit": 0,
+  "seconds": 94.1,
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "pass": 21,
+  "log": "batch\\logs_phase2\\7733.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-07 (net_income=95,500mn, operating_income=136,500mn, revenue=1,055,000mn)",
+  "beta_line": "0.743 -> adjusted 0.828 -> adopted 0.828",
+  "wacc": "9.20",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: No current-FY quarters found on yfinance. Cannot build LTM."
+  ]
+ },
+ "7974": {
+  "exit": 0,
+  "seconds": 90.0,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\7974.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-06 (net_income=310,000mn, operating_income=370,000mn, revenue=2,050,000mn)",
+  "beta_line": "0.566 -> adjusted 0.709 -> adopted 0.709",
+  "wacc": "8.58",
+  "warnings": [
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: No current-FY quarters found on yfinance. Cannot build LTM.",
+   "WARNING: OCF/Cash/Debt coverage OCF 6/6, Cash 6/6, Debt 0/6 - verify against 短信 (unmatched years left BLANK; set hist_ocf / hist_cash / hist_debt in overrides to fill them)",
+   "WARNING: OCF/Cash/Debt coverage OCF 6/6, Cash 6/6, Debt 0/6 — verify against 短信",
+   "WARNING: net_debt could not be determined from EDINET (total_debt=None, cash=1791802.0). It must be supplied in overrides."
+  ]
+ },
+ "8035": {
+  "exit": 0,
+  "seconds": 109.3,
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "pass": 21,
+  "log": "batch\\logs_phase2\\8035.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-07-30 (net_income=349,000mn, operating_income=458,000mn, revenue=1,620,000mn)",
+  "beta_line": "1.240 -> adjusted 1.161 -> adopted 1.161",
+  "wacc": "11.51",
+  "warnings": [
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 - verify against 短信 (unmatched years left BLANK; set hist_ocf / hist_cash / hist_debt in overrides to fill them)",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 — verify against 短信",
+   "WARNING: net_debt could not be determined from EDINET (total_debt=None, cash=451252.0). It must be supplied in overrides.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "8801": {
+  "exit": 0,
+  "seconds": 102.8,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\8801.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-07 (net_income=285,000mn, operating_income=410,000mn, revenue=2,800,000mn)",
+  "beta_line": "0.632 -> adjusted 0.754 -> adopted 0.754",
+  "wacc": "4.86",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2021, FY2022, FY2023, FY2024, FY2025, FY2026 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "8802": {
+  "exit": 0,
+  "seconds": 114.8,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\8802.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-07 (net_income=235,000mn, operating_income=370,000mn, revenue=2,000,000mn)",
+  "beta_line": "0.610 -> adjusted 0.739 -> adopted 0.739",
+  "wacc": "5.54",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2021, FY2022, FY2023, FY2024, FY2025, FY2026 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "9020": {
+  "exit": 0,
+  "seconds": 105.2,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\9020.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-07-31 (net_income=255,000mn, operating_income=429,000mn, revenue=3,295,000mn)",
+  "beta_line": "0.075 -> adjusted 0.381 -> adopted 0.381",
+  "wacc": "3.69",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2021, FY2022, FY2023, FY2024, FY2025, FY2026 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: No current-FY quarters found on yfinance. Cannot build LTM."
+  ]
+ },
+ "7751": {
+  "exit": 0,
+  "seconds": 356.6,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\7751.log",
+  "beta_line": "0.771 -> adjusted 0.847 -> adopted 0.847",
+  "wacc": "8.73",
+  "no_guidance": "NO GUIDANCE - Management scenario falls back",
+  "warnings": [
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: OCF/Cash/Debt coverage OCF 0/4, Cash 4/4, Debt 4/4 - verify against 短信 (unmatched years left BLANK; set hist_ocf / hist_cash / hist_debt in overrides to fill them)",
+   "WARNING: OCF/Cash/Debt coverage OCF 0/4, Cash 4/4, Debt 4/4 — verify against 短信",
+   "WARNING: no 会社予想 obtained - the Management scenario is the CAGR estimate, not company guidance (screener DB: no guidance row for code=7751 in the TDnet archive | EDINET XBRL: 5 cached EDINET XBRL file",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "9021": {
+  "exit": 0,
+  "seconds": 94.6,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\9021.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-05 (net_income=100,000mn, operating_income=165,000mn, revenue=1,829,000mn)",
+  "beta_line": "0.238 -> adjusted 0.490 -> adopted 0.490",
+  "wacc": "4.14",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2021, FY2022, FY2023, FY2024, FY2025, FY2026 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "9022": {
+  "exit": 0,
+  "seconds": 97.0,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\9022.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-07-31 (net_income=447,000mn, operating_income=702,000mn, revenue=1,993,000mn)",
+  "beta_line": "0.285 -> adjusted 0.521 -> adopted 0.521",
+  "wacc": "6.14",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2021, FY2022, FY2023, FY2024, FY2025, FY2026 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "9064": {
+  "exit": 0,
+  "seconds": 94.6,
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "pass": 21,
+  "log": "batch\\logs_phase2\\9064.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-03 (net_income=16,000mn, operating_income=42,000mn, revenue=1,918,000mn)",
+  "beta_line": "0.445 -> adjusted 0.628 -> adopted 0.628",
+  "wacc": "8.05",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2021, FY2022, FY2023, FY2024, FY2025, FY2026 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters."
+  ]
+ },
+ "9432": {
+  "exit": 0,
+  "seconds": 96.5,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\9432.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-06 (net_income=980,000mn, operating_income=1,710,000mn)",
+  "beta_line": "0.218 -> adjusted 0.476 -> adopted 0.476",
+  "wacc": "4.07",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2018, FY2019, FY2020, FY2021, FY2022, FY2023, FY2024, FY2025, FY2026 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matter",
+   "WARNING: EDINET has no operating_income for FY2018, FY2019, FY2020 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2018, FY2019, FY2020, FY2021, FY2022, FY2023, FY2024, FY2025, FY2026 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 - verify against 短信 (unmatched years left BLANK; set hist_ocf / hist_cash / hist_debt in overrides to fill them)",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 — verify against 短信",
+   "WARNING: core_ebitda unavailable (operating_income=1706221.0, depreciation=None for the latest FY). Set core_ebitda in overrides, or the Comps EV/EBITDA leg is N/A.",
+   "WARNING: net_debt could not be determined from EDINET (total_debt=None, cash=1921882.0). It must be supplied in overrides.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "9502": {
+  "exit": 0,
+  "seconds": 99.4,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\9502.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-07 (net_income=160,000mn, revenue=3,900,000mn)",
+  "beta_line": "0.704 -> adjusted 0.801 -> adopted 0.801",
+  "wacc": "4.66",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2021, FY2022, FY2023, FY2024, FY2025, FY2026 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2021, FY2022, FY2023, FY2024, FY2025, FY2026 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: No current-FY quarters found on yfinance. Cannot build LTM."
+  ]
+ },
+ "9503": {
+  "exit": 0,
+  "seconds": 108.7,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\9503.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-07-31 (net_income=310,000mn, operating_income=250,000mn, revenue=4,500,000mn)",
+  "beta_line": "0.831 -> adjusted 0.887 -> adopted 0.887",
+  "wacc": "5.53",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2021, FY2022, FY2023, FY2024, FY2025, FY2026 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2021, FY2022, FY2023, FY2024, FY2025, FY2026 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: base-year BS items absent from EDINET: accounts_receivable - treated as 0 for the NWC day counts. Set base_year_ar / base_year_inv / base_year_ap in overrides if the working-capital bridge ma",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "9531": {
+  "exit": 0,
+  "seconds": 99.6,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\9531.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-07-30 (net_income=137,000mn, operating_income=186,000mn, revenue=2,947,000mn)",
+  "beta_line": "0.452 -> adjusted 0.633 -> adopted 0.633",
+  "wacc": "5.77",
+  "warnings": [
+   "WARNING: EDINET has no sga for FY2021 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: base-year BS items absent from EDINET: accounts_receivable - treated as 0 for the NWC day counts. Set base_year_ar / base_year_inv / base_year_ap in overrides if the working-capital bridge ma",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "9532": {
+  "exit": 0,
+  "seconds": 99.1,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\9532.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-07-30 (net_income=145,000mn, operating_income=150,000mn, revenue=2,170,000mn)",
+  "beta_line": "0.499 -> adjusted 0.664 -> adopted 0.664",
+  "wacc": "6.51",
+  "warnings": [
+   "WARNING: EDINET has no sga for FY2021 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: No current-FY quarters found on yfinance. Cannot build LTM.",
+   "WARNING: base-year BS items absent from EDINET: accounts_receivable - treated as 0 for the NWC day counts. Set base_year_ar / base_year_inv / base_year_ap in overrides if the working-capital bridge ma"
+  ]
+ },
+ "9697": {
+  "exit": 0,
+  "seconds": 95.7,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\9697.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-07-28 (net_income=58,000mn, operating_income=83,000mn, revenue=210,000mn)",
+  "beta_line": "0.326 -> adjusted 0.548 -> adopted 0.548",
+  "wacc": "7.54",
+  "warnings": [
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 3/4 - verify against 短信 (unmatched years left BLANK; set hist_ocf / hist_cash / hist_debt in overrides to fill them)",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 3/4 — verify against 短信",
+   "WARNING: net_debt could not be determined from EDINET (total_debt=None, cash=148002.0). It must be supplied in overrides.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "9735": {
+  "exit": 0,
+  "seconds": 96.1,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\9735.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-07 (net_income=105,800mn, operating_income=165,500mn, revenue=1,313,500mn)",
+  "beta_line": "0.285 -> adjusted 0.521 -> adopted 0.521",
+  "wacc": "7.36",
+  "warnings": [
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ },
+ "9983": {
+  "exit": 0,
+  "seconds": 250.4,
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "pass": 21,
+  "log": "batch\\logs_phase2\\9983.log",
+  "beta_line": "1.063 -> adjusted 1.042 -> adopted 1.042",
+  "wacc": "10.74",
+  "no_guidance": "NO GUIDANCE - Management scenario falls back",
+  "warnings": [
+   "WARNING: EDINET has no cogs for FY2017, FY2018, FY2019 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_cogs in overrides if the number matters.",
+   "WARNING: EDINET has no operating_income for FY2017, FY2018, FY2019 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_operating_income in overrides if the number matters.",
+   "WARNING: EDINET has no sga for FY2017, FY2018, FY2019 - left BLANK (was silently 0 before フェーズ2 #1). Supply hist_sga in overrides if the number matters.",
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 - verify against 短信 (unmatched years left BLANK; set hist_ocf / hist_cash / hist_debt in overrides to fill them)",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 0/4 — verify against 短信",
+   "WARNING: base-year BS items absent from EDINET: accounts_receivable, accounts_payable - treated as 0 for the NWC day counts. Set base_year_ar / base_year_inv / base_year_ap in overrides if the working",
+   "WARNING: net_debt could not be determined from EDINET (total_debt=None, cash=1040505.0). It must be supplied in overrides.",
+   "WARNING: no 会社予想 obtained - the Management scenario is the CAGR estimate, not company guidance (screener DB: no guidance row for code=9983 in the TDnet archive | EDINET XBRL: 6 cached EDINET XBRL file"
+  ]
+ },
+ "9843": {
+  "exit": 0,
+  "seconds": 382.0,
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "pass": 22,
+  "log": "batch\\logs_phase2\\9843.log",
+  "guidance": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-07 (net_income=91,000mn, operating_income=130,300mn, revenue=957,000mn)",
+  "beta_line": "-0.002 -> adjusted 0.329 -> adopted 0.329",
+  "wacc": "6.07",
+  "warnings": [
+   "WARNING: Hybrid LTM computation failed. Proceeding without LTM update.",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 2/4 - verify against 短信 (unmatched years left BLANK; set hist_ocf / hist_cash / hist_debt in overrides to fill them)",
+   "WARNING: OCF/Cash/Debt coverage OCF 4/4, Cash 4/4, Debt 2/4 — verify against 短信",
+   "WARNING: net_debt could not be determined from EDINET (total_debt=None, cash=145010.0). It must be supplied in overrides.",
+   "WARNING: yfinance quarters have no income/cashflow data. Cannot build meaningful hybrid LTM."
+  ]
+ }
+}

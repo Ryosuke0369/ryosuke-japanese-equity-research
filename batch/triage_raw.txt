@@ -1,0 +1,90 @@
+4063	信越化学工業	min=24.68	p25=27.90	med=29.00	p75=30.66	max=35.54	range=10.9		nonop=+11.5
+2802	味の素	min=7.03	p25=9.16	med=10.25	p75=11.00	max=12.08	range=5.0		nonop=+2.5
+9022	JR東海	min=26.74	p25=33.32	med=36.94	p75=39.12	max=41.38	range=14.6	RANGE	nonop=-6.1
+9433	KDDI	min=15.83	p25=17.04	med=17.80	p75=18.24	max=18.49	range=2.7		nonop=+5.5
+7974	任天堂	min=15.57	p25=22.08	med=27.87	p75=31.53	max=31.64	range=16.1	RANGE	nonop=+57.8
+2502	アサヒグループHD	min=6.42	p25=8.09	med=8.75	p75=8.92	max=9.15	range=2.7		nonop=-3.5
+2503	キリンHD	min=5.36	p25=5.71	med=6.44	p75=7.44	max=8.62	range=3.3		nonop=+13.4
+2914	JT	min=9.86	p25=20.00	med=23.83	p75=24.37	max=24.62	range=14.8	RANGE	nonop=-13.3
+2267	ヤクルト本社	min=9.29	p25=10.64	med=11.84	p75=12.87	max=13.68	range=4.4		nonop=+54.8
+2269	明治HD	min=7.10	p25=7.28	med=7.48	p75=7.71	max=7.95	range=0.9		nonop=-27.1
+2801	キッコーマン	min=8.95	p25=9.81	med=10.14	p75=10.24	max=10.40	range=1.5		nonop=+10.7
+2897	日清食品HD	min=6.27	p25=6.91	med=7.50	p75=7.96	max=8.23	range=2.0		nonop=+31.8
+4005	住友化学	min=-17.63	p25=-5.03	med=2.89	p75=7.05	max=8.38	range=26.0	NEG	nonop=-40.5
+4183	三井化学	min=3.39	p25=3.50	med=3.59	p75=4.16	max=5.71	range=2.3		nonop=+21.2
+4188	三菱ケミカルグループ	min=0.87	p25=2.76	med=3.54	p75=4.21	max=5.78	range=4.9		nonop=-97.8
+3405	クラレ	min=7.28	p25=9.07	med=9.98	p75=10.60	max=11.52	range=4.2		nonop=-66.3
+3407	旭化成	min=4.68	p25=4.96	med=6.02	p75=7.11	max=7.52	range=2.8		nonop=-7.2
+4091	日本酸素HD	min=9.77	p25=11.67	med=12.84	p75=13.60	max=14.22	range=4.5		nonop=-8.6
+4151	協和キリン	min=18.54	p25=20.07	med=20.63	p75=20.93	max=21.67	range=3.1		nonop=-14.7
+4502	武田薬品工業	min=7.27	p25=9.45	med=10.24	p75=11.38	max=14.60	range=7.3		nonop=-130.7
+4503	アステラス製薬	min=1.18	p25=1.87	med=5.38	p75=10.94	max=17.77	range=16.6	RANGE	nonop=-0.9
+4507	塩野義製薬	min=33.37	p25=34.53	med=35.08	p75=35.36	max=35.73	range=2.4		nonop=+43.3
+4519	中外製薬	min=39.52	p25=41.63	med=44.32	p75=46.63	max=47.60	range=8.1		nonop=-0.2
+4523	エーザイ	min=5.35	p25=5.37	med=6.13	p75=6.97	max=7.20	range=1.9		nonop=+15.5
+4543	テルモ	min=14.31	p25=14.97	med=15.21	p75=15.31	max=15.58	range=1.3		nonop=+1.1
+4568	第一三共	min=9.43	p25=10.45	med=12.00	p75=14.31	max=17.60	range=8.2		nonop=+15.0
+4578	大塚HD	min=10.71	p25=13.51	med=16.15	p75=18.17	max=19.12	range=8.4		nonop=-0.9
+4901	富士フイルムHD	min=9.35	p25=9.50	med=9.94	p75=10.36	max=10.43	range=1.1		nonop=+4.7
+6501	日立製作所	min=6.88	p25=7.55	med=8.85	p75=10.28	max=11.33	range=4.5		nonop=+6.2
+6503	三菱電機	min=5.24	p25=6.00	med=6.67	p75=7.16	max=7.35	range=2.1		nonop=+21.5
+6506	安川電機	min=8.73	p25=9.18	med=10.42	p75=11.70	max=12.29	range=3.6		nonop=+4.8
+6594	ニデック	min=4.46	p25=6.29	med=7.89	p75=8.94	max=9.13	range=4.7		nonop=-2.0
+6645	オムロン	min=4.27	p25=6.46	med=7.57	p75=8.78	max=11.23	range=7.0		nonop=-4.7
+6701	NEC	min=5.14	p25=5.34	med=6.45	p75=8.13	max=10.05	range=4.9		nonop=+10.6
+6702	富士通	min=4.29	p25=6.67	med=8.25	p75=9.26	max=9.94	range=5.6		nonop=+17.4
+6752	パナソニックHD	min=2.61	p25=3.22	med=3.81	p75=4.35	max=4.81	range=2.2		nonop=+25.3
+6762	TDK	min=7.74	p25=8.10	med=9.19	p75=10.35	max=10.88	range=3.1		nonop=+1.6
+6861	キーエンス	min=50.95	p25=51.12	med=51.54	p75=52.45	max=54.09	range=3.1		nonop=+6.7
+6954	ファナック	min=17.85	p25=19.41	med=20.67	p75=21.68	max=22.46	range=4.6		nonop=+23.8
+6971	京セラ	min=1.33	p25=3.77	med=4.61	p75=5.06	max=6.35	range=5.0		nonop=+77.8
+6981	村田製作所	min=13.14	p25=14.83	med=15.72	p75=16.37	max=17.36	range=4.2		nonop=+9.5
+7733	オリンパス	min=5.59	p25=8.88	med=13.11	p75=17.46	max=21.10	range=15.5	RANGE	nonop=-6.8
+7741	HOYA	min=54.28	p25=54.52	med=54.65	p75=54.85	max=55.34	range=1.1		nonop=-40.5
+7751	キヤノン	min=8.77	p25=8.93	med=9.41	p75=9.85	max=9.86	range=1.1		nonop=+5.9
+6146	ディスコ	min=38.86	p25=39.34	med=40.92	p75=42.36	max=42.42	range=3.6		nonop=-0.6
+6857	アドバンテスト	min=16.78	p25=26.14	med=29.60	p75=33.51	max=44.22	range=27.4	RANGE	nonop=+3.5
+8035	東京エレクトロン	min=24.93	p25=25.41	med=26.77	p75=28.14	max=28.68	range=3.8		nonop=+19.7
+6273	SMC	min=22.62	p25=23.67	med=24.64	p75=26.77	max=31.31	range=8.7		nonop=+24.4
+6301	コマツ	min=13.82	p25=13.96	med=14.94	p75=15.92	max=16.06	range=2.2		nonop=-5.9
+6326	クボタ	min=8.01	p25=8.60	med=9.63	p75=10.57	max=10.89	range=2.9		nonop=+6.3
+6367	ダイキン工業	min=8.27	p25=8.41	med=8.69	p75=9.06	max=9.47	range=1.2		nonop=-2.7
+7011	三菱重工業	min=4.28	p25=5.59	med=7.11	p75=8.24	max=8.35	range=4.1		nonop=-1.5
+7013	IHI	min=-5.30	p25=3.22	med=7.44	p75=9.13	max=10.07	range=15.4	NEG	nonop=+12.1
+6902	デンソー	min=5.33	p25=6.32	med=6.95	p75=7.27	max=7.33	range=2.0		nonop=+11.7
+5108	ブリヂストン	min=8.61	p25=9.66	med=10.37	p75=10.84	max=11.17	range=2.6		nonop=-7.0
+5201	AGC	min=5.97	p25=6.06	med=6.19	p75=6.95	max=8.97	range=3.0		nonop=-0.6
+5401	日本製鉄	min=4.26	p25=5.86	med=7.29	p75=8.68	max=10.20	range=5.9		nonop=-59.7
+5802	住友電気工業	min=4.43	p25=4.97	med=6.00	p75=7.18	max=8.18	range=3.8		nonop=+20.8
+3861	王子HD	min=1.86	p25=3.21	med=3.97	p75=4.45	max=4.97	range=3.1		nonop=+165.0
+1801	大成建設	min=1.50	p25=2.87	med=4.46	p75=6.43	max=9.00	range=7.5		nonop=+31.1
+1802	大林組	min=3.41	p25=4.40	med=5.11	p75=6.01	max=7.53	range=4.1		nonop=+28.1
+1812	鹿島建設	min=5.11	p25=5.15	med=5.19	p75=5.87	max=7.85	range=2.7		nonop=+6.1
+8801	三井不動産	min=13.46	p25=14.01	med=14.23	p75=14.36	max=14.68	range=1.2		nonop=-0.2
+8802	三菱地所	min=18.52	p25=18.79	med=19.23	p75=20.06	max=21.53	range=3.0		nonop=+5.9
+3289	東急不動産HD	min=10.90	p25=10.96	med=11.61	p75=12.53	max=13.39	range=2.5		nonop=-11.8
+9020	JR東日本	min=5.85	p25=10.94	med=12.85	p75=13.14	max=13.43	range=7.6		nonop=-19.4
+9064	ヤマトHD	min=0.81	p25=1.34	med=1.90	p75=2.54	max=3.34	range=2.5		nonop=+5.5
+9101	日本郵船	min=5.72	p25=6.92	med=7.73	p75=8.94	max=11.33	range=5.6		nonop=+99.7
+9202	ANAHD	min=7.03	p25=8.18	med=8.63	p75=9.05	max=10.11	range=3.1		nonop=+2.8
+9502	中部電力	min=2.69	p25=5.54	med=6.54	p75=7.32	max=9.51	range=6.8		nonop=+19.9
+9503	関西電力	min=-1.32	p25=7.76	med=10.80	p75=12.60	max=17.96	range=19.3	NEG	nonop=+18.9
+9531	東京ガス	min=5.05	p25=6.49	med=7.56	p75=9.32	max=12.81	range=7.8		nonop=+46.3
+9532	大阪ガス	min=2.64	p25=6.49	med=8.03	p75=8.37	max=8.61	range=6.0		nonop=+16.1
+9432	NTT	min=12.18	p25=12.34	med=13.22	p75=14.15	max=14.49	range=2.3		nonop=-11.4
+9434	ソフトバンク	min=14.40	p25=14.71	med=14.96	p75=15.82	max=17.93	range=3.5		nonop=-10.8
+8001	伊藤忠商事	min=4.64	p25=4.71	med=4.90	p75=5.07	max=5.10	range=0.5		nonop=+70.9
+8002	丸紅	min=3.11	p25=3.40	med=3.60	p75=3.73	max=3.81	range=0.7		nonop=+158.9
+8031	三井物産	min=2.73	p25=2.97	med=3.49	p75=4.17	max=4.85	range=2.1		nonop=+155.2
+8053	住友商事	min=5.43	p25=5.52	med=5.78	p75=6.05	max=6.20	range=0.8		nonop=+76.3
+8058	三菱商事	min=1.99	p25=2.16	med=2.81	p75=3.66	max=4.42	range=2.4		nonop=+161.8
+9983	ファーストリテイリング	min=12.87	p25=13.52	med=14.91	p75=16.21	max=16.54	range=3.7		nonop=+15.6
+9843	ニトリHD	min=12.32	p25=13.05	med=13.46	p75=14.48	max=17.04	range=4.7		nonop=+5.0
+3099	三越伊勢丹HD	min=6.08	p25=9.12	med=11.94	p75=13.97	max=14.67	range=8.6		nonop=+19.7
+7550	ゼンショーHD	min=2.79	p25=4.87	med=6.00	p75=6.48	max=6.61	range=3.8		nonop=-16.5
+9735	セコム	min=12.03	p25=12.14	med=12.30	p75=12.50	max=12.76	range=0.7		nonop=+12.3
+6098	リクルートHD	min=10.04	p25=11.35	med=12.79	p75=14.61	max=17.05	range=7.0		nonop=+2.2
+4661	オリエンタルランド	min=23.02	p25=23.68	med=24.62	p75=25.69	max=26.75	range=3.7		nonop=+1.0
+4307	野村総合研究所	min=7.02	p25=13.82	med=16.17	p75=16.56	max=17.52	range=10.5		nonop=+2.9
+9697	カプコン	min=37.45	p25=38.27	med=38.66	p75=39.17	max=40.35	range=2.9		nonop=-1.8
+4689	LINEヤフー	min=9.53	p25=10.78	med=12.60	p75=14.62	max=16.43	range=6.9		nonop=+3.1

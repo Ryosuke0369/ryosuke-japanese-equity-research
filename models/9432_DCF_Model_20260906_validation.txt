@@ -1,0 +1,27 @@
+validate_output.py — 9432_DCF_Model_20260906.xlsx
+==============================================================================
+[PASS]  1. No formula errors                      0 error cells in all sheets
+[PASS]  2. Scenario index is MATCH                D27 = =MATCH(C27,B69:B73,0)
+[PASS]  3. Comps stats exclude subject row        subject row 5 excluded from all MEDIAN/PERCENTILE ranges
+[PASS]  4. Subject Mkt Cap / EV are formulas      D5=='Executive Summary'!C9*C23/1000000 / E5==D5+C24
+[PASS]  5. Scenario names are the fixed 5         B69:B73 = ['Base', 'Upside', 'Management', 'Downside 1', 'Downside 2']
+[PASS]  6. C20 LTM Revenue matches generator      14,409,121.0 mn (source: latest FY (no LTM))
+[PASS]  7. C5 Capex/Revenue basis                 13.05% - explicit assumption from overrides
+[PASS]  7. C18 D&A/Revenue basis                  12.43% - explicit assumption from overrides
+[PASS]  8. FS OCF/Cash/Debt year alignment        4 year column(s) match the source year keys cell-for-cell
+[PASS]  9. Terminal-year capex / D&A ratio        1.05x within [0.90, 1.15] at g=1.00%
+[PASS] 10. PGM implied price sanity               EV 50,183,145 >= net debt 14,997,658 mn
+[PASS] 11. PGM-implied vs assumed exit multiple   PGM implies 12.09x vs assumed 9.20x (1.31x)
+[PASS] 12. Peer EBITDA != EBIT                    no peer row where EBITDA equals operating income
+[PASS] 13. Adjustments Log sheet present          
+[PASS] 14. Target Price averages DCF legs only    C10 averages C16:C17 (PGM + Exit); comps rows excluded
+[PASS] 15. Exit implied price sanity              EV 40,572,463 >= net debt 14,997,658 mn
+[PASS] 16. Reverse DCF sheet present              121 live formulas, sheet position 4
+[PASS] 17. Cost of debt basis                     actual: 240,068 / 14,045,376 = 1.7092% pre-tax -> 1.2800% after-tax
+[PASS] 18. FX sensitivity Table 3                 not enabled (domestic name) — no table expected
+[PASS] 19. Subject EBITDA vs operating income     core_ebitda 3,577,393 >= operating income 1,786,410 mn (implied D&A 1,790,983)
+[PASS] 20. Comps reference prices in a sane band  EV/EBITDA=221 ok; PER=266 ok
+[PASS] 21. Market data is not a placeholder       price 173 x 81,027,939,965 shares = 13,985,423 JPY mn [source: yfinance; from overrides: beta, current_price, shares_outstanding]
+==============================================================================
+FAIL 0 / WARN 0 / SKIP 0 / PASS 22
+VERDICT: PASS

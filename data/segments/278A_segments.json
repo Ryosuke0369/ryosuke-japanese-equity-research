@@ -1,0 +1,411 @@
+{
+  "_source": "セグメント情報は決算短信(プロンプト提供)/ 有価証券報告書。特損内訳・資金構造・希薄化前提は FY2026/1有報(EDINET docID S100XY8O)および本モデルの overrides。全て百万円(原典は千円)。",
+  "_ticker": "278A Terra Drone",
+  "_sheet_scope": "このシートはセグメントブリッジに加え、(a) FY2026/1 特別損失の正常化ブリッジ、(b) 防衛事業の前提セル(単価×台数)、(c) 資金繰りと希薄化の分析 の3表を持つ。シート名 'Segment Bridge' は汎用スクリプト add_segment_bridge.py の固定値であり変更していない(銘柄別スクリプトを作らない運用のため)。",
+  "title": "Segment Bridge, Loss Normalisation, Defence Assumptions and Dilution - Terra Drone (278A)",
+  "intro": [
+    "All figures JPY mn. Two reportable segments: Drone Solutions (survey and inspection services) and UTM (unmanned traffic management, built around the Unifly equity-method holding).",
+    "The point of the first table: BOTH segments were loss-making and getting worse before the August 2026 defence contract. Drone Solutions went from a JPY194mn to a JPY435mn segment loss; UTM from JPY433mn to JPY709mn on almost flat revenue of about JPY620mn. UTM also carries a further JPY439mn of equity-method losses below the operating line, so it bleeds twice.",
+    "Tables 5 to 7 hold the analysis the standard eight sheets have no place for: what the FY1/26 special losses do and do not change, the explicit unit-price x volume assumptions behind the defence revenue in the Base and Upside scenarios, and how much equity has to be issued to fund the plan.",
+    "Tables 5 and 7 are live formulas off 'DCF Model' and follow the scenario selector in 'DCF Model'!C27. Table 6 is a set of blue input cells: they are estimates, not disclosure."
+  ],
+  "periods": [
+    "FY2025/1",
+    "FY2026/1"
+  ],
+  "segments": [
+    {
+      "label": "Drone Solutions  ドローンソリューション",
+      "revenue": [
+        3807.0,
+        4163.0
+      ],
+      "profit": [
+        -194.0,
+        -435.0
+      ],
+      "da": [
+        null,
+        414.0
+      ],
+      "note": "External sales. 87% of FY1/26 group revenue. Segment loss more than doubled on 9.3% revenue growth. Impairment of 405 was booked in this segment in FY1/26."
+    },
+    {
+      "label": "UTM  運航管理",
+      "revenue": [
+        628.0,
+        620.0
+      ],
+      "profit": [
+        -433.0,
+        -709.0
+      ],
+      "da": [
+        null,
+        113.0
+      ],
+      "note": "Revenue fell 1.3% while the segment loss grew 64%. Impairment of 188 in FY1/26. Equity-method losses (Unifly and related) of 439 in FY1/26 (152 in FY1/25) sit below the operating line and are NOT in this row."
+    }
+  ],
+  "adjustment": {
+    "revenue": "derive",
+    "revenue_note": "Derived as (consolidated - segment total). Near zero because the segment rows are external-customer sales.",
+    "profit": [
+      -0.2,
+      0.2
+    ],
+    "profit_label": "Adjustment  調整額 (全社費用・消去)",
+    "da": [
+      null,
+      0.3
+    ],
+    "da_label": "Adjustment  調整額 (D&A)"
+  },
+  "consolidated": {
+    "revenue": [
+      4435.6,
+      4782.6
+    ],
+    "revenue_note": "Ties to the Financial Statements sheet (FY2024/1, FY2025/1, FY2026/1 columns) and to EDINET.",
+    "profit": [
+      -627.2,
+      -1143.8
+    ],
+    "profit_note": "Disclosed consolidated operating loss (EDINET: -627.159 / -1,143.791).",
+    "da": [
+      null,
+      527.3
+    ],
+    "da_note": "CF-statement D&A. FY2025/1 consolidated D&A was 330.1 but is NOT disclosed by segment, so that column is left blank rather than bridged against nothing (the FY2026/1 segment total 414+113=527 ties to 527.3)."
+  },
+  "show_margin_table": true,
+  "show_ebitda_row": true,
+  "extra_tables": [
+    {
+      "title": "FY2026/1 Special Losses - what normalisation does and does not change",
+      "headers": [
+        "Item",
+        "FY2026/1",
+        "Note"
+      ],
+      "formats": [
+        "text",
+        "yen",
+        "text"
+      ],
+      "rows": [
+        [
+          "Operating loss as reported  営業損失",
+          -1143.8,
+          "This is the line the DCF forecasts. None of the items below sit above it."
+        ],
+        [
+          "Impairment  減損損失",
+          593.0,
+          "Drone Solutions 405 + UTM 188. Special loss, below operating."
+        ],
+        [
+          "Loss on valuation of investment securities  投資有価証券評価損",
+          259.0,
+          "Special loss."
+        ],
+        [
+          "Fire loss  火災損失",
+          342.0,
+          "Special loss. A related provision of 177 sits in current liabilities at 2026/4/30."
+        ],
+        [
+          "Loss on business transfer  事業譲渡関連損",
+          157.0,
+          "Special loss."
+        ],
+        [
+          "Total special losses  特別損失計",
+          1351.0,
+          "Sum of the four rows above (the prompt quotes 1,361; the four disclosed components sum to 1,351)."
+        ],
+        [
+          "Equity-method investment loss  持分法投資損失",
+          -439.0,
+          "Non-operating, recurring (FY1/25: -152). Attaches to the UTM segment."
+        ],
+        [
+          "Government grant income  補助金収入",
+          255.0,
+          "Non-operating, recurring (FY1/25: 107; Q1 FY1/27: 44). Flatters recurring profit, not operating profit."
+        ],
+        [
+          "Profit attributable to owners of parent  親会社株主に帰属する当期純損失",
+          -2497.9,
+          "EDINET. Cross-check: retained earnings moved -1,812.7 to -4,310.6, a fall of 2,497.9, with no dividend."
+        ],
+        [
+          "Operating loss after removing every one-off  正常化後の営業損失",
+          -1143.8,
+          "UNCHANGED. Every special item is below the operating line, so there is no reading of FY1/26 in which the operating business breaks even."
+        ]
+      ],
+      "note": "This table exists to close off the 'strip out the one-offs and it is profitable' reading. The special losses are real and large, but they are all below the operating line; the operating loss of 1,143.8 stands on its own. This is why the Comps sheet shows PER as N/A and why no normalised-net-income reference row was built."
+    },
+    {
+      "title": "Defence Programme Assumptions (estimates - the contract value is not disclosed)",
+      "headers": [
+        "Assumption",
+        "Base",
+        "Upside",
+        "Unit / basis"
+      ],
+      "formats": [
+        "text",
+        "yen",
+        "yen",
+        "text"
+      ],
+      "rows": [
+        [
+          "Terra B1 unit price",
+          5.0,
+          5.0,
+          "JPY mn per unit. ESTIMATE. The Acquisition, Technology & Logistics Agency contract value is undisclosed."
+        ],
+        [
+          "Units delivered, FY2028/1",
+          200,
+          500,
+          "units"
+        ],
+        [
+          "Units delivered, FY2031/1",
+          900,
+          3300,
+          "units"
+        ],
+        [
+          "Units delivered, FY2034/1",
+          1260,
+          4500,
+          "units"
+        ],
+        [
+          "Defence revenue, FY2028/1",
+          1000,
+          2500,
+          "JPY mn = unit price x units"
+        ],
+        [
+          "Defence revenue, FY2031/1",
+          4500,
+          16500,
+          "JPY mn"
+        ],
+        [
+          "Defence revenue, FY2034/1",
+          6300,
+          22500,
+          "JPY mn"
+        ],
+        [
+          "Cumulative units, FY2027/1 to FY2034/1",
+          5760,
+          20200,
+          "units"
+        ],
+        [
+          "Implied share of the 80,000-unit programme concept (%)",
+          7,
+          25,
+          "% (approx). Base = a niche supplier; Upside = a quarter of the whole programme."
+        ]
+      ],
+      "note": "Every cell in this table is an estimate. The unit price of JPY5.0mn is the single most important unmodelled variable: at JPY2.0mn per unit the defence revenue in both scenarios falls to 40% of the amounts above, and the Upside case loses roughly half its terminal operating profit. Nothing here is company guidance."
+    },
+    {
+      "title": "Cash Runway, Funding Requirement and Dilution (live off the active scenario)",
+      "headers": [
+        "Item",
+        "JPY mn / price",
+        "Shares",
+        "% of current shares"
+      ],
+      "formats": [
+        "text",
+        "yen",
+        "int",
+        "pct"
+      ],
+      "rows": [
+        [
+          "Cumulative negative unlevered FCF over FY2027/1-FY2034/1",
+          {
+            "formula": "=-SUMIF('DCF Model'!C45:J45,\"<0\")"
+          },
+          null,
+          null
+        ],
+        [
+          "Net cash at 2026-04-30",
+          {
+            "formula": "=-'DCF Model'!C16"
+          },
+          null,
+          null
+        ],
+        [
+          "Minimum operating cash buffer (assumption)",
+          1000,
+          null,
+          null
+        ],
+        [
+          "External equity funding required",
+          {
+            "formula": "=MAX(0,C{r0}-C{r1}+C{r2})",
+            "bold": true,
+            "highlight": true
+          },
+          null,
+          null
+        ],
+        [
+          "Issue price at 80% of the current price",
+          {
+            "formula": "=ROUND(0.8*'Executive Summary'!C9,0)"
+          },
+          {
+            "formula": "=IFERROR(ROUND(C{r3}*1000000/C{r4},0),\"n/a\")"
+          },
+          {
+            "formula": "=IFERROR(D{r4}/'DCF Model'!C15,\"n/a\")"
+          }
+        ],
+        [
+          "Issue price at 80% of the Comps EV/Sales implied value",
+          {
+            "formula": "=IF('Comps Analysis'!C27<=0,\"n/a\",ROUND(0.8*'Comps Analysis'!C27,0))"
+          },
+          {
+            "formula": "=IFERROR(ROUND(C{r3}*1000000/C{r5},0),\"n/a\")"
+          },
+          {
+            "formula": "=IFERROR(D{r5}/'DCF Model'!C15,\"n/a\")"
+          }
+        ],
+        [
+          "Issue price at 80% of the DCF Exit-multiple implied value",
+          {
+            "formula": "=IF('DCF Model'!C64<=0,\"n/a\",ROUND(0.8*'DCF Model'!C64,0))"
+          },
+          {
+            "formula": "=IFERROR(ROUND(C{r3}*1000000/C{r6},0),\"n/a\")"
+          },
+          {
+            "formula": "=IFERROR(D{r6}/'DCF Model'!C15,\"n/a\")"
+          }
+        ],
+        [
+          "Funding required as a multiple of the DCF Exit equity value",
+          {
+            "formula": "=IFERROR(ROUND(C{r3}/'DCF Model'!C63,2),\"n/a\")",
+            "fmt": "ratio",
+            "bold": true
+          },
+          null,
+          null
+        ],
+        [
+          "Outstanding stock-option shares not yet exercised",
+          null,
+          490400,
+          {
+            "formula": "=D{r8}/'DCF Model'!C15"
+          }
+        ],
+        [
+          "Fully diluted shares if funded at 80% of the current price",
+          null,
+          {
+            "formula": "=IFERROR('DCF Model'!C15+D{r4}+D{r8},\"n/a\")",
+            "bold": true
+          },
+          {
+            "formula": "=IFERROR(D{r9}/'DCF Model'!C15-1,\"n/a\")",
+            "bold": true
+          }
+        ],
+        [
+          "Fully diluted shares if funded at 80% of the DCF Exit value",
+          null,
+          {
+            "formula": "=IFERROR('DCF Model'!C15+D{r6}+D{r8},\"n/a\")",
+            "bold": true
+          },
+          {
+            "formula": "=IFERROR(D{r10}/'DCF Model'!C15-1,\"n/a\")",
+            "bold": true
+          }
+        ],
+        [
+          "Equity value per share, PGM leg, pre-dilution",
+          {
+            "formula": "='DCF Model'!C55"
+          },
+          null,
+          null
+        ],
+        [
+          "Equity value per share, PGM leg, after dilution at 80% of the DCF Exit value",
+          {
+            "formula": "=IFERROR(ROUND('DCF Model'!C54*1000000/D{r10},0),\"n/a\")",
+            "bold": true
+          },
+          null,
+          null
+        ],
+        [
+          "Equity value per share, Exit leg, pre-dilution",
+          {
+            "formula": "='DCF Model'!C64"
+          },
+          null,
+          null
+        ],
+        [
+          "Equity value per share, Exit leg, after dilution at 80% of the DCF Exit value",
+          {
+            "formula": "=IFERROR(ROUND('DCF Model'!C63*1000000/D{r10},0),\"n/a\")",
+            "bold": true
+          },
+          null,
+          null
+        ]
+      ],
+      "note": "The asymmetry is the finding. At today's price the whole Base plan is funded for about 3% dilution - the theme price itself solves the funding problem. If the theme deflates towards the DCF or Comps values, the SAME cash requirement costs 40-60% of the company. Dilution risk here is a function of the share price, and it bites hardest exactly when the equity story has already failed. Switch 'DCF Model'!C27 to Downside 1 and the 'funding required as a multiple of the DCF Exit equity value' row goes above 10x: the plan is not financeable at that valuation at all, which is itself the answer. Read that ratio by scenario: Upside 0.11x, Management 0.31x, Base 0.49x, Downside 1 10.25x (not financeable), Downside 2 negative (there is no positive modelled equity value to fund against). Rows that would divide by a zero or negative modelled value show n/a rather than a spurious number. Every per-share figure on 'Executive Summary' and 'DCF Model' is PRE-dilution and therefore flattering."
+    }
+  ],
+  "notes": [
+    "Segment profit is the disclosed segment operating profit; the adjustment row carries corporate costs and eliminations and is close to zero in both years, so the bridge closes cleanly.",
+    "Segment operating margin: Drone Solutions -5.1% (FY1/25) -> -10.4% (FY1/26); UTM -69.0% -> -114.4%. Consolidated -14.1% -> -23.9%.",
+    "Segment D&A is only disclosed for FY1/26, so the D&A bridge has one usable column. The FY1/26 segment total (414 + 113 = 527) ties to consolidated D&A of 527.3.",
+    "Consolidated EBITDA is negative in both years (-297.1 and -616.5). This is why the model uses EV/Sales rather than EV/EBITDA as the primary multiple.",
+    "No segment data has been published for FY1/27 Q1 or for the defence contract. The mid-September 2026 second-quarter results are the first chance to see whether defence revenue lands in Drone Solutions or in a new segment, and at what margin.",
+    "This sheet is informational except where noted: tables 5 and 7 contain live references INTO 'DCF Model' and 'Comps Analysis', but no cell on 'DCF Model' references this sheet."
+  ],
+  "open_items": [
+    [
+      "2026-08-29",
+      "'Segment Bridge' Table 6",
+      "防衛事業の単価5.0百万円/台と台数はすべて推定。契約金額・数量・納期はいずれも未開示",
+      "2026/8/25の防衛装備庁「迎撃ドローン早期取得プログラム」量産調達契約について、公表されているのは契約締結の事実のみ。単価はUpsideで年200〜260億円規模(=年数百億)、Baseで年50〜63億円規模(=年数十億)というプロンプトのシナリオ定義を満たすよう逆算的に置いた。単価が半分なら両シナリオの防衛売上は半減し、Upsideのターミナル営業利益は約半分になる。",
+      "-",
+      "推定・要確認"
+    ],
+    [
+      "2026-08-29",
+      "'Segment Bridge' Table 7",
+      "希薄化分析の前提: 最低運転現金1,000百万、発行価格は各参照値の80%、既存新株予約権490,400株",
+      "最低現金1,000は現行の四半期販管費(884)約1期分。発行価格80%はグロース市場の公募・第三者割当のディスカウント慣行(ディスカウント率は通常3〜10%だが、テーマ剥落局面での資金調達を想定し保守的に20%)。新株予約権490,400株は『提出日現在の潜在株式1,142,200株』から、現行株数10,397,100と提出日株数9,745,300の差651,800が行使によるものと仮定して差し引いた残高であり、確認できていない。",
+      "-",
+      "推定・要確認"
+    ]
+  ]
+}

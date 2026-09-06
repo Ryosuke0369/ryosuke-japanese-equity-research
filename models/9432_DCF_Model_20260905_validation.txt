@@ -1,0 +1,24 @@
+validate_output.py — 9432_DCF_Model_20260905.xlsx
+==============================================================================
+[PASS]  1. No formula errors                     0 error cells in all sheets
+[PASS]  2. Scenario index is MATCH               D27 = =MATCH(C27,B69:B73,0)
+[PASS]  3. Comps stats exclude subject row       subject row 5 excluded from all MEDIAN/PERCENTILE ranges
+[PASS]  4. Subject Mkt Cap / EV are formulas     D5=='Executive Summary'!C9*C23/1000000 / E5==D5+C24
+[PASS]  5. Scenario names are the fixed 5        B69:B73 = ['Base', 'Upside', 'Management', 'Downside 1', 'Downside 2']
+[PASS]  6. C20 LTM Revenue matches generator     14,409,121.0 mn (source: latest FY (no LTM))
+[PASS]  7. C5 Capex/Revenue basis                13.05% (explicit assumption, not a back-solve; basis=assumption)
+[PASS]  7. C18 D&A/Revenue basis                 12.43% (explicit assumption, not a back-solve; basis=assumption)
+[PASS]  8. FS OCF/Cash/Debt year alignment       4 year column(s) match the source year keys cell-for-cell
+[PASS]  9. Terminal-year capex / D&A ratio       1.05x within [0.90, 1.15] at g=1.00%
+[PASS] 10. PGM implied price sanity              EV 44,935,168 >= net debt 14,997,658 mn
+[PASS] 11. PGM-implied vs assumed exit multiple  PGM implies 10.73x vs assumed 9.20x (1.17x)
+[PASS] 12. Peer EBITDA != EBIT                   no peer row where EBITDA equals operating income
+[PASS] 13. Adjustments Log sheet present         
+[PASS] 14. Target Price averages DCF legs only   C10 averages C16:C17 (PGM + Exit); comps rows excluded
+[PASS] 15. Exit implied price sanity             EV 39,927,540 >= net debt 14,997,658 mn
+[PASS] 16. Reverse DCF sheet present             121 live formulas, sheet position 4
+[PASS] 17. Cost of debt basis                    actual: 240,068 / 14,045,376 = 1.7092% pre-tax -> 1.2800% after-tax
+[PASS] 18. FX sensitivity Table 3                not enabled (domestic name) — no table expected
+==============================================================================
+FAIL 0 / WARN 0 / SKIP 0 / PASS 19
+VERDICT: PASS

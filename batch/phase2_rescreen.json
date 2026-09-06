@@ -1,0 +1,230 @@
+{
+ "4519": {
+  "code": "4519",
+  "fy_end_month": 12,
+  "archive_docs": [
+   [
+    "2025-12-31",
+    "S100XTBJ"
+   ],
+   [
+    "2024-12-31",
+    "S100VHBT"
+   ],
+   [
+    "2023-12-31",
+    "S100T5H8"
+   ],
+   [
+    "2022-12-31",
+    "S100QH69"
+   ]
+  ],
+  "company": "中外製薬株式会社",
+  "fiscal_years": [
+   "FY2018",
+   "FY2019",
+   "FY2020",
+   "FY2021",
+   "FY2022",
+   "FY2023",
+   "FY2024",
+   "FY2025"
+  ],
+  "latest_fy": "FY2025",
+  "latest_fields": {
+   "revenue": 1257941.0,
+   "operating_income": 598833.0,
+   "depreciation": null,
+   "net_debt": null,
+   "total_debt": null,
+   "cash": 426602.0,
+   "cogs": 363690.0,
+   "sga": 116461.0,
+   "net_income": 434012.0
+  },
+  "missing_latest": [
+   "depreciation",
+   "net_debt",
+   "total_debt"
+  ],
+  "guidance_source": "none",
+  "guidance_note": "screener DB: no guidance row for code=4519 in the TDnet archive | EDINET XBRL: 5 cached EDINET XBRL file(s) for this ticker carry no ForecastMember context | EDINET tanshin: skipped (--tanshin-fallback not given; EDINET does not host 決算短信)",
+  "guidance": null
+ },
+ "6594": {
+  "code": "6594",
+  "fy_end_month": 3,
+  "archive_docs": [
+   [
+    "2025-03-31",
+    "S100WRH7"
+   ],
+   [
+    "2024-03-31",
+    "S100TNGX"
+   ],
+   [
+    "2023-03-31",
+    "S100R0SZ"
+   ],
+   [
+    "2022-03-31",
+    "S100OA6Q"
+   ]
+  ],
+  "company": "ニデック株式会社",
+  "fiscal_years": [
+   "FY2017",
+   "FY2018",
+   "FY2019",
+   "FY2020",
+   "FY2021",
+   "FY2022",
+   "FY2023",
+   "FY2024",
+   "FY2025"
+  ],
+  "latest_fy": "FY2025",
+  "latest_fields": {
+   "revenue": 2607813.0,
+   "operating_income": 238116.0,
+   "depreciation": 113972.0,
+   "net_debt": null,
+   "total_debt": null,
+   "cash": 246239.0,
+   "cogs": 2071392.0,
+   "sga": 217706.0,
+   "net_income": 164365.0
+  },
+  "missing_latest": [
+   "net_debt",
+   "total_debt"
+  ],
+  "guidance_source": "none",
+  "guidance_note": "screener DB: no guidance row for code=6594 in the TDnet archive | EDINET XBRL: 6 cached EDINET XBRL file(s) for this ticker carry no ForecastMember context | EDINET tanshin: skipped (--tanshin-fallback not given; EDINET does not host 決算短信)",
+  "guidance": null
+ },
+ "7741": {
+  "code": "7741",
+  "fy_end_month": 3,
+  "archive_docs": [
+   [
+    "2026-03-31",
+    "S100Y90T"
+   ],
+   [
+    "2025-03-31",
+    "S100VW2P"
+   ],
+   [
+    "2024-03-31",
+    "S100TOTA"
+   ],
+   [
+    "2023-03-31",
+    "S100QWA7"
+   ],
+   [
+    "2022-03-31",
+    "S100O6IV"
+   ]
+  ],
+  "company": "ＨＯＹＡ株式会社",
+  "fiscal_years": [
+   "FY2018",
+   "FY2019",
+   "FY2020",
+   "FY2021",
+   "FY2022",
+   "FY2023",
+   "FY2024",
+   "FY2025",
+   "FY2026"
+  ],
+  "latest_fy": "FY2026",
+  "latest_fields": {
+   "revenue": 947749.0,
+   "operating_income": null,
+   "depreciation": 58218.0,
+   "net_debt": null,
+   "total_debt": null,
+   "cash": 574092.0,
+   "cogs": null,
+   "sga": null,
+   "net_income": 253085.0
+  },
+  "missing_latest": [
+   "operating_income",
+   "net_debt",
+   "total_debt",
+   "cogs",
+   "sga"
+  ],
+  "guidance_source": "tdnet_screener_db",
+  "guidance_note": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-07-31 (net_income=131,000mn, operating_income=165,000mn, revenue=521,000mn)",
+  "guidance": {
+   "forecast_revenue": 521000.0,
+   "forecast_operating_income": 165000.0,
+   "forecast_net_income": 131000.0
+  }
+ },
+ "7752": {
+  "code": "7752",
+  "fy_end_month": 3,
+  "archive_docs": [
+   [
+    "2026-03-31",
+    "S100YBFF"
+   ],
+   [
+    "2025-03-31",
+    "S100VZRZ"
+   ],
+   [
+    "2024-03-31",
+    "S100TPAP"
+   ],
+   [
+    "2023-03-31",
+    "S100R29T"
+   ],
+   [
+    "2022-03-31",
+    "S100OE3Q"
+   ]
+  ],
+  "company": "株式会社リコー",
+  "fiscal_years": [
+   "FY2018",
+   "FY2019",
+   "FY2020",
+   "FY2021",
+   "FY2022",
+   "FY2023",
+   "FY2024",
+   "FY2025",
+   "FY2026"
+  ],
+  "latest_fy": "FY2026",
+  "latest_fields": {
+   "revenue": 2608314.0,
+   "operating_income": 90713.0,
+   "depreciation": 117404.0,
+   "net_debt": 227271.0,
+   "total_debt": 432126.0,
+   "cash": 204855.0,
+   "cogs": 1719166.0,
+   "sga": 815166.0,
+   "net_income": 55669.0
+  },
+  "missing_latest": [],
+  "guidance_source": "tdnet_screener_db",
+  "guidance_note": "TDnet 決算短信 via screener guidance table: FY2027 disclosed 2026-08-03 (net_income=62,000mn, operating_income=95,000mn, revenue=2,700,000mn)",
+  "guidance": {
+   "forecast_revenue": 2700000.0,
+   "forecast_operating_income": 95000.0,
+   "forecast_net_income": 62000.0
+  }
+ }
+}

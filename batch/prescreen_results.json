@@ -1,0 +1,438 @@
+{
+ "2897": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YEWB",
+  "hits": {}
+ },
+ "4005": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YAUO",
+  "hits": {}
+ },
+ "4183": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YGUI",
+  "hits": {}
+ },
+ "4188": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YFSR",
+  "hits": {}
+ },
+ "3405": {
+  "verdict": "CLEAN",
+  "doc_id": "S100XSSZ",
+  "hits": {}
+ },
+ "3407": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YGRD",
+  "hits": {}
+ },
+ "4091": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YB9P",
+  "hits": {}
+ },
+ "4151": {
+  "verdict": "CLEAN",
+  "doc_id": "S100XPTY",
+  "hits": {}
+ },
+ "4502": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YB5L",
+  "hits": {}
+ },
+ "4503": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YBPK",
+  "hits": {}
+ },
+ "3099": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YD7C",
+  "hits": {}
+ },
+ "9432": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YCP3",
+  "hits": {}
+ },
+ "6752": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YETA",
+  "hits": {}
+ },
+ "4507": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YF57",
+  "hits": {}
+ },
+ "4519": {
+  "verdict": "CLEAN",
+  "doc_id": "S100XTBJ",
+  "hits": {}
+ },
+ "4523": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YB05",
+  "hits": {}
+ },
+ "4543": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YGMG",
+  "hits": {}
+ },
+ "4568": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YEY0",
+  "hits": {}
+ },
+ "4578": {
+  "verdict": "CLEAN",
+  "doc_id": "S100XUA7",
+  "hits": {}
+ },
+ "4901": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YIBH",
+  "hits": {}
+ },
+ "6501": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YGBO",
+  "hits": {}
+ },
+ "6503": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YD3V",
+  "hits": {}
+ },
+ "6506": {
+  "verdict": "CLEAN",
+  "doc_id": "S100Y69H",
+  "hits": {}
+ },
+ "6594": {
+  "verdict": "CLEAN",
+  "doc_id": "S100TNGX",
+  "hits": {}
+ },
+ "6645": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YG81",
+  "hits": {}
+ },
+ "6701": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YBFV",
+  "hits": {}
+ },
+ "6702": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YM3K",
+  "hits": {}
+ },
+ "6762": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YD2Y",
+  "hits": {}
+ },
+ "6861": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YAHE",
+  "hits": {}
+ },
+ "6954": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YG3Q",
+  "hits": {}
+ },
+ "6981": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YHPY",
+  "hits": {}
+ },
+ "7733": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YDN3",
+  "hits": {}
+ },
+ "7741": {
+  "verdict": "CLEAN",
+  "doc_id": "S100TOTA",
+  "hits": {}
+ },
+ "7751": {
+  "verdict": "CLEAN",
+  "doc_id": "S100XTLJ",
+  "hits": {}
+ },
+ "6146": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YC6I",
+  "hits": {}
+ },
+ "6857": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YKTA",
+  "hits": {}
+ },
+ "8035": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YEOO",
+  "hits": {}
+ },
+ "6273": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YLC6",
+  "hits": {}
+ },
+ "6367": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YFQL",
+  "hits": {}
+ },
+ "7011": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YHZG",
+  "hits": {}
+ },
+ "7013": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YENT",
+  "hits": {}
+ },
+ "6902": {
+  "verdict": "CLEAN",
+  "doc_id": "S100Y9T1",
+  "hits": {}
+ },
+ "5108": {
+  "verdict": "CLEAN",
+  "doc_id": "S100XRPR",
+  "hits": {}
+ },
+ "5201": {
+  "verdict": "CLEAN",
+  "doc_id": "S100XSTU",
+  "hits": {}
+ },
+ "5401": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YF8E",
+  "hits": {}
+ },
+ "5802": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YL2M",
+  "hits": {}
+ },
+ "3861": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YJ8J",
+  "hits": {}
+ },
+ "1801": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YBGF",
+  "hits": {}
+ },
+ "1802": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YITC",
+  "hits": {}
+ },
+ "1812": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YGGI",
+  "hits": {}
+ },
+ "8801": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YHUO",
+  "hits": {}
+ },
+ "8802": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YBLA",
+  "hits": {}
+ },
+ "3289": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YHXW",
+  "hits": {}
+ },
+ "9020": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YC7N",
+  "hits": {}
+ },
+ "9064": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YAYL",
+  "hits": {}
+ },
+ "9202": {
+  "verdict": "FINANCIAL-BUSINESS",
+  "doc_id": "S100YKL4",
+  "hits": {
+   "LeaseReceivablesAndInvestmentAssetsCA": 7919
+  }
+ },
+ "9502": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YDH0",
+  "hits": {}
+ },
+ "9503": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YFXZ",
+  "hits": {}
+ },
+ "9531": {
+  "verdict": "FINANCIAL-BUSINESS",
+  "doc_id": "S100YH8W",
+  "hits": {
+   "LeaseReceivablesAndInvestmentAssetsCA": 18362
+  }
+ },
+ "9532": {
+  "verdict": "FINANCIAL-BUSINESS",
+  "doc_id": "S100YFQT",
+  "hits": {
+   "LeaseReceivablesAndInvestmentAssetsCA": 66619
+  }
+ },
+ "9983": {
+  "verdict": "CLEAN",
+  "doc_id": "S100X6X6",
+  "hits": {}
+ },
+ "9843": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YIMF",
+  "hits": {}
+ },
+ "7550": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YKA9",
+  "hits": {}
+ },
+ "9735": {
+  "verdict": "FINANCIAL-BUSINESS",
+  "doc_id": "S100YICV",
+  "hits": {
+   "CallLoanCA": 19000,
+   "LeaseReceivablesAndInvestmentAssetsCA": 45228
+  }
+ },
+ "6098": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YDHL",
+  "hits": {}
+ },
+ "4661": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YCJX",
+  "hits": {}
+ },
+ "4307": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YBM8",
+  "hits": {}
+ },
+ "9697": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YCGO",
+  "hits": {}
+ },
+ "4689": {
+  "verdict": "FINANCIAL-BUSINESS",
+  "doc_id": "S100YBXD",
+  "hits": {
+   "CallLoansInBankingBusinessAssetsIFRS": 52788,
+   "InvestmentSecuritiesInBankingBusinessAssetsIFRS": 1550844,
+   "LoansInBankingBusinessAssetsIFRS": 1615955,
+   "CustomerDepositsInBankingBusinessLiabilitiesIFRS": 2701160
+  }
+ },
+ "2587": {
+  "verdict": "CLEAN",
+  "doc_id": "S100XSOA",
+  "hits": {}
+ },
+ "2871": {
+  "verdict": "CLEAN",
+  "doc_id": "S100TR05",
+  "hits": {}
+ },
+ "3401": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YCMK",
+  "hits": {}
+ },
+ "3659": {
+  "verdict": "CLEAN",
+  "doc_id": "S100XSM4",
+  "hits": {}
+ },
+ "3863": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YJ5X",
+  "hits": {}
+ },
+ "4205": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YJ12",
+  "hits": {}
+ },
+ "4528": {
+  "verdict": "CLEAN",
+  "doc_id": "S100VY8R",
+  "hits": {}
+ },
+ "6479": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YISS",
+  "hits": {}
+ },
+ "6976": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YHU5",
+  "hits": {}
+ },
+ "7012": {
+  "verdict": "CLEAN",
+  "doc_id": "S100Y99Z",
+  "hits": {}
+ },
+ "7259": {
+  "verdict": "CLEAN",
+  "doc_id": "S100TNMJ",
+  "hits": {}
+ },
+ "7731": {
+  "verdict": "CLEAN",
+  "doc_id": "S100YKBP",
+  "hits": {}
+ },
+ "7752": {
+  "verdict": "CLEAN",
+  "doc_id": "S100VZRZ",
+  "hits": {}
+ },
+ "9021": {
+  "verdict": "CLEAN",
+  "doc_id": "S100TOS4",
+  "hits": {}
+ },
+ "3086": {
+  "doc_id": "S100Y6K0",
+  "hits": [],
+  "status": "CLEAN",
+  "total_assets": 1141567000000,
+  "_note": "2月決算のため fiscal_year_end_month=2 を明示指定して再取得した（既定の探索窓では有報が見つからない。CLAUDE.md の既知パターン）。JFRカードを連結するが、金融事業専用科目（InstallmentReceivable / ForFinancialBusiness / CallLoan 等）は1件も検出されず。IFRS適用で営業債権に含まれていると思われる。3099 三越伊勢丹（CLEAN・型A処理）と同じ基準により型Aとする。"
+ }
+}

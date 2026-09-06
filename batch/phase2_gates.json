@@ -1,0 +1,1362 @@
+{
+ "1801": {
+  "file": "1801_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  1801: workbook EBITDA=        204740  csv=      204740.0  implied EV/EBITDA price=10778",
+   "market_data": "OK  1801: price=12690 (cache 12690.0)  shares=163009119 (cache 163009119)"
+  },
+  "clean": true
+ },
+ "1802": {
+  "file": "1802_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  1802: workbook EBITDA=        231032  csv=      231032.0  implied EV/EBITDA price=3424",
+   "market_data": "OK  1802: price=3011 (cache 3011.0)  shares=687421514 (cache 687421514)"
+  },
+  "clean": true
+ },
+ "1812": {
+  "file": "1812_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  1812: workbook EBITDA=        274253  csv=      274253.0  implied EV/EBITDA price=4719",
+   "market_data": "OK  1812: price=4938 (cache 4938.0)  shares=460951595 (cache 460951595)"
+  },
+  "clean": true
+ },
+ "2267": {
+  "file": "2267_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  2267: workbook EBITDA=         73994  csv=       73994.0  implied EV/EBITDA price=3264",
+   "market_data": "OK  2267: price=2822 (cache 2822.0)  shares=286835826 (cache 286835826)"
+  },
+  "clean": true
+ },
+ "2269": {
+  "file": "2269_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  2269: workbook EBITDA=        148261  csv=      148261.0  implied EV/EBITDA price=5900",
+   "market_data": "OK  2269: price=4408 (cache 4408.0)  shares=271166783 (cache 271166783)"
+  },
+  "clean": true
+ },
+ "2502": {
+  "file": "2502_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  2502: workbook EBITDA=        348957  csv=      348957.0  implied EV/EBITDA price=1588",
+   "market_data": "OK  2502: price=1639 (cache 1639.0)  shares=1462662258 (cache 1462662258)"
+  },
+  "clean": true
+ },
+ "2503": {
+  "file": "2503_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  2503: workbook EBITDA=        311527  csv=      311527.0  implied EV/EBITDA price=3505",
+   "market_data": "OK  2503: price=2912 (cache 2912.0)  shares=796891219 (cache 796891219)"
+  },
+  "clean": true
+ },
+ "2587": {
+  "file": "2587_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  2587: workbook EBITDA=        232403  csv=      232403.0  implied EV/EBITDA price=8645",
+   "market_data": "OK  2587: price=4514 (cache 4514.0)  shares=308999659 (cache 308999659)"
+  },
+  "clean": true
+ },
+ "2801": {
+  "file": "2801_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  2801: workbook EBITDA=        102540  csv=      102686.0  implied EV/EBITDA price=1261",
+   "market_data": "OK  2801: price=1784.5 (cache 1784.5)  shares=927739554 (cache 927739554)"
+  },
+  "clean": true
+ },
+ "2802": {
+  "file": "2802_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "passed": 21,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  2802: workbook EBITDA=        280763  csv=      277762.0  implied EV/EBITDA price=2886",
+   "market_data": "OK  2802: price=5174 (cache 5174.0)  shares=953335931 (cache 953335931)"
+  },
+  "clean": true
+ },
+ "2871": {
+  "file": "2871_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  2871: workbook EBITDA=         61091  csv=       61091.0  implied EV/EBITDA price=2372",
+   "market_data": "OK  2871: price=2108.5 (cache 2108.5)  shares=250617252 (cache 250617252)"
+  },
+  "clean": true
+ },
+ "2897": {
+  "file": "2897_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  2897: workbook EBITDA=         85277  csv=       85277.0  implied EV/EBITDA price=2770",
+   "market_data": "OK  2897: price=2980.5 (cache 2980.5)  shares=286578095 (cache 286578095)"
+  },
+  "clean": true
+ },
+ "3086": {
+  "file": "3086_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  3086: workbook EBITDA=         93306  csv=       93306.0  implied EV/EBITDA price=2803",
+   "market_data": "OK  3086: price=2767.5 (cache 2767.5)  shares=245908464 (cache 245908464)"
+  },
+  "clean": true
+ },
+ "3099": {
+  "file": "3099_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "passed": 21,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  3099: workbook EBITDA=        104454  csv=      104454.0  implied EV/EBITDA price=3175",
+   "market_data": "OK  3099: price=3203 (cache 3203.0)  shares=347894421 (cache 347894421)"
+  },
+  "clean": true
+ },
+ "3289": {
+  "file": "3289_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  3289: workbook EBITDA=        240689  csv=      240689.0  implied EV/EBITDA price=3016",
+   "market_data": "OK  3289: price=1312 (cache 1312.0)  shares=713231306 (cache 713231306)"
+  },
+  "clean": true
+ },
+ "3405": {
+  "file": "3405_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "passed": 21,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  3405: workbook EBITDA=        143584  csv=      143585.0  implied EV/EBITDA price=3559",
+   "market_data": "OK  3405: price=1838.5 (cache 1838.5)  shares=301296860 (cache 301296860)"
+  },
+  "clean": true
+ },
+ "3407": {
+  "file": "3407_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "passed": 21,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  3407: workbook EBITDA=        427544  csv=      427544.0  implied EV/EBITDA price=2524",
+   "market_data": "OK  3407: price=1612 (cache 1612.0)  shares=1339960331 (cache 1339960331)"
+  },
+  "clean": true
+ },
+ "3659": {
+  "file": "3659_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "passed": 21,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  3659: workbook EBITDA=        135421  csv=      135421.0  implied EV/EBITDA price=3262",
+   "market_data": "OK  3659: price=3120 (cache 3120.0)  shares=778877498 (cache 778877498)"
+  },
+  "clean": true
+ },
+ "3861": {
+  "file": "3861_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  3861: workbook EBITDA=        143723  csv=      143723.0  implied EV/EBITDA price=380",
+   "market_data": "OK  3861: price=875.2000122070312 (cache 875.2000122070312)  shares=849234293 (cache 849234293)"
+  },
+  "clean": true
+ },
+ "3863": {
+  "file": "3863_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  3863: workbook EBITDA=         88420  csv=       88420.0  implied EV/EBITDA price=740",
+   "market_data": "OK  3863: price=1306 (cache 1306.0)  shares=115308503 (cache 115308503)"
+  },
+  "clean": true
+ },
+ "4005": {
+  "file": "4005_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "passed": 21,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  4005: workbook EBITDA=        316084  csv=      316084.0  implied EV/EBITDA price=1095",
+   "market_data": "OK  4005: price=594.7 (cache 594.7000122070312)  shares=1651872408 (cache 1651872408)"
+  },
+  "clean": true
+ },
+ "4063": {
+  "file": "4063_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  4063: workbook EBITDA=        878177  csv=      878178.0  implied EV/EBITDA price=5242",
+   "market_data": "OK  4063: price=5786 (cache 5786.0)  shares=1815064711 (cache 1815064711)"
+  },
+  "clean": true
+ },
+ "4091": {
+  "file": "4091_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  4091: workbook EBITDA=        324786  csv=      320233.0  implied EV/EBITDA price=4876",
+   "market_data": "OK  4091: price=5471 (cache 5471.0)  shares=432853299 (cache 432853299)"
+  },
+  "clean": true
+ },
+ "4151": {
+  "file": "4151_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  4151: workbook EBITDA=        128419  csv=      128419.0  implied EV/EBITDA price=3519",
+   "market_data": "OK  4151: price=2403.5 (cache 2403.5)  shares=523586484 (cache 523586484)"
+  },
+  "clean": true
+ },
+ "4183": {
+  "file": "4183_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  4183: workbook EBITDA=        161346  csv=      161346.0  implied EV/EBITDA price=1376",
+   "market_data": "OK  4183: price=2224 (cache 2224.0)  shares=361537201 (cache 361537201)"
+  },
+  "clean": true
+ },
+ "4188": {
+  "file": "4188_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "passed": 21,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  4188: workbook EBITDA=        297864  csv=      303490.0  implied EV/EBITDA price=429",
+   "market_data": "OK  4188: price=1237.5 (cache 1237.5)  shares=1358687815 (cache 1358687815)"
+  },
+  "clean": true
+ },
+ "4205": {
+  "file": "4205_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  4205: workbook EBITDA=         53606  csv=       53606.0  implied EV/EBITDA price=1897",
+   "market_data": "OK  4205: price=2458 (cache 2458.0)  shares=191345507 (cache 191345507)"
+  },
+  "clean": true
+ },
+ "4307": {
+  "file": "4307_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  4307: workbook EBITDA=        108445  csv=      108445.0  implied EV/EBITDA price=1490",
+   "market_data": "OK  4307: price=5244 (cache 5244.0)  shares=560101089 (cache 560101089)"
+  },
+  "clean": true
+ },
+ "4502": {
+  "file": "4502_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  4502: workbook EBITDA=       1185578  csv=     1185578.0  implied EV/EBITDA price=5684",
+   "market_data": "OK  4502: price=5753 (cache 5753.0)  shares=1596751439 (cache 1596751439)"
+  },
+  "clean": true
+ },
+ "4503": {
+  "file": "4503_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "passed": 21,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  4503: workbook EBITDA=        574653  csv=      574653.0  implied EV/EBITDA price=3689",
+   "market_data": "OK  4503: price=2355.5 (cache 2355.5)  shares=1793013747 (cache 1793013747)"
+  },
+  "clean": true
+ },
+ "4507": {
+  "file": "4507_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  4507: workbook EBITDA=        193693  csv=      193693.0  implied EV/EBITDA price=2387",
+   "market_data": "OK  4507: price=2909 (cache 2909.0)  shares=851176737 (cache 851176737)"
+  },
+  "clean": true
+ },
+ "4523": {
+  "file": "4523_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "passed": 21,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  4523: workbook EBITDA=         83689  csv=       83689.0  implied EV/EBITDA price=3285",
+   "market_data": "OK  4523: price=4694 (cache 4694.0)  shares=282236007 (cache 282236007)"
+  },
+  "clean": true
+ },
+ "4528": {
+  "file": "4528_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  4528: workbook EBITDA=        129988  csv=      129988.0  implied EV/EBITDA price=3075",
+   "market_data": "OK  4528: price=2448.5 (cache 2448.5)  shares=469907311 (cache 469907311)"
+  },
+  "clean": true
+ },
+ "4543": {
+  "file": "4543_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "passed": 21,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  4543: workbook EBITDA=        271700  csv=      271700.0  implied EV/EBITDA price=2262",
+   "market_data": "OK  4543: price=2432 (cache 2432.0)  shares=1475101493 (cache 1475101493)"
+  },
+  "clean": true
+ },
+ "4568": {
+  "file": "4568_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  4568: workbook EBITDA=        306549  csv=      306549.0  implied EV/EBITDA price=1900",
+   "market_data": "OK  4568: price=2794 (cache 2794.0)  shares=1819653230 (cache 1819653230)"
+  },
+  "clean": true
+ },
+ "4578": {
+  "file": "4578_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  4578: workbook EBITDA=        588273  csv=      588273.0  implied EV/EBITDA price=13438",
+   "market_data": "OK  4578: price=12030 (cache 12030.0)  shares=525393423 (cache 525393423)"
+  },
+  "clean": true
+ },
+ "4661": {
+  "file": "4661_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  4661: workbook EBITDA=        234958  csv=      234958.0  implied EV/EBITDA price=1720",
+   "market_data": "OK  4661: price=3136 (cache 3136.0)  shares=1639716594 (cache 1639716594)"
+  },
+  "clean": true
+ },
+ "4901": {
+  "file": "4901_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  4901: workbook EBITDA=        522581  csv=      522581.0  implied EV/EBITDA price=2657",
+   "market_data": "OK  4901: price=3313 (cache 3313.0)  shares=1195987347 (cache 1195987347)"
+  },
+  "clean": true
+ },
+ "5108": {
+  "file": "5108_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  5108: workbook EBITDA=        734466  csv=      734466.0  implied EV/EBITDA price=3890",
+   "market_data": "OK  5108: price=3961 (cache 3961.0)  shares=1239319283 (cache 1239319283)"
+  },
+  "clean": true
+ },
+ "5201": {
+  "file": "5201_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  5201: workbook EBITDA=        305264  csv=      305264.0  implied EV/EBITDA price=6795",
+   "market_data": "OK  5201: price=5591 (cache 5591.0)  shares=212393793 (cache 212393793)"
+  },
+  "clean": true
+ },
+ "5401": {
+  "file": "5401_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  5401: workbook EBITDA=       1002632  csv=     1002632.0  implied EV/EBITDA price=145",
+   "market_data": "OK  5401: price=691.9000244140625 (cache 691.9000244140625)  shares=5226293989 (cache 5226293989)"
+  },
+  "clean": true
+ },
+ "5802": {
+  "file": "5802_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  5802: workbook EBITDA=        630935  csv=      630935.0  implied EV/EBITDA price=817",
+   "market_data": "OK  5802: price=2133 (cache 2133.0)  shares=3119679500 (cache 3119679500)"
+  },
+  "clean": true
+ },
+ "6098": {
+  "file": "6098_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  6098: workbook EBITDA=        737644  csv=      737644.0  implied EV/EBITDA price=5811",
+   "market_data": "OK  6098: price=16235 (cache 16235.0)  shares=1387337063 (cache 1387337063)"
+  },
+  "clean": true
+ },
+ "6146": {
+  "file": "6146_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 2,
+  "skip": 0,
+  "passed": 20,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  6146: workbook EBITDA=        199811  csv=      199811.0  implied EV/EBITDA price=74213",
+   "market_data": "OK  6146: price=54460 (cache 54460.0)  shares=108467725 (cache 108467725)"
+  },
+  "clean": true
+ },
+ "6273": {
+  "file": "6273_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "passed": 21,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  6273: workbook EBITDA=        235405  csv=      235405.0  implied EV/EBITDA price=69142",
+   "market_data": "OK  6273: price=67140 (cache 67140.0)  shares=62477789 (cache 62477789)"
+  },
+  "clean": true
+ },
+ "6367": {
+  "file": "6367_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "passed": 21,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  6367: workbook EBITDA=        691198  csv=      691198.0  implied EV/EBITDA price=35015",
+   "market_data": "OK  6367: price=20500 (cache 20500.0)  shares=278336120 (cache 278336120)"
+  },
+  "clean": true
+ },
+ "6479": {
+  "file": "6479_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "passed": 21,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  6479: workbook EBITDA=        174401  csv=      174401.0  implied EV/EBITDA price=4187",
+   "market_data": "OK  6479: price=3332 (cache 3332.0)  shares=401595519 (cache 401595519)"
+  },
+  "clean": true
+ },
+ "6501": {
+  "file": "6501_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 2,
+  "skip": 0,
+  "passed": 20,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  6501: workbook EBITDA=       1657248  csv=     1657248.0  implied EV/EBITDA price=5828",
+   "market_data": "OK  6501: price=5377 (cache 5377.0)  shares=4476140293 (cache 4476140293)"
+  },
+  "clean": true
+ },
+ "6503": {
+  "file": "6503_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 2,
+  "skip": 0,
+  "passed": 20,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  6503: workbook EBITDA=        666879  csv=      666879.0  implied EV/EBITDA price=4851",
+   "market_data": "OK  6503: price=5248 (cache 5248.0)  shares=2046435776 (cache 2046435776)"
+  },
+  "clean": true
+ },
+ "6506": {
+  "file": "6506_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "passed": 21,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  6506: workbook EBITDA=         68402  csv=       68402.0  implied EV/EBITDA price=3716",
+   "market_data": "OK  6506: price=4570 (cache 4570.0)  shares=259367959 (cache 259367959)"
+  },
+  "clean": true
+ },
+ "6645": {
+  "file": "6645_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 2,
+  "skip": 0,
+  "passed": 20,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  6645: workbook EBITDA=         88966  csv=       88966.0  implied EV/EBITDA price=6657",
+   "market_data": "OK  6645: price=6217 (cache 6217.0)  shares=196629396 (cache 196629396)"
+  },
+  "clean": true
+ },
+ "6701": {
+  "file": "6701_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "passed": 21,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  6701: workbook EBITDA=        514415  csv=      514415.0  implied EV/EBITDA price=6160",
+   "market_data": "OK  6701: price=4828 (cache 4828.0)  shares=1326344017 (cache 1326344017)"
+  },
+  "clean": true
+ },
+ "6702": {
+  "file": "6702_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "passed": 21,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  6702: workbook EBITDA=        489556  csv=      489556.0  implied EV/EBITDA price=4582",
+   "market_data": "OK  6702: price=3900 (cache 3900.0)  shares=1731026775 (cache 1731026775)"
+  },
+  "clean": true
+ },
+ "6752": {
+  "file": "6752_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "passed": 21,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  6752: workbook EBITDA=        614305  csv=      614305.0  implied EV/EBITDA price=3414",
+   "market_data": "OK  6752: price=4163 (cache 4163.0)  shares=2334925020 (cache 2334925020)"
+  },
+  "clean": true
+ },
+ "6762": {
+  "file": "6762_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 2,
+  "skip": 0,
+  "passed": 20,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  6762: workbook EBITDA=        476606  csv=      476606.0  implied EV/EBITDA price=4662",
+   "market_data": "OK  6762: price=2907.5 (cache 2907.5)  shares=1898154125 (cache 1898154125)"
+  },
+  "clean": true
+ },
+ "6857": {
+  "file": "6857_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 2,
+  "skip": 0,
+  "passed": 20,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  6857: workbook EBITDA=        524732  csv=      524732.0  implied EV/EBITDA price=22890",
+   "market_data": "OK  6857: price=33090 (cache 33090.0)  shares=722281552 (cache 722281552)"
+  },
+  "clean": true
+ },
+ "6861": {
+  "file": "6861_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "passed": 21,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  6861: workbook EBITDA=        612986  csv=      612986.0  implied EV/EBITDA price=48611",
+   "market_data": "OK  6861: price=77720 (cache 77720.0)  shares=242525136 (cache 242525136)"
+  },
+  "clean": true
+ },
+ "6902": {
+  "file": "6902_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  6902: workbook EBITDA=        930612  csv=      930612.0  implied EV/EBITDA price=2689",
+   "market_data": "OK  6902: price=1916.5 (cache 1916.5)  shares=2507140573 (cache 2507140573)"
+  },
+  "clean": true
+ },
+ "6954": {
+  "file": "6954_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 2,
+  "skip": 0,
+  "passed": 20,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  6954: workbook EBITDA=        231545  csv=      231545.0  implied EV/EBITDA price=4648",
+   "market_data": "OK  6954: price=5931 (cache 5931.0)  shares=929200798 (cache 929200798)"
+  },
+  "clean": true
+ },
+ "6976": {
+  "file": "6976_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 2,
+  "skip": 0,
+  "passed": 20,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  6976: workbook EBITDA=         69144  csv=       69144.0  implied EV/EBITDA price=5884",
+   "market_data": "OK  6976: price=9426 (cache 9426.0)  shares=125146903 (cache 125146903)"
+  },
+  "clean": true
+ },
+ "6981": {
+  "file": "6981_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 2,
+  "skip": 0,
+  "passed": 20,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  6981: workbook EBITDA=        460047  csv=      460047.0  implied EV/EBITDA price=4672",
+   "market_data": "OK  6981: price=7191 (cache 7191.0)  shares=1820312372 (cache 1820312372)"
+  },
+  "clean": true
+ },
+ "7011": {
+  "file": "7011_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 2,
+  "skip": 0,
+  "passed": 20,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  7011: workbook EBITDA=        568788  csv=      568788.0  implied EV/EBITDA price=2227",
+   "market_data": "OK  7011: price=3754 (cache 3754.0)  shares=3360209340 (cache 3360209340)"
+  },
+  "clean": true
+ },
+ "7012": {
+  "file": "7012_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 2,
+  "skip": 0,
+  "passed": 20,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  7012: workbook EBITDA=        224778  csv=      224778.0  implied EV/EBITDA price=2326",
+   "market_data": "OK  7012: price=2433.5 (cache 2433.5)  shares=873197387 (cache 873197387)"
+  },
+  "clean": true
+ },
+ "7013": {
+  "file": "7013_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 2,
+  "skip": 0,
+  "passed": 20,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  7013: workbook EBITDA=        252356  csv=      252356.0  implied EV/EBITDA price=3096",
+   "market_data": "OK  7013: price=2624.5 (cache 2624.5)  shares=1060161928 (cache 1060161928)"
+  },
+  "clean": true
+ },
+ "7259": {
+  "file": "7259_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  7259: workbook EBITDA=        493431  csv=      493431.0  implied EV/EBITDA price=3185",
+   "market_data": "OK  7259: price=2249.5 (cache 2249.5)  shares=697464378 (cache 697464378)"
+  },
+  "clean": true
+ },
+ "7550": {
+  "file": "7550_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  7550: workbook EBITDA=        135937  csv=      135937.0  implied EV/EBITDA price=7373",
+   "market_data": "OK  7550: price=11955 (cache 11955.0)  shares=156462209 (cache 156462209)"
+  },
+  "clean": true
+ },
+ "7733": {
+  "file": "7733_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "passed": 21,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  7733: workbook EBITDA=        168036  csv=      168036.0  implied EV/EBITDA price=2097",
+   "market_data": "OK  7733: price=2061 (cache 2061.0)  shares=1062852681 (cache 1062852681)"
+  },
+  "clean": true
+ },
+ "7751": {
+  "file": "7751_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  7751: workbook EBITDA=        694626  csv=      694626.0  implied EV/EBITDA price=6009",
+   "market_data": "OK  7751: price=4615 (cache 4615.0)  shares=843953156 (cache 843953156)"
+  },
+  "clean": true
+ },
+ "7974": {
+  "file": "7974_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  7974: workbook EBITDA=        375971  csv=      375971.0  implied EV/EBITDA price=5848",
+   "market_data": "OK  7974: price=8839 (cache 8839.0)  shares=1152873205 (cache 1152873205)"
+  },
+  "clean": true
+ },
+ "8035": {
+  "file": "8035_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 2,
+  "skip": 0,
+  "passed": 20,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  8035: workbook EBITDA=        706282  csv=      706282.0  implied EV/EBITDA price=57122",
+   "market_data": "OK  8035: price=53320 (cache 53320.0)  shares=454296856 (cache 454296856)"
+  },
+  "clean": true
+ },
+ "8801": {
+  "file": "8801_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  8801: workbook EBITDA=        548765  csv=      548765.0  implied EV/EBITDA price=1520",
+   "market_data": "OK  8801: price=1510 (cache 1510.0)  shares=2692184018 (cache 2692184018)"
+  },
+  "clean": true
+ },
+ "8802": {
+  "file": "8802_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  8802: workbook EBITDA=        440519  csv=      440519.0  implied EV/EBITDA price=3007",
+   "market_data": "OK  8802: price=3693 (cache 3693.0)  shares=1200688080 (cache 1200688080)"
+  },
+  "clean": true
+ },
+ "9020": {
+  "file": "9020_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  9020: workbook EBITDA=        842989  csv=      842989.0  implied EV/EBITDA price=1422",
+   "market_data": "OK  9020: price=3520 (cache 3520.0)  shares=1129068483 (cache 1129068483)"
+  },
+  "clean": true
+ },
+ "9021": {
+  "file": "9021_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  9021: workbook EBITDA=        375928  csv=      375928.0  implied EV/EBITDA price=5410",
+   "market_data": "OK  9021: price=3020 (cache 3020.0)  shares=455083814 (cache 455083814)"
+  },
+  "clean": true
+ },
+ "9022": {
+  "file": "9022_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  9022: workbook EBITDA=       1036102  csv=     1036103.0  implied EV/EBITDA price=10880",
+   "market_data": "OK  9022: price=3857 (cache 3857.0)  shares=949380107 (cache 949380107)"
+  },
+  "clean": true
+ },
+ "9064": {
+  "file": "9064_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "passed": 21,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  9064: workbook EBITDA=         96500  csv=       96500.0  implied EV/EBITDA price=2628",
+   "market_data": "OK  9064: price=1965 (cache 1965.0)  shares=316676561 (cache 316676561)"
+  },
+  "clean": true
+ },
+ "9432": {
+  "file": "9432_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  9432: workbook EBITDA=       3577393  csv=     3577393.0  implied EV/EBITDA price=221",
+   "market_data": "OK  9432: price=172.6000061035156 (cache 172.60000610351562)  shares=81027939965 (cache 81027939965)"
+  },
+  "clean": true
+ },
+ "9502": {
+  "file": "9502_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  9502: workbook EBITDA=        402347  csv=      402347.0  implied EV/EBITDA price=967",
+   "market_data": "OK  9502: price=2926 (cache 2926.0)  shares=755393538 (cache 755393538)"
+  },
+  "clean": true
+ },
+ "9503": {
+  "file": "9503_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  9503: workbook EBITDA=        812350  csv=      812350.0  implied EV/EBITDA price=3684",
+   "market_data": "OK  9503: price=2947 (cache 2947.0)  shares=1114056720 (cache 1114056720)"
+  },
+  "clean": true
+ },
+ "9531": {
+  "file": "9531_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  9531: workbook EBITDA=        461976  csv=      461976.0  implied EV/EBITDA price=10071",
+   "market_data": "OK  9531: price=6128 (cache 6128.0)  shares=328504948 (cache 328504948)"
+  },
+  "clean": true
+ },
+ "9532": {
+  "file": "9532_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  9532: workbook EBITDA=        309948  csv=      309948.0  implied EV/EBITDA price=4513",
+   "market_data": "OK  9532: price=5719 (cache 5719.0)  shares=379504022 (cache 379504022)"
+  },
+  "clean": true
+ },
+ "9697": {
+  "file": "9697_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  9697: workbook EBITDA=         80496  csv=       80496.0  implied EV/EBITDA price=3318",
+   "market_data": "OK  9697: price=4248 (cache 4248.0)  shares=418308843 (cache 418308843)"
+  },
+  "clean": true
+ },
+ "9735": {
+  "file": "9735_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  9735: workbook EBITDA=        241049  csv=      241049.0  implied EV/EBITDA price=7338",
+   "market_data": "OK  9735: price=6401 (cache 6401.0)  shares=398929240 (cache 398929240)"
+  },
+  "clean": true
+ },
+ "9843": {
+  "file": "9843_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  9843: workbook EBITDA=        190777  csv=      190777.0  implied EV/EBITDA price=3777",
+   "market_data": "OK  9843: price=3254 (cache 3254.0)  shares=565057598 (cache 565057598)"
+  },
+  "clean": true
+ },
+ "9983": {
+  "file": "9983_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "passed": 21,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  9983: workbook EBITDA=        779053  csv=      779053.0  implied EV/EBITDA price=27934",
+   "market_data": "OK  9983: price=69100 (cache 69100.0)  shares=306851024 (cache 306851024)"
+  },
+  "clean": true
+ }
+}
