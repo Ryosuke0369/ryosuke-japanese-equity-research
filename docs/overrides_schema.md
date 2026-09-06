@@ -26,8 +26,27 @@
 | `shares_outstanding` | number | 同上（発行済株式総数 実数） |
 | `shares` | dict | `{"fully_diluted_shares": N}`。DCF/SOTP 共通の single source of truth |
 | `net_debt` | number | JPY mn。負 = ネットキャッシュ |
-| `beta` | number | テンプレで [0.6, 1.75] にクランプ（範囲外→1.0） |
-| `de_ratio` | number | 未指定時は net_debt/時価総額 から自動算出 |
+| `beta` | number | **実測（回帰）β = raw を入れる**。調整後の値ではない。テンプレが Blume 調整 `0.67×raw + 0.33×1.00` を掛け、`[0.3, 2.0]` にクランプする（下記） |
+| `de_ratio` | number | 未指定時は net_debt/時価総額 から自動算出（**市場データ override 適用後**の時価総額を使う） |
+
+#### β の扱い（2026-09-06 フェーズ2 #6 で改訂）
+
+- **`beta` に入れるのは実測（回帰）βの生値**。yfinance 由来でも自前回帰でも同じ扱いで、
+  overrides 経由でも yfinance 経由でも**同一の処理を通る**。
+- テンプレが **Blume 調整を既定**で適用する: `β_adj = 0.67 × β_raw + 0.33 × 1.00`。
+  回帰βは平均回帰するため。2026-09-05 バッチでは旧ルール `[0.6, 1.75]` の
+  **下限 0.60 に 85件中 57件（67%）が張り付き**、上側では太陽誘電の raw 1.561 が
+  WACC 13.35% を生んでいた。
+- クランプ域は **`[0.3, 2.0]`**。範囲外は**無言で置換せず WARN を出す**。
+  Blume 調整後にこの域を外れるには raw が概ね `[-0.05, 2.49]` の外である必要があり、
+  クランプは日常経路ではなく稀なガードになる。
+- `beta` を渡さない（yfinance も取れない）場合は市場β 1.00 を採用し、WARN を出す。
+- Adjustments Log（`DCF Model!C8` 行）と Pipeline Metadata
+  （`beta_raw` / `beta_blume_adjusted` / `beta_adopted_c8` / `beta_basis` / `beta_clamped`）に
+  **raw / adjusted / 採用値の3点**が必ず残る。
+- **移行時の注意**: 旧ルール下で作られた overrides には**クランプ後の値**（0.60 等）が
+  書かれていることがある。それを raw として渡すと二重に縮小される。
+  既存銘柄の `beta` は raw を再導出して差し替えること。
 
 ### WACC（平坦キー！）
 `risk_free` / `erp` / `size_premium` / `cost_of_debt_at`（**税引後**）/ `tax_rate`
@@ -246,6 +265,7 @@ validate_output のチェック16が WARN で報告する。ゼロ埋めのシ�
 | `8267_comps.csv` | 2026-07-29終値ベース(3382/9843)、7532は日付未確認のIR公表値 | 銀行(イオン銀行)連結子会社があるため、自社行のNet_Debtは有利子負債(預金除く)−現金+非支配株主持分(984,094)で算出(schema上部「net_debtにMIを織り込む」設計、DCF側overridesのnet_debtと整合)。プロンプト指定peer5社のうち`3141.T`(ウエルシアHD)は2025-11-27にツルハHDへ吸収合併され上場廃止、`8905.T`(イオンモール)は2025-06-27に株式交換で完全子会社化され上場廃止と判明(いずれも時価総額取得不可)のため**両方除外**、3社(3382/7532/9843)のみで統計を構成(元々イオン自身は統計除外の設計だったため、実質的な変更は「表示専用2社」が無くなった点のみ)。`scripts/add_sotp_crosscheck.py`が生成後にComps Analysisの統計式(row5除外)をパッチ。 |
 | `8410_comps.csv` | 2026-07-29終値ベース(Rakuten Bank/Japan Post Bank)、AEON Financial Serviceは日付未確認のIR公表値 | 銀行のため全行Net_Debt=0固定(schema上部「銀行のNet_Debt」注記参照)。プロンプト指定のpeer4社のうち`7163.T`(住信SBIネット銀行)は2025-09-25にNTT Docomoの TOB で東証上場廃止済みと判明(時価総額なし、FY2026/3科目も未確認)のため**除外**、3社(5838/7182/8570)で統計を構成。統計からセブン銀行自身を除外する要件があるが`dcf_comps_template.py`の統計式(`{col}5:{col}{last_row}`)には自社除外の仕組みがなく、`scripts/add_bank_valuation.py`が生成後にopenpyxlでComps Analysisの統計式レンジ(row5除外)を書き換えるポストプロセスとして対応。AEON Financial Serviceは決算期が2月期(3月期ではない)のためFY2026/2実績を使用(約1か月のズレ、僅少)。Japan Post Bankの純資産9,260,000は非支配株主持分等未調整の総額(自己資本の厳密値ではない)。 |
 | `7203_comps.csv` | 2026-07-29/30終値ベース（Market_Cap）、各社直近期末実績（P/L・BS） | 連結ベースで統一（DCFは自動車事業のみ、両者の乖離は既知の設計で最終レポートに明記）。FX: USD/JPY 158.75、EUR/JPY 183.44（2026-03-31時点、valutafx.com。GM/F/VOW3のBS・PL全項目にこの期末レート1本を簡便法として統一適用、プロンプト許容範囲）。`comps_fetcher.py`に`_`接頭辞コメント行のスキップ機能が無いため、CSV内へのFXコメント埋め込みは行わずこの表に記録する運用とした。Honda/SubaruはFY2026/3に関税等一過性費用で赤字/大幅減益、Suzuki実績は情報源により営業利益に約3%の差異（602.9 vs 604.6十億円、大きい方を採用）。VW時価総額は普通株(VOW)/優先株(VOW3)二種類の合算方法が情報源で一致せず、37-38EURbnの中間値37,780EURmnを近似値として採用。 |
+| `1433_comps.csv` | 2026-09-02 終値ベース（Market_Cap）、財務は各社直近本決算実績 | 全社日本企業のためFX換算不要。EBITDA = 営業利益 + D&A（yfinance Depreciation And Amortization、無形・のれん償却込み）で全社統一。自社行も同定義（741.1 + 減価償却29.4 + のれん償却45.5 = 816.0）。Net_Debt = Total Debt − 現金及び現金同等物 + 非支配株主持分で統一、Book_Value は Stockholders Equity（非支配株主持分を除く）。ピア5社（6379/1968/1945/1966/1716）は 2026-09-02 の終値を取得でき上場廃止・TOB進行中の社は無い。**1716 第一カッター興業のみ財務が FY2025/6**（yfinance が FY2026/6 実績を未反映、約14ヶ月古い）— 時価総額だけ最新のため倍率が『新しい株価 ÷ 古い利益』になっている点に注意。**604A ビーエイブル（2026-07-29上場、廃炉・原子力プラント工事）はCSVに含めていない**: プロンプトは『残置＋統計除外（東邦方式）』を指定したが、現行テンプレで peer を統計から外せる経路は（a）株価鮮度チェック（45日超・取得不能）と（b）D&A欠損（EBITDA空欄）のみで、株価も D&A も正常に取れる live 銘柄には適用できないため、統計汚染を避けてCSVから外し数値は Adjustments Log と Reverse DCF Block E 注記に記録した（同社 2026-09-02 実勢: 時価総額11,225 / PER 23.6x / EV/EBITDA 13.6x）。**改善候補**: CSV に任意列 `Exclude_From_Stats` / `Exclude_Reason` を設け comps_fetcher.py が `comp['exclude_from_stats']` にセットすれば既存の stale 経路（全統計から除外＋行は残置＋Note）を live 銘柄にも再利用できる（列が無ければ現行と同一挙動）。 |
 
 ## market_analysis ランナー設定の補足
 

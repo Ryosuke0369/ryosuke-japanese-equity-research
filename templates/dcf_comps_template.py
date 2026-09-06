@@ -1830,12 +1830,52 @@ def generate_dcf_workbook(config, output_path=None):
     R_CMP_SUBJECT = (5 + subject_idx) if subject_idx is not None else None
 
     # ── Normalize WACC inputs ──
-    # Beta: clamp to [0.6, 1.75]; outside range → sector-standard 1.0
-    # Upper bound is 1.75 (not 1.5) to admit high-beta growth names (e.g. ELEMENTS
-    # 5246 at 1.6) without collapsing them to 1.0.
-    raw_beta = C.get("beta", 1.0)
-    if not raw_beta or raw_beta < 0.6 or raw_beta > 1.75:
-        C["beta"] = 1.0
+    # Beta (フェーズ2 #6). Two changes from the [0.6, 1.75]-or-1.0 rule:
+    #
+    # 1. The Blume adjustment is the default: beta_adj = 0.67*raw + 0.33*1.0.
+    #    Regression betas mean-revert, and the 2026-09-05 batch demonstrated the
+    #    distortion at both tails — 57 of 85 tickers (67%) pinned to the 0.60
+    #    floor, while 太陽誘電's raw 1.561 carried WACC to 13.35%. Shrinking
+    #    toward the market beta is the standard treatment for exactly this.
+    # 2. The clamp widens to [0.3, 2.0] and NEVER replaces silently. The old
+    #    rule mapped anything outside the band to 1.0 without a word, so a
+    #    genuinely low-beta Japanese defensive was handed the market's beta and
+    #    2-4 points of excess WACC with nothing on the record.
+    #
+    # After the Blume shrink a raw beta has to fall outside roughly [-0.05, 2.49]
+    # to reach the clamp at all, so the clamp is now the rare guard it should be
+    # rather than the everyday path.
+    #
+    # The input C["beta"] is the RAW (regression) beta wherever it comes from —
+    # yfinance or an explicit override — so both go through the same treatment.
+    # See docs/overrides_schema.md.
+    BLUME_W, BLUME_TARGET = 0.67, 1.0
+    BETA_FLOOR, BETA_CEIL = 0.3, 2.0
+    _beta_raw = C.get("beta")
+    if not isinstance(_beta_raw, (int, float)) or isinstance(_beta_raw, bool):
+        _beta_raw = None
+    if _beta_raw is None:
+        _beta_blume = BLUME_TARGET
+        _beta_basis = "no raw beta available - market beta 1.00 used"
+        print(f"  WARNING: no raw beta for this ticker; using the market beta "
+              f"{BLUME_TARGET:.2f}. Measure it and set \"beta\" in overrides.")
+    else:
+        _beta_blume = round(BLUME_W * _beta_raw + (1 - BLUME_W) * BLUME_TARGET, 4)
+        _beta_basis = (f"Blume: {BLUME_W} x {_beta_raw:.3f} + "
+                       f"{1 - BLUME_W:.2f} x {BLUME_TARGET:.2f} = {_beta_blume:.3f}")
+    _beta_adopted = min(max(_beta_blume, BETA_FLOOR), BETA_CEIL)
+    if _beta_adopted != _beta_blume:
+        _beta_basis += (f"; CLAMPED to [{BETA_FLOOR}, {BETA_CEIL}] -> {_beta_adopted:.3f}")
+        print(f"  WARNING: Blume-adjusted beta {_beta_blume:.3f} is outside "
+              f"[{BETA_FLOOR}, {BETA_CEIL}] - clamped to {_beta_adopted:.3f}. "
+              f"Raw beta was {_beta_raw}. This is a substitution, not a "
+              f"measurement: confirm the regression before relying on the WACC.")
+    C["beta"] = _beta_adopted
+    _beta_record = {"raw": _beta_raw, "blume": _beta_blume,
+                    "adopted": _beta_adopted, "basis": _beta_basis,
+                    "clamped": _beta_adopted != _beta_blume}
+    print(f"  Beta: raw {'n/a' if _beta_raw is None else f'{_beta_raw:.3f}'} "
+          f"-> adjusted {_beta_blume:.3f} -> adopted {_beta_adopted:.3f}")
     # Size Premium: auto-determine from market cap (JPY mn) unless explicitly overridden
     if "size_premium" not in C.get("_override_keys", set()):
         try:
@@ -1893,6 +1933,11 @@ def generate_dcf_workbook(config, output_path=None):
             print("  WARNING: interest_expense supplied but no usable debt "
                   "balances (set debt_beginning / debt_ending, or give at least "
                   "two hist_debt years) - falling back to cost_of_debt_at.")
+    _meta["beta_raw"] = _beta_record["raw"] if _beta_record["raw"] is not None else "n/a"
+    _meta["beta_blume_adjusted"] = _beta_record["blume"]
+    _meta["beta_adopted_c8"] = _beta_record["adopted"]
+    _meta["beta_basis"] = _beta_record["basis"]
+    _meta["beta_clamped"] = "yes" if _beta_record["clamped"] else "no"
     _meta["cost_of_debt_basis"] = "actual" if _cod_actual else "assumption"
     if _cod_actual:
         _meta["cost_of_debt_actual"] = (
@@ -4136,6 +4181,26 @@ def generate_dcf_workbook(config, output_path=None):
              if _cod_default_at is not None else "テンプレ既定"),
             "確定(実績)",
         ))
+    # Beta is always a derivation now (Blume shrink, and sometimes a clamp), so
+    # the raw / adjusted / adopted triple belongs on the record every time.
+    _br = _beta_record
+    _auto_log.append((
+        "DCF Model!C8",
+        f"Beta = {_br['adopted']:.3f}（採用値）",
+        (f"実測β(raw) = {_br['raw']:.3f} → Blume調整 0.67×raw + 0.33×1.00 = "
+         f"{_br['blume']:.3f} → 採用 {_br['adopted']:.3f}。"
+         if _br["raw"] is not None else
+         f"実測βを取得できず、市場β {_br['blume']:.2f} を採用。"
+         f"回帰を実測して overrides の beta に入れること。")
+        + (f"【クランプ発動】Blume調整後が [0.3, 2.0] の外だったため置換した。"
+           f"これは測定値ではなく代替値であり、WACC を根拠にする前に回帰を確認すること。"
+           if _br["clamped"] else
+           "クランプ域 [0.3, 2.0] の内側。置換なし。")
+        + "回帰βは平均回帰するため Blume 調整を既定とする（2026-09-05 バッチで"
+          "85件中57件が旧下限 0.60 に張り付き、両裾の歪みが実証された）。",
+        (f"実測 {_br['raw']:.3f}" if _br["raw"] is not None else "実測なし"),
+        "クランプ発動・要確認" if _br["clamped"] else "確定",
+    ))
     if _fx_rows:
         _auto_log.append((
             f"Sensitivity!C{_fx_rows['rate']}:C{_fx_rows['rate'] + 2}",
