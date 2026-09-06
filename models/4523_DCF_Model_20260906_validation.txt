@@ -14,7 +14,7 @@ validate_output.py — 4523_DCF_Model_20260906.xlsx
 [WARN] 11. PGM-implied vs assumed exit multiple   PGM implies 3.78x vs assumed 10.40x (2.75x apart) — the two DCF legs disagree on terminal value
 [PASS] 12. Peer EBITDA != EBIT                    no peer row where EBITDA equals operating income
 [PASS] 13. Adjustments Log sheet present          
-[PASS] 14. Target Price averages DCF legs only    C10 averages C16:C17 (PGM + Exit); comps rows excluded
+[PASS] 14. Target Price averages DCF legs only    C10 averages C16:C17 (PGM + Exit); comps rows [18, 19] excluded
 [PASS] 15. Exit implied price sanity              EV 831,621 >= net debt -59,342 mn
 [PASS] 16. Reverse DCF sheet present              121 live formulas, sheet position 4
 [PASS] 17. Cost of debt basis                     1.0000% after-tax (assumption; supply interest_expense + debt balances to derive the actual rate)
@@ -23,6 +23,9 @@ validate_output.py — 4523_DCF_Model_20260906.xlsx
 [PASS] 20. Comps reference prices in a sane band  EV/EBITDA=3,285 ok; PER=2,272 ok
 [PASS] 21. Market data is not a placeholder       price 4,694 x 282,236,007 shares = 1,324,816 JPY mn [source: yfinance; from overrides: beta]
 [PASS] 22. 追補6 §X arbitration applied             降格不要: 収斂 / 裁定不要（倍率乖離・株価乖離とも ≤ 3.0倍） (乖離 2.75x)
+[PASS] 23. Disclosure vintage recorded            no disclosure metadata (pre-追補13 model or overrides-only build)
+[PASS] 24. 型D DDM/RI model                        対象外（company_type=未宣言）
+[PASS] 25. Beta clamp not silently applied        クランプなし（採用 0.8669）。Blume: 0.67 x 0.801 + 0.33 x 1.00 = 0.867
 ==============================================================================
-FAIL 0 / WARN 1 / SKIP 0 / PASS 22
+FAIL 0 / WARN 1 / SKIP 0 / PASS 25
 VERDICT: PASS

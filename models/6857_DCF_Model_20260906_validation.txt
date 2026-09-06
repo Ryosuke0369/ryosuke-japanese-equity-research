@@ -25,6 +25,7 @@ validate_output.py — 6857_DCF_Model_20260906.xlsx
 [PASS] 22. 追補6 §X arbitration applied             適用済 追補6 §X: EXIT 脚を降格 (乖離 6.08x, 成長プレミアム(§Q))
 [PASS] 23. Disclosure vintage recorded            no disclosure metadata (pre-追補13 model or overrides-only build)
 [PASS] 24. 型D DDM/RI model                        対象外（company_type=未宣言）
+[PASS] 25. Beta clamp not silently applied        クランプなし（採用 1.5201）。Blume: 0.67 x 1.776 + 0.33 x 1.00 = 1.520
 ==============================================================================
-FAIL 0 / WARN 2 / SKIP 0 / PASS 23
+FAIL 0 / WARN 2 / SKIP 0 / PASS 24
 VERDICT: PASS
