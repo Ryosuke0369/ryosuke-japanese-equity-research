@@ -1,0 +1,306 @@
+{
+ "risk_free": 0.0297,
+ "erp": 0.065,
+ "size_premium": 0.01,
+ "tax_rate": 0.25,
+ "terminal_growth": 0.01,
+ "primary_multiple": "EV/EBITDA",
+ "nwc_method": "days",
+ "current_price": 4828.0,
+ "shares_outstanding": 1326344017,
+ "hist_years": [
+  "FY2023",
+  "FY2024",
+  "FY2025",
+  "FY2026"
+ ],
+ "hist_revenue": [
+  3313018.0,
+  3477262.0,
+  3423431.0,
+  3582733.0
+ ],
+ "hist_operating_income": [
+  170447.0,
+  188012.0,
+  256497.0,
+  359913.0
+ ],
+ "hist_net_income": [
+  114500.0,
+  149521.0,
+  175183.0,
+  270228.0
+ ],
+ "hist_cogs": [
+  2354770.0,
+  2471404.0,
+  2362875.0,
+  2401437.0
+ ],
+ "hist_sga": [
+  787801.0,
+  817846.0,
+  804059.0,
+  821383.0
+ ],
+ "base_year_revenue": 3582733.0,
+ "base_year_cogs": 2401437.0,
+ "base_year_ar": 994066.0,
+ "base_year_inv": 171181.0,
+ "base_year_ap": 476503.0,
+ "book_value": 2196578.0,
+ "core_ebitda": 514415.0,
+ "net_debt": -169819,
+ "_note": "バッチ生成 2026-09-05。型A。DRAFT（part1）。根拠は batch/per_ticker/6701_summary.md。 ■**追補8 §AE の rework wave により Base を再設計（第8セッション）**。",
+ "_prescreen_note": "追補1 §B / 追補2 §B のプレスクリーン実施済み。金融事業専用科目の検出なし → 型判定へ。",
+ "_wacc_note": "rf=2.97%。ERP6.5%固定。size_premium=1.0%（時価総額6.40兆円）。beta: yfinance実測 0.345 はクランプ域の下限を下回り無言で 1.0 に置換されるため、追補1 §A に従い下限 0.60 を明示指定（**実測値ではなくテンプレが受け付ける最小値**）。ネットキャッシュ（net_debt −169,819）のため de_ratio = 0 → WACC = Ke = 7.87%。",
+ "_exit_note": "exit_multiple = Peer 5社の実測EV/EBITDA中央値 15.55x（6702 富士通 / 4307 野村総合研究所 / 6503 三菱電機 / 6752 パナソニックHD / 6501 日立）。自社の現在倍率 12.12x は算式に入れていない。■時価総額バンド（1.92〜19.2兆円）から 6501(24.1兆) が外れるが総合電機としての比較可能性で採用した。",
+ "_capex_note": "capex_method / da_method とも revenue_pct（capex 4.51% / D&A 4.30%）。■**留保**: 実績 capex は売上比 2.3-4.4%（直近 2.6%）で、D&A（4.3-5.5%）を下回る。ターミナル収束要件（capex/D&A 0.90-1.15）を満たすため capex_pct を 4.51% と直近実績の1.7倍に置いており、**近い将来の FCF はその分保守的に（低く）出る**。無形資産償却の剥落を織り込むなら 4502 武田と同様に da_direct で D&A を逓減させる設計もあり得る（人間の判断を要する）。",
+ "_scenario_note": "【追補8 §AE の rework wave（第8セッション）】追補7 §Y の単調性判定と、追補8 §AE-2 が確定した方向別の定義に従って **Base を再設計**した。■実績OPM: 0.05% → 0.05% → 0.07% → 0.10%。**判定: 単調増加**。■**適用ルール: 単調増加 → 直近水準の維持** により Base 到達OPM = **10.05%**（旧: 9.09%、差 +0.96pt）。■**平均回帰（§4-4 の中央値収束）は使わない**: トレンドに平均回帰を当てるのは統計的な誤りであり、その理由は符号で変わらない（追補8 §AE-2）。**単調増加では『さらなる上積みの外挿はしない』という保守側のガード**を置き、直近水準の維持とした。■Upside / Downside 1 / Downside 2 は本 rework の対象外で、従前の設計を維持している。■COGS% は据え置き、SGA% = 100% − COGS% − 目標OPM で逆算した。",
+ "ticker": "6701",
+ "company_name": "NEC",
+ "exchange": "TSE Prime",
+ "sector": "電気機器",
+ "fiscal_year_end_month": 3,
+ "beta": 0.8659,
+ "exit_multiple": 15.6,
+ "capex_method": "revenue_pct",
+ "capex_pct": 0.0451,
+ "da_method": "revenue_pct",
+ "da_pct": 0.043,
+ "scenarios": {
+  "Base": {
+   "revenue_growth": [
+    0.04,
+    0.035,
+    0.03,
+    0.03,
+    0.025
+   ],
+   "cogs_pct": [
+    0.67,
+    0.67,
+    0.67,
+    0.67,
+    0.67
+   ],
+   "sga_pct": [
+    0.229542,
+    0.229542,
+    0.229542,
+    0.229542,
+    0.229542
+   ],
+   "dso_days": [
+    93,
+    93,
+    93,
+    93,
+    93
+   ],
+   "dih_days": [
+    26,
+    26,
+    26,
+    26,
+    26
+   ],
+   "dpo_days": [
+    76,
+    76,
+    76,
+    76,
+    76
+   ]
+  },
+  "Upside": {
+   "revenue_growth": [
+    0.055,
+    0.05,
+    0.045,
+    0.04,
+    0.035
+   ],
+   "cogs_pct": [
+    0.664,
+    0.664,
+    0.664,
+    0.664,
+    0.664
+   ],
+   "sga_pct": [
+    0.233,
+    0.231,
+    0.229,
+    0.227,
+    0.2255
+   ],
+   "dso_days": [
+    89,
+    89,
+    89,
+    89,
+    89
+   ],
+   "dih_days": [
+    25,
+    25,
+    25,
+    25,
+    25
+   ],
+   "dpo_days": [
+    79,
+    79,
+    79,
+    79,
+    79
+   ]
+  },
+  "Management": {
+   "revenue_growth": [
+    0.04,
+    0.035,
+    0.03,
+    0.03,
+    0.025
+   ],
+   "cogs_pct": [
+    0.67,
+    0.67,
+    0.67,
+    0.67,
+    0.67
+   ],
+   "sga_pct": [
+    0.229542,
+    0.229542,
+    0.229542,
+    0.229542,
+    0.229542
+   ],
+   "dso_days": [
+    93,
+    93,
+    93,
+    93,
+    93
+   ],
+   "dih_days": [
+    26,
+    26,
+    26,
+    26,
+    26
+   ],
+   "dpo_days": [
+    76,
+    76,
+    76,
+    76,
+    76
+   ]
+  },
+  "Downside 1": {
+   "revenue_growth": [
+    0.005,
+    0.005,
+    0.005,
+    0.005,
+    0.005
+   ],
+   "cogs_pct": [
+    0.68,
+    0.68,
+    0.68,
+    0.68,
+    0.68
+   ],
+   "sga_pct": [
+    0.235,
+    0.247,
+    0.257,
+    0.264,
+    0.2666
+   ],
+   "dso_days": [
+    98,
+    98,
+    98,
+    98,
+    98
+   ],
+   "dih_days": [
+    27,
+    27,
+    27,
+    27,
+    27
+   ],
+   "dpo_days": [
+    72,
+    72,
+    72,
+    72,
+    72
+   ]
+  },
+  "Downside 2": {
+   "revenue_growth": [
+    -0.08,
+    -0.01,
+    0.005,
+    0.01,
+    0.015
+   ],
+   "cogs_pct": [
+    0.69,
+    0.69,
+    0.69,
+    0.69,
+    0.69
+   ],
+   "sga_pct": [
+    0.255,
+    0.26,
+    0.26,
+    0.258,
+    0.255
+   ],
+   "dso_days": [
+    102,
+    102,
+    102,
+    102,
+    102
+   ],
+   "dih_days": [
+    29,
+    29,
+    29,
+    29,
+    29
+   ],
+   "dpo_days": [
+    68,
+    68,
+    68,
+    68,
+    68
+   ]
+  }
+ },
+ "investment_thesis": [
+  "NEC has doubled its operating margin over four years by pruning hardware and leaning on domestic IT services and network software; the shares trade at {per} earnings and {pb} book.",
+  "The balance sheet is net cash and the asset base is light — inventory days are the lowest in this batch at 26 — so the {wacc} discount rate applies to a business that converts profit to cash quickly.",
+  "At {price} the shares are valued below the diversified-electronics and IT-services peer median on EV/EBITDA; a base case that holds most of the margin gain supports {target_price}, or {upside_pct} from here."
+ ],
+ "key_risks": [
+  "The margin has risen for four straight years off a low base, and the base case assumes it gives back less than a point; a return toward the 6.45% median would remove much of {target_price}.",
+  "Revenue growth has averaged under three percent, so the equity story is a margin story — and margin stories end.",
+  "Capital expenditure in this model is set at roughly 1.7 times the recent actual level in order to converge on depreciation in the terminal year, so near-term free cash flow behind {per} is understated by construction."
+ ],
+ "_edinet_note": "【追補2 §F-2 / 追補3 §L の予防的補完（生成前適用・必須）】根本原因は scripts/generate_dcf.py:66 の _val(data_dict, key, default=0) が欠損値を None ではなく 0 に落とすこと。hist_years を直近4期に置換し hist_revenue / hist_operating_income / hist_net_income / hist_cogs / hist_sga を yfinance連結財務諸表から供給（配列長は全て4で hist_years と一致、契約遵守）。CF/BS 5系列は供給せず Step 4.6 の年度キー再マッピングに委ねる。hist_sga = 売上 − COGS − 営業利益 で逆算。**追補3 §L に従い current_price / shares_outstanding も予防的に明示指定**。**net_debt も明示指定**（EDINET の有利子負債抽出が 0 に落ちる既知パターンの予防）。**追補2 §G に従い core_ebitda も明示指定**（Peer と同一定義に統一）。",
+ "_beta_note": "実測（raw）β = 0.8659。出所: TOPIX 2y 1wk OLS (n=104, corr=0.347)。フェーズ2 #6 以降 overrides の beta は raw を入れる契約で、テンプレが Blume 調整 0.67×raw + 0.33×1.00 を掛け [0.3, 2.0] にクランプする（採用 0.9102、クランプ非発動）。■旧 overrides の値 0.6 は旧ルール [0.6, 1.75] のクランプ後の値であり raw ではない。■yfinance の beta フィールドは 0.345。日本株では市場を説明しないベンチマークで算出されており（NTT −0.165 / 大阪ガス −0.201 等）、採用しない。詳細は docs/phase2_pipeline_fixes_20260906.md の §2-4。"
+}

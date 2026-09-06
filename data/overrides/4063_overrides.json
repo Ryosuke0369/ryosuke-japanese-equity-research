@@ -1,0 +1,267 @@
+{
+ "_note": "バッチ生成 2026-09-05。型A(通常の事業会社)。全前提は batch/triage_report.md と batch/per_ticker/4063_summary.md に根拠を記録。DRAFT。 ■**追補8 §AE の rework wave により Base を再設計（第8セッション）**。",
+ "_wacc_note": "rf=2.966%(財務省 jgbcm.csv 10年 R8.9.3=2026-09-03)を0.0297に丸め。ERP6.5%固定。size_premium は時価総額10.5兆円->1.0%バンド。beta=yfinance実測1.062(テンプレのクランプ域[0.6,1.75]内のため素通し)。ネットキャッシュのため de_ratio=0 -> WACC=Ke、負債コストはWACCに影響しないので interest_expense は指定しない。",
+ "_capex_note": "capex_method=direct。実績capex/売上13.8%(FY2026)から5年かけて逓減させ、ターミナル年のcapexをD&Aに収束させる。capex_pct(0.100)はdirect方式のフォールバック値であり、ターミナル比率と整合するようD&A比率+5%に置いた(Y5 293,000 / D&A 279,366 = 1.05x、規定レンジ0.90-1.15内)。da_pct=9.5%は直近実績(9.44%)基準、4年平均8.93%より高いのは増設投資の稼働開始を反映。",
+ "_exit_note": "exit_multiple = Peer 5社の実測 EV/EBITDA 中央値 9.22x をそのまま採用(3407 6.54 / 4188 10.03 / 4183 8.70 / 4091 9.63 / 4901 9.22)。バッチ共通の導出式で、自社の現在株価・現在倍率(10.35x)は算式に入れていないため市場価格への循環参照にならない。■当初は Peer中央値にマージン優位分を上乗せする調整式を試したが、EV/EBITDA は既に資本集約度を織り込んでおり営業利益率による上方調整は資本集約型銘柄で逆方向に働く(9022 JR東海: OPM 41%だが実測 EV/EBITDA 7.4x に対し調整式は 16.3x を返した)ため、恒久的に採用しないことにした。全銘柄で素の Peer 中央値を用いる。",
+ "_scenario_note": "【追補8 §AE の rework wave（第8セッション）】追補7 §Y の単調性判定と、追補8 §AE-2 が確定した方向別の定義に従って **Base を再設計**した。■実績OPM: 0.36% → 0.29% → 0.29% → 0.25%。**判定: 単調減少**。■**適用ルール: 単調減少 → (直近 + 中央値)/2（2267先例）** により Base 到達OPM = **26.84%**（旧: 29.00%、差 -2.16pt）。■**平均回帰（§4-4 の中央値収束）は使わない**: トレンドに平均回帰を当てるのは統計的な誤りであり、その理由は符号で変わらない（追補8 §AE-2）。**4063 は単調減少でありながら特則が適用されていなかった適用漏れ**であり、追補8 §AE-1 により是正した。■Upside / Downside 1 / Downside 2 は本 rework の対象外で、従前の設計を維持している。■COGS% は据え置き、SGA% = 100% − COGS% − 目標OPM で逆算した。",
+ "ticker": "4063",
+ "company_name": "信越化学工業",
+ "exchange": "TSE Prime",
+ "sector": "化学",
+ "fiscal_year_end_month": 3,
+ "risk_free": 0.0297,
+ "erp": 0.065,
+ "size_premium": 0.01,
+ "tax_rate": 0.25,
+ "beta": 1.0436,
+ "terminal_growth": 0.01,
+ "exit_multiple": 9.2,
+ "primary_multiple": "EV/EBITDA",
+ "capex_method": "direct",
+ "capex_pct": 0.1,
+ "da_method": "revenue_pct",
+ "da_pct": 0.095,
+ "capex_direct": {
+  "projections": [
+   340000,
+   325000,
+   313000,
+   302000,
+   293000
+  ]
+ },
+ "nwc_method": "days",
+ "scenarios": {
+  "Base": {
+   "revenue_growth": [
+    0.025,
+    0.03,
+    0.03,
+    0.025,
+    0.025
+   ],
+   "cogs_pct": [
+    0.65,
+    0.64,
+    0.63,
+    0.62,
+    0.615
+   ],
+   "sga_pct": [
+    0.098896,
+    0.104572,
+    0.110248,
+    0.115925,
+    0.116601
+   ],
+   "dso_days": [
+    71,
+    71,
+    71,
+    71,
+    71
+   ],
+   "dih_days": [
+    170,
+    170,
+    170,
+    170,
+    170
+   ],
+   "dpo_days": [
+    41,
+    41,
+    41,
+    41,
+    41
+   ]
+  },
+  "Upside": {
+   "revenue_growth": [
+    0.04,
+    0.045,
+    0.045,
+    0.04,
+    0.04
+   ],
+   "cogs_pct": [
+    0.642,
+    0.622,
+    0.607,
+    0.6,
+    0.6
+   ],
+   "sga_pct": [
+    0.093,
+    0.093,
+    0.093,
+    0.093,
+    0.093
+   ],
+   "dso_days": [
+    68,
+    68,
+    68,
+    68,
+    68
+   ],
+   "dih_days": [
+    160,
+    158,
+    155,
+    155,
+    155
+   ],
+   "dpo_days": [
+    43,
+    43,
+    43,
+    43,
+    43
+   ]
+  },
+  "Management": {
+   "revenue_growth": [
+    0.025,
+    0.03,
+    0.03,
+    0.025,
+    0.025
+   ],
+   "cogs_pct": [
+    0.65,
+    0.64,
+    0.63,
+    0.62,
+    0.615
+   ],
+   "sga_pct": [
+    0.098896,
+    0.104572,
+    0.110248,
+    0.115925,
+    0.116601
+   ],
+   "dso_days": [
+    71,
+    71,
+    71,
+    71,
+    71
+   ],
+   "dih_days": [
+    170,
+    170,
+    170,
+    170,
+    170
+   ],
+   "dpo_days": [
+    41,
+    41,
+    41,
+    41,
+    41
+   ]
+  },
+  "Downside 1": {
+   "revenue_growth": [
+    0.0,
+    0.0,
+    0.005,
+    0.005,
+    0.005
+   ],
+   "cogs_pct": [
+    0.657,
+    0.662,
+    0.667,
+    0.667,
+    0.667
+   ],
+   "sga_pct": [
+    0.098,
+    0.098,
+    0.098,
+    0.098,
+    0.098
+   ],
+   "dso_days": [
+    75,
+    75,
+    75,
+    75,
+    75
+   ],
+   "dih_days": [
+    180,
+    182,
+    185,
+    185,
+    185
+   ],
+   "dpo_days": [
+    39,
+    39,
+    39,
+    39,
+    39
+   ]
+  },
+  "Downside 2": {
+   "revenue_growth": [
+    -0.12,
+    -0.03,
+    0.0,
+    0.01,
+    0.015
+   ],
+   "cogs_pct": [
+    0.74,
+    0.75,
+    0.74,
+    0.73,
+    0.72
+   ],
+   "sga_pct": [
+    0.11,
+    0.11,
+    0.11,
+    0.11,
+    0.11
+   ],
+   "dso_days": [
+    78,
+    78,
+    78,
+    78,
+    78
+   ],
+   "dih_days": [
+    200,
+    205,
+    200,
+    195,
+    190
+   ],
+   "dpo_days": [
+    36,
+    36,
+    36,
+    36,
+    36
+   ]
+  }
+ },
+ "investment_thesis": [
+  "Semiconductor-grade silicon, silicones and PVC give Shin-Etsu a structurally higher operating margin than the Japanese chemical peer group; the shares change hands at {per} earnings and {pb} book against a {wacc} cost of capital.",
+  "The balance sheet carries net cash rather than net debt, so enterprise value is funded entirely by equity and the discount rate is the cost of equity with no leverage benefit assumed.",
+  "At {price} the market is capitalising the current trough operating margin as permanent; normalising toward the five-year median margin supports {target_price}, or {upside_pct} from the current level."
+ ],
+ "key_risks": [
+  "PVC and silicones are commodity-linked, and a further leg down in Chinese construction demand would take margins below the level implied by today's {price} and {per}.",
+  "Semiconductor wafer demand is cyclical: the projected margin recovery assumes a memory and logic capex upturn that customer order books have not yet confirmed.",
+  "Yen appreciation compresses translated overseas earnings, and the {wacc} discount rate carries no explicit FX sensitivity in this model."
+ ],
+ "_beta_note": "実測（raw）β = 1.0436。出所: TOPIX 2y 1wk OLS (n=104, corr=0.513)。フェーズ2 #6 以降 overrides の beta は raw を入れる契約で、テンプレが Blume 調整 0.67×raw + 0.33×1.00 を掛け [0.3, 2.0] にクランプする（採用 1.0292、クランプ非発動）。■旧 overrides の値 1.06 は旧ルール [0.6, 1.75] のクランプ後の値であり raw ではない。■yfinance の beta フィールドは 1.062。日本株では市場を説明しないベンチマークで算出されており（NTT −0.165 / 大阪ガス −0.201 等）、採用しない。詳細は docs/phase2_pipeline_fixes_20260906.md の §2-4。"
+}

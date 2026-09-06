@@ -1,0 +1,140 @@
+{
+  "_README": "日東紡績 (3110) overrides — 型A + セグメント重要(Segment Bridge を別スクリプトで追加)、3月期決算、百万円表記。電子材料(AIサーバー向け低誘電ガラスクロス)がセグメント利益の84%を占め、連結営業利益率は 9.0%(FY24/3) → 15.1% → 17.6% → Q1 23.3% と急拡大中のブーム局面。プロンプト(2026-08-21)の指定値を docs/overrides_schema.md の契約キー名に正規化。キー読み替え: risk_free_rate→risk_free / equity_risk_premium→erp / cost_of_debt(税前)→cost_of_debt_at(税引後) / hist_op→hist_operating_income / hist_da→hist_depreciation。minority_interest は契約に存在しないキーのため net_debt に織り込み(下記 _net_debt_note)。",
+
+  "ticker": "3110",
+  "company_name": "Nitto Boseki",
+  "exchange": "TSE Prime",
+  "sector": "Glass Fibre / Electronic Materials",
+  "fiscal_year_end_month": 3,
+
+  "current_price": 3065,
+  "_price_note": "3,065円 = 2026-08-21終値(プロンプト指定。yfinance の currentPrice / regularMarketPrice と完全一致)。2026-06-29 実施の1:5株式分割後の株価。",
+
+  "shares_outstanding": 182886560,
+  "shares": { "fully_diluted_shares": 182886560 },
+  "_shares_note": "188,615,060株(プロンプト指定の発行済株式総数、分割後) − 期末自己株式 5,728,500株 = 182,886,560株。根拠: 有価証券報告書 第178期(docID S100YDBM, 2026-03-31期)の議決権等の状況より 発行済株式総数 37,723,012株 / 自己株式 1,145,700株(いずれも分割前)。2026-06-29 に1:5株式分割(yfinance splits で実施日・比率を確認)が行われており、分割後は 37,723,012 x 5 = 188,615,060(プロンプト値と完全一致)、自己株式 1,145,700 x 5 = 5,728,500。自己株式は発行済の3.04%と無視できない規模のため控除した(BS 自己株式 △3,047百万円、プロンプト記載の3,051とほぼ一致)。参考: yfinance の sharesOutstanding は 182,025,600 で、本値との差 860,960株(0.47%)は2026/3期末以降の自己株式取得と推定。時価総額 = 3,065 x 182,886,560 = 560,547百万円(プロンプト記載の578,105は自己株控除前の株数ベース)。",
+
+  "net_debt": 10478,
+  "_net_debt_note": "10,478 = 純有利子負債 3,792 + 非支配株主持分 6,686。純有利子負債の内訳(2026/6末 = Q1末): 短期借入3,240 + 1年内返済長期借入7,744 + リース債務(流動)336 + 社債10,000 + 長期借入27,021 + リース債務(固定)927 = 有利子負債49,268 − 現金及び預金45,476 = 3,792。Q1で現金が16.5bn減少(法人税納付13,117 + 配当)しているため、期末値(2026/3末 net cash △12,603)ではなくQ1末を採用。非支配株主持分6,686(2026/6末)は overrides契約に minority_interest キーが存在しないため net_debt に織り込んだ(手順書§2 型E の「MIをnet_debtに織込み」と同じ扱い)。これにより Equity Value = EV − net_debt − MI が正しく計算され、Executive Summary の PGM INVALID 判定も EV < net_debt + MI で判定される。参考: 2026/3末の非支配株主持分は 6,787(有報 jppfs_cor:NonControllingInterests)。",
+
+  "tax_rate": 0.28,
+  "_tax_note": "実効税率 28%。実績は FY2025/3 24.9% / FY2026/3 27.8%。FY2026/3 は固定資産売却益34,165を含むため税率が押し上げられている。",
+
+  "risk_free": 0.016,
+  "_risk_free_note": "yfinanceでの10年JGB利回り取得を試行したが失敗(JP10Y-JGB / ^JP10YB / JGB10Y.TO / ^JPNTNX / JP10YT=RR いずれも 404 または no data)。プロンプト指定のフォールバック 1.6% を使用。",
+  "erp": 0.055,
+  "beta": 1.75,
+  "_beta_note": "yfinanceで3110.Tの週次2年リターン(2026-08-21まで104週)をTOPIX連動ETF 1306.Tに対して回帰: beta = 1.768(相関0.395)。プロンプトの許容レンジ[0.7, 2.0]内のためフォールバック1.1ではなく実測値を採用。ただし dcf_comps_template.py の正規化は `if raw_beta < 0.6 or raw_beta > 1.75: beta = 1.0` であり、クランプではなく範囲外なら1.0に置換されるため、実測値1.768をそのまま投入すると無言で1.0(Ke が4.2pp低下)になる。これを避けるためテンプレの上限 1.75 を投入した(実測との差0.018、Ke への影響は0.1pp)。参考: ^N225基準では1.587、yfinance info.beta は None(取得不可)。",
+  "size_premium": 0.010,
+  "_size_premium_note": "時価総額5,608億円の中型。プロンプト指定の1.0%を明示指定(明示指定しないとテンプレが時価総額から自動決定する経路に入る)。",
+  "cost_of_debt_at": 0.0108,
+  "_cost_of_debt_note": "税引前 1.5% x (1 - 0.28) = 1.08%(テンプレのWACC式は cost_of_debt_at に(1-t)を掛けないため税引後で投入)。税引前1.5%の根拠: FY2026/3 支払利息798 ÷ 平均有利子負債51,715 = 1.5%。",
+  "_de_ratio_note": "de_ratio は指定せず自動計算に委ねる。generate_dcf.py は net_debt ÷ 時価総額 で算出するため 10,478 / 560,547 ≒ 0.019 となり、プロンプトの期待レンジ 0.07〜0.10 を下回る見込み。プロンプトの期待値は有利子負債総額49,268 ÷ 時価総額578,105 ≒ 0.085 とみられ、定義(net_debt vs 有利子負債総額)と株数(自己株控除の有無)の двух点で異なる。最終レポートで報告する。",
+
+  "terminal_growth": 0.010,
+  "exit_multiple": 9.0,
+  "primary_multiple": "EV/EBITDA",
+  "_exit_note": "Exit倍率9.0倍で固定。ブーム局面のピーク利益 x 高倍率という二重計上を避けるための保守値。Base/Management の Y5 営業利益率もピーク(Y2)より低く設定している。",
+
+  "capex_method": "revenue_pct",
+  "da_method": "revenue_pct",
+  "capex_pct": 0.085,
+  "da_pct": 0.083,
+  "_capex_note": "スキーマ上 capex_pct / da_pct は数値スカラーのみ(overrides_validator の ALLOWED_KEYS で _NUM 指定)で配列は契約違反となるため、プロンプトの Y1→Y5 テーパー(capex [0.15,0.13,0.10,0.085,0.080] / D&A [0.078,0.080,0.083,0.083,0.082])は表現できない。プロンプト指定の単一値フォールバック 0.085 / 0.083 を採用した。terminal capex/D&A = 0.085/0.083 = 1.02倍で、プロンプト要求の 0.95〜1.05 および validator の [0.90, 1.15] の双方を満たす。【未解決事項】単一値化により Y1〜Y2 の実capex水準(FY2026/3 実績は売上比17.4%、建設仮勘定12,067の増産投資期)を大幅に過小評価しており、初期2年のFCFが過大に出る。Adjustments Log にも記載。capex_method=direct による年次配列も検討したが、絶対額指定はシナリオ別の売上規模に連動せずDownside 2とUpsideが同額capexとなり5シナリオの分散を歪めるため不採用。Y3以降は維持投資水準へ収束する想定。",
+
+  "nwc_method": "days",
+  "base_year_ar": 35967,
+  "base_year_inv": 59076,
+  "base_year_ap": 8015,
+  "_nwc_note": "FY2026/3末(基準年)BS: AR = 受取手形5,787 + 売掛金30,180 = 35,967 / INV = 製品16,011 + 仕掛8,671 + 原材料34,394 = 59,076 / AP = 8,015。いずれもEDINET実データと完全一致。基準年日数は DSO 111.0日 / DIH 305.2日(COGS基準) / DPO 41.4日。棚卸資産は売上の50%で、増産局面での在庫積増しが続く前提としてBase/ManagementのDIHは305日に据え置いた。契約負債等はテンプレのNWC定義(AR + INV − AP)の外。",
+
+  "projection_years": 5,
+  "base_year_revenue": 118229,
+  "base_year_cogs": 70652,
+  "_base_year_note": "予測Y1の起点は FY2026/3 実績 118,229百万円(LTM 124,031 ではない)。テンプレは base_year_revenue(直近本決算FY実績)を起点に revenue_growth を乗じるため、プロンプトが懸念した LTM 起点への成長率換算(Base +11.5%)は不要。",
+
+  "core_ebitda": 30120,
+  "core_net_income": 17171,
+  "book_value": 173596,
+  "_core_note": "core_ebitda = FY2026/3 営業利益20,819 + 減価償却費9,301 = 30,120。core_net_income は特別利益を除いた実質値: 報告純利益41,770 − 固定資産売却益34,165 x (1 − 税率0.28) = 41,770 − 24,599 = 17,171。Comps の PER 逆算(自社Net Income)はこの実質値を使う。book_value = FY2026/3末 親会社株主持分 = 純資産180,383 − 非支配株主持分6,787 = 173,596(EDINET jppfs_cor 実データ)。",
+
+  "ltm_revenue": 124031,
+
+  "hist_years": ["FY2024/3", "FY2025/3", "FY2026/3"],
+  "hist_revenue": [93253, 109035, 118229],
+  "hist_operating_income": [8387, 16445, 20819],
+  "hist_net_income": [7296, 12837, 41770],
+  "hist_cogs": [62638, 68657, 70652],
+  "hist_sga": [22226, 23933, 26757],
+  "hist_ocf": [5057, 19121, 17296],
+  "hist_cash": [23664, 28546, 62014],
+  "hist_debt": [53137, 52746, 50684],
+  "hist_capex": [6949, 13138, 20518],
+  "hist_depreciation": [7166, 7941, 9301],
+  "_hist_note": "3年方式(2年方式へは縮めていない)。FY2024/3 は有価証券報告書 第176期(docID S100TNQ2, 2024-03-31期)から取得できたため、プロンプトが前期比からの逆算値として提示した値(売上93,272 / 営業利益8,386)ではなく EDINET 実績値(93,253 / 8,387)を採用した(差はそれぞれ 19 と 1)。hist_debt は全年でプロンプト定義「短期借入 + 1年内返済長期借入 + リース債務(流動) + 社債 + 長期借入 + リース債務(固定)」に統一: FY2024/3 = 12,626+12,576+262+(社債5,000+1年内社債5,000)+16,638+1,035 = 53,137 / FY2025/3 = 9,922+7,904+295+10,000+23,743+882 = 52,746(プロンプト値と一致) / FY2026/3 = 4,393+7,814+335+10,000+27,204+938 = 50,684(プロンプト値と一致)。hist_cash は全年 現金及び預金(jppfs_cor:CashAndDeposits)で統一: FY2024/3 = 23,664(EDINETパーサが返す23,517は現金及び現金同等物ベースで定義が異なるため不採用)。hist_capex は有形固定資産取得のみ、hist_depreciation は減価償却費のみ(減損は含めない)。hist_cogs / hist_sga / hist_net_income はプロンプト未指定だが、指定しないと EDINET側の4年配列(FY2023〜FY2026)が3年の hist_years に位置コピーされ年度ズレを起こすため(これらのキーは年度キー突合の対象外)、EDINET一次情報から明示指定した。検算: 93,253−62,638−22,226=8,389 / 109,035−68,657−23,933=16,445 / 118,229−70,652−26,757=20,820(hist_operating_income と丸め誤差2以内)。",
+
+  "_ltm_note": "ltm_revenue は当初指定せず自動構築に委ねたが、EDINET に FY2027/3 Q1 の四半期報告書が存在せず(2024年4月施行の四半期報告書制度廃止により四半期開示は決算短信のみ)、初回ランのログは [LTM] source: latest FY (no LTM) / C20 = 118,229 となり3成分ログが出力されなかった。プロンプト §3-2 の指示に従い ltm_revenue を明示指定して再実行した。値の根拠: FY2026/3実績 118,229 − 前年同期Q1 28,231 + 当期Q1 34,033 = 124,031。自動構築値118,229との乖離は4.7%でテンプレの20%警告閾値内。参考: LTM営業利益 = 20,819 − 4,298 + 7,943 = 24,464。C20 は表示・参照用セルであり、予測の起点は base_year_revenue(118,229)である点は変わらない。",
+
+  "_scenario_design_note": "テンプレは営業利益率を直接受け取らず、営業利益率 = 1 − cogs_pct − sga_pct として算出する(scenarios の許容配列キーは revenue_growth / cogs_pct / sga_pct / dso_days / dih_days / dpo_days / nwc_pct のみ)。したがってプロンプト指定の営業利益率 Y1〜Y5 を、粗利率(cogs_pct)を主ドライバー・販管費率(sga_pct)を残差として分解した。基準年 FY2026/3 実績は cogs 59.76% / sga 22.63% / OPM 17.61%。マージン変動の主因は電子材料(低誘電ガラスクロス)の構成比と稼働率であり、粗利率を主ドライバーに置くのが実態に整合する。Base では粗利率が Y2 にピーク(43.1%)をつけ Y5 に 40.8% へ低下する設計で、リスク文の『margins peak in year 2 and fade to ~18% by year 5』と整合。Downside では減収による固定費デレバレッジで粗利率が悪化し、販管費は実額削減を織り込む。",
+
+  "scenarios": {
+    "Base": {
+      "_desc": "会社予想をやや下回る保守線。Y1 +17.0% / OPM 20.5%、Y2 に利益率ピーク21.5%、以降は競合参入で18.5%へ逓減。検算 Y1: 118,229 x 1.17 = 138,328 x 20.5% = 28,357百万円。粗利率 42.5%→43.1%→40.8%。",
+      "revenue_growth": [0.170, 0.12, 0.06, 0.02, 0.02],
+      "cogs_pct":       [0.575, 0.569, 0.574, 0.585, 0.592],
+      "sga_pct":        [0.220, 0.216, 0.216, 0.220, 0.223],
+      "dso_days":       [111, 111, 111, 111, 111],
+      "dih_days":       [305, 305, 305, 305, 305],
+      "dpo_days":       [41, 41, 41, 41, 41]
+    },
+    "Upside": {
+      "_desc": "AIサーバー需要が継続拡大し、新設能力がフル稼働。営業利益率 Y1-Y5 = 22.0/25.0/26.0/25.0/24.0%。粗利率 43.8%→46.5%。在庫効率も改善する前提でDIHを逓減。",
+      "revenue_growth": [0.220, 0.20, 0.12, 0.06, 0.04],
+      "cogs_pct":       [0.562, 0.540, 0.535, 0.543, 0.550],
+      "sga_pct":        [0.218, 0.210, 0.205, 0.207, 0.210],
+      "dso_days":       [110, 109, 108, 108, 108],
+      "dih_days":       [300, 295, 290, 288, 288],
+      "dpo_days":       [42, 42, 43, 43, 43]
+    },
+    "Management": {
+      "_desc": "会社予想線。FY2027/3 会社予想 営業利益30,000 に Y1 を合わせる。営業利益率 Y1-Y5 = 21.3/23.0/23.0/22.0/21.0%。検算 Y1: 118,229 x 1.193 = 141,047 x 21.3% = 30,043百万円(会社予想30,000と整合)。",
+      "revenue_growth": [0.193, 0.14, 0.08, 0.04, 0.03],
+      "cogs_pct":       [0.568, 0.556, 0.557, 0.565, 0.572],
+      "sga_pct":        [0.219, 0.214, 0.213, 0.215, 0.218],
+      "dso_days":       [111, 111, 111, 111, 111],
+      "dih_days":       [305, 305, 305, 305, 305],
+      "dpo_days":       [41, 41, 41, 41, 41]
+    },
+    "Downside 1": {
+      "_desc": "AIサーバー投資が一巡し Y2-Y3 に調整局面。競合参入で価格が下落し営業利益率は11.0%まで低下。営業利益率 Y1-Y5 = 18.0/14.0/11.0/12.0/13.0%。在庫日数は減収で悪化。",
+      "revenue_growth": [0.100, -0.05, -0.08, 0.03, 0.03],
+      "cogs_pct":       [0.595, 0.630, 0.655, 0.647, 0.640],
+      "sga_pct":        [0.225, 0.230, 0.235, 0.233, 0.230],
+      "dso_days":       [113, 116, 118, 116, 114],
+      "dih_days":       [312, 330, 340, 332, 325],
+      "dpo_days":       [40, 39, 39, 40, 40]
+    },
+    "Downside 2": {
+      "_desc": "需要のエアポケットと競合の本格参入が重なり、増設能力が過剰化。営業利益率は6.0%まで低下し、5年後もブーム前(FY2024/3 9.0%)を回復しない。営業利益率 Y1-Y5 = 16.0/9.0/6.0/8.0/10.0%。販管費の実額削減を織り込む。",
+      "revenue_growth": [0.050, -0.15, -0.10, 0.00, 0.03],
+      "cogs_pct":       [0.612, 0.673, 0.703, 0.688, 0.673],
+      "sga_pct":        [0.228, 0.237, 0.237, 0.232, 0.227],
+      "dso_days":       [115, 120, 122, 120, 118],
+      "dih_days":       [318, 350, 365, 355, 345],
+      "dpo_days":       [39, 38, 38, 39, 39]
+    }
+  },
+
+  "_thesis_note": "プロンプト原文は「trades at {per}x PER and {pb}x PBR」だったが、テンプレのトークン書式 {per} = TEXT(...,\"0.0\\\"x\\\"\") / {pb} = TEXT(...,\"0.00\\\"x\\\"\") が既に末尾に x を付与するため、原文のままでは「2.27xx PBR」のように x が重複出力される(6521 で実測済みの挙動)。トークン直後のリテラル x のみを削除し、その他の文言はプロンプト原文どおり。",
+
+  "investment_thesis": [
+    "Electronic materials (low-dielectric glass cloth for AI servers) now generate ~84% of segment profit; consolidated operating margin rose from 9% in FY3/24 to 23% in Q1 FY3/27.",
+    "Management guides FY3/27 operating profit of JPY30bn (+44%), and Q1 already delivered 26% of that with the full ramp of new capacity still ahead.",
+    "At {price} the stock trades at {per} PER and {pb} PBR; our target of {target_price} implies {upside_pct} with WACC of {wacc}."
+  ],
+  "key_risks": [
+    "Capex is running at ~17% of sales to add capacity into a demand boom; if AI-server investment pauses, utilisation and margins fall fast.",
+    "Inventory equals ~50% of annual sales (about 300 days of COGS), so a demand air-pocket would hit free cash flow before the P&L.",
+    "Competitors are entering low-dielectric glass; our Base case already assumes margins peak in year 2 and fade to ~18% by year 5."
+  ]
+}

@@ -1,0 +1,331 @@
+{
+  "_comment_header": "Timee (215A) DCF overrides. Source: FY2025/10 Tanshin (12-month, consolidated, first full consolidated year), prior non-consolidated FY2022/10-FY2024/10, and 1H FY2026/4 interim (6-month 2025-11-01 to 2026-04-30, fiscal-period CHANGE from Oct-end to Apr-end). All figures JPY mn. Spot-work matching platform (single segment), gross margin ~92% (negligible COGS), NOT SOTP.",
+  "ticker": "215A",
+  "_comment_market": "Market data fallback for when yfinance is unavailable. Shares ~99.74M (post stock-split, yfinance live = 99,735,797). generate_dcf.py re-applies yfinance over these. VERIFY exact share count from securities report.",
+  "shares_outstanding": 99735797,
+  "current_price": 1459,
+  "_price_note": "1,459円 = yfinanceライブ値 2026-06-17（分割後）。ユーザーが板で要確認",
+  "company_name": "株式会社タイミー",
+  "_company_name_en": "Timee, Inc.",
+  "fiscal_year_end_month": 10,
+  "_fiscal_note": "FISCAL-PERIOD CHANGE: Oct-end → Apr-end. FY2025/10 is the last 12-month Oct-end period (base year, normal). Next period is a 6-month irregular (2025/11-2026/4), then FY2027/4 (12m). fiscal_year_end_month=10 reflects the BASE-YEAR end used for DCF.",
+  "projection_start_fy": "FY2026",
+  "projection_years": 5,
+  "_comment_historical": "FY2022/10, FY2023/10, FY2024/10 are non-consolidated (single entity); FY2025/10 is first FULL consolidated 12-month year (base year). All 12-month, no annualization needed (base year is normal 12m, unlike 325A). Revenue/OP/COGS/SGA/NetIncome/DA/Capex from Tanshin PL & CF. The 6-month irregular interim is NOT used as a hist row to avoid distortion.",
+  "hist_years": [
+    "FY2022/10(12m)",
+    "FY2023/10(12m)",
+    "FY2024/10(12m)",
+    "FY2025/10(12m)"
+  ],
+  "_hist_period_months": [
+    12,
+    12,
+    12,
+    12
+  ],
+  "hist_revenue": [
+    16144,
+    26880,
+    34289,
+    34289
+  ],
+  "_hist_revenue_note": "FY2022/10=16,144, FY2023/10=26,880, FY2024/10=34,289 (these are the 3 disclosed annual figures). FY2025/10: tanshin shows 34,289 as latest full consolidated 12m. NOTE: last two entries identical pending exact FY2025/10 vs FY2024/10 disaggregation — VERIFY which is the true latest consolidated FY from securities report. base_year uses 34,289.",
+  "hist_operating_income": [
+    1957,
+    4247,
+    6747,
+    6747
+  ],
+  "hist_net_income": [
+    1802,
+    2797,
+    5310,
+    5310
+  ],
+  "hist_cogs": [
+    672,
+    1274,
+    1912,
+    1912
+  ],
+  "hist_sga": [
+    13514,
+    21358,
+    25630,
+    25630
+  ],
+  "hist_depreciation": [
+    120,
+    152,
+    153,
+    153
+  ],
+  "hist_capex": [
+    493,
+    138,
+    256,
+    256
+  ],
+  "_comment_base_year": "Base year = FY2025/10 (34,289), a NORMAL 12-month period — no annualization needed (contrast 325A's 7-month annualization). COGS 1,912 (COGS% 5.6%, platform near-zero cost of revenue). OP 6,747 (OP margin 19.7%). Gross margin ~94%.",
+  "base_year_revenue": 34289,
+  "base_year_cogs": 1912,
+  "_comment_nwc": "NWC from FY2025/10 / 1H FY2026 interim BS. AR=売掛金 3,859. INV=0 (matching platform holds NO inventory — key structural contrast vs 325A's 4,861 inventory). AP=未払金 2,656. dih_days=0 throughout.",
+  "base_year_ar": 3859,
+  "base_year_inv": 0,
+  "base_year_ap": 2656,
+  "_comment_scenarios": "Base = company guidance (CAGR ~20% revenue, 'FY2026 is investment/仕込み phase' tapering). Upside = scale leverage on SGA + new verticals (logistics/care) succeed, re-acceleration. Management = company mid-term plan (revenue CAGR20%, profit CAGR30%, margin improves). Downside1 = competition (Mercari Hello, LINE Skima, Recruit) slows growth. Downside2 = investment phase fails to convert, SGA pressure persists. COGS% ~5.5-6.0% (platform). SGA% is the swing factor. dih_days=0 (NO inventory).",
+  "scenarios": {
+    "Base": {
+      "revenue_growth": [
+        0.25,
+        0.22,
+        0.2,
+        0.18,
+        0.16
+      ],
+      "cogs_pct": [
+        0.056,
+        0.056,
+        0.056,
+        0.056,
+        0.056
+      ],
+      "sga_pct": [
+        0.74,
+        0.734,
+        0.729,
+        0.724,
+        0.719
+      ],
+      "dso_days": [
+        41,
+        41,
+        41,
+        41,
+        41
+      ],
+      "dih_days": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "dpo_days": [
+        28,
+        28,
+        28,
+        28,
+        28
+      ]
+    },
+    "Upside": {
+      "revenue_growth": [
+        0.3,
+        0.27,
+        0.24,
+        0.21,
+        0.18
+      ],
+      "cogs_pct": [
+        0.055,
+        0.055,
+        0.055,
+        0.055,
+        0.055
+      ],
+      "sga_pct": [
+        0.71,
+        0.7,
+        0.695,
+        0.69,
+        0.685
+      ],
+      "dso_days": [
+        41,
+        41,
+        41,
+        41,
+        41
+      ],
+      "dih_days": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "dpo_days": [
+        28,
+        28,
+        28,
+        28,
+        28
+      ]
+    },
+    "Management": {
+      "revenue_growth": [
+        0.27,
+        0.24,
+        0.21,
+        0.19,
+        0.17
+      ],
+      "cogs_pct": [
+        0.055,
+        0.055,
+        0.055,
+        0.055,
+        0.055
+      ],
+      "sga_pct": [
+        0.7,
+        0.695,
+        0.69,
+        0.685,
+        0.68
+      ],
+      "dso_days": [
+        41,
+        41,
+        41,
+        41,
+        41
+      ],
+      "dih_days": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "dpo_days": [
+        28,
+        28,
+        28,
+        28,
+        28
+      ]
+    },
+    "Downside 1": {
+      "revenue_growth": [
+        0.18,
+        0.15,
+        0.13,
+        0.11,
+        0.1
+      ],
+      "cogs_pct": [
+        0.058,
+        0.058,
+        0.058,
+        0.058,
+        0.058
+      ],
+      "sga_pct": [
+        0.76,
+        0.762,
+        0.764,
+        0.767,
+        0.772
+      ],
+      "dso_days": [
+        45,
+        45,
+        45,
+        45,
+        45
+      ],
+      "dih_days": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "dpo_days": [
+        28,
+        28,
+        28,
+        28,
+        28
+      ]
+    },
+    "Downside 2": {
+      "revenue_growth": [
+        0.15,
+        0.12,
+        0.1,
+        0.09,
+        0.08
+      ],
+      "cogs_pct": [
+        0.06,
+        0.06,
+        0.06,
+        0.06,
+        0.06
+      ],
+      "sga_pct": [
+        0.79,
+        0.795,
+        0.8,
+        0.805,
+        0.81
+      ],
+      "dso_days": [
+        48,
+        48,
+        48,
+        48,
+        48
+      ],
+      "dih_days": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "dpo_days": [
+        28,
+        28,
+        28,
+        28,
+        28
+      ]
+    }
+  },
+  "_comment_capex_da": "Asset-light platform. DA% ~0.5% (FY2024/10: 153/34,289=0.45%), Capex% ~1.0% of revenue. No inventory burden (contrast 325A). revenue_pct method.",
+  "capex_method": "revenue_pct",
+  "da_method": "revenue_pct",
+  "capex_pct": 0.01,
+  "da_pct": 0.005,
+  "_comment_tax": "Statutory ~30-31%. Solidly profitable, effective near statutory.",
+  "tax_rate": 0.3,
+  "_comment_wacc": "risk_free 1.2%, ERP 6.0%, size_premium 3.0% (smaller than 325A's 4.0% as Timee has larger absolute profit). Beta 1.5 cap (yfinance live may override; range guard [0.6,1.5] in template, live fell back to 1.0). Cost of equity = 1.2 + 1.5*6.0 + 3.0 = 13.2% (or with beta 1.0: 10.2%).",
+  "risk_free": 0.012,
+  "beta": 1.5,
+  "erp": 0.06,
+  "size_premium": 0.03,
+  "_comment_debt": "Net cash. Interest-bearing debt ~14,225 (short-term borrowings 13,500 + 1yr-long 140 + long-term 585) at 1H FY2026, but cash ~16,540 => net cash. Actually short-term borrowings are large (working-capital facility for 立替金/advances to workers). Using net_debt = -2,300 (conservative net cash). de_ratio small. NOT EDINET-derived (manual, avoid narrow-taxonomy trap).",
+  "cost_of_debt_at": 0.015,
+  "de_ratio": 0.05,
+  "net_debt": -2300,
+  "_comment_terminal": "Terminal growth 1.5%. Exit EV/EBITDA 12x (platform/high-growth, user-selected). Timee solidly profitable so EV/EBITDA meaningful. Cross-check EV/Sales with growth-normalization given comps span (Visional/SMS/CrowdWorks/Wantedly differ widely in growth & margin).",
+  "terminal_growth": 0.015,
+  "exit_multiple": 12.0,
+  "_comment_v3": "Primary multiple = EV/EBITDA (Timee OP margin ~20%, EBITDA stable). Cross-check EV/Sales÷growth against HR/matching comps (growth-normalization essential; comps span Visional mid-growth to Wantedly flat).",
+  "primary_multiple": "EV/EBITDA",
+  "investment_thesis": [
+    "1. Category-leading spot-work platform: Timee is Japan's No.1 spot-work matching platform with first-mover network effects (workers x businesses two-sided liquidity)",
+    "2. High-margin platform economics: gross margin ~92%, OP margin ~20%, strong operating leverage; FY2025/10 revenue 34,289mn (+27.6%), first full consolidated year",
+    "3. Growth runway: new verticals (logistics, nursing-care/福祉) and SkimaWorks-type M&A expand TAM; structural labor-shortage tailwind in Japan"
+  ],
+  "key_risks": [
+    "1. Competition intensifying: Mercari Hello, LINE Skima-niwa, Recruit/Indeed entering spot-work; two-sided network advantage could erode",
+    "2. Investment phase: company guides FY2026 as a 'shikomi (仕込み)' investment phase with intentional strategic spend, temporarily suppressing profit growth",
+    "3. Fiscal-period change (Oct-end → Apr-end, 12m→6m irregular) makes short-term YoY comparison opaque; large short-term borrowings fund worker advances (立替金)"
+  ]
+}

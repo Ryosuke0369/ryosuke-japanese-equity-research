@@ -1,0 +1,361 @@
+{
+  "ticker": "8267",
+  "company_name": "イオン株式会社",
+  "_company_name_en": "AEON Co., Ltd.",
+  "sector": "Retail holding company (GMS/SM/drugstore/mall/finance/services)",
+  "fiscal_year_end_month": 2,
+  "projection_start_fy": "FY2027",
+  "projection_years": 5,
+  "current_price": 1424,
+  "shares_outstanding": 2765768421,
+  "_shares_note": "REPLACED prompt fallback (2,590,000,000) with EDINET-confirmed actual. FY2026/2 有報 (docID S100Y5VH, filed 2026-05-25, EDINET's own annual-report search DID succeed via generate_dcf.py's dynamic fiscal_year_end_month=2 season logic) cover page: issued shares 2,783,529,021 (both 'as of FY-end 2026-02-28' and 'as of filing date 2026-05-25' -- both post the 2025-09-01 1:3 split, confirmed consistent, no split-adjustment needed); TotalNumberOfSharesHeldTreasurySharesEtc aggregate = 17,760,600. Net = 2,765,768,421. Cross-checked against yfinance's live raw share count (2,766,624,836, per generate_dcf.py Step 5 log) -- the two independent sources agree within 0.03%, a strong corroboration. This is 6.8% HIGHER than the prompt's own fallback of 2,590,000,000 (a ~175.8mn share gap) -- material enough that the prompt's own '+-2% shares -> +-2% price' sensitivity framing understates the actual swing here; see final report for the quantified impact of using the confirmed count vs the fallback.",
+  "hist_years": [
+    "FY2023/2",
+    "FY2024/2",
+    "FY2025/2",
+    "FY2026/2"
+  ],
+  "_hist_period_months": [
+    12,
+    12,
+    12,
+    12
+  ],
+  "_hist_note": "Consolidated basis (segment-level operating profit split is NOT disclosed for AEON, unlike Toyota -- SGA of 3,639,916 is not broken out by segment, so a retail-only DCF is not constructible; per prompt design this model runs on full consolidated P&L, with SOTP as the intended primary lens, added separately via scripts/add_sotp_crosscheck.py). hist_revenue=営業収益合計(売上高+総合金融事業営業収益+その他), hist_cogs=営業原価合計, hist_sga=販売費及び一般管理費, hist_operating_income=営業利益, hist_net_income=親会社株主に帰属する当期純利益(non-controlling interests excluded). Verified: FY2026/2 10,715,342-6,804,966-3,639,916=270,460 vs actual 270,459 (JPY1mn rounding); operating margin 2.30%->2.63%->2.35%->2.52%.",
+  "hist_revenue": [
+    9116823,
+    9553557,
+    10134877,
+    10715342
+  ],
+  "hist_cogs": [
+    5778894,
+    6007745,
+    6380141,
+    6804966
+  ],
+  "hist_sga": [
+    3128145,
+    3294989,
+    3516989,
+    3639916
+  ],
+  "hist_operating_income": [
+    209783,
+    250822,
+    237747,
+    270459
+  ],
+  "hist_net_income": [
+    21381,
+    44692,
+    27168,
+    72677
+  ],
+  "hist_depreciation": [
+    337272,
+    344933,
+    362059,
+    382500
+  ],
+  "_hist_depreciation_note": "= CF-statement depreciation + goodwill amortization (NOT the SGA-embedded depreciation figure, e.g. FY2026/2 SGA shows 342,061 but CF-statement 362,946 is correct since some depreciation sits inside COGS too): FY2023/2 321,084+16,188=337,272; FY2024/2 328,435+16,498=344,933; FY2025/2 345,291+16,768=362,059; FY2026/2 362,946+19,554=382,500.",
+  "hist_capex": [
+    370848,
+    396236,
+    465958,
+    528536
+  ],
+  "_hist_capex_note": "ALL 4 YEARS NOW CONFIRMED ACTUALS. FY2025/2 (465,958) and FY2026/2 (528,536) were given directly. FY2023/2 (370,848) and FY2024/2 (396,236) were EXTRACTED from AEON's FY2024/2 kessan tanshin (2024-04-10), consolidated CF statement investing-activities section, p.26 -- replacing the prompt's placeholder estimates (419,374/439,464, which had been extrapolated at 4.6% of revenue). Actuals are lower than the extrapolation: 4.07% and 4.15% of revenue respectively. Tanshin narrative corroborates: stated YoY increase of 25,388 matches 396,236-370,848 exactly.",
+  "base_year_revenue": 10715342,
+  "base_year_cogs": 6804966,
+  "core_ebitda": 652959,
+  "core_net_income": 72677,
+  "_core_ebitda_note": "Explicitly set = hist_operating_income[-1] 270,459 + hist_depreciation[-1] 382,500 = 652,959, and core_net_income = hist_net_income[-1] 72,677 (parent-attributable). Set explicitly to avoid the generate_dcf.py bug (found on 285A/7203, preemptively guarded on 8410 and here) where these auto-derive from EDINET's raw pre-override data and can silently diverge from the override arrays.",
+  "nwc_method": "days",
+  "base_year_ar": 1887611,
+  "base_year_inv": 829524,
+  "base_year_ap": 1475963,
+  "_nwc_note": "Bank-segment assets (貸出金3,197,412 / 営業貸付金663,896 / コールローン1,396 / 有価証券1,289,102) EXCLUDED from AR -- all financial-segment assets funded by deposits, not working capital in the ordinary sense. DSO 64.3 days is elevated for a retailer because 受取手形及び売掛金 includes AEON Financial's credit-card receivables; flagged in final report as an asymmetry (AR grows with revenue in the model but the deposit growth that funds it is not modeled).",
+  "net_debt": 4083263,
+  "de_ratio": 0.8403,
+  "_net_debt_note": "= net interest-bearing debt (4,449,206, EXCLUDING bank-segment deposits 5,474,093) minus cash 1,350,037 = 3,099,169, PLUS non-controlling interests 984,094 (book value) = 4,083,263. MI is folded into net_debt because generate_dcf.py only computes Equity=EV-net_debt with no separate parent-vs-NCI bridge; this is the only mechanism available to arrive at a parent-attributable equity value. de_ratio EXPLICITLY set to 0.8403 (=3,099,169/3,688,160, net-interest-bearing-debt-only basis) because leaving it unspecified would make the pipeline auto-compute net_debt/market_cap = 4,083,263/3,688,160 = 1.1071, which would incorrectly treat the MI component as leverage for WACC purposes and understate WACC. MUST verify post-generation that DCF Model's D/E cell reads 0.8403, not 1.1071 -- if the override isn't taking effect this is a critical error requiring investigation before proceeding.",
+  "risk_free": 0.023,
+  "beta": 0.8,
+  "_beta_note": "FALLBACK USED. stockanalysis.com reports 8267.T's 5Y beta as 0.22, and the pipeline's own live yfinance fetch independently corroborates this (console log: 'Beta 0.221 outside [0.6, 1.5] range'). Both far outside the prompt's [0.60,1.10] acceptance range, so per instruction the raw value is discarded and the 0.80 fallback is used. As with 8410 (Seven Bank), an unusually low raw beta is directionally consistent with AEON's defensive retail/financial-holding profile but is too low to use directly as a discount-rate input.",
+  "erp": 0.06,
+  "size_premium": 0.0,
+  "cost_of_debt_at": 0.00744,
+  "_cost_of_debt_note": "SENSITIVITY VARIANT: uses FY2026/2 realized pre-tax cost of debt 1.24% (51,376/4,140,937) -> post-tax 0.744% at 40% tax, instead of the primary model forward-looking 2.0% pre-tax assumption.",
+  "tax_rate": 0.4,
+  "_tax_rate_note": "FY2026/2 actual effective rate 39.9% (matches). Statutory ~31% sensitivity case (NOPAT +~11%) reported separately.",
+  "terminal_growth": 0.005,
+  "exit_multiple": 8.0,
+  "primary_multiple": "EV/EBITDA",
+  "capex_method": "direct",
+  "capex_direct": {
+    "historical": [
+      370848,
+      396236,
+      465958,
+      528536
+    ],
+    "projections": [
+      560000,
+      550000,
+      540000,
+      540000,
+      545000
+    ]
+  },
+  "capex_pct": 0.0493,
+  "da_method": "direct",
+  "da_direct": {
+    "historical": [
+      337272,
+      344933,
+      362059,
+      382500
+    ],
+    "projections": [
+      400000,
+      415000,
+      425000,
+      435000,
+      445000
+    ]
+  },
+  "da_pct": 0.0357,
+  "scenarios": {
+    "Base": {
+      "revenue_growth": [
+        0.08,
+        0.04,
+        0.03,
+        0.025,
+        0.02
+      ],
+      "cogs_pct": [
+        0.634,
+        0.633,
+        0.632,
+        0.631,
+        0.63
+      ],
+      "sga_pct": [
+        0.339,
+        0.338,
+        0.3375,
+        0.3375,
+        0.338
+      ],
+      "dso_days": [
+        64,
+        64,
+        64,
+        64,
+        64
+      ],
+      "dih_days": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ],
+      "dpo_days": [
+        79,
+        79,
+        79,
+        79,
+        79
+      ]
+    },
+    "Upside": {
+      "revenue_growth": [
+        0.11,
+        0.06,
+        0.05,
+        0.04,
+        0.035
+      ],
+      "cogs_pct": [
+        0.632,
+        0.63,
+        0.628,
+        0.627,
+        0.626
+      ],
+      "sga_pct": [
+        0.338,
+        0.336,
+        0.335,
+        0.334,
+        0.334
+      ],
+      "dso_days": [
+        63,
+        63,
+        62,
+        62,
+        62
+      ],
+      "dih_days": [
+        43,
+        43,
+        42,
+        42,
+        42
+      ],
+      "dpo_days": [
+        80,
+        80,
+        80,
+        80,
+        80
+      ]
+    },
+    "Management": {
+      "_note": "Y1 reflects FY2027/2 company guidance (revenue +12.0%, operating margin 2.83% = 340,000/12,000,000) per prompt instruction, driven by full-year Tsuruha consolidation rather than organic growth. To be re-verified against the tanshin in the research step.",
+      "revenue_growth": [
+        0.12,
+        0.03,
+        0.025,
+        0.02,
+        0.02
+      ],
+      "cogs_pct": [
+        0.634,
+        0.633,
+        0.633,
+        0.633,
+        0.633
+      ],
+      "sga_pct": [
+        0.3377,
+        0.3375,
+        0.337,
+        0.3365,
+        0.3365
+      ],
+      "dso_days": [
+        64,
+        64,
+        64,
+        64,
+        64
+      ],
+      "dih_days": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ],
+      "dpo_days": [
+        79,
+        79,
+        79,
+        79,
+        79
+      ]
+    },
+    "Downside 1": {
+      "revenue_growth": [
+        0.05,
+        0.01,
+        0.005,
+        0.005,
+        0.005
+      ],
+      "cogs_pct": [
+        0.638,
+        0.64,
+        0.64,
+        0.639,
+        0.639
+      ],
+      "sga_pct": [
+        0.34,
+        0.341,
+        0.341,
+        0.341,
+        0.341
+      ],
+      "dso_days": [
+        65,
+        66,
+        66,
+        66,
+        66
+      ],
+      "dih_days": [
+        46,
+        47,
+        47,
+        46,
+        46
+      ],
+      "dpo_days": [
+        78,
+        78,
+        78,
+        78,
+        78
+      ]
+    },
+    "Downside 2": {
+      "revenue_growth": [
+        0.02,
+        -0.01,
+        -0.01,
+        -0.005,
+        -0.005
+      ],
+      "cogs_pct": [
+        0.643,
+        0.648,
+        0.648,
+        0.646,
+        0.646
+      ],
+      "sga_pct": [
+        0.342,
+        0.344,
+        0.344,
+        0.344,
+        0.344
+      ],
+      "dso_days": [
+        67,
+        68,
+        68,
+        68,
+        68
+      ],
+      "dih_days": [
+        48,
+        50,
+        50,
+        49,
+        49
+      ],
+      "dpo_days": [
+        76,
+        75,
+        75,
+        76,
+        76
+      ]
+    }
+  },
+  "investment_thesis": [
+    "1. Operating profit is compounding but almost none of it reaches the parent. Operating income rose from 209,783 (FY2023/2) to 270,459 (FY2026/2) and is guided to 340,000 in FY2027/2 (+25.7%), yet guided parent net income is 73,000, up just 0.4%. Non-controlling interests took 51,858 of the 124,536 consolidated net income in FY2026/2. The investment case is entirely about whether Aeon can convert consolidated growth into parent-level value.",
+    "2. Drug-store consolidation is reshaping the group. The Tsuruha integration drove a 69,086 step-acquisition gain in FY2026/2 and underpins the guided 12.0% revenue jump to 12,000,000. Health & Wellness is now the growth engine alongside the developer business.",
+    "3. Low cost of capital supports a long-duration asset base. Interest expense of 51,376 on average interest-bearing debt of 4,140,937 is a 1.24% pre-tax cost, giving a WACC near 4.4%. For a business with 3,941,556 of property and 1,138,073 of land, cheap long-term funding is a genuine structural advantage."
+  ],
+  "key_risks": [
+    "1. Minority interests are 984,094 at book, or 380 per share against a 1,424 price. Because the listed subsidiaries trade above book, the true economic deduction is larger than the balance sheet figure. Any consolidated valuation that omits this overstates the equity by more than a quarter.",
+    "2. Valuation already prices in the improvement. At 1,424 the shares trade at 3.03x book, 50.7x parent earnings and 11.90x consolidated EBITDA on a 2.52% operating margin. A retailer at 11.9x EBITDA leaves no room for the margin recovery to disappoint.",
+    "3. Impairment and leverage. FY2026/2 booked 97,486 of impairment losses with 270,803 of goodwill still on the balance sheet, and the effective tax rate has run 40-57% because much of that charge is not deductible. Interest-bearing debt of 4,449,206 against 1,218,421 of owners' equity means a small move in funding costs moves the WACC and the terminal value materially."
+  ]
+}

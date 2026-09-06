@@ -1,0 +1,262 @@
+{
+ "_note": "バッチ生成 2026-09-05。型B(シクリカル・コンソールサイクル)。要目視レビュー。DRAFT。根拠は batch/per_ticker/7974_summary.md。",
+ "_type_note": "機械ルール(実績OPMレンジ 16.1pt > 12pt)により型B。FY2026/3 は Switch 2 立ち上げ年で、ハード比率上昇によりOPMが15.57%(観測4期の最低)まで低下し売上は+98.6%。ソフト比率の回復に伴うマージン正常化を Base に織り込む(§4-4 ミッドサイクル正常化)。",
+ "_edinet_note": "EDINET カバレッジ hist_years FY2021-FY2026、OCF/Cash 6/6。Debt 0/6 は抽出漏れではなく当社が有利子負債を持たない事実(yfinance の Total Debt 行も存在しない)。LTM = latest FY = FY2026/3 実績 2,313,051百万円。",
+ "_wacc_note": "rf=2.97%。ERP6.5%固定。size_premium=1.0%(時価総額10.19兆円)。beta: yfinance が beta を返さない(null)。テンプレのフォールバック1.0をそのまま採用するが、これは推定値であり要確認。ネットキャッシュのため de_ratio=0 -> WACC=Ke。負債コストはWACCに寄与しないため interest_expense は指定しない。",
+ "_net_debt_note": "net_debt = 有利子負債 0 − 現金及び現金同等物 1,791,802 = −1,791,802百万円(ネットキャッシュ)。■保守的な定義: 当社が保有する短期有価証券(定期預金等)は「現金及び現金同等物」に含まれないためネットキャッシュから除外している。含めればネットキャッシュはさらに大きくなり、株式価値は上振れる。",
+ "_exit_note": "exit_multiple = Peer 5社の実測 EV/EBITDA 中央値 13.17x(7832 13.17 / 9766 15.44 / 9697 20.30 / 9684 12.08 / 6758 8.10)。型Bのため §4-4 により Peer中央値が上限だが、本ルールでは中央値そのものを採用しているので上限は binding しない。自社の現在倍率 22.34x は算式に入れていない。",
+ "_capex_note": "capex_method / da_method とも revenue_pct。当社は資産が軽く実績 capex 1.0-1.6% / D&A 0.7-1.3%。capex_pct 0.95% / da_pct 0.90% でターミナル比率 1.056x とし、レンジ[0.90,1.15]内に収める。",
+ "_nwc_note": "DSO/DIH/DPO は実績「平均」ではなく「中央値」を採用(DSO 22 / DIH 136 / DPO 69)。FY2025 は Switch 2 の事前在庫積み増しで DIH 390日・DPO 161日と極端に歪んでおり、平均(DIH 185)はサイクル常態を表さないため。中央値は外れ値に頑健。",
+ "ticker": "7974",
+ "company_name": "任天堂",
+ "exchange": "TSE Prime",
+ "sector": "その他製品",
+ "fiscal_year_end_month": 3,
+ "risk_free": 0.0297,
+ "erp": 0.065,
+ "size_premium": 0.01,
+ "tax_rate": 0.25,
+ "beta": 0.5655,
+ "net_debt": -1791802,
+ "terminal_growth": 0.01,
+ "exit_multiple": 13.2,
+ "primary_multiple": "EV/EBITDA",
+ "capex_method": "revenue_pct",
+ "capex_pct": 0.0095,
+ "da_method": "revenue_pct",
+ "da_pct": 0.009,
+ "nwc_method": "days",
+ "scenarios": {
+  "Base": {
+   "revenue_growth": [
+    0.12,
+    0.06,
+    0.03,
+    0.02,
+    0.02
+   ],
+   "cogs_pct": [
+    0.56,
+    0.52,
+    0.49,
+    0.48,
+    0.481
+   ],
+   "sga_pct": [
+    0.24,
+    0.24,
+    0.24,
+    0.24,
+    0.24
+   ],
+   "dso_days": [
+    22,
+    22,
+    22,
+    22,
+    22
+   ],
+   "dih_days": [
+    136,
+    136,
+    136,
+    136,
+    136
+   ],
+   "dpo_days": [
+    69,
+    69,
+    69,
+    69,
+    69
+   ]
+  },
+  "Upside": {
+   "revenue_growth": [
+    0.16,
+    0.09,
+    0.05,
+    0.03,
+    0.03
+   ],
+   "cogs_pct": [
+    0.545,
+    0.495,
+    0.465,
+    0.45,
+    0.45
+   ],
+   "sga_pct": [
+    0.235,
+    0.235,
+    0.235,
+    0.235,
+    0.235
+   ],
+   "dso_days": [
+    21,
+    21,
+    21,
+    21,
+    21
+   ],
+   "dih_days": [
+    120,
+    118,
+    115,
+    115,
+    115
+   ],
+   "dpo_days": [
+    72,
+    72,
+    72,
+    72,
+    72
+   ]
+  },
+  "Management": {
+   "revenue_growth": [
+    0.12,
+    0.06,
+    0.03,
+    0.02,
+    0.02
+   ],
+   "cogs_pct": [
+    0.56,
+    0.52,
+    0.49,
+    0.48,
+    0.481
+   ],
+   "sga_pct": [
+    0.24,
+    0.24,
+    0.24,
+    0.24,
+    0.24
+   ],
+   "dso_days": [
+    22,
+    22,
+    22,
+    22,
+    22
+   ],
+   "dih_days": [
+    136,
+    136,
+    136,
+    136,
+    136
+   ],
+   "dpo_days": [
+    69,
+    69,
+    69,
+    69,
+    69
+   ]
+  },
+  "Downside 1": {
+   "revenue_growth": [
+    0.05,
+    0.02,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "cogs_pct": [
+    0.58,
+    0.56,
+    0.54,
+    0.53,
+    0.529
+   ],
+   "sga_pct": [
+    0.25,
+    0.25,
+    0.25,
+    0.25,
+    0.25
+   ],
+   "dso_days": [
+    24,
+    24,
+    24,
+    24,
+    24
+   ],
+   "dih_days": [
+    150,
+    152,
+    155,
+    155,
+    155
+   ],
+   "dpo_days": [
+    65,
+    65,
+    65,
+    65,
+    65
+   ]
+  },
+  "Downside 2": {
+   "revenue_growth": [
+    -0.15,
+    -0.05,
+    0.0,
+    0.01,
+    0.02
+   ],
+   "cogs_pct": [
+    0.64,
+    0.65,
+    0.64,
+    0.63,
+    0.62
+   ],
+   "sga_pct": [
+    0.27,
+    0.27,
+    0.27,
+    0.27,
+    0.27
+   ],
+   "dso_days": [
+    26,
+    26,
+    26,
+    26,
+    26
+   ],
+   "dih_days": [
+    175,
+    180,
+    175,
+    170,
+    165
+   ],
+   "dpo_days": [
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  }
+ },
+ "investment_thesis": [
+  "The Switch 2 launch year carries hardware-heavy economics, which is why the operating margin sits at the bottom of its four-year range; as the software attach rate builds, the mix normalises and the {per} the market pays looks different against mid-cycle earnings.",
+  "A large net cash position means enterprise value is well below market capitalisation, so the {wacc} discount rate applies to a business with no financial leverage and the equity absorbs none of the balance-sheet risk.",
+  "At {price} the shares are held at a clear premium to the listed Japanese game peer group on {pb} book; the base case mid-cycle normalisation supports {target_price}, or {upside_pct} from here."
+ ],
+ "key_risks": [
+  "Console cycles are hit-driven and the projected margin recovery depends on a software line-up that is not yet on the market, so a soft attach rate would leave earnings near the launch-year trough rather than the {per} implied by {price}.",
+  "The hardware bill of materials is dollar-denominated while a large share of revenue is not, so yen weakness or component inflation compresses the very margin recovery the base case assumes.",
+  "The model discounts a smoothed cycle rather than an actual one: real console transitions produce a revenue cliff between generations, which the {wacc} single-path discounting does not represent."
+ ],
+ "_beta_note": "実測（raw）β = 0.5655。出所: TOPIX 2y 1wk OLS (n=104, corr=0.243)。フェーズ2 #6 以降 overrides の beta は raw を入れる契約で、テンプレが Blume 調整 0.67×raw + 0.33×1.00 を掛け [0.3, 2.0] にクランプする（採用 0.7089、クランプ非発動）。■旧 overrides の値 1.0 は旧ルール [0.6, 1.75] のクランプ後の値であり raw ではない。■yfinance の beta フィールドは 取得不能（null）。日本株では市場を説明しないベンチマークで算出されており（NTT −0.165 / 大阪ガス −0.201 等）、採用しない。詳細は docs/phase2_pipeline_fixes_20260906.md の §2-4。"
+}

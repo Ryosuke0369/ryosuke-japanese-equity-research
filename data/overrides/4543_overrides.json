@@ -1,0 +1,306 @@
+{
+ "risk_free": 0.0297,
+ "erp": 0.065,
+ "size_premium": 0.01,
+ "tax_rate": 0.25,
+ "terminal_growth": 0.01,
+ "primary_multiple": "EV/EBITDA",
+ "nwc_method": "days",
+ "hist_years": [
+  "FY2023",
+  "FY2024",
+  "FY2025",
+  "FY2026"
+ ],
+ "hist_revenue": [
+  820209.0,
+  921863.0,
+  1036171.0,
+  1131877.0
+ ],
+ "hist_operating_income": [
+  117333.0,
+  140095.0,
+  157670.0,
+  176321.0
+ ],
+ "hist_net_income": [
+  89325.0,
+  106374.0,
+  116978.0,
+  135914.0
+ ],
+ "hist_cogs": [
+  402839.0,
+  442688.0,
+  475501.0,
+  537201.0
+ ],
+ "hist_sga": [
+  300037.0,
+  339080.0,
+  403000.0,
+  418355.0
+ ],
+ "base_year_revenue": 1131877.0,
+ "base_year_cogs": 537201.0,
+ "base_year_ar": 214927.0,
+ "base_year_inv": 335634.0,
+ "base_year_ap": 89756.0,
+ "book_value": 1584509.0,
+ "core_ebitda": 271700.0,
+ "_note": "バッチ生成 2026-09-05。型A。DRAFT。根拠は batch/per_ticker/4543_summary.md。 ■**追補8 §AE の rework wave により Base を再設計（第8セッション）**。",
+ "_prescreen_note": "追補1 §B / 追補2 §B のプレスクリーン実施済み（docID S100YGMG）。金融事業専用科目の検出なし → 型判定へ。",
+ "_wacc_note": "rf=2.97%。ERP6.5%固定。size_premium=1.0%（時価総額3.59兆円）。beta: yfinance実測 0.232 はクランプ域の下限を下回るため、追補1 §A に従い下限 0.60 を明示指定した。負債コストは実績Kd（支払利息 3,286 ÷ 平均有利子負債 (174,838+379,796)/2 = 277,317 = 1.18%税引前 → 税引後0.89%）。",
+ "_exit_note": "exit_multiple = Peer 5社の実測EV/EBITDA中央値 12.64x（7733 オリンパス / 7741 HOYA / 4507 塩野義 / 4568 第一三共 / 4578 大塚HD）。自社の現在倍率 13.57x は算式に入れていない。",
+ "_capex_note": "capex_method / da_method とも revenue_pct（capex 8.82% / D&A 8.40%）。実績は capex 7.9-9.0% / D&A 8.2-8.6% で既に近接（直近 101,963 / 95,379 = 1.069倍）。ターミナル比率 1.050x（レンジ内）。",
+ "_scenario_note": "【追補8 §AE の rework wave（第8セッション）】追補7 §Y の単調性判定と、追補8 §AE-2 が確定した方向別の定義に従って **Base を再設計**した。■実績OPM: 0.14% → 0.15% → 0.15% → 0.16%。**判定: 単調増加**。■**適用ルール: 単調増加 → 直近水準の維持** により Base 到達OPM = **15.58%**（旧: 15.45%、差 +0.13pt）。■**平均回帰（§4-4 の中央値収束）は使わない**: トレンドに平均回帰を当てるのは統計的な誤りであり、その理由は符号で変わらない（追補8 §AE-2）。**単調増加では『さらなる上積みの外挿はしない』という保守側のガード**を置き、直近水準の維持とした。■Upside / Downside 1 / Downside 2 は本 rework の対象外で、従前の設計を維持している。■COGS% は据え置き、SGA% = 100% − COGS% − 目標OPM で逆算した。",
+ "ticker": "4543",
+ "company_name": "テルモ",
+ "exchange": "TSE Prime",
+ "sector": "精密機器",
+ "fiscal_year_end_month": 3,
+ "beta": 0.578,
+ "exit_multiple": 12.6,
+ "interest_expense": 3286,
+ "debt_beginning": 174838,
+ "debt_ending": 379796,
+ "capex_method": "revenue_pct",
+ "capex_pct": 0.0882,
+ "da_method": "revenue_pct",
+ "da_pct": 0.084,
+ "scenarios": {
+  "Base": {
+   "revenue_growth": [
+    0.07,
+    0.06,
+    0.05,
+    0.04,
+    0.03
+   ],
+   "cogs_pct": [
+    0.475,
+    0.475,
+    0.475,
+    0.475,
+    0.475
+   ],
+   "sga_pct": [
+    0.369222,
+    0.369222,
+    0.369222,
+    0.369222,
+    0.369222
+   ],
+   "dso_days": [
+    67,
+    67,
+    67,
+    67,
+    67
+   ],
+   "dih_days": [
+    229,
+    229,
+    229,
+    229,
+    229
+   ],
+   "dpo_days": [
+    74,
+    74,
+    74,
+    74,
+    74
+   ]
+  },
+  "Upside": {
+   "revenue_growth": [
+    0.09,
+    0.075,
+    0.06,
+    0.05,
+    0.04
+   ],
+   "cogs_pct": [
+    0.47,
+    0.47,
+    0.47,
+    0.47,
+    0.47
+   ],
+   "sga_pct": [
+    0.372,
+    0.37,
+    0.368,
+    0.366,
+    0.3642
+   ],
+   "dso_days": [
+    64,
+    64,
+    64,
+    64,
+    64
+   ],
+   "dih_days": [
+    219,
+    219,
+    219,
+    219,
+    219
+   ],
+   "dpo_days": [
+    77,
+    77,
+    77,
+    77,
+    77
+   ]
+  },
+  "Management": {
+   "revenue_growth": [
+    0.07,
+    0.06,
+    0.05,
+    0.04,
+    0.03
+   ],
+   "cogs_pct": [
+    0.475,
+    0.475,
+    0.475,
+    0.475,
+    0.475
+   ],
+   "sga_pct": [
+    0.369222,
+    0.369222,
+    0.369222,
+    0.369222,
+    0.369222
+   ],
+   "dso_days": [
+    67,
+    67,
+    67,
+    67,
+    67
+   ],
+   "dih_days": [
+    229,
+    229,
+    229,
+    229,
+    229
+   ],
+   "dpo_days": [
+    74,
+    74,
+    74,
+    74,
+    74
+   ]
+  },
+  "Downside 1": {
+   "revenue_growth": [
+    0.02,
+    0.015,
+    0.01,
+    0.01,
+    0.01
+   ],
+   "cogs_pct": [
+    0.48,
+    0.48,
+    0.48,
+    0.48,
+    0.48
+   ],
+   "sga_pct": [
+    0.367,
+    0.368,
+    0.369,
+    0.37,
+    0.3703
+   ],
+   "dso_days": [
+    70,
+    70,
+    70,
+    70,
+    70
+   ],
+   "dih_days": [
+    240,
+    240,
+    240,
+    240,
+    240
+   ],
+   "dpo_days": [
+    71,
+    71,
+    71,
+    71,
+    71
+   ]
+  },
+  "Downside 2": {
+   "revenue_growth": [
+    -0.06,
+    -0.01,
+    0.005,
+    0.01,
+    0.015
+   ],
+   "cogs_pct": [
+    0.495,
+    0.495,
+    0.495,
+    0.495,
+    0.495
+   ],
+   "sga_pct": [
+    0.415,
+    0.427,
+    0.427,
+    0.423,
+    0.419
+   ],
+   "dso_days": [
+    74,
+    74,
+    74,
+    74,
+    74
+   ],
+   "dih_days": [
+    252,
+    252,
+    252,
+    252,
+    252
+   ],
+   "dpo_days": [
+    68,
+    68,
+    68,
+    68,
+    68
+   ]
+  }
+ },
+ "investment_thesis": [
+  "Terumo compounds revenue in the high single digits from catheters, blood management and pharmaceutical solutions, and the operating margin has held inside a 1.3-point band for four years; the shares trade at {per} earnings and {pb} book.",
+  "That margin stability is unusual in this batch and is what the {wacc} discount rate is applied to; leverage is modest and the cost of debt is taken from the filings rather than assumed.",
+  "At {price} the market pays a premium to the Japanese medical-device and pharmaceutical peer group; a base case that merely holds the current margin supports {target_price}, or {upside_pct} from here."
+ ],
+ "key_risks": [
+  "Growth has run above ten percent for three years and the base case assumes it decays only gradually; a slowdown would leave the {per} the market pays at {price} looking expensive against the peer median.",
+  "Capital expenditure runs at roughly nine percent of revenue and above depreciation, so the free cash flow behind {target_price} depends on the two converging.",
+  "Overseas revenue is the majority and unhedged in this model, so yen strength compresses translated earnings without any offset in the {wacc} used here."
+ ],
+ "_edinet_note": "【追補2 §F-2 の予防的 EDINET 補完（生成前適用・必須）】根本原因は scripts/generate_dcf.py:66 の _val(data_dict, key, default=0) が欠損値を None ではなく 0 に落とすことで、hist_* 全系列・net_debt・core_ebitda に波及する。バッチ中はパイプラインを変更しない方針（追補2 §F-1）のため、全銘柄に生成前適用する回避策として hist_years を直近4期（P/L 4項目がすべて揃う年）に置換し、hist_revenue / hist_operating_income / hist_net_income / hist_cogs / hist_sga を yfinance連結財務諸表から供給した（配列長は全て4で hist_years と一致、契約遵守）。■hist_ocf / hist_cash / hist_debt / hist_capex / hist_depreciation は【供給していない】 — Step 4.6 の align_hist_series_to_years() が最終 hist_years に会計年度キーで再マッピングするため EDINET を一次ソースのまま使える。■hist_sga = 売上 − COGS − 営業利益 で逆算。■core_ebitda も追補2 §G に従い明示指定した（下記）。",
+ "_beta_note": "実測（raw）β = 0.5780。出所: TOPIX 2y 1wk OLS (n=104, corr=0.315)。フェーズ2 #6 以降 overrides の beta は raw を入れる契約で、テンプレが Blume 調整 0.67×raw + 0.33×1.00 を掛け [0.3, 2.0] にクランプする（採用 0.7173、クランプ非発動）。■旧 overrides の値 0.6 は旧ルール [0.6, 1.75] のクランプ後の値であり raw ではない。■yfinance の beta フィールドは 0.232。日本株では市場を説明しないベンチマークで算出されており（NTT −0.165 / 大阪ガス −0.201 等）、採用しない。詳細は docs/phase2_pipeline_fixes_20260906.md の §2-4。"
+}

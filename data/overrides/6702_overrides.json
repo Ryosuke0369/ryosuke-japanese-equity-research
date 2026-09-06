@@ -1,0 +1,306 @@
+{
+ "risk_free": 0.0297,
+ "erp": 0.065,
+ "size_premium": 0.01,
+ "tax_rate": 0.25,
+ "terminal_growth": 0.01,
+ "primary_multiple": "EV/EBITDA",
+ "nwc_method": "days",
+ "current_price": 3900.0,
+ "shares_outstanding": 1731026775,
+ "hist_years": [
+  "FY2023",
+  "FY2024",
+  "FY2025",
+  "FY2026"
+ ],
+ "hist_revenue": [
+  3713767.0,
+  3476985.0,
+  3550116.0,
+  3502971.0
+ ],
+ "hist_operating_income": [
+  335614.0,
+  149326.0,
+  265089.0,
+  348329.0
+ ],
+ "hist_net_income": [
+  215182.0,
+  254478.0,
+  219807.0,
+  449408.0
+ ],
+ "hist_cogs": [
+  2569685.0,
+  2358996.0,
+  2382138.0,
+  2256104.0
+ ],
+ "hist_sga": [
+  808468.0,
+  968663.0,
+  902889.0,
+  898538.0
+ ],
+ "base_year_revenue": 3502971.0,
+ "base_year_cogs": 2256104.0,
+ "base_year_ar": 897958.0,
+ "base_year_inv": 204090.0,
+ "base_year_ap": 385421.0,
+ "book_value": 2024915.0,
+ "core_ebitda": 489556.0,
+ "net_debt": -317272,
+ "_note": "バッチ生成 2026-09-05。型A。DRAFT（part1）。根拠は batch/per_ticker/6702_summary.md。",
+ "_prescreen_note": "追補1 §B / 追補2 §B のプレスクリーン実施済み。金融事業専用科目の検出なし → 型判定へ。",
+ "_wacc_note": "rf=2.97%。ERP6.5%固定。size_premium=1.0%（時価総額6.75兆円）。beta: yfinance実測 **0.748** はクランプ域 [0.6, 1.75] の内側のため素通し（置換なし）。ネットキャッシュ（net_debt −317,272）のため de_ratio = 0 → WACC = Ke = 8.83%。",
+ "_exit_note": "exit_multiple = Peer 5社の実測EV/EBITDA中央値 15.55x（6701 NEC / 4307 野村総合研究所 / 6503 三菱電機 / 6752 パナソニックHD / 6501 日立）。自社の現在倍率 13.14x は算式に入れていない。",
+ "_capex_note": "capex_method / da_method とも revenue_pct（capex 4.20% / D&A 4.00%）。実績は capex 3.1-5.6% / D&A 4.0-5.3% で近接。ターミナル比率 1.050x（レンジ内）。",
+ "_scenario_note": "実績OPM（FY2023-FY2026）: 9.04 → **4.29** → 7.47 → **9.94%**。min 4.29 / p25 6.67 / med 8.25 / p75 9.26 / max 9.94%。直近が観測窓の最高で中央値を上回るため Base 到達OPM =（直近実績 9.94 + p75 9.26）/2 = **9.60%**（実質横ばい）。Upside は max(実績p75 9.26, 直近+1.0pt = 10.94) = 10.94%。Downside 1 は min(p25 6.67, 直近 9.94) = 6.67%。Downside 2 は実績トラフ **4.29%**（FY2024/3 実績、直近と大きく乖離した実在の谷）を起点に売上 −8% を重ねた。■FY2024/3 の落ち込みは事業構造改革費用によるもので、**わずか2年前に半分以下のマージンを記録している**点に注意。■**恒等式の扱い**: テンプレは OP = 売上 − COGS − SGA で計算するため、**COGS% を実績水準に固定し SGA% = 100% − COGS% − 目標OPM で逆算**した。本モデルの SGA 行は「販管費 ± その他営業損益」を表す。COGS% は直近実績 64.4% に固定した。既存銘柄からの流用なし。",
+ "ticker": "6702",
+ "company_name": "富士通",
+ "exchange": "TSE Prime",
+ "sector": "電気機器",
+ "fiscal_year_end_month": 3,
+ "beta": 0.7926,
+ "exit_multiple": 15.6,
+ "capex_method": "revenue_pct",
+ "capex_pct": 0.042,
+ "da_method": "revenue_pct",
+ "da_pct": 0.04,
+ "scenarios": {
+  "Base": {
+   "revenue_growth": [
+    0.02,
+    0.025,
+    0.025,
+    0.025,
+    0.02
+   ],
+   "cogs_pct": [
+    0.644,
+    0.644,
+    0.644,
+    0.644,
+    0.644
+   ],
+   "sga_pct": [
+    0.2575,
+    0.258,
+    0.2588,
+    0.2595,
+    0.26
+   ],
+   "dso_days": [
+    94,
+    94,
+    94,
+    94,
+    94
+   ],
+   "dih_days": [
+    40,
+    40,
+    40,
+    40,
+    40
+   ],
+   "dpo_days": [
+    65,
+    65,
+    65,
+    65,
+    65
+   ]
+  },
+  "Upside": {
+   "revenue_growth": [
+    0.035,
+    0.04,
+    0.035,
+    0.035,
+    0.03
+   ],
+   "cogs_pct": [
+    0.638,
+    0.638,
+    0.638,
+    0.638,
+    0.638
+   ],
+   "sga_pct": [
+    0.26,
+    0.258,
+    0.256,
+    0.254,
+    0.2526
+   ],
+   "dso_days": [
+    90,
+    90,
+    90,
+    90,
+    90
+   ],
+   "dih_days": [
+    38,
+    38,
+    38,
+    38,
+    38
+   ],
+   "dpo_days": [
+    68,
+    68,
+    68,
+    68,
+    68
+   ]
+  },
+  "Management": {
+   "revenue_growth": [
+    0.02,
+    0.025,
+    0.025,
+    0.025,
+    0.02
+   ],
+   "cogs_pct": [
+    0.644,
+    0.644,
+    0.644,
+    0.644,
+    0.644
+   ],
+   "sga_pct": [
+    0.2575,
+    0.258,
+    0.2588,
+    0.2595,
+    0.26
+   ],
+   "dso_days": [
+    94,
+    94,
+    94,
+    94,
+    94
+   ],
+   "dih_days": [
+    40,
+    40,
+    40,
+    40,
+    40
+   ],
+   "dpo_days": [
+    65,
+    65,
+    65,
+    65,
+    65
+   ]
+  },
+  "Downside 1": {
+   "revenue_growth": [
+    0.0,
+    0.005,
+    0.005,
+    0.005,
+    0.005
+   ],
+   "cogs_pct": [
+    0.654,
+    0.654,
+    0.654,
+    0.654,
+    0.654
+   ],
+   "sga_pct": [
+    0.256,
+    0.264,
+    0.272,
+    0.277,
+    0.2793
+   ],
+   "dso_days": [
+    99,
+    99,
+    99,
+    99,
+    99
+   ],
+   "dih_days": [
+    42,
+    42,
+    42,
+    42,
+    42
+   ],
+   "dpo_days": [
+    62,
+    62,
+    62,
+    62,
+    62
+   ]
+  },
+  "Downside 2": {
+   "revenue_growth": [
+    -0.08,
+    -0.01,
+    0.005,
+    0.01,
+    0.015
+   ],
+   "cogs_pct": [
+    0.665,
+    0.665,
+    0.665,
+    0.665,
+    0.665
+   ],
+   "sga_pct": [
+    0.285,
+    0.292,
+    0.292,
+    0.289,
+    0.285
+   ],
+   "dso_days": [
+    103,
+    103,
+    103,
+    103,
+    103
+   ],
+   "dih_days": [
+    44,
+    44,
+    44,
+    44,
+    44
+   ],
+   "dpo_days": [
+    59,
+    59,
+    59,
+    59,
+    59
+   ]
+  }
+ },
+ "investment_thesis": [
+  "Fujitsu has narrowed to domestic IT services and Uvance while shedding hardware, and the operating margin has recovered to the top of its four-year range; the shares trade at {per} earnings and {pb} book.",
+  "The balance sheet is net cash with interest-bearing debt at just four percent of revenue, so the {wacc} discount rate is the cost of equity with no leverage assumed.",
+  "At {price} the shares are valued below the diversified-electronics and IT-services peer median on EV/EBITDA; a base case that holds the current margin supports {target_price}, or {upside_pct} from here."
+ ],
+ "key_risks": [
+  "The operating margin was 4.29% just two years ago on restructuring charges, so the recovery behind {target_price} is only two years old and the second downside case returns to that level.",
+  "Revenue has fallen for three consecutive years on divestitures, and the base case assumes the shrinking stops — which the reported top line has not yet shown.",
+  "Reported net income in the latest year far exceeded operating income, so the {per} the market pays is measured against an earnings base that includes items the operating result does not."
+ ],
+ "_edinet_note": "【追補2 §F-2 / 追補3 §L の予防的補完（生成前適用・必須）】根本原因は scripts/generate_dcf.py:66 の _val(data_dict, key, default=0) が欠損値を None ではなく 0 に落とすこと。hist_years を直近4期に置換し hist_revenue / hist_operating_income / hist_net_income / hist_cogs / hist_sga を yfinance連結財務諸表から供給（配列長は全て4で hist_years と一致、契約遵守）。CF/BS 5系列は供給せず Step 4.6 の年度キー再マッピングに委ねる。hist_sga = 売上 − COGS − 営業利益 で逆算。**追補3 §L に従い current_price / shares_outstanding も予防的に明示指定**。**net_debt も明示指定**（EDINET の有利子負債抽出が 0 に落ちる既知パターンの予防）。**追補2 §G に従い core_ebitda も明示指定**（Peer と同一定義に統一）。",
+ "_beta_note": "実測（raw）β = 0.7926。出所: TOPIX 2y 1wk OLS (n=104, corr=0.377)。フェーズ2 #6 以降 overrides の beta は raw を入れる契約で、テンプレが Blume 調整 0.67×raw + 0.33×1.00 を掛け [0.3, 2.0] にクランプする（採用 0.8610、クランプ非発動）。■旧 overrides の値 0.75 は旧ルール [0.6, 1.75] のクランプ後の値であり raw ではない。■yfinance の beta フィールドは 0.748。日本株では市場を説明しないベンチマークで算出されており（NTT −0.165 / 大阪ガス −0.201 等）、採用しない。詳細は docs/phase2_pipeline_fixes_20260906.md の §2-4。"
+}

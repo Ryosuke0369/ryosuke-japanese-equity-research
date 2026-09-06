@@ -1,0 +1,146 @@
+{
+  "_README": "テクニスコ (2962) overrides — 型A・ターンアラウンド(精密加工部品/ヒートシンク・ガラス)、6月期決算。決算短信は千円表記だが本ファイルは全て百万円。FY2025/6 に減損1,271を計上しD&Aが530→261に半減、FY2026/6 は営業損失△75・純利益6で黒字転換。FY2027/6 会社予想は売上5,900(+57.5%)/営業利益250(4.2%)。EDINET の最新有報は FY2025/6 までで FY2026/6 は未掲載のため fundamentals_fy2026 で注入する。",
+
+  "ticker": "2962",
+  "company_name": "Technisco",
+  "exchange": "TSE",
+  "sector": "Precision Machining / Heat Sinks",
+  "fiscal_year_end_month": 6,
+  "_fiscal_note": "6月期決算。EDINET 探索窓は (期末月+3)=9月中心に生成される。fiscal_year_end_month を外すと有報を発見できない。",
+
+  "current_price": 1549,
+  "_price_note": "1,549円 = 2026-08-21時点(プロンプト指定)。",
+  "shares_outstanding": 9193374,
+  "shares": { "fully_diluted_shares": 9193374 },
+  "_shares_note": "発行済9,193,374株(ユーザー提供)をそのまま採用。自己株式の控除は行っていない — 決算短信1面が未提供で期末自己株式数を確認できないため。検算: 9,193,374株 x 1,549円 = 14,240,536,326円 = 14,241百万円 となり、プロンプト指定の時価総額14,241百万円と完全一致する。つまりプロンプトの時価総額自体が自己株控除前ベースであり、控除しないほうが整合する。",
+
+  "net_debt": 2182,
+  "_net_debt_note": "2,182 = 有利子負債4,270 − 現金及び預金2,088(いずれも2026/6末)。有利子負債4,270の内訳は短期借入金2,300+1年内返済長期借入金+リース債務(流動)+長期借入金+リース債務(固定)。非支配株主持分は無し(MIゼロ)。overrides契約に minority_interest キーは存在しない(ALLOWED_KEYS 外)ため本ファイルには書かず、値が0のため net_debt への織り込みも不要。",
+
+  "tax_rate": 0.306,
+  "_tax_note": "法定実効税率30.6%を予測全期間に適用。2期連続営業赤字により繰越欠損金は相当額あると見られるが、金額・期限が短信からは確定できないため Base には織り込まない(=保守的)。実際にはY1〜Y3のキャッシュ税負担はこれより軽くなる可能性が高く、その分だけ本モデルは株主価値を過小評価する。",
+
+  "risk_free": 0.016,
+  "_risk_free_note": "yfinance での10年JGB利回り取得を試行したが全滅(^JP10YB / JP10Y-JP / JGB10YR-JP / ^TNX.JP / JP10YT=RR いずれも 404 または no data)。プロンプト指定のフォールバック 1.6% を使用。",
+  "erp": 0.055,
+  "beta": 1.39,
+  "_beta_note": "yfinance で 2962.T の週次2年リターン(104週、2026-08-21まで)を TOPIX連動ETF 1306.T に対して回帰: beta = 1.390。^TPX はデータ取得不可のため 1306.T を TOPIX プロキシとして使用。プロンプトの許容レンジ [0.8, 2.5] 内のため、フォールバック1.3ではなく実測値1.39を採用。テンプレの正規化レンジ [0.6, 1.5] 内でもあり、置換は発生しない。",
+  "size_premium": 0.040,
+  "_size_premium_note": "時価総額142億円の超小型株。プロンプト指定の4.0%を明示指定する(明示しないとテンプレが時価総額から自動決定する経路に入り、意図しない値になる)。",
+  "cost_of_debt_at": 0.0104,
+  "_cost_of_debt_note": "プロンプト指定は税引前1.5%(FY2026/6 支払利息55 / 平均有利子負債4,250 = 1.3% を丸めたもの)。スキーマの cost_of_debt_at は【税引後】であり、テンプレの WACC 式は cost_of_debt_at に (1-t) を掛けないため、1.5% x (1 - 0.306) = 1.041% を税引後値として投入する。",
+  "_de_ratio_note": "de_ratio はプロンプト指示どおり指定せず自動計算に委ねる。generate_dcf.py の自動式は de_ratio = net_debt / 時価総額 = 2,182 / 14,241 = 0.153 となり、プロンプトの期待値 4,270/14,241 ≈ 0.30(=【総】有利子負債ベース)とは一致しない。パイプラインは一貫して【純】有利子負債ベースで de_ratio を定義しているため、0.2〜0.4 のレンジ外になるのは仕様どおり。最終レポートに明記する。",
+
+  "terminal_growth": 0.010,
+  "exit_multiple": 8.0,
+  "primary_multiple": "EV/EBITDA",
+  "_exit_note": "Exit倍率 8.0倍(EV/EBITDA)。電子部品・精密加工の中小型 peer 水準。",
+
+  "capex_method": "revenue_pct",
+  "da_method": "revenue_pct",
+  "capex_pct": 0.064,
+  "da_pct": 0.065,
+  "_capex_note": "減損後のD&A 261(FY2026/6 売上比7.0%)が基準。DC向け増産で capex は D&A 並みに戻る前提。スキーマ上 capex_pct / da_pct は数値スカラーのみ(overrides_validator の ALLOWED_KEYS が _NUM 指定)で配列は契約違反となるため、プロンプトの配列案 capex [0.06,0.06,0.065,0.065,0.065] / D&A [0.065,0.063,0.065,0.065,0.065] ではなくプロンプトが用意したスカラー・フォールバック 0.064 / 0.065 を採用した。ターミナル年 capex/D&A = 0.064/0.065 = 0.985倍で、要求レンジ 0.95〜1.05 および validator の警告レンジ [0.90, 1.15] の内側。",
+
+  "nwc_method": "days",
+  "base_year_ar": 661,
+  "base_year_inv": 1319,
+  "base_year_ap": 272,
+  "_nwc_note": "2026/6末BS。AR = 受取手形8 + 売掛金653 = 661。INV = 商品240 + 仕掛345 + 原材料734 = 1,319。AP = 支払手形・買掛金204 + 電子記録債務68 = 272。原材料(Cu-W等)の積み増しで在庫日数は 1,319/2,248 x 365 = 214日。売上+57%なら在庫増でΔNWCが重くなる。テンプレの自動生成経路は dih_days を 180日に強制クランプするため(generate_dcf.py の max(0, min(dih_days,180)))、実態の214日を保つ目的で dso/dih/dpo を全シナリオに明示指定している。",
+
+  "projection_years": 5,
+  "base_year_revenue": 3746,
+  "base_year_cogs": 2248,
+  "_base_year_note": "予測Y1の起点は FY2026/6 実績 3,746百万円。base_year_cogs 2,248 は 3,746 − SGA 1,573 − 営業利益(-75) の逆算値で、粗利率40.0%に相当する(FY2025/6 の粗利率3.9%からの回復。減損によるD&A半減が主因)。",
+  "core_ebitda": 186,
+  "core_net_income": 6,
+  "book_value": 1764,
+  "_core_note": "core_ebitda = FY2026/6 営業利益 -75 + 減価償却費 261 = 186。core_net_income = 6(FY2026/6 純利益)。book_value = 純資産1,764(2026/6末)。営業赤字のため自社 EV/EBITDA は正だが極端な高倍率(EV 16,423 / EBITDA 186 ≈ 88倍)となり実質的に無意味 — Comps の自社行は統計から自動除外される設計であり、判断には PER / PBR を用いる。",
+
+  "hist_years": ["FY2024/6", "FY2025/6", "FY2026/6"],
+  "hist_revenue": [4683, 3362, 3746],
+  "hist_operating_income": [-477, -1443, -75],
+  "hist_net_income": [-604, -2977, 6],
+  "hist_cogs": [3507, 3232, 2248],
+  "hist_sga": [1653, 1574, 1573],
+  "hist_ocf": [-387, -257, 97],
+  "hist_cash": [2180, 1913, 2088],
+  "hist_debt": [3969, 4231, 4270],
+  "hist_capex": [431, 166, 209],
+  "hist_depreciation": [543, 530, 261],
+  "_hist_note": "3年方式。FY2024/6・FY2025/6 の売上/営業利益/COGS/SGA/純利益は EDINET 有報(docID S100UG1F / S100WRPQ)実績と一致(4,683.182 / 3,362.209、-476.939 / -1,443.128、COGS 3,507.270 / 3,231.756、SGA 1,652.850 / 1,573.581、純利益 -603.632 / -2,976.832)。FY2026/6 は EDINET に有報が未掲載のため fundamentals_fy2026 で注入し、COGS 2,248 / SGA 1,573 は「SGAは過去5年ほぼ固定(FY2022売上5,481でSGA1,586、FY2025売上3,362でSGA1,574 — 売上-39%に対しSGA-0.8%)」という実績にもとづき SGA を1,573で据え置いて逆算した。粗利率は3.9%→40.0%となり、プロンプトの thesis 記載『gross margin from 4% to 40%』と整合する。FY2025/6の減損1,271は特別損失であり営業利益・D&A系列には含めていない(D&A 530→261 の半減はその翌期効果)。プロンプトのキー名 hist_op / hist_da はスキーマ上 hist_operating_income / hist_depreciation が正のため改名した。hist_years もスキーマの年度突合ラダーに合わせ [2024,2025,2026] の整数から 'FY2024/6' 形式の文字列に変更した。",
+
+  "ltm_revenue": 3746,
+  "_ltm_note": "本決算直後(FY2027/6 Q1未発表)のため LTM = FY2026/6 実績 3,746 を明示指定。指定しない場合、EDINET が第58期の半期報告書(2025/07-2026/06期の上期)を拾って LTM = 3,541.8 を自動構築してしまう(FY2025/6 実績 3,362.2 − 前年同期 1,463.9 + 当期 1,643.5 相当)。自動構築値との乖離は +5.8% で、テンプレの20%警告閾値の内側。",
+
+  "fundamentals_fy2026": {
+    "revenue": 3746,
+    "operating_income": -75,
+    "net_income": 6,
+    "ebitda": 186,
+    "net_assets": 1764
+  },
+  "_fundamentals_note": "EDINET の最新有報は FY2025/6(docID S100WRPQ)までで FY2026/6 は未掲載。本ブロックが無いと最新FYが FY2025/6(売上3,362)となり、予測Y1の起点が 3,746 ではなく 3,362 になって全シナリオが下方にズレる。D&A は EBITDA − 営業利益 = 186 − (-75) = 261 で逆算される(プロンプトの hist_depreciation 最終値と一致)。",
+
+  "_scenario_design_note": "テンプレートは営業利益率を直接受け取らない。シナリオの許容配列キーは revenue_growth / cogs_pct / sga_pct / dso_days / dih_days / dpo_days / nwc_pct のみで、営業利益率 = 1 − cogs_pct − sga_pct として算出される。そこでプロンプト指定の営業利益率を満たすよう、(1) SGA を実額で置き(1,573 から年1.5%成長 = Y1 1,597 / Y2 1,621 / Y3 1,645 / Y4 1,670 / Y5 1,695、過去5年SGAがほぼ固定である実績にもとづく)、(2) sga_pct = SGA実額 / 各年売上、(3) cogs_pct = 1 − sga_pct − 目標営業利益率 として逆算した。この分解は営業利益(=EBIT)には一切影響せず、Financial Statements の売上総利益/販管費の表示のみを決める。結果の粗利率は Base 32.5〜34.6% / Upside 31.1〜32.1% / Management 29.9〜31.3% / Downside 1 35.8〜39.4% / Downside 2 34.9〜48.3%。Downside 2 で粗利率が48%まで上がるのは、売上横ばいのまま営業利益率を -10%→+1% に改善させるというプロンプト指定の前提を、固定SGAの下で満たすには粗利で稼ぐしかないためであり、分解方法ではなく前提の含意である。NWC日数は base_year 実績(DSO 64日 / DIH 214日 / DPO 44日)を Base とし、テンプレ自動生成と同じ差分幅(Upside: -5/-2/+3、Downside 1: +5/+3/-3、Downside 2: +10/+5/-5)を適用した。明示指定するのは、自動生成経路が dih_days を180日にクランプして在庫214日の実態を消してしまうため。",
+
+  "scenarios": {
+    "Base": {
+      "_desc": "会社予想を割り引く。Y1売上 3,746 x 1.35 = 5,057(会社予想5,900の86%)、営業利益率 3% で営業利益152。Y2以降は減速しながら営業利益率9%へ。検算: 3,746 x 1.35 x 3% = 152。",
+      "revenue_growth": [0.35, 0.20, 0.10, 0.05, 0.03],
+      "cogs_pct": [0.6542, 0.6729, 0.6736, 0.6717, 0.6752],
+      "sga_pct": [0.3158, 0.2671, 0.2464, 0.2383, 0.2348],
+      "dso_days": [64, 64, 64, 64, 64],
+      "dih_days": [214, 214, 214, 214, 214],
+      "dpo_days": [44, 44, 44, 44, 44]
+    },
+    "Upside": {
+      "_desc": "会社予想どおり立ち上がり、その後もDC向けが伸長。営業利益率は14%まで。",
+      "revenue_growth": [0.575, 0.30, 0.15, 0.08, 0.04],
+      "cogs_pct": [0.6793, 0.6887, 0.6835, 0.6847, 0.6889],
+      "sga_pct": [0.2707, 0.2113, 0.1865, 0.1753, 0.1711],
+      "dso_days": [59, 59, 59, 59, 59],
+      "dih_days": [212, 212, 212, 212, 212],
+      "dpo_days": [47, 47, 47, 47, 47]
+    },
+    "Management": {
+      "_desc": "Y1は会社予想どおり。検算: 3,746 x 1.575 = 5,900、5,900 x 4.2% = 248(会社予想 営業利益250)。Y2以降はBaseと同じ成長率で営業利益率10%へ。",
+      "revenue_growth": [0.575, 0.20, 0.10, 0.05, 0.03],
+      "cogs_pct": [0.6873, 0.7010, 0.6988, 0.6958, 0.6988],
+      "sga_pct": [0.2707, 0.2290, 0.2112, 0.2042, 0.2012],
+      "dso_days": [64, 64, 64, 64, 64],
+      "dih_days": [214, 214, 214, 214, 214],
+      "dpo_days": [44, 44, 44, 44, 44]
+    },
+    "Downside 1": {
+      "_desc": "DC向けの立ち上がりが小幅にとどまる。Y1は営業赤字継続(-3%)、Y5でようやく営業利益率3%。",
+      "revenue_growth": [0.10, 0.05, 0.03, 0.03, 0.03],
+      "cogs_pct": [0.6424, 0.6253, 0.6109, 0.6062, 0.6115],
+      "sga_pct": [0.3876, 0.3747, 0.3691, 0.3638, 0.3585],
+      "dso_days": [69, 69, 69, 69, 69],
+      "dih_days": [217, 217, 217, 217, 217],
+      "dpo_days": [41, 41, 41, 41, 41]
+    },
+    "Downside 2": {
+      "_desc": "DC向け案件が流れ既存事業も縮小。Y1-Y2は売上減・大幅営業赤字、Y5でも営業利益率1%。",
+      "revenue_growth": [-0.05, -0.05, 0.00, 0.03, 0.03],
+      "cogs_pct": [0.6512, 0.6005, 0.5434, 0.5204, 0.5174],
+      "sga_pct": [0.4488, 0.4795, 0.4866, 0.4796, 0.4726],
+      "dso_days": [74, 74, 74, 74, 74],
+      "dih_days": [219, 219, 219, 219, 219],
+      "dpo_days": [39, 39, 39, 39, 39]
+    }
+  },
+
+  "_thesis_note": "プロンプト原文は 'trades at {pb}x PBR' だったが、テンプレのトークン書式 {pb} = TEXT(...,'0.00\"x\"') が既に末尾に x を付与するため、そのままだと '1.23xx PBR' と二重になる。'{pb} PBR' に修正した(3905 と同じ扱い)。",
+  "investment_thesis": [
+    "Data-center demand for laser-diode heat sinks underpins FY6/27 guidance of +57.5% sales and a return to operating profit after two loss-making years.",
+    "The FY6/25 impairment halved depreciation, lifting gross margin from 4% to 40%; incremental sales now drop through to profit quickly.",
+    "At {price} the stock trades at {pb} PBR; our target of {target_price} implies {upside_pct} with WACC of {wacc}."
+  ],
+  "key_risks": [
+    "Guidance rests on a single major customer's data-center orders; any slip in that program removes most of the projected growth.",
+    "Interest-bearing debt is 2.4x equity with JPY2.3bn of short-term borrowings, so the balance sheet depends on continued bank support.",
+    "Inventory days exceed 200; a 57% sales increase will tie up working capital before profits convert to cash."
+  ]
+}

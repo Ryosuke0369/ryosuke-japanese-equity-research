@@ -1,910 +1,310 @@
 {
-  "sector": "Heavy Industry / Machinery",
-  "primary_multiple": "EV/EBITDA",
-  "tax_rate": 0.305,
-  "risk_free": 0.023,
-  "cost_of_debt_at": 0.008,
-  "terminal_growth": 0.015,
-  "exit_multiple": 15.0,
-  "beta": 1.2,
-  "size_premium": 0.0,
-  "capex_pct": 0.065,
-  "da_pct": 0.042,
-  "de_ratio": 0.98,
-  "nwc_method": "revenue_pct",
-  "scenarios": {
-    "Base": {
-      "cogs_pct": [
-        0.7655,
-        0.7614,
-        0.7578,
-        0.7575,
-        0.7534
-      ],
-      "sga_pct": [
-        0.137,
-        0.135,
-        0.133,
-        0.131,
-        0.13
-      ],
-      "nwc_pct": [
-        0.39,
-        0.38,
-        0.37,
-        0.36,
-        0.35
-      ]
-    },
-    "Upside": {
-      "cogs_pct": [
-        0.7494,
-        0.747,
-        0.7441,
-        0.7446,
-        0.7412
-      ],
-      "sga_pct": [
-        0.132,
-        0.128,
-        0.125,
-        0.122,
-        0.12
-      ],
-      "nwc_pct": [
-        0.38,
-        0.36,
-        0.34,
-        0.33,
-        0.32
-      ]
-    },
-    "Management": {
-      "cogs_pct": [
-        0.7681,
-        0.7635,
-        0.7593,
-        0.7583,
-        0.7546
-      ],
-      "sga_pct": [
-        0.137,
-        0.136,
-        0.135,
-        0.134,
-        0.133
-      ],
-      "nwc_pct": [
-        0.41,
-        0.4,
-        0.39,
-        0.38,
-        0.37
-      ]
-    },
-    "Downside 1": {
-      "cogs_pct": [
-        0.7861,
-        0.7788,
-        0.7729,
-        0.7703,
-        0.7658
-      ],
-      "sga_pct": [
-        0.142,
-        0.144,
-        0.145,
-        0.146,
-        0.146
-      ],
-      "nwc_pct": [
-        0.43,
-        0.44,
-        0.45,
-        0.45,
-        0.45
-      ]
-    },
-    "Downside 2": {
-      "cogs_pct": [
-        0.8023,
-        0.7953,
-        0.7888,
-        0.7855,
-        0.7803
-      ],
-      "sga_pct": [
-        0.148,
-        0.15,
-        0.152,
-        0.154,
-        0.155
-      ],
-      "nwc_pct": [
-        0.46,
-        0.47,
-        0.48,
-        0.48,
-        0.48
-      ]
-    }
+ "risk_free": 0.0297,
+ "erp": 0.065,
+ "size_premium": 0.01,
+ "tax_rate": 0.25,
+ "terminal_growth": 0.01,
+ "primary_multiple": "EV/EBITDA",
+ "nwc_method": "days",
+ "current_price": 2624.5,
+ "shares_outstanding": 1060161928,
+ "hist_years": [
+  "FY2023",
+  "FY2024",
+  "FY2025",
+  "FY2026"
+ ],
+ "hist_revenue": [
+  1352940.0,
+  1322591.0,
+  1626831.0,
+  1643402.0
+ ],
+ "hist_operating_income": [
+  81985.0,
+  -70138.0,
+  143517.0,
+  165534.0
+ ],
+ "hist_net_income": [
+  44545.0,
+  -68214.0,
+  112740.0,
+  160992.0
+ ],
+ "hist_cogs": [
+  1070935.0,
+  1177736.0,
+  1252317.0,
+  1263891.0
+ ],
+ "hist_sga": [
+  200020.0,
+  214993.0,
+  230997.0,
+  213977.0
+ ],
+ "base_year_revenue": 1643402.0,
+ "base_year_cogs": 1263891.0,
+ "base_year_ar": 575965.0,
+ "base_year_inv": 504223.0,
+ "base_year_ap": 401427.0,
+ "book_value": 652243.0,
+ "core_ebitda": 252356.0,
+ "net_debt": 334809,
+ "_note": "バッチ生成 2026-09-05。型B(シクリカル・航空エンジン/エネルギー)。要目視レビュー。DRAFT（part1）。根拠は batch/per_ticker/7013_summary.md。",
+ "_prescreen_note": "追補1 §B / 追補2 §B のプレスクリーン実施済み。金融事業専用科目の検出なし → 型判定へ。",
+ "_type_note": "型B。**実績OPM に赤字年あり**（FY2024/3 −5.30%、民間航空エンジン関連の一過性費用）。レンジ15.4pt。直近は 10.07% と観測窓の最高。",
+ "_wacc_note": "rf=2.97%。ERP6.5%固定。size_premium=1.0%（時価総額2.78兆円）。beta: yfinance実測 **0.869** はクランプ域 [0.6, 1.75] の内側のため素通し（置換なし）。負債コストは実績Kd（支払利息 9,059 ÷ 平均有利子負債 (514,723+489,893)/2 = 502,308 = 1.80%税引前 → 税引後1.35%）。",
+ "_exit_note": "exit_multiple = Peer 5社の実測EV/EBITDA中央値 14.33x（7012 川崎重工 / 7011 三菱重工 / 6501 日立 / 6503 三菱電機 / 6367 ダイキン）。自社の現在倍率 12.35x は算式に入れていない。自社が Peer 中央値をやや下回るため Exit 法は現値より強気側に出る。■年度混在の開示: 7012 川崎重工・7011 三菱重工の D&A は FY2025/3 の値。",
+ "_capex_note": "capex_method / da_method とも revenue_pct（capex 5.57% / D&A 5.30%）。実績 D&A は 4.7-5.7%、capex は FY2026/3 のみ取得でき 5.6%。ターミナル比率 1.051x（レンジ内）。",
+ "_scenario_note": "実績OPM（FY2023-FY2026）: min **−5.30** / p25 3.22 / med 7.44 / p75 9.13 / max 10.07%。■**§4-4 からの意図的な逸脱（4005 住友化学と同じ扱い）**: §4-4 は Base を『ピークとトラフの中間』とするが、当社のトラフ（−5.30%）は民間航空エンジン関連の**一過性費用による赤字年であって営業上の谷ではない**。そのまま適用すると Base 到達OPMが 2.39% という実勢とかけ離れた値になる。したがって Base 到達OPM =（直近実績 10.07% + 実績中央値 7.44%）/2 = **8.76%** とし、ピーク側からミッドサイクルへの緩やかな正常化を置いた（Y1 9.8% → Y5 8.76%）。同じ理由で **Downside 1 の p25（3.22%）も使えず、実績中央値 7.44% を到達点**とした。Upside は max(実績max 10.07, 直近+1.0pt = 11.07) = 11.07%。Downside 2 は赤字年の再現ではなく事業悪化として設計し、売上 −10% + OPM 2.0-4.0% とした。■**恒等式の扱い**: 当社は 売上 − COGS − SGA が営業利益に完全一致しない（その他営業損益が存在する）。テンプレは OP = 売上 − COGS − SGA で計算するので、**COGS% を実績水準に固定し SGA% = 100% − COGS% − 目標OPM で逆算**した。したがって本モデルの SGA 行は「販管費 ± その他営業損益」を表す。COGS% は直近実績 76.9% に固定した。既存銘柄からの流用なし。",
+ "ticker": "7013",
+ "company_name": "IHI",
+ "exchange": "TSE Prime",
+ "sector": "機械",
+ "fiscal_year_end_month": 3,
+ "beta": 1.7465,
+ "exit_multiple": 14.3,
+ "interest_expense": 9059,
+ "debt_beginning": 514723,
+ "debt_ending": 489893,
+ "capex_method": "revenue_pct",
+ "capex_pct": 0.0557,
+ "da_method": "revenue_pct",
+ "da_pct": 0.053,
+ "scenarios": {
+  "Base": {
+   "revenue_growth": [
+    0.04,
+    0.035,
+    0.03,
+    0.025,
+    0.025
+   ],
+   "cogs_pct": [
+    0.769,
+    0.769,
+    0.769,
+    0.769,
+    0.769
+   ],
+   "sga_pct": [
+    0.133,
+    0.136,
+    0.139,
+    0.142,
+    0.1434
+   ],
+   "dso_days": [
+    117,
+    117,
+    117,
+    117,
+    117
+   ],
+   "dih_days": [
+    133,
+    133,
+    133,
+    133,
+    133
+   ],
+   "dpo_days": [
+    91,
+    91,
+    91,
+    91,
+    91
+   ]
   },
-  "investment_thesis": [
-    "1. Aero Engine: V2500/PW1100G aftermarket revenue accelerating; installed base of 5,000+ engines drives recurring high-margin MRO demand",
-    "2. Defense upside: Japan defense budget doubling (1%→2% GDP by FY2027); IHI is sole supplier of F110/F135 engine MRO for JASDF F-15/F-35 fleet",
-    "3. Margin recovery: FY2025 OPM 8.8% recovering from FY2024 trough (-9.2%); structural improvement from aero engine mix shift and turbocharger restructuring"
-  ],
-  "key_risks": [
-    "1. Aero engine concentration: 70%+ of OP from single segment; Boeing/Airbus delivery delays reduce new engine shipments",
-    "2. Civil aero engine PBH contracts: long-term risk-sharing partnerships expose IHI to OEM production cycle downturns",
-    "3. Legacy segments (Social Infrastructure, Industrial Systems) remain low-margin; turnaround execution risk"
-  ],
-  "segments": [
-    {
-      "name": "Resources, Energy & Environment",
-      "name_jp": "資源・エネルギー・環境",
-      "driver_type": "manual",
-      "historical": {
-        "revenue": [
-          369721,
-          402503,
-          408301
-        ],
-        "op": [
-          26264,
-          17715,
-          16136
-        ]
-      },
-      "projections": {
-        "revenue_growth": [
-          0.035,
-          0.04,
-          0.05,
-          0.06,
-          0.065
-        ],
-        "op_margin": [
-          0.05,
-          0.055,
-          0.06,
-          0.065,
-          0.07
-        ]
-      },
-      "scenario_projections": {
-        "Upside": {
-          "revenue_growth": [
-            0.06,
-            0.065,
-            0.075,
-            0.085,
-            0.09
-          ],
-          "op_margin": [
-            0.065,
-            0.07,
-            0.075,
-            0.08,
-            0.085
-          ],
-          "revenue": [
-            402800,
-            428982,
-            461156,
-            500354,
-            545386
-          ]
-        },
-        "Management": {
-          "revenue_growth": [
-            0.04,
-            0.045,
-            0.055,
-            0.065,
-            0.07
-          ],
-          "op_margin": [
-            0.05,
-            0.055,
-            0.06,
-            0.065,
-            0.07
-          ],
-          "revenue": [
-            395200,
-            412984,
-            435698,
-            464018,
-            496499
-          ]
-        },
-        "Downside 1": {
-          "revenue_growth": [
-            0.005,
-            0.01,
-            0.02,
-            0.03,
-            0.035
-          ],
-          "op_margin": [
-            0.03,
-            0.035,
-            0.04,
-            0.045,
-            0.05
-          ],
-          "revenue": [
-            381900,
-            385719,
-            393433,
-            405236,
-            419419
-          ]
-        },
-        "Downside 2": {
-          "revenue_growth": [
-            -0.02,
-            -0.015,
-            -0.005,
-            0.005,
-            0.01
-          ],
-          "op_margin": [
-            0.015,
-            0.02,
-            0.025,
-            0.03,
-            0.035
-          ],
-          "revenue": [
-            372400,
-            366814,
-            364980,
-            366805,
-            370473
-          ]
-        }
-      }
-    },
-    {
-      "name": "Social Infrastructure",
-      "name_jp": "社会基盤",
-      "driver_type": "manual",
-      "historical": {
-        "revenue": [
-          166155,
-          165394,
-          155910
-        ],
-        "op": [
-          17089,
-          15066,
-          9442
-        ]
-      },
-      "projections": {
-        "revenue_growth": [
-          -0.03,
-          -0.025,
-          -0.02,
-          -0.015,
-          -0.01
-        ],
-        "op_margin": [
-          0.03,
-          0.025,
-          0.02,
-          0.02,
-          0.02
-        ]
-      },
-      "scenario_projections": {
-        "Upside": {
-          "revenue_growth": [
-            -0.01,
-            -0.005,
-            0.0,
-            0.005,
-            0.01
-          ],
-          "op_margin": [
-            0.05,
-            0.045,
-            0.04,
-            0.04,
-            0.04
-          ],
-          "revenue": [
-            128700,
-            128056,
-            128056,
-            128696,
-            129983
-          ]
-        },
-        "Management": {
-          "revenue_growth": [
-            -0.035,
-            -0.03,
-            -0.025,
-            -0.02,
-            -0.015
-          ],
-          "op_margin": [
-            0.025,
-            0.02,
-            0.015,
-            0.015,
-            0.015
-          ],
-          "revenue": [
-            125450,
-            121686,
-            118644,
-            116271,
-            114527
-          ]
-        },
-        "Downside 1": {
-          "revenue_growth": [
-            -0.055,
-            -0.05,
-            -0.045,
-            -0.04,
-            -0.035
-          ],
-          "op_margin": [
-            0.01,
-            0.005,
-            0.0,
-            0.0,
-            0.0
-          ],
-          "revenue": [
-            122850,
-            116708,
-            111456,
-            106998,
-            103253
-          ]
-        },
-        "Downside 2": {
-          "revenue_growth": [
-            -0.07,
-            -0.065,
-            -0.06,
-            -0.055,
-            -0.05
-          ],
-          "op_margin": [
-            -0.005,
-            -0.01,
-            -0.015,
-            -0.015,
-            -0.015
-          ],
-          "revenue": [
-            120900,
-            113042,
-            106259,
-            100415,
-            95394
-          ]
-        }
-      }
-    },
-    {
-      "name": "Industrial Systems & General-Purpose Machinery",
-      "name_jp": "産業システム・汎用機械",
-      "driver_type": "growth_rate",
-      "historical": {
-        "revenue": [
-          428195,
-          457132,
-          475644
-        ],
-        "op": [
-          18000,
-          12800,
-          10800
-        ]
-      },
-      "projections": {
-        "revenue_growth": [
-          -0.02,
-          0.01,
-          0.02,
-          0.02,
-          0.025
-        ],
-        "op_margin": [
-          0.055,
-          0.06,
-          0.065,
-          0.065,
-          0.07
-        ]
-      },
-      "scenario_projections": {
-        "Upside": {
-          "revenue_growth": [
-            0.005,
-            0.035,
-            0.045,
-            0.045,
-            0.05
-          ],
-          "op_margin": [
-            0.07,
-            0.075,
-            0.08,
-            0.08,
-            0.085
-          ],
-          "revenue": [
-            442200,
-            457677,
-            478272,
-            499794,
-            524784
-          ]
-        },
-        "Management": {
-          "revenue_growth": [
-            -0.015,
-            0.015,
-            0.025,
-            0.025,
-            0.03
-          ],
-          "op_margin": [
-            0.055,
-            0.06,
-            0.065,
-            0.065,
-            0.07
-          ],
-          "revenue": [
-            433400,
-            439901,
-            450899,
-            462171,
-            476036
-          ]
-        },
-        "Downside 1": {
-          "revenue_growth": [
-            -0.045,
-            -0.015,
-            -0.005,
-            -0.005,
-            0.0
-          ],
-          "op_margin": [
-            0.03,
-            0.035,
-            0.04,
-            0.04,
-            0.045
-          ],
-          "revenue": [
-            420200,
-            413897,
-            411828,
-            409769,
-            409769
-          ]
-        },
-        "Downside 2": {
-          "revenue_growth": [
-            -0.06,
-            -0.03,
-            -0.02,
-            -0.02,
-            -0.015
-          ],
-          "op_margin": [
-            0.01,
-            0.015,
-            0.02,
-            0.02,
-            0.025
-          ],
-          "revenue": [
-            413600,
-            401192,
-            393168,
-            385305,
-            379525
-          ]
-        }
-      }
-    },
-    {
-      "name": "Aero Engine, Space & Defense",
-      "name_jp": "航空・宇宙・防衛",
-      "driver_type": "manual",
-      "historical": {
-        "revenue": [
-          360272,
-          266896,
-          552700
-        ],
-        "op": [
-          36171,
-          -102897,
-          122791
-        ]
-      },
-      "projections": {
-        "revenue_growth": [
-          0.1,
-          0.08,
-          0.07,
-          0.06,
-          0.05
-        ],
-        "op_margin": [
-          0.18,
-          0.185,
-          0.19,
-          0.19,
-          0.195
-        ]
-      },
-      "scenario_projections": {
-        "Upside": {
-          "revenue_growth": [
-            0.13,
-            0.11,
-            0.1,
-            0.09,
-            0.08
-          ],
-          "op_margin": [
-            0.21,
-            0.215,
-            0.22,
-            0.22,
-            0.225
-          ],
-          "revenue": [
-            768400,
-            852924,
-            938216,
-            1022655,
-            1104467
-          ]
-        },
-        "Management": {
-          "revenue_growth": [
-            0.09,
-            0.07,
-            0.06,
-            0.05,
-            0.04
-          ],
-          "op_margin": [
-            0.175,
-            0.18,
-            0.185,
-            0.185,
-            0.19
-          ],
-          "revenue": [
-            741200,
-            793084,
-            840669,
-            882702,
-            918010
-          ]
-        },
-        "Downside 1": {
-          "revenue_growth": [
-            0.05,
-            0.03,
-            0.02,
-            0.01,
-            0.0
-          ],
-          "op_margin": [
-            0.15,
-            0.155,
-            0.16,
-            0.16,
-            0.165
-          ],
-          "revenue": [
-            714000,
-            735420,
-            750128,
-            757629,
-            757629
-          ]
-        },
-        "Downside 2": {
-          "revenue_growth": [
-            0.02,
-            0.0,
-            -0.01,
-            -0.02,
-            -0.03
-          ],
-          "op_margin": [
-            0.12,
-            0.125,
-            0.13,
-            0.13,
-            0.135
-          ],
-          "revenue": [
-            693600,
-            693600,
-            686664,
-            672931,
-            652743
-          ]
-        }
-      }
-    }
-  ],
-  "sotp": {
-    "thesis": "IHI's consolidated valuation obscures value concentration in Aero segment. 76% of EV from Aerospace & Defense.",
-    "valuation_date": "April 2026",
-    "stock_split_ratio": 7,
-    "consolidated": {
-      "da_total": 70000,
-      "net_debt": 360000,
-      "minority_interest": 27000,
-      "equity_method_op": 6200,
-      "equity_method_multiple": 10.0,
-      "shares_outstanding": 151364
-    },
-    "segments": [
-      {
-        "key": "aero",
-        "label": "Aero, Space & Defense",
-        "label_jp": "航空・宇宙・防衛",
-        "revenue": [
-          270400,
-          555700,
-          620000
-        ],
-        "op": [
-          -102800,
-          122700,
-          130000
-        ],
-        "fiscal_years": [
-          "FY23",
-          "FY24",
-          "FY25E"
-        ],
-        "da_allocation_pct": 0.31,
-        "selected_multiple": 18.0,
-        "multiple_source": "Median of Safran/MTU/Rolls-Royce (excl. TransDigm)",
-        "peers": [
-          {
-            "name": "Safran",
-            "ticker": "SAF.PA",
-            "ev_ebitda": 20.5,
-            "opm": 0.166,
-            "market_cap_usd_b": 130,
-            "note": "CFM LEAP, MRO, Defense",
-            "excluded": false
-          },
-          {
-            "name": "MTU Aero Engines",
-            "ticker": "MTX.DE",
-            "ev_ebitda": 11.9,
-            "opm": 0.199,
-            "market_cap_usd_b": 24,
-            "note": "V2500/PW1100G partner",
-            "excluded": false
-          },
-          {
-            "name": "Rolls-Royce",
-            "ticker": "RR.L",
-            "ev_ebitda": 18.0,
-            "opm": 0.15,
-            "market_cap_usd_b": 65,
-            "note": "Large engine, V-shape recovery",
-            "excluded": false
-          },
-          {
-            "name": "TransDigm",
-            "ticker": "TDG",
-            "ev_ebitda": 25.0,
-            "opm": 0.54,
-            "market_cap_usd_b": 75,
-            "note": "Aftermarket monopoly — EXCLUDED",
-            "excluded": true
-          }
-        ]
-      },
-      {
-        "key": "energy",
-        "label": "Resources, Energy & Environment",
-        "label_jp": "資源・エネルギー・環境",
-        "revenue": [
-          404900,
-          411400,
-          370000
-        ],
-        "op": [
-          17700,
-          16100,
-          24000
-        ],
-        "fiscal_years": [
-          "FY23",
-          "FY24",
-          "FY25E"
-        ],
-        "da_allocation_pct": 0.3,
-        "selected_multiple": 8.0,
-        "multiple_source": "Energy equipment peers",
-        "peers": [
-          {
-            "name": "Siemens Energy",
-            "ticker": "ENR.DE",
-            "ev_ebitda": 12.0,
-            "opm": 0.06,
-            "market_cap_usd_b": 50,
-            "note": "Gas turbine, grid",
-            "excluded": false
-          },
-          {
-            "name": "MHI (Energy seg.)",
-            "ticker": "7011.T",
-            "ev_ebitda": 8.0,
-            "opm": 0.05,
-            "market_cap_usd_b": 0,
-            "note": "Comparable segment estimate",
-            "excluded": false
-          }
-        ]
-      },
-      {
-        "key": "industrial",
-        "label": "Industrial Systems & General Machinery",
-        "label_jp": "産業システム・汎用機械",
-        "revenue": [
-          466100,
-          484800,
-          440000
-        ],
-        "op": [
-          12700,
-          10800,
-          25000
-        ],
-        "fiscal_years": [
-          "FY23",
-          "FY24",
-          "FY25E"
-        ],
-        "da_allocation_pct": 0.27,
-        "selected_multiple": 10.0,
-        "multiple_source": "Turbocharger/machinery blend",
-        "peers": [
-          {
-            "name": "BorgWarner",
-            "ticker": "BWA",
-            "ev_ebitda": 6.5,
-            "opm": 0.1,
-            "market_cap_usd_b": 7,
-            "note": "Turbocharger OEM",
-            "excluded": false
-          },
-          {
-            "name": "Garrett Motion",
-            "ticker": "GTX",
-            "ev_ebitda": 7.0,
-            "opm": 0.15,
-            "market_cap_usd_b": 3,
-            "note": "Turbocharger pure-play",
-            "excluded": false
-          }
-        ]
-      },
-      {
-        "key": "social_infra",
-        "label": "Social Infrastructure",
-        "label_jp": "社会基盤",
-        "revenue": [
-          154300,
-          146000,
-          140000
-        ],
-        "op": [
-          4900,
-          -4200,
-          0
-        ],
-        "fiscal_years": [
-          "FY23",
-          "FY24",
-          "FY25E"
-        ],
-        "da_allocation_pct": 0.12,
-        "selected_multiple": 6.0,
-        "multiple_source": "Infrastructure floor",
-        "peers": [
-          {
-            "name": "Yokogawa Bridge",
-            "ticker": "5911.T",
-            "ev_ebitda": 5.5,
-            "opm": 0.04,
-            "market_cap_usd_b": 0,
-            "note": "Bridge construction — low margin",
-            "excluded": false
-          }
-        ]
-      }
-    ],
-    "conglomerate_discount": {
-      "base": 0.0,
-      "sensitivity_range": [
-        0.0,
-        0.05,
-        0.1,
-        0.15,
-        0.2
-      ]
-    },
-    "sensitivity": {
-      "primary_segment_key": "aero",
-      "primary_multiples": [
-        14,
-        16,
-        18,
-        20,
-        22,
-        25
-      ],
-      "table2": {
-        "row_segment_key": "industrial",
-        "row_multiples": [
-          7,
-          8,
-          10,
-          12,
-          14
-        ],
-        "col_segment_key": "energy",
-        "col_multiples": [
-          6,
-          8,
-          10,
-          12
-        ]
-      }
-    },
-    "dcf_crosscheck": {
-      "pgm_fair_value": 1982,
-      "exit_fair_value": 3463,
-      "comps_ev_ebitda": 3794,
-      "comps_per": 4973
-    },
-    "da_allocation_intro": [
-      "IHI does not disclose segment-level D&A.",
-      "Allocation is estimated based on fixed asset intensity by segment."
-    ],
-    "da_allocation_notes": [
-      "• Aero segment has highest capital intensity (engine test facilities, MRO hangars)",
-      "• Energy segment includes boiler/turbine manufacturing → moderate fixed assets",
-      "• Industrial includes turbocharger plants (Niigata, overseas) → moderate",
-      "• Social Infrastructure: project-based, lower owned fixed assets"
-    ]
+  "Upside": {
+   "revenue_growth": [
+    0.06,
+    0.05,
+    0.04,
+    0.035,
+    0.03
+   ],
+   "cogs_pct": [
+    0.763,
+    0.763,
+    0.763,
+    0.763,
+    0.763
+   ],
+   "sga_pct": [
+    0.134,
+    0.132,
+    0.13,
+    0.128,
+    0.1263
+   ],
+   "dso_days": [
+    112,
+    112,
+    112,
+    112,
+    112
+   ],
+   "dih_days": [
+    127,
+    127,
+    127,
+    127,
+    127
+   ],
+   "dpo_days": [
+    95,
+    95,
+    95,
+    95,
+    95
+   ]
   },
-  "_notes": {
-    "stock_split": "2025年10月 1:7分割済み。shares_outstandingはyfinanceから自動取得（分割後）",
-    "ifrs": "IHIはIFRS適用企業。EDINET XBRLタグはIFRS taxonomyを使用",
-    "pw1100g": "PW1100G-JM追加検査プログラムの為替影響を含むノイズあり。正規化はFY26通期確定後に実施",
-    "comps_csv": "data/comps/7013_comps.csv に4社配置済み（自動検出される）",
-    "historical_source": "Segment historical data extracted from EDINET XBRL (FY2023-FY2025 actual)",
-    "backlog_upgrade": "Order/backlog data not in XBRL. Upgrade to backlog driver_type after sourcing IR materials"
+  "Management": {
+   "revenue_growth": [
+    0.04,
+    0.035,
+    0.03,
+    0.025,
+    0.025
+   ],
+   "cogs_pct": [
+    0.769,
+    0.769,
+    0.769,
+    0.769,
+    0.769
+   ],
+   "sga_pct": [
+    0.133,
+    0.136,
+    0.139,
+    0.142,
+    0.1434
+   ],
+   "dso_days": [
+    117,
+    117,
+    117,
+    117,
+    117
+   ],
+   "dih_days": [
+    133,
+    133,
+    133,
+    133,
+    133
+   ],
+   "dpo_days": [
+    91,
+    91,
+    91,
+    91,
+    91
+   ]
+  },
+  "Downside 1": {
+   "revenue_growth": [
+    0.01,
+    0.01,
+    0.005,
+    0.005,
+    0.005
+   ],
+   "cogs_pct": [
+    0.778,
+    0.778,
+    0.778,
+    0.778,
+    0.778
+   ],
+   "sga_pct": [
+    0.13,
+    0.136,
+    0.142,
+    0.146,
+    0.1476
+   ],
+   "dso_days": [
+    123,
+    123,
+    123,
+    123,
+    123
+   ],
+   "dih_days": [
+    140,
+    140,
+    140,
+    140,
+    140
+   ],
+   "dpo_days": [
+    86,
+    86,
+    86,
+    86,
+    86
+   ]
+  },
+  "Downside 2": {
+   "revenue_growth": [
+    -0.1,
+    -0.02,
+    0.01,
+    0.02,
+    0.025
+   ],
+   "cogs_pct": [
+    0.8,
+    0.8,
+    0.8,
+    0.8,
+    0.8
+   ],
+   "sga_pct": [
+    0.17,
+    0.18,
+    0.175,
+    0.165,
+    0.16
+   ],
+   "dso_days": [
+    129,
+    129,
+    129,
+    129,
+    129
+   ],
+   "dih_days": [
+    147,
+    147,
+    147,
+    147,
+    147
+   ],
+   "dpo_days": [
+    82,
+    82,
+    82,
+    82,
+    82
+   ]
   }
+ },
+ "investment_thesis": [
+  "IHI has turned its civil aero-engine spare-parts business from a loss into the group's profit engine, and the operating margin has reached the top of its four-year range; the shares trade at {per} earnings and {pb} book.",
+  "The stock is valued slightly below the heavy-machinery peer median on EV/EBITDA, which is where the exit leg of this model finds value against a {wacc} cost of capital.",
+  "At {price} the market has not fully re-rated the earnings recovery; a base case that normalises only partway back toward the cycle median supports {target_price}, or {upside_pct} from here."
+ ],
+ "key_risks": [
+  "The company posted an operating loss two years ago on civil aero-engine charges; that year is excluded from the mid-cycle calculation as a one-off, and if such charges prove recurrent the base case behind {target_price} is too generous.",
+  "Aero-engine spare-parts revenue depends on flight hours and on programme share that is contractually fixed years ahead, so a demand shock feeds through with a lag the {wacc} single-path discounting does not represent.",
+  "Working capital is heavy — receivable and inventory days together exceed two hundred and fifty — so a revenue decline ties up cash before it appears in the {per} the market pays."
+ ],
+ "_edinet_note": "【追補2 §F-2 / 追補3 §L の予防的補完（生成前適用・必須）】根本原因は scripts/generate_dcf.py:66 の _val(data_dict, key, default=0) が欠損値を None ではなく 0 に落とすこと。hist_years を直近4期に置換し hist_revenue / hist_operating_income / hist_net_income / hist_cogs / hist_sga を yfinance連結財務諸表から供給（配列長は全て4で hist_years と一致、契約遵守）。■hist_ocf / hist_cash / hist_debt / hist_capex / hist_depreciation は【供給していない】 — Step 4.6 が最終 hist_years に会計年度キーで再マッピングするため EDINET を一次ソースのまま使える。■hist_sga = 売上 − COGS − 営業利益 で逆算。■追補3 §L に従い current_price / shares_outstanding も予防的に明示指定（プレースホルダ降格の回避＋再現性確保）。■net_debt も明示指定（EDINET の有利子負債抽出が 0 に落ちる既知パターンが3件発生しているため）。",
+ "_beta_note": "実測（raw）β = 1.7465。出所: TOPIX 2y 1wk OLS (n=104, corr=0.568)。フェーズ2 #6 以降 overrides の beta は raw を入れる契約で、テンプレが Blume 調整 0.67×raw + 0.33×1.00 を掛け [0.3, 2.0] にクランプする（採用 1.5002、クランプ非発動）。■旧 overrides の値 0.87 は旧ルール [0.6, 1.75] のクランプ後の値であり raw ではない。■yfinance の beta フィールドは 0.869。日本株では市場を説明しないベンチマークで算出されており（NTT −0.165 / 大阪ガス −0.201 等）、採用しない。詳細は docs/phase2_pipeline_fixes_20260906.md の §2-4。"
 }

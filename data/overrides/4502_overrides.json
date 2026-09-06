@@ -1,0 +1,329 @@
+{
+ "risk_free": 0.0297,
+ "erp": 0.065,
+ "size_premium": 0.01,
+ "tax_rate": 0.25,
+ "terminal_growth": 0.01,
+ "primary_multiple": "EV/EBITDA",
+ "nwc_method": "days",
+ "_note": "バッチ生成 2026-09-05。型A。DRAFT。根拠は batch/per_ticker/4502_summary.md。",
+ "_prescreen_note": "追補1 §B の金融事業プレスクリーン実施済み(docID S100YB5L)。金融事業科目の検出なし → 型判定へ。",
+ "_wacc_note": "rf=2.97%。ERP6.5%固定。size_premium=1.0%(時価総額9.19兆円)。beta: yfinance実測 0.10。追補1 §A に従い max(0.6, min(1.75, 実測)) = 0.60 を明示指定。テンプレは [0.6, 1.75] の範囲外を無言で 1.0 に置換するため、そのまま渡すとサイレントフォールバックが発動する。負債コストは実績Kd(支払利息148,123 / 平均有利子負債(4,515,265+4,881,838)/2=4,698,552 = 3.15%税引前 -> 税引後2.36%)。■Shire 買収に伴う米ドル・ユーロ建て社債が中心で、3.15% は国内発行体の水準より高いが当社の資本構成として妥当。D/E 0.47。",
+ "_exit_note": "exit_multiple = Peer 4社の実測EV/EBITDA中央値 11.43x(4568 第一三共 / 4503 アステラス / 4578 大塚HD / 4507 塩野義)。自社の現在倍率 11.36x は算式に不使用(ほぼ同水準)。■4519 中外製薬は yfinance が FY2025/12 の減価償却費を収録しておらず EBITDA を算出できないため、§5『D&Aが取れない社はCSVに入れない』に従い comps から除外した(Peer 4社構成)。",
+ "_capex_note": "【本モデル最大の設計判断】da_method=direct。当社の D&A は売上比 16.0%(721,127百万円)で capex 9.2%(414,659百万円)の 1.74倍。差は Shire 買収に伴う無形資産償却であり、恒久的な現金支出ではない。§4-2 のターミナル収束要件(capex/D&A 0.90-1.15)を capex を D&A まで引き上げて満たすことは事業実態に反する(当社が年7,200億円の設備投資をすることはない)。したがって逆に D&A を 5年かけて逓減させる明示パス [700,000 / 640,000 / 580,000 / 510,000 / 470,000] を置いた(Shire 無形資産の償却が期間の経過とともに剥落する経済実態を反映)。ターミナル年 capex(Y5売上4,896,617 x 9.2% = 450,489) / D&A 470,000 = 0.958x でレンジ内(validate チェック9)。■留保: 無形資産の償却スケジュールは会社開示で確認しておらず、逓減率は推定である。",
+ "_scenario_note": "実績OPM(FY2023-FY2026): min 7.27 / p25 9.45 / med 10.24 / p75 11.38 / max 14.60%。直近は 10.31%。直近が中央値(10.24%)を僅かに上回るため Base 到達OPM = 『直近実績と p75 の平均 = 10.85%』。■Upside は max(p75 11.38, 直近+1.0pt = 11.31) = 11.38%。■Downside 1 は min(p25 9.45, 直近 10.31) = 9.45%。■Downside 2 は実績トラフ 7.27%(FY2024/3 実績、直近実績と乖離した実在の谷)を起点に売上-5%を重ねた。■製薬の恒等式について: 当社は 売上 - COGS - SGA が営業利益にならない(研究開発費・無形資産償却が yfinance の SG&A に含まれないため)。テンプレは OP = 売上 - COGS - SGA で計算するので、COGS% を実績水準に固定し SGA% = 100% - COGS% - 目標OPM で逆算した。したがって本モデルの SGA 行は「販管費 + 研究開発費 + 無形資産償却」の合計を表す。COGS% は直近実績 34.9% を基準にシナリオ別に調整した。既存銘柄からの流用なし。",
+ "_pl_note": "■FY2026/3 は純利益 -152,390百万円(赤字)。営業利益は 464,451百万円の黒字で、差は無形資産の減損・償却と金融費用による(NonOp/OP -130.7%)。Comps の PER は分母が負になるため意味を持たない。メモ§2 の『分母が歪んだ指標は削除でなく残置+除外+理由記録』に従い、テンプレのガード(基準指標が0以下なら N/A 表記で Target 平均から除外)に委ねる。",
+ "ticker": "4502",
+ "company_name": "武田薬品工業",
+ "exchange": "TSE Prime",
+ "sector": "医薬品",
+ "fiscal_year_end_month": 3,
+ "beta": 0.2947,
+ "exit_multiple": 11.4,
+ "interest_expense": 148123,
+ "debt_beginning": 4515265,
+ "debt_ending": 4881838,
+ "capex_method": "revenue_pct",
+ "capex_pct": 0.092,
+ "da_method": "direct",
+ "da_pct": 0.096,
+ "da_direct": {
+  "projections": [
+   700000,
+   640000,
+   580000,
+   510000,
+   470000
+  ]
+ },
+ "scenarios": {
+  "Base": {
+   "revenue_growth": [
+    0.01,
+    0.015,
+    0.02,
+    0.02,
+    0.02
+   ],
+   "cogs_pct": [
+    0.349,
+    0.349,
+    0.349,
+    0.349,
+    0.349
+   ],
+   "sga_pct": [
+    0.547,
+    0.546,
+    0.545,
+    0.5435,
+    0.5425
+   ],
+   "dso_days": [
+    66,
+    66,
+    66,
+    66,
+    66
+   ],
+   "dih_days": [
+    301,
+    301,
+    301,
+    301,
+    301
+   ],
+   "dpo_days": [
+    80,
+    80,
+    80,
+    80,
+    80
+   ]
+  },
+  "Upside": {
+   "revenue_growth": [
+    0.025,
+    0.03,
+    0.03,
+    0.03,
+    0.03
+   ],
+   "cogs_pct": [
+    0.345,
+    0.345,
+    0.345,
+    0.345,
+    0.345
+   ],
+   "sga_pct": [
+    0.547,
+    0.545,
+    0.543,
+    0.5415,
+    0.5412
+   ],
+   "dso_days": [
+    63,
+    63,
+    63,
+    63,
+    63
+   ],
+   "dih_days": [
+    288,
+    288,
+    288,
+    288,
+    288
+   ],
+   "dpo_days": [
+    83,
+    83,
+    83,
+    83,
+    83
+   ]
+  },
+  "Management": {
+   "revenue_growth": [
+    0.01,
+    0.015,
+    0.02,
+    0.02,
+    0.02
+   ],
+   "cogs_pct": [
+    0.349,
+    0.349,
+    0.349,
+    0.349,
+    0.349
+   ],
+   "sga_pct": [
+    0.547,
+    0.546,
+    0.545,
+    0.5435,
+    0.5425
+   ],
+   "dso_days": [
+    66,
+    66,
+    66,
+    66,
+    66
+   ],
+   "dih_days": [
+    301,
+    301,
+    301,
+    301,
+    301
+   ],
+   "dpo_days": [
+    80,
+    80,
+    80,
+    80,
+    80
+   ]
+  },
+  "Downside 1": {
+   "revenue_growth": [
+    0.0,
+    0.005,
+    0.005,
+    0.005,
+    0.005
+   ],
+   "cogs_pct": [
+    0.353,
+    0.353,
+    0.353,
+    0.353,
+    0.353
+   ],
+   "sga_pct": [
+    0.547,
+    0.549,
+    0.551,
+    0.552,
+    0.5525
+   ],
+   "dso_days": [
+    70,
+    70,
+    70,
+    70,
+    70
+   ],
+   "dih_days": [
+    316,
+    316,
+    316,
+    316,
+    316
+   ],
+   "dpo_days": [
+    76,
+    76,
+    76,
+    76,
+    76
+   ]
+  },
+  "Downside 2": {
+   "revenue_growth": [
+    -0.05,
+    -0.01,
+    0.005,
+    0.01,
+    0.015
+   ],
+   "cogs_pct": [
+    0.36,
+    0.36,
+    0.36,
+    0.36,
+    0.36
+   ],
+   "sga_pct": [
+    0.56,
+    0.567,
+    0.567,
+    0.565,
+    0.562
+   ],
+   "dso_days": [
+    73,
+    73,
+    73,
+    73,
+    73
+   ],
+   "dih_days": [
+    331,
+    331,
+    331,
+    331,
+    331
+   ],
+   "dpo_days": [
+    72,
+    72,
+    72,
+    72,
+    72
+   ]
+  }
+ },
+ "investment_thesis": [
+  "Takeda is working through the loss of exclusivity on Vyvanse while a late-stage pipeline reaches the market, and the operating margin has stabilised near its four-year median; the shares trade at {per} earnings and {pb} book.",
+  "Reported depreciation and amortisation runs at nearly twice capital expenditure because of Shire acquisition intangibles, so operating cash flow is far above reported earnings and the {wacc} discounting works off cash rather than accounting profit.",
+  "At {price} the market is valuing the company on a net loss caused by impairments; on operating economics the base case supports {target_price}, or {upside_pct} from here."
+ ],
+ "key_risks": [
+  "The company reported a net loss in the latest year on impairments, so the {per} the market pays is measured against an earnings base that is not comparable across years and may not have stopped falling.",
+  "Net debt is large in absolute terms and dollar-denominated, so a refinancing at wider spreads raises the realised cost of debt embedded in {wacc}.",
+  "The base case assumes Shire intangible amortisation runs off over the projection window; that schedule is an estimate rather than a disclosed figure, and a slower run-off lowers the free cash flow behind {target_price}."
+ ],
+ "hist_years": [
+  "FY2023",
+  "FY2024",
+  "FY2025",
+  "FY2026"
+ ],
+ "hist_revenue": [
+  4027478,
+  4263762,
+  4581551,
+  4505720
+ ],
+ "hist_operating_income": [
+  587812,
+  309901,
+  466370,
+  464451
+ ],
+ "hist_net_income": [
+  317017,
+  144067,
+  107928,
+  -152390
+ ],
+ "hist_cogs": [
+  1244072,
+  1426678,
+  1580217,
+  1571588
+ ],
+ "hist_sga": [
+  2195594,
+  2527183,
+  2534964,
+  2469681
+ ],
+ "base_year_revenue": 4505720,
+ "base_year_cogs": 1571588,
+ "base_year_ar": 977355,
+ "base_year_inv": 1396620,
+ "base_year_ap": 324368,
+ "book_value": 7429441,
+ "_edinet_note": "【予防的な EDINET 補完・§3-2 / 追補1 §D】本バッチではここまで生成した14銘柄中8銘柄で EDINET が古い年度の営業利益を 0 で抽出し、Financial Statements の『営業利益YoY成長率』が 0 除算になって validate FAIL 1(#DIV/0!)を引き起こしている。根本原因は scripts/generate_dcf.py:66 の _val(data_dict, key, default=0) が【欠損値を None ではなく 0 に落とす】ことにある(バッチ中はパイプラインを変更しない方針のため未修正)。そこで本銘柄では発生を待たずに予防的に対処した: hist_years を直近4期に置換し hist_revenue / hist_operating_income / hist_net_income / hist_cogs / hist_sga を yfinance連結財務諸表から供給する(配列長は全て4で hist_years と一致、契約遵守)。■hist_ocf / hist_cash / hist_debt / hist_capex / hist_depreciation は【供給していない】 — パイプラインの Step 4.6 align_hist_series_to_years() が最終 hist_years に対し会計年度キーで再マッピングするため、EDINET を一次ソースのまま安全に使える(位置コピーによる年度ズレ事故も起きない)。■hist_sga = 売上 - COGS - 営業利益 で逆算(yfinance の SG&A 単独値は その他営業損益・研究開発費 を含まず恒等式が成立しないため)。",
+ "core_ebitda": 1185578,
+ "_core_ebitda_note": "【core_ebitda の明示指定 — validate では検出されない不整合の是正】Comps Analysis の『自社 Financials』ブロックの EBITDA(および そこから計算される Via EV/EBITDA (Median) 参考株価)は comps CSV の自社行ではなく config の core_ebitda を使う。core_ebitda は EDINET 由来の hist_operating_income[-1] + hist_depreciation[-1] で自動計算されるが、EDINET の減価償却費の抽出は銘柄により信頼できない。当社では EDINET 由来 D&A = 算出不能 に対し CF計算書実績(yfinance) = 721,127 で乖離があり、Comps の自社EBITDAが EDINET 由来の値で表示されていた(Peer 行は yfinance 定義)。Peer と同一定義(EBITDA = 営業利益 + CF計算書の減価償却費)に揃えるため core_ebitda = 営業利益 464,451 + D&A 721,127 = 1,185,578 を明示指定した(comps CSV の自社行と同値)。■この不整合は validate では検出されない(FAIL 0 / WARN 0 のまま)。batch/check_core_ebitda.py で全銘柄を機械照合している。■Comps は Target 不算入([参考])のため Target Price への影響はない。■あわせて hist_depreciation / hist_capex も yfinance連結キャッシュフロー計算書から供給し、Financial Statements の D&A・capex 行の表示も Peer と同じ定義に揃えた(EDINET は当社の減価償却費をほとんど抽出できていなかった)。",
+ "hist_depreciation": [
+  664400,
+  728002,
+  761396,
+  721127
+ ],
+ "hist_capex": [
+  633689,
+  480730,
+  379625,
+  414659
+ ],
+ "_beta_note": "実測（raw）β = 0.2947。出所: TOPIX 2y 1wk OLS (n=104, corr=0.231)。フェーズ2 #6 以降 overrides の beta は raw を入れる契約で、テンプレが Blume 調整 0.67×raw + 0.33×1.00 を掛け [0.3, 2.0] にクランプする（採用 0.5274、クランプ非発動）。■旧 overrides の値 0.6 は旧ルール [0.6, 1.75] のクランプ後の値であり raw ではない。■yfinance の beta フィールドは 0.1。日本株では市場を説明しないベンチマークで算出されており（NTT −0.165 / 大阪ガス −0.201 等）、採用しない。詳細は docs/phase2_pipeline_fixes_20260906.md の §2-4。"
+}

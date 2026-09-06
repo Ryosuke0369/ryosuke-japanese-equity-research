@@ -1,0 +1,82 @@
+{
+  "_comment_header": "TENTIAL (325A) DCF overrides. Source: FY2025/8 Tanshin (7-month irregular period 2025-02-01 to 2025-08-31, transition from Jan-end to Aug-end), prior FY2025/1 (12-month 2024-02-01 to 2025-01-31), and 1H FY2026/8 interim (6-month 2025-09-01 to 2026-02-28). All figures JPY mn. Single brand D2C (BAKUNE recovery wear + bedding + sandals), consolidated direct revenue forecast, NOT SOTP.",
+
+  "ticker": "325A",
+  "_comment_market": "Market data fallback for when yfinance is unavailable. shares_outstanding approx from market cap / price; treasury stock (625mn) repurchased in 1H FY2026. generate_dcf.py re-applies these over any yfinance value. VERIFY exact share count from securities report.",
+  "shares_outstanding": 7280000,
+  "current_price": 3500,
+  "_price_note": "3,500円 = 概算（出所: 各種株価サイト 2026-06。ユーザーが板で要確認）",
+  "company_name": "株式会社TENTIAL",
+  "_company_name_en": "TENTIAL Inc.",
+  "fiscal_year_end_month": 8,
+  "projection_start_fy": "FY2026",
+  "projection_years": 5,
+
+  "_comment_historical": "IMPORTANT FISCAL-PERIOD NOTE: FY2025/8 is a 7-MONTH irregular period (Jan-end to Aug-end transition). It is NOT comparable to the 12-month FY2025/1 without annualization. For DCF base-year purposes we annualize FY2025/8 (x12/7) to get a normalized 12-month run-rate. hist_years below labels each period explicitly. Revenue / OP / COGS / SGA / NetIncome / DA / Capex from Tanshin PL & CF.",
+  "hist_years": ["FY2024/1(12m)", "FY2025/1(12m)", "FY2025/8(7m)", "FY2026/8E(12m)"],
+  "_hist_period_months": [12, 12, 7, 12],
+  "hist_revenue": [4735, 12837, 11134, 30200],
+  "_hist_revenue_note": "FY2024/1=47.35e (estimate, prior 12m). FY2025/1=12,837 actual 12m. FY2025/8=11,134 actual but 7m only (annualized x12/7 = 19,087). FY2026/8E=30,200 company forecast (full 12m, +158% vs 7m / approx +58% vs annualized prior). VERIFY FY2024/1 from securities report.",
+  "hist_operating_income": [506, 1452, 1167, 2400],
+  "hist_net_income": [477, 1061, 817, 1600],
+  "hist_cogs": [1420, 3600, 3052, 8200],
+  "hist_sga": [2809, 7784, 6914, 19600],
+  "hist_depreciation": [50, 81, 114, 250],
+  "hist_capex": [80, 228, 126, 350],
+
+  "_comment_base_year": "Base year = FY2025/8 ANNUALIZED (x12/7). Revenue 11,134 x12/7 = 19,087. COGS 3,052 x12/7 = 5,232 (COGS% 27.4%). OP 1,167 x12/7 = 2,001 (OP margin 10.5%). Using annualized run-rate as base to avoid 7-month distortion. ALTERNATIVELY use FY2026/8E forecast 30,200 as base if you prefer forward-looking start.",
+  "base_year_revenue": 19087,
+  "base_year_cogs": 5232,
+
+  "_comment_nwc": "NWC base from 1H FY2026 interim BS (2026-02-28). AR=accounts receivable (売掛金) 801, INV=inventory (商品) 4,861 -- VERY HIGH, ~150+ days, key risk, AP=accounts payable (買掛金) 217+other payables 1,069. Using AR=801, INV=4861, AP=1069.",
+  "base_year_ar": 801,
+  "base_year_inv": 4861,
+  "base_year_ap": 1069,
+
+  "_comment_scenarios": "HYBRID design tied to thesis. Base = growth decelerates from current high pace but stays strong (store expansion confirmed on-ground, product横展開 to bedding/sandals). Upside = 2024-problem-style wellness tailwind + new category success, SGA leverage kicks in. Management = company plan FY2026/8 +58% (annualized base) tapering. Downside1 = BAKUNE saturation + MTG/competitor pressure. Downside2 = brand obsolescence + inventory write-down risk (INV is 4,861mn). COGS% ~27-30% (high gross margin D2C). SGA% is the swing factor: declines with scale in upside, stays high (ad/store costs) in downside. dih_days HIGH (~150) reflecting heavy inventory.",
+  "scenarios": {
+    "Base":       {"revenue_growth": [0.45, 0.32, 0.24, 0.18, 0.14], "cogs_pct": [0.275, 0.275, 0.275, 0.275, 0.275], "sga_pct": [0.56, 0.55, 0.54, 0.53, 0.52], "dso_days": [15, 15, 15, 15, 15], "dih_days": [150, 145, 140, 135, 130], "dpo_days": [25, 25, 25, 25, 25]},
+    "Upside":     {"revenue_growth": [0.58, 0.45, 0.35, 0.28, 0.22], "cogs_pct": [0.27, 0.265, 0.26, 0.26, 0.255], "sga_pct": [0.55, 0.52, 0.50, 0.48, 0.46], "dso_days": [15, 15, 15, 15, 15], "dih_days": [150, 140, 130, 120, 110], "dpo_days": [25, 25, 25, 25, 25]},
+    "Management": {"revenue_growth": [0.58, 0.40, 0.30, 0.25, 0.20], "cogs_pct": [0.275, 0.275, 0.275, 0.275, 0.275], "sga_pct": [0.56, 0.54, 0.53, 0.52, 0.51], "dso_days": [15, 15, 15, 15, 15], "dih_days": [150, 145, 140, 135, 130], "dpo_days": [25, 25, 25, 25, 25]},
+    "Downside 1": {"revenue_growth": [0.20, 0.12, 0.08, 0.06, 0.04], "cogs_pct": [0.29, 0.30, 0.31, 0.31, 0.32], "sga_pct": [0.58, 0.59, 0.60, 0.60, 0.61], "dso_days": [17, 17, 17, 17, 17], "dih_days": [165, 170, 175, 180, 185], "dpo_days": [23, 23, 23, 23, 23]},
+    "Downside 2": {"revenue_growth": [0.08, 0.03, 0.00, -0.02, -0.03], "cogs_pct": [0.31, 0.32, 0.33, 0.34, 0.35], "sga_pct": [0.61, 0.63, 0.64, 0.65, 0.66], "dso_days": [20, 20, 20, 20, 20], "dih_days": [185, 195, 205, 215, 225], "dpo_days": [20, 20, 20, 20, 20]}
+  },
+
+  "_comment_capex_da": "DA% ~1.3 and Capex% ~1.8 of revenue (FY2025/8 annualized: DA 114x12/7=195 on rev 19,087=1.0%; capex 126x12/7=216=1.1%). D2C asset-light (EC + some stores). Inventory is the heavy working-capital item, NOT capex. revenue_pct method.",
+  "capex_method": "revenue_pct",
+  "da_method": "revenue_pct",
+  "capex_pct": 0.018,
+  "da_pct": 0.013,
+
+  "_comment_tax": "Tax rate statutory ~31%. Profitable company (positive net income all recent periods), so effective tax near statutory. No major carryforward concern.",
+  "tax_rate": 0.31,
+
+  "_comment_wacc": "User-style inputs consistent with prior models: risk_free 2.3%, ERP 6.0%, size_premium 4.0%. Beta 1.3 (D2C consumer discretionary, brand-driven; lower than SpiderPlus 1.45 as less B2B-capex-cyclical but ADJUST 1.2-1.5 if preferred). Cost of equity = 2.3 + 1.3*6.0 + 4.0 = 14.1%.",
+  "risk_free": 0.023,
+  "beta": 1.3,
+  "erp": 0.060,
+  "size_premium": 0.040,
+
+  "_comment_debt": "Net cash position. Interest-bearing debt ~357 (1yr-portion long-term 136 + 1yr bond 11 + long-term 210) at 1H FY2026 interim (2026-02-28), cash 2,458 => net cash ~2,101. de_ratio tiny. NOT EDINET-derived (avoid narrow-taxonomy trap, manual per prior learning).",
+  "cost_of_debt_at": 0.010,
+  "de_ratio": 0.03,
+  "net_debt": -2101,
+
+  "_comment_terminal": "Terminal growth 1.5% (Japan long-run). Exit multiple EV/EBITDA 12x (D2C/consumer brand mature multiple, more conservative than SaaS). For TENTIAL profit is positive so EV/EBITDA Exit is meaningful (unlike SpiderPlus). But still cross-check with EV/Sales given growth.",
+  "terminal_growth": 0.015,
+  "exit_multiple": 12.0,
+
+  "_comment_v3": "Primary multiple = EV/EBITDA (TENTIAL is solidly profitable, OP margin ~10-13%, so EBITDA-based multiples are stable and meaningful -- unlike near-zero-profit SaaS). Cross-check EV/Sales against high-growth D2C comps with growth-normalization (comps span MTG high-growth to others decelerating).",
+  "primary_multiple": "EV/EBITDA",
+
+  "investment_thesis": [
+    "1. Category-defining D2C wellness brand: BAKUNE recovery wear leads the recovery-wear category (1M+ sets sold), expanding横展開 into bedding and sandals; on-ground store rollout accelerating (confirmed across 5 cities)",
+    "2. Growth re-accelerating: 1H FY2026/8 revenue 16,471mn (half-year already exceeds prior full 12-month FY2025/1 of 12,837), OP margin recovered to 13.3% from the 9.3% dip; high product quality drives repeat/brand pull",
+    "3. Healthy finance: net cash ~2,101mn, conducting share buyback (625mn) signaling management confidence; high gross margin (~73%) D2C economics"
+  ],
+  "key_risks": [
+    "1. Inventory risk: inventory ballooned to 4,861mn (from 1,795mn), ~150+ days; durable if growth continues but a write-down/markdown risk if growth stalls (single-brand concentration amplifies this)",
+    "2. Competition & brand saturation: MTG (ReD/ReFa recovery wear, JAL/ANA adoption), Phiten, VENEX, Workman entering recovery-wear; BAKUNE could saturate or face price competition",
+    "3. Single-brand / consumer-discretionary cyclicality: heavy dependence on BAKUNE franchise; SGA (ad/store) intensity pressures margins during expansion (margin dipped to 9.3% in 7m period before recovering)"
+  ]
+}

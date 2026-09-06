@@ -1,0 +1,140 @@
+{
+  "_README": "オキサイド (6521) overrides — 型A(通常の事業会社)、2月期決算。ターンアラウンド局面(FY2024/2 営業赤字 → FY2026/2 OPM5.4% → 会社予想FY2027/2 OPM9.5%)。プロンプト(2026-08-21)の指定値を docs/overrides_schema.md の契約キー名に正規化して記述。キー名の読み替え: risk_free_rate→risk_free / equity_risk_premium→erp / cost_of_debt(税前)→cost_of_debt_at(税引後) / hist_op→hist_operating_income / hist_da→hist_depreciation。minority_interest は契約に存在しないキーのため _minority_interest_note にコメントとして記載(MIは実際にゼロ)。",
+
+  "ticker": "6521",
+  "company_name": "Oxide Corporation",
+  "exchange": "TSE Growth",
+  "sector": "Optical / Single-crystal Materials",
+  "fiscal_year_end_month": 2,
+
+  "current_price": 3350,
+  "_price_note": "3,350円 = 2026-08-21時点(プロンプト指定。yfinance の previousClose 3,350 と一致。2026-08-21 の取得値は3,315円だがプロンプト指定値を優先)",
+
+  "shares_outstanding": 11618742,
+  "shares": { "fully_diluted_shares": 11618742 },
+  "_shares_note": "11,620,442株(プロンプト指定の発行済株式総数) − 期末自己株式 1,700株 = 11,618,742株。自己株式数は有価証券報告書 第26期(docID S100Y5QW, 2026-02-28期)の議決権等の状況 jpcrp_cor:NumberOfSharesHeldInOwnNameTreasurySharesEtc = 1,700株より取得(BS 自己株式 △1,591千円と整合、FY2025/2から変動なし)。控除インパクトは0.015%と僅少。時価総額 = 3,350 x 11,618,742 = 38,923百万円。",
+
+  "net_debt": 5201,
+  "_net_debt_note": "2026/5末(FY2027/2 Q1)基準: 短期借入金2,900 + 1年内返済長期借入金721 + 社債150 + 長期借入金3,382 = 有利子負債合計7,153 − 現金及び預金1,951 = 5,201百万円。標準定義(captive finance/銀行なし)。参考: EDINET FY2026/2末の net_debt は 5,255(有利子負債7,543 − 現預金2,287)。",
+  "_minority_interest_note": "minority_interest = 0。非支配株主持分なし(FY2026/2末 純資産4,694.989 ≒ 株主資本4,693.797)。overrides契約に minority_interest キーは存在しないためコメントとして記載。",
+
+  "tax_rate": 0.306,
+  "_tax_note": "法定実効税率30.6%。3期連続で税引前赤字のため実効税率が算出不能。繰越欠損金による軽減はBaseに織り込まない(繰延税金資産は FY2026/2 に718→178百万円へ取崩済みで回収可能性の裏付けが弱い)。",
+
+  "risk_free": 0.016,
+  "_risk_free_note": "yfinanceでの10年JGB利回り取得を試行したが失敗(JP10Y-JGB / ^JP10YB / JGB10Y.TO / ^JPNTNX / JP10YT=RR いずれも 404 または no data)。プロンプト指定のフォールバック 1.6% を使用。",
+  "erp": 0.055,
+  "beta": 1.16,
+  "_beta_note": "yfinanceで6521.Tの週次2年リターン(2026-08-21まで104週)をTOPIX連動ETF 1306.Tに対して回帰: beta = 1.162(相関0.251)。プロンプトの許容レンジ[0.8, 2.0]内のためフォールバック1.2ではなく実測値1.16を採用。テンプレのクランプ[0.6, 1.75]内。参考: ^N225基準では1.069、yfinance info.beta は1.41。",
+  "size_premium": 0.030,
+  "_size_premium_note": "時価総額389億円の小型グロース。既存銘柄からの流用ではなく、時価総額<1,000億円のレンジに対する 3.0% を明示指定。",
+  "cost_of_debt_at": 0.01388,
+  "_cost_of_debt_note": "税引前 2.0% x (1 - 0.306) = 1.388%(テンプレのWACC式は cost_of_debt_at に(1-t)を掛けないため税引後で投入)。税引前2.0%の根拠: FY2026/2 支払利息163 ÷ 平均有利子負債8,956 = 1.8% に金利上昇分を上乗せ。",
+  "_de_ratio_note": "de_ratio は指定せず自動計算に委ねる(generate_dcf.py が net_debt ÷ 時価総額 で算出)。プロンプトの期待値0.18は有利子負債総額7,153ベースだが、パイプラインは net_debt ベースのため 5,201/38,923 ≒ 0.134 となり、プロンプトの想定レンジ0.15〜0.22を下回る見込み。最終レポートで報告する。",
+
+  "terminal_growth": 0.010,
+  "exit_multiple": 10.0,
+  "primary_multiple": "EV/EBITDA",
+  "_exit_note": "ターンアラウンド局面のため型B(シクリカル)のサイクル型シナリオは使わないが、ピーク利益 x 高Exit倍率の二重計上を避けるためExit倍率は10.0倍で固定。",
+
+  "capex_method": "revenue_pct",
+  "da_method": "revenue_pct",
+  "capex_pct": 0.070,
+  "da_pct": 0.073,
+  "_capex_note": "スキーマ上 capex_pct / da_pct は数値スカラーのみ(overrides_validator の ALLOWED_KEYS で _NUM 指定)で配列は契約違反となるため、プロンプトの Y1→Y5 テーパー(capex [0.065..0.070] / D&A [0.085..0.073])は表現できない。ターミナル整合(SOP禁止事項#8「ターミナル年の capex は D&A に収束させる」)を優先し、Y5 の値(capex 7.0% / D&A 7.3%)を全年に適用。terminal capex/D&A = 0.070/0.073 = 0.96倍で、プロンプト要求の 0.95〜1.05 および validator の [0.90, 1.15] の双方を満たす。プロンプトの単一値フォールバック(0.068/0.078)は比率0.87倍で両基準を外すため不採用。capex_method=direct による年次配列も検討したが、絶対額指定はシナリオ別の売上規模に連動せず Downside 2 と Upside が同額capexとなり5シナリオの分散を歪めるため不採用。事業実態: FY2024-25/2は成長投資期(capex 1,676/1,661)、FY2026/2から投資抑制期(648)に転換。",
+
+  "nwc_method": "days",
+  "base_year_ar": 1321,
+  "base_year_inv": 2831,
+  "base_year_ap": 828,
+  "_nwc_note": "FY2026/2末(基準年)BS: AR = 売掛金1,281 + 電子記録債権40 = 1,321 / INV = 商品及び製品239 + 仕掛品1,844 + 原材料及び貯蔵品747 = 2,831(EDINET棚卸資産合計 2,830.5 と整合) / AP = 買掛金828。単結晶の長期仕掛品で在庫日数が重く、DIH は COGS 基準で約155日(在庫/売上高 = 28%)。FY2027/2 Q1(2026/5末)の AR 642 は期ズレの季節性とみなし、年度末値1,321を基準に採用。",
+
+  "projection_years": 5,
+  "base_year_revenue": 10040,
+  "base_year_cogs": 6670.9,
+  "_base_year_note": "予測Y1の起点は FY2026/2 実績 10,040百万円(LTM 10,445 ではない)。テンプレは base_year_revenue(直近本決算FY実績)を起点に revenue_growth を乗じるため、LTM起点への成長率換算は不要。",
+
+  "core_ebitda": 1427,
+  "core_net_income": -538,
+  "book_value": 4695,
+  "_book_value_note": "FY2026/2末 純資産 4,694.989百万円(EDINET jppfs_cor:NetAssets)。非支配株主持分なし。",
+
+  "hist_years": ["FY2024/2", "FY2025/2", "FY2026/2"],
+  "hist_revenue": [6607, 8395, 10040],
+  "hist_operating_income": [-983, 126, 543],
+  "hist_net_income": [-422, -2704, -538],
+  "hist_cogs": [4722.9, 5134.3, 6670.9],
+  "hist_sga": [2867.2, 3134.2, 2826.7],
+  "hist_ocf": [-954, 885, 2847],
+  "hist_cash": [1631, 2245, 2287],
+  "hist_debt": [9206, 10369, 7543],
+  "hist_capex": [1676, 1661, 648],
+  "hist_depreciation": [716, 817, 884],
+  "_hist_note": "hist_capex は有形固定資産の取得による支出のみ(無形固定資産の取得 791/48/28 は除外)。hist_depreciation は減価償却費のみ(のれん償却 131/140/0 は除外。Raicol関連ののれんは FY2026/2 の売却・連結除外により以降発生しない)。hist_cogs / hist_sga / hist_net_income はプロンプト未指定だが、指定しないと EDINET側の5年配列(FY2021,2022,2023,2025,2026)が3年の hist_years に位置コピーされ年度ズレを起こすため、EDINET一次情報から3年分を明示指定した: FY2024/2 は有価証券報告書 docID S100TJ4N(パイプラインの探索窓が取りこぼした 2024-05-30 提出分を個別取得)、FY2025/2・FY2026/2 は docID S100Y5QW より。検算: 6,607-4,722.9-2,867.2=-983.1 / 8,395-5,134.3-3,134.2=126.5 / 10,040-6,670.9-2,826.7=542.4。",
+
+  "ltm_revenue": 10445,
+  "_ltm_note": "当初 ltm_revenue を指定せず自動構築に委ねたが、初回ランのコンソールログは [LTM] source: latest FY (no LTM) / C20 = 10,040.4 となり3成分ログが出力されなかった(EDINETに FY2027/2 Q1 の四半期報告書が存在せず — 2024年4月施行の四半期報告書制度廃止により、上場会社の四半期開示は決算短信のみとなったため。yfinance四半期補完も6521.Tでは売上を返さず)。プロンプト §3-2 の指示に従い ltm_revenue を明示指定して再実行した。値の根拠: FY2026/2実績 10,040,393千円 − 前年同期Q1累計 1,787,587千円 + 当期Q1累計 2,192,297千円 = 10,445,103千円 = 10,445百万円。自動構築値10,040との乖離は4.0%で、テンプレの20%警告閾値内。参考: LTM営業利益 = 542,745 + 72,237 + 199,022 = 814百万円。C20は表示・参照用セルであり、予測の起点は base_year_revenue(10,040)である点は変わらない。",
+
+  "_scenario_design_note": "テンプレは営業利益率を直接受け取らず、営業利益率 = 1 − cogs_pct − sga_pct として算出する(scenarios の許容配列キーは revenue_growth / cogs_pct / sga_pct / dso_days / dih_days / dpo_days / nwc_pct のみ)。したがってプロンプト指定の営業利益率 Y1〜Y5 を、粗利率(cogs_pct)を主ドライバー、販管費率(sga_pct)を残差として分解した。基準年 FY2026/2 実績は cogs 66.4% / sga 28.2% / OPM 5.4%。マージン改善の主因は半導体検査用結晶(売上の約50%)への製品ミックスシフトと Raicol 連結除外による粗利率改善であり、粗利率を主ドライバーに置くのが実態に整合する。Downside では減収による固定費デレバレッジで cogs_pct・sga_pct がともに上昇する設計。",
+
+  "scenarios": {
+    "Base": {
+      "_desc": "会社予想をやや下回る保守線。Y1は減収(Raicol連結除外の通年影響)だが製品ミックス改善でOPM 9.0%へ回復、以降5-6%成長でOPM 11.0%まで漸進。営業利益率 Y1-Y5 = 9.0/9.5/10.0/10.5/11.0%。検算 Y1: 10,040 x 0.98 = 9,839 x 9.0% = 886百万円。",
+      "revenue_growth": [-0.02, 0.06, 0.06, 0.05, 0.04],
+      "cogs_pct":       [0.640, 0.635, 0.630, 0.626, 0.622],
+      "sga_pct":        [0.270, 0.270, 0.270, 0.269, 0.268],
+      "dso_days":       [48, 48, 48, 48, 48],
+      "dih_days":       [155, 152, 150, 148, 145],
+      "dpo_days":       [45, 45, 45, 45, 45]
+    },
+    "Upside": {
+      "_desc": "半導体検査需要の再加速と新領域(量子・核融合)の量産寄与。営業利益率 Y1-Y5 = 11.0/12.5/13.5/14.0/14.0%。粗利率37.0%→39.5%、販管費率は増収レバレッジで26.0%→25.5%。",
+      "revenue_growth": [0.03, 0.12, 0.10, 0.08, 0.06],
+      "cogs_pct":       [0.630, 0.618, 0.610, 0.605, 0.605],
+      "sga_pct":        [0.260, 0.257, 0.255, 0.255, 0.255],
+      "dso_days":       [46, 45, 45, 44, 44],
+      "dih_days":       [150, 145, 140, 136, 132],
+      "dpo_days":       [46, 46, 47, 47, 48]
+    },
+    "Management": {
+      "_desc": "会社予想線。FY2027/2会社予想 売上9,828 / 営業利益933(OPM 9.49%)に Y1 を合わせる。営業利益率 Y1-Y5 = 9.5/10.5/11.0/11.5/12.0%。検算 Y1: 10,040 x (1-0.021) = 9,829 x 9.5% = 934百万円(会社予想933と整合)。",
+      "revenue_growth": [-0.021, 0.08, 0.08, 0.06, 0.05],
+      "cogs_pct":       [0.638, 0.632, 0.627, 0.622, 0.618],
+      "sga_pct":        [0.267, 0.263, 0.263, 0.263, 0.262],
+      "dso_days":       [48, 48, 48, 48, 48],
+      "dih_days":       [155, 152, 150, 148, 145],
+      "dpo_days":       [45, 45, 45, 45, 45]
+    },
+    "Downside 1": {
+      "_desc": "半導体設備投資の調整局面。Y2に-10%の減収、固定費デレバレッジで営業利益率が3.0%まで低下し、その後緩やかに回復。営業利益率 Y1-Y5 = 7.0/3.0/5.0/7.0/8.0%。",
+      "revenue_growth": [-0.05, -0.10, 0.03, 0.05, 0.04],
+      "cogs_pct":       [0.650, 0.680, 0.665, 0.650, 0.642],
+      "sga_pct":        [0.280, 0.290, 0.285, 0.280, 0.278],
+      "dso_days":       [50, 52, 52, 51, 50],
+      "dih_days":       [160, 168, 165, 162, 158],
+      "dpo_days":       [44, 43, 43, 44, 44]
+    },
+    "Downside 2": {
+      "_desc": "半導体調整の深刻化に新領域の立ち上がり遅延が重なる。Y2に営業赤字(-3.0%)へ再転落し、回復も鈍い。営業利益率 Y1-Y5 = 5.0/-3.0/1.0/4.0/6.0%。",
+      "revenue_growth": [-0.08, -0.15, 0.00, 0.03, 0.03],
+      "cogs_pct":       [0.660, 0.710, 0.695, 0.675, 0.660],
+      "sga_pct":        [0.290, 0.320, 0.295, 0.285, 0.280],
+      "dso_days":       [52, 55, 55, 54, 53],
+      "dih_days":       [165, 178, 175, 170, 165],
+      "dpo_days":       [43, 42, 42, 43, 43]
+    }
+  },
+
+  "_thesis_note": "プロンプト指定の原文は「trades at {per}x PER and {pb}x PBR」だったが、テンプレのトークン書式は {per} = TEXT(...,\"0.0\\\"x\\\"\") / {pb} = TEXT(...,\"0.00\\\"x\\\"\") と既に末尾に x を付与するため、原文のままでは Executive Summary B26 が「8.29xx PBR」と x が重複して出力される(初回ラン実測)。トークン直後のリテラル x のみを削除し、その他の文言はプロンプト原文どおり。",
+
+  "investment_thesis": [
+    "Turnaround is real: operating margin recovered from a loss to 5.4% in FY2/26 and 9.1% in Q1 FY2/27, driven by high-margin semiconductor inspection crystals (~50% of sales).",
+    "Raicol divestiture and capex discipline cut interest-bearing debt by ~JPY2.8bn in one year; free cash flow turned strongly positive.",
+    "At {price} the stock trades at {per} PER and {pb} PBR; our target of {target_price} implies {upside_pct} upside with WACC of {wacc}."
+  ],
+  "key_risks": [
+    "~50% of sales depend on semiconductor inspection demand; a capex downturn would hit margins quickly given high fixed costs.",
+    "Two consecutive net losses from impairments; further write-downs of new-domain (quantum/fusion) assets remain possible.",
+    "Interest-bearing debt is still ~1.5x equity; covenant headroom is thin if profitability slips below guidance."
+  ]
+}

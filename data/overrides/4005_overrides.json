@@ -1,0 +1,308 @@
+{
+ "risk_free": 0.0297,
+ "erp": 0.065,
+ "size_premium": 0.01,
+ "tax_rate": 0.25,
+ "terminal_growth": 0.01,
+ "primary_multiple": "EV/EBITDA",
+ "nwc_method": "days",
+ "_note": "バッチ生成 2026-09-05。型B(シクリカル・石化サイクル)。要目視レビュー。DRAFT。根拠は batch/per_ticker/4005_summary.md。",
+ "_prescreen_note": "追補1 §B の金融事業プレスクリーン実施済み(docID S100YAUO)。金融事業科目の検出なし → 型判定へ。",
+ "_type_note": "型B確定。実績OPM に赤字年あり(FY2024/3 -17.63%)、レンジ26.0pt。石化サイクル + 医薬(住友ファーマ)の減損が重畳した。FY2025/3 以降は不採算石化の縮小と構造改革により 6.6% -> 8.4% へ回復している。",
+ "_wacc_note": "rf=2.97%。ERP6.5%固定。size_premium=1.0%(時価総額0.98兆円)。beta: yfinance実測 0.485。追補1 §A に従い max(0.6, min(1.75, 実測)) = 0.60 を明示指定した。テンプレは [0.6, 1.75] の範囲外を無言で 1.0 に置換するため、そのまま渡すとサイレントフォールバックが発動する。負債コストは実績Kd(支払利息63,776 / 平均有利子負債(1,286,128+1,151,455)/2=1,218,792 = 5.23%税引前 -> 税引後3.92%)。■5.23% は国内化学の実勢(2-3%)より明確に高いが、当社はラービグ(サウジアラビア)等の海外プロジェクトファイナンスをドル建てで連結しており、ブレンド後の水準として妥当と判断して採用した。ただし出所は yfinance の Interest Expense であり EDINET 有報の支払利息と突合していない(要確認)。■D/E 0.96 と負債比率が高く、Kd が WACC を大きく押し下げている。",
+ "_exit_note": "exit_multiple = Peer 5社の実測EV/EBITDA中央値 8.70x(4183 8.70 / 4188 10.03 / 3407 6.54 / 3405 5.12 / 4091 9.63)。型Bのため §4-4 により Peer中央値が上限だが、本ルールは中央値そのものを採るため上限は binding しない。自社の現在倍率 6.09x は算式に不使用。",
+ "_capex_note": "capex_method / da_method とも revenue_pct。実績は capex 5.0-6.2% / D&A 5.0-6.4% と既に収束しており、direct 方式を使う必要がない。capex_pct 5.46% / da_pct 5.20% でターミナル比率 1.050x(レンジ内)。",
+ "_scenario_note": "実績OPM(FY2023-FY2026): min -17.63 / p25 -5.03 / med 2.89 / p75 7.05 / max 8.38%。直近は 8.38%(観測窓の最高)。■§4-4 は Base を『ピークとトラフの中間』とするが、当社のトラフ(-17.63%)は住友ファーマ等の減損計上年であって【営業上の谷ではない】。そのまま適用すると Base の到達OPMが -4.63% という無意味な値になる。したがって Base 到達OPM = (直近実績 8.38% + 実績中央値 2.89%)/2 = 5.64% とし、現在のピーク側水準からミッドサイクルへの『緩やかな正常化』を置いた(Y1 8.0% -> Y5 5.64%)。■Upside は 実績max 8.38% + 1.0pt = 9.38%(サイクルピークの再現)。■Downside 1 は p25(-5.03%)が減損年に汚染されているため使えず、実績中央値 2.89% を到達点とした。■Downside 2 は営業上のトラフ FY2023/3 の -0.8% を起点に売上-12% を重ねた(-2.0〜+0.5%)。SGA% は構造改革後の直近水準24.5%を基準に調整し COGS% = 100% - OPM - SGA% で逆算。既存銘柄からの流用なし。",
+ "ticker": "4005",
+ "company_name": "住友化学",
+ "exchange": "TSE Prime",
+ "sector": "化学",
+ "fiscal_year_end_month": 3,
+ "beta": 1.106,
+ "exit_multiple": 8.7,
+ "interest_expense": 63776,
+ "debt_beginning": 1286128,
+ "debt_ending": 1151455,
+ "capex_method": "revenue_pct",
+ "capex_pct": 0.0546,
+ "da_method": "revenue_pct",
+ "da_pct": 0.052,
+ "scenarios": {
+  "Base": {
+   "revenue_growth": [
+    0.0,
+    0.01,
+    0.015,
+    0.02,
+    0.02
+   ],
+   "cogs_pct": [
+    0.675,
+    0.681,
+    0.688,
+    0.695,
+    0.6986
+   ],
+   "sga_pct": [
+    0.245,
+    0.245,
+    0.245,
+    0.245,
+    0.245
+   ],
+   "dso_days": [
+    87,
+    87,
+    87,
+    87,
+    87
+   ],
+   "dih_days": [
+    129,
+    129,
+    129,
+    129,
+    129
+   ],
+   "dpo_days": [
+    97,
+    97,
+    97,
+    97,
+    97
+   ]
+  },
+  "Upside": {
+   "revenue_growth": [
+    0.02,
+    0.025,
+    0.025,
+    0.025,
+    0.025
+   ],
+   "cogs_pct": [
+    0.676,
+    0.674,
+    0.672,
+    0.67,
+    0.6682
+   ],
+   "sga_pct": [
+    0.238,
+    0.238,
+    0.238,
+    0.238,
+    0.238
+   ],
+   "dso_days": [
+    83,
+    83,
+    83,
+    83,
+    83
+   ],
+   "dih_days": [
+    122,
+    122,
+    122,
+    122,
+    122
+   ],
+   "dpo_days": [
+    100,
+    100,
+    100,
+    100,
+    100
+   ]
+  },
+  "Management": {
+   "revenue_growth": [
+    0.0,
+    0.01,
+    0.015,
+    0.02,
+    0.02
+   ],
+   "cogs_pct": [
+    0.675,
+    0.681,
+    0.688,
+    0.695,
+    0.6986
+   ],
+   "sga_pct": [
+    0.245,
+    0.245,
+    0.245,
+    0.245,
+    0.245
+   ],
+   "dso_days": [
+    87,
+    87,
+    87,
+    87,
+    87
+   ],
+   "dih_days": [
+    129,
+    129,
+    129,
+    129,
+    129
+   ],
+   "dpo_days": [
+    97,
+    97,
+    97,
+    97,
+    97
+   ]
+  },
+  "Downside 1": {
+   "revenue_growth": [
+    -0.03,
+    0.0,
+    0.005,
+    0.005,
+    0.005
+   ],
+   "cogs_pct": [
+    0.68,
+    0.695,
+    0.707,
+    0.715,
+    0.7161
+   ],
+   "sga_pct": [
+    0.255,
+    0.255,
+    0.255,
+    0.255,
+    0.255
+   ],
+   "dso_days": [
+    92,
+    92,
+    92,
+    92,
+    92
+   ],
+   "dih_days": [
+    137,
+    137,
+    137,
+    137,
+    137
+   ],
+   "dpo_days": [
+    93,
+    93,
+    93,
+    93,
+    93
+   ]
+  },
+  "Downside 2": {
+   "revenue_growth": [
+    -0.12,
+    -0.03,
+    0.0,
+    0.01,
+    0.015
+   ],
+   "cogs_pct": [
+    0.74,
+    0.75,
+    0.74,
+    0.73,
+    0.725
+   ],
+   "sga_pct": [
+    0.27,
+    0.27,
+    0.27,
+    0.27,
+    0.27
+   ],
+   "dso_days": [
+    97,
+    97,
+    97,
+    97,
+    97
+   ],
+   "dih_days": [
+    146,
+    146,
+    146,
+    146,
+    146
+   ],
+   "dpo_days": [
+    88,
+    88,
+    88,
+    88,
+    88
+   ]
+  }
+ },
+ "investment_thesis": [
+  "Sumitomo Chemical has exited loss-making petrochemical capacity and restructured pharmaceuticals, taking the operating margin from a deep loss to the top of its four-year range; the shares trade at {per} earnings and {pb} book.",
+  "Leverage is the defining feature of the equity: net debt is close to the market value of the equity, so the {wacc} discount rate is dominated by an actual, filing-derived cost of debt that is well above the domestic chemical norm.",
+  "At {price} the market is not paying for the restructured margin to hold; a base case that normalises only halfway back toward the cycle median supports {target_price}, or {upside_pct} from here."
+ ],
+ "key_risks": [
+  "This is a cyclical with a recent loss year: petrochemical spreads and pharmaceutical impairments have twice taken earnings far below the level implied by today's {price} and {per}.",
+  "The realised cost of debt embedded in {wacc} reflects dollar-denominated project financing at overseas affiliates, and a refinancing at wider spreads would raise it further against an already heavy debt load.",
+  "Revenue has fallen for three consecutive years on divestitures, so the base case growth path assumes the portfolio pruning is finished — which the filings do not yet confirm."
+ ],
+ "hist_years": [
+  "FY2023",
+  "FY2024",
+  "FY2025",
+  "FY2026"
+ ],
+ "hist_revenue": [
+  2895283,
+  2446893,
+  2606281,
+  2328515
+ ],
+ "hist_operating_income": [
+  -24187,
+  -431428,
+  172394,
+  195015
+ ],
+ "hist_net_income": [
+  6987,
+  -311838,
+  38591,
+  60947
+ ],
+ "hist_cogs": [
+  2074357,
+  1947198,
+  1880805,
+  1660247
+ ],
+ "hist_sga": [
+  845113,
+  931123,
+  553082,
+  473253
+ ],
+ "base_year_revenue": 2328515,
+ "base_year_cogs": 1660247,
+ "base_year_ar": 608670,
+ "base_year_inv": 595471,
+ "base_year_ap": 464422,
+ "book_value": 1008644,
+ "_edinet_note": "【リトライ1回目・§3-2 の補完】初回生成は FAIL 1(Financial Statements!D16:F16 = #DIV/0!)。原因は EDINET が hist_years を FY2018-FY2026 の9期で構築し、うち FY2019-FY2021 の営業利益を 0 で抽出していたため『営業利益YoY成長率 = 0/0』となったこと。対処: hist_years を FY2023-FY2026 の4期に置換し P/L 5系列を yfinance連結財務諸表から供給(配列長は全て4)。hist_ocf / hist_cash / hist_debt / hist_capex / hist_depreciation は供給していない(Step 4.6 が会計年度キーで再マッピングする)。■hist_sga = 売上 - COGS - 営業利益 で逆算。■追補1 §D の数値照合: 初回生成の net_debt 自動値 942,866百万円 は yfinance 独立計算(有利子負債1,151,455 - 現金208,589 = 942,866)と【完全一致】したため override せず EDINET 値をそのまま採用した。",
+ "core_ebitda": 316084,
+ "_core_ebitda_note": "【core_ebitda の明示指定 — validate では検出されない不整合の是正】Comps Analysis の『自社 Financials』ブロックの EBITDA(および そこから計算される Via EV/EBITDA (Median) 参考株価)は comps CSV の自社行ではなく config の core_ebitda を使う。core_ebitda は EDINET 由来の hist_operating_income[-1] + hist_depreciation[-1] で自動計算されるが、EDINET の減価償却費の抽出は銘柄により信頼できない。当社では EDINET 由来 D&A = 77,798 に対し CF計算書実績(yfinance) = 121,069 で乖離があり、Comps の自社EBITDAが EDINET 由来の値で表示されていた(Peer 行は yfinance 定義)。Peer と同一定義(EBITDA = 営業利益 + CF計算書の減価償却費)に揃えるため core_ebitda = 営業利益 195,015 + D&A 121,069 = 316,084 を明示指定した(comps CSV の自社行と同値)。■この不整合は validate では検出されない(FAIL 0 / WARN 0 のまま)。batch/check_core_ebitda.py で全銘柄を機械照合している。■Comps は Target 不算入([参考])のため Target Price への影響はない。",
+ "_beta_note": "実測（raw）β = 1.1060。出所: TOPIX 2y 1wk OLS (n=104, corr=0.508)。フェーズ2 #6 以降 overrides の beta は raw を入れる契約で、テンプレが Blume 調整 0.67×raw + 0.33×1.00 を掛け [0.3, 2.0] にクランプする（採用 1.0710、クランプ非発動）。■旧 overrides の値 0.6 は旧ルール [0.6, 1.75] のクランプ後の値であり raw ではない。■yfinance の beta フィールドは 0.485。日本株では市場を説明しないベンチマークで算出されており（NTT −0.165 / 大阪ガス −0.201 等）、採用しない。詳細は docs/phase2_pipeline_fixes_20260906.md の §2-4。"
+}

@@ -1,0 +1,315 @@
+{
+ "risk_free": 0.0297,
+ "erp": 0.065,
+ "size_premium": 0.01,
+ "tax_rate": 0.25,
+ "terminal_growth": 0.01,
+ "primary_multiple": "EV/EBITDA",
+ "nwc_method": "days",
+ "current_price": 67140.0,
+ "shares_outstanding": 62477789,
+ "hist_years": [
+  "FY2023",
+  "FY2024",
+  "FY2025",
+  "FY2026"
+ ],
+ "hist_revenue": [
+  824772.0,
+  776873.0,
+  792108.0,
+  842541.0
+ ],
+ "hist_operating_income": [
+  258201.0,
+  196226.0,
+  190245.0,
+  190559.0
+ ],
+ "hist_net_income": [
+  224610.0,
+  178321.0,
+  156344.0,
+  167304.0
+ ],
+ "hist_cogs": [
+  403613.0,
+  413796.0,
+  429069.0,
+  461089.0
+ ],
+ "hist_sga": [
+  162958.0,
+  166851.0,
+  172794.0,
+  190893.0
+ ],
+ "base_year_revenue": 842541.0,
+ "base_year_cogs": 461089.0,
+ "base_year_ar": 235325.0,
+ "base_year_inv": 506697.0,
+ "base_year_ap": 31822.0,
+ "book_value": 2115090.0,
+ "core_ebitda": 235405.0,
+ "net_debt": -658778,
+ "_note": "バッチ生成 2026-09-05。型A。DRAFT（part1）。根拠は batch/per_ticker/6273_summary.md。",
+ "_prescreen_note": "追補1 §B / 追補2 §B のプレスクリーン実施済み。金融事業専用科目の検出なし → 型判定へ。",
+ "_wacc_note": "rf=2.97%。ERP6.5%固定。size_premium=1.0%（時価総額4.19兆円）。beta: yfinance実測 **0.843** はクランプ域 [0.6, 1.75] の内側のため素通し（置換なし）。ネットキャッシュ（net_debt −658,778、有利子負債はわずか 5,092百万円）のため de_ratio = 0 → WACC = Ke = 9.45%。interest_expense（508百万円）は WACC に寄与しないため指定しない。",
+ "_exit_note": "exit_multiple = Peer 5社の実測EV/EBITDA中央値 15.55x（6954 ファナック / 6503 三菱電機 / 6367 ダイキン / 6645 オムロン / 6506 安川電機）。自社の現在倍率 15.02x は算式に入れていない（ほぼ同水準）。■時価総額バンド（1.26〜12.6兆円）から外れる 6645 オムロン(1.22兆) / 6506 安川電機(1.19兆) をファクトリーオートメーションの事業比較可能性を優先して採用した。",
+ "_capex_note": "capex_method=direct。実績capexは売上比 9.0% → 13.4% → 13.6% → **18.3%** と一貫して上昇し、D&A（3.1-5.3%）の3〜4倍という異例の水準にある。5年で逓減させ、ターミナル年 56,200 ÷ D&A(Y5売上1,009,786 × 5.3% = 53,519) = 1.050x でレンジ[0.90,1.15]に収束。■**この逓減は会社が表明した計画ではなく本モデルの仮定であり、本銘柄の最大の設計判断である**。capex が現水準で高止まりすればターミナルFCFは大きく下振れる。",
+ "_scenario_note": "実績OPM（FY2023-FY2026）: 31.31 → 25.26 → 24.02 → **22.62%** と**4期連続の単調低下**。min 22.62 / p25 23.67 / med 24.64 / p75 26.77 / max 31.31%。■**単調系列の特則（2267 ヤクルトで確立）を適用**: Base 到達OPM =（直近実績 22.62% + 実績中央値 24.64%）/2 = **23.63%** とし、下げ止まりと僅かな改善のみを織り込んだ。Upside は max(実績p75 26.77, 直近+1.0pt = 23.62) = 26.77%。Downside 1 は min(p25 23.67, 直近 22.62) = 22.62% を下回る 19.4%。Downside 2 は実績トラフ(22.62%)が直近実績そのものでトラフとして機能しないため、売上 −12% + OPM半減（11.3-14.0%）。■SGA% は yfinance から取得できないため COGS% を直近実績 54.7% に固定し SGA% = 100% − COGS% − 目標OPM で逆算した。既存銘柄からの流用なし。",
+ "ticker": "6273",
+ "company_name": "SMC",
+ "exchange": "TSE Prime",
+ "sector": "機械",
+ "fiscal_year_end_month": 3,
+ "beta": 1.4822,
+ "exit_multiple": 15.6,
+ "capex_method": "direct",
+ "capex_pct": 0.0557,
+ "da_method": "revenue_pct",
+ "da_pct": 0.053,
+ "capex_direct": {
+  "projections": [
+   140000,
+   120000,
+   95000,
+   72000,
+   56200
+  ]
+ },
+ "scenarios": {
+  "Base": {
+   "revenue_growth": [
+    0.05,
+    0.04,
+    0.035,
+    0.03,
+    0.025
+   ],
+   "cogs_pct": [
+    0.547,
+    0.547,
+    0.547,
+    0.547,
+    0.547
+   ],
+   "sga_pct": [
+    0.225,
+    0.223,
+    0.221,
+    0.219,
+    0.2167
+   ],
+   "dso_days": [
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "dih_days": [
+    414,
+    414,
+    414,
+    414,
+    414
+   ],
+   "dpo_days": [
+    46,
+    46,
+    46,
+    46,
+    46
+   ]
+  },
+  "Upside": {
+   "revenue_growth": [
+    0.07,
+    0.06,
+    0.05,
+    0.04,
+    0.035
+   ],
+   "cogs_pct": [
+    0.54,
+    0.54,
+    0.54,
+    0.54,
+    0.54
+   ],
+   "sga_pct": [
+    0.225,
+    0.215,
+    0.205,
+    0.197,
+    0.1923
+   ],
+   "dso_days": [
+    95,
+    95,
+    95,
+    95,
+    95
+   ],
+   "dih_days": [
+    395,
+    395,
+    395,
+    395,
+    395
+   ],
+   "dpo_days": [
+    48,
+    48,
+    48,
+    48,
+    48
+   ]
+  },
+  "Management": {
+   "revenue_growth": [
+    0.05,
+    0.04,
+    0.035,
+    0.03,
+    0.025
+   ],
+   "cogs_pct": [
+    0.547,
+    0.547,
+    0.547,
+    0.547,
+    0.547
+   ],
+   "sga_pct": [
+    0.225,
+    0.223,
+    0.221,
+    0.219,
+    0.2167
+   ],
+   "dso_days": [
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "dih_days": [
+    414,
+    414,
+    414,
+    414,
+    414
+   ],
+   "dpo_days": [
+    46,
+    46,
+    46,
+    46,
+    46
+   ]
+  },
+  "Downside 1": {
+   "revenue_growth": [
+    0.01,
+    0.01,
+    0.005,
+    0.005,
+    0.005
+   ],
+   "cogs_pct": [
+    0.555,
+    0.555,
+    0.555,
+    0.555,
+    0.555
+   ],
+   "sga_pct": [
+    0.23,
+    0.24,
+    0.247,
+    0.251,
+    0.251
+   ],
+   "dso_days": [
+    105,
+    105,
+    105,
+    105,
+    105
+   ],
+   "dih_days": [
+    435,
+    435,
+    435,
+    435,
+    435
+   ],
+   "dpo_days": [
+    44,
+    44,
+    44,
+    44,
+    44
+   ]
+  },
+  "Downside 2": {
+   "revenue_growth": [
+    -0.12,
+    -0.03,
+    0.02,
+    0.035,
+    0.04
+   ],
+   "cogs_pct": [
+    0.58,
+    0.58,
+    0.58,
+    0.58,
+    0.58
+   ],
+   "sga_pct": [
+    0.28,
+    0.305,
+    0.307,
+    0.3,
+    0.29
+   ],
+   "dso_days": [
+    110,
+    110,
+    110,
+    110,
+    110
+   ],
+   "dih_days": [
+    456,
+    456,
+    456,
+    456,
+    456
+   ],
+   "dpo_days": [
+    42,
+    42,
+    42,
+    42,
+    42
+   ]
+  }
+ },
+ "investment_thesis": [
+  "SMC holds roughly a third of the global pneumatic-components market with a catalogue business that carries an operating margin above twenty percent; the shares trade at {per} earnings and {pb} book.",
+  "The balance sheet is almost entirely net cash — interest-bearing debt is a rounding error — so the {wacc} discount rate is the cost of equity with no leverage assumed.",
+  "At {price} the shares are valued in line with the automation peer median on EV/EBITDA; a base case that halts the four-year margin slide supports {target_price}, or {upside_pct} from here."
+ ],
+ "key_risks": [
+  "Capital expenditure has climbed to eighteen percent of revenue against depreciation near five percent, and the free cash flow behind {target_price} depends entirely on that spending tapering — a commitment the filings do not make.",
+  "The operating margin has fallen in each of the last four years, from thirty-one to twenty-three percent; treating that as a plateau rather than a continuing trend is the second-largest assumption here.",
+  "Inventory days exceed four hundred, so the catalogue availability model that supports pricing also ties up cash whenever demand slows, well before it shows in the {per} the market pays."
+ ],
+ "_edinet_note": "【追補2 §F-2 / 追補3 §L の予防的補完（生成前適用・必須）】根本原因は scripts/generate_dcf.py:66 の _val(data_dict, key, default=0) が欠損値を None ではなく 0 に落とすこと。hist_years を直近4期に置換し hist_revenue / hist_operating_income / hist_net_income / hist_cogs / hist_sga を yfinance連結財務諸表から供給（配列長は全て4で hist_years と一致、契約遵守）。■hist_ocf / hist_cash / hist_debt / hist_capex / hist_depreciation は【供給していない】 — Step 4.6 が最終 hist_years に会計年度キーで再マッピングするため EDINET を一次ソースのまま使える。■hist_sga = 売上 − COGS − 営業利益 で逆算。■追補3 §L に従い current_price / shares_outstanding も予防的に明示指定（プレースホルダ降格の回避＋再現性確保）。■net_debt も明示指定（EDINET の有利子負債抽出が 0 に落ちる既知パターンが3件発生しているため）。",
+ "_beta_note": "実測（raw）β = 1.4822。出所: TOPIX 2y 1wk OLS (n=104, corr=0.611)。フェーズ2 #6 以降 overrides の beta は raw を入れる契約で、テンプレが Blume 調整 0.67×raw + 0.33×1.00 を掛け [0.3, 2.0] にクランプする（採用 1.3231、クランプ非発動）。■旧 overrides の値 0.84 は旧ルール [0.6, 1.75] のクランプ後の値であり raw ではない。■yfinance の beta フィールドは 0.843。日本株では市場を説明しないベンチマークで算出されており（NTT −0.165 / 大阪ガス −0.201 等）、採用しない。詳細は docs/phase2_pipeline_fixes_20260906.md の §2-4。"
+}

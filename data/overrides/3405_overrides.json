@@ -1,0 +1,263 @@
+{
+ "risk_free": 0.0297,
+ "erp": 0.065,
+ "size_premium": 0.01,
+ "tax_rate": 0.25,
+ "terminal_growth": 0.01,
+ "primary_multiple": "EV/EBITDA",
+ "nwc_method": "days",
+ "_note": "バッチ生成 2026-09-05。型B(シクリカル・化学市況)。要目視レビュー。DRAFT。根拠は batch/per_ticker/3405_summary.md。",
+ "_prescreen_note": "追補1 §B の金融事業プレスクリーン実施済み(docID S100XSSZ)。金融事業科目の検出なし → 型判定へ。",
+ "_type_note": "型B。実績OPM 11.52 -> 9.66 -> 10.29 -> 7.28% と振れ、直近は 7.28%(観測窓の最低)。NonOp/OP -66.3% で純利益が 54,307 -> 7,468 と急減しており、減損等の一過性要因が大きい。",
+ "_wacc_note": "rf=2.97%。ERP6.5%固定。size_premium=1.0%(時価総額0.55兆円)。beta: yfinance実測 0.054。追補1 §A に従い max(0.6, min(1.75, 実測)) = 0.60 を明示指定した。テンプレは [0.6, 1.75] の範囲外を無言で 1.0 に置換するため、そのまま渡すとサイレントフォールバックが発動する。負債コストは実績Kd(支払利息2,807 / 平均有利子負債(244,282+284,919)/2=264,601 = 1.06%税引前 -> 税引後0.80%)。",
+ "_exit_note": "exit_multiple = Peer 5社の実測EV/EBITDA中央値 8.70x(4183 8.70 / 4005 6.09 / 4188 10.03 / 3407 6.54 / 4091 9.63)。型Bの上限は binding しない。自社の現在倍率 5.12x は算式に不使用。■自社倍率が Peer 中央値を大きく下回るため Exit 法は現値より強気側に出る。",
+ "_capex_note": "capex_method / da_method とも revenue_pct。実績は capex 7.8-12.1% / D&A 8.7-10.5% で近接している。capex_pct 11.02% / da_pct 10.50% でターミナル比率 1.050x(レンジ内)。",
+ "_scenario_note": "実績OPM(FY2022-FY2025 いずれも12月期): min 7.28 / p25 9.07 / med 9.98 / p75 10.60 / max 11.52%。直近は 7.28%(観測窓の最低)。■型Bのため §4-4 に従い Base 到達OPM = ピークとトラフの中間 = (11.52 + 7.28)/2 = 9.40%。Y1 7.8% -> Y5 9.40%。■Upside は 実績max 11.52%(サイクルピークの再現)。■Downside 1 は min(p25 9.07, 直近 7.28) = 7.28% を下回る 5.8%。■Downside 2 は実績トラフ(7.28%)が直近実績そのものでトラフとして機能しないため、売上-10%+OPM半減アーム(3.5-4.0%)。SGA% は実績20.4->23.2%の直近水準23.2%を基準に調整し COGS% = 100% - OPM - SGA% で逆算。既存銘柄からの流用なし。",
+ "ticker": "3405",
+ "company_name": "クラレ",
+ "exchange": "TSE Prime",
+ "sector": "化学",
+ "fiscal_year_end_month": 12,
+ "beta": 0.7613,
+ "exit_multiple": 8.7,
+ "interest_expense": 2807,
+ "debt_beginning": 244282,
+ "debt_ending": 284919,
+ "capex_method": "revenue_pct",
+ "capex_pct": 0.1102,
+ "da_method": "revenue_pct",
+ "da_pct": 0.105,
+ "scenarios": {
+  "Base": {
+   "revenue_growth": [
+    0.01,
+    0.02,
+    0.025,
+    0.025,
+    0.025
+   ],
+   "cogs_pct": [
+    0.69,
+    0.684,
+    0.679,
+    0.676,
+    0.674
+   ],
+   "sga_pct": [
+    0.232,
+    0.232,
+    0.232,
+    0.232,
+    0.232
+   ],
+   "dso_days": [
+    76,
+    76,
+    76,
+    76,
+    76
+   ],
+   "dih_days": [
+    164,
+    164,
+    164,
+    164,
+    164
+   ],
+   "dpo_days": [
+    37,
+    37,
+    37,
+    37,
+    37
+   ]
+  },
+  "Upside": {
+   "revenue_growth": [
+    0.03,
+    0.035,
+    0.03,
+    0.03,
+    0.03
+   ],
+   "cogs_pct": [
+    0.684,
+    0.674,
+    0.666,
+    0.66,
+    0.6568
+   ],
+   "sga_pct": [
+    0.228,
+    0.228,
+    0.228,
+    0.228,
+    0.228
+   ],
+   "dso_days": [
+    73,
+    73,
+    73,
+    73,
+    73
+   ],
+   "dih_days": [
+    156,
+    156,
+    156,
+    156,
+    156
+   ],
+   "dpo_days": [
+    38,
+    38,
+    38,
+    38,
+    38
+   ]
+  },
+  "Management": {
+   "revenue_growth": [
+    0.01,
+    0.02,
+    0.025,
+    0.025,
+    0.025
+   ],
+   "cogs_pct": [
+    0.69,
+    0.684,
+    0.679,
+    0.676,
+    0.674
+   ],
+   "sga_pct": [
+    0.232,
+    0.232,
+    0.232,
+    0.232,
+    0.232
+   ],
+   "dso_days": [
+    76,
+    76,
+    76,
+    76,
+    76
+   ],
+   "dih_days": [
+    164,
+    164,
+    164,
+    164,
+    164
+   ],
+   "dpo_days": [
+    37,
+    37,
+    37,
+    37,
+    37
+   ]
+  },
+  "Downside 1": {
+   "revenue_growth": [
+    0.0,
+    0.0,
+    0.005,
+    0.005,
+    0.005
+   ],
+   "cogs_pct": [
+    0.694,
+    0.698,
+    0.702,
+    0.704,
+    0.704
+   ],
+   "sga_pct": [
+    0.238,
+    0.238,
+    0.238,
+    0.238,
+    0.238
+   ],
+   "dso_days": [
+    80,
+    80,
+    80,
+    80,
+    80
+   ],
+   "dih_days": [
+    174,
+    174,
+    174,
+    174,
+    174
+   ],
+   "dpo_days": [
+    35,
+    35,
+    35,
+    35,
+    35
+   ]
+  },
+  "Downside 2": {
+   "revenue_growth": [
+    -0.1,
+    -0.02,
+    0.005,
+    0.01,
+    0.015
+   ],
+   "cogs_pct": [
+    0.71,
+    0.715,
+    0.714,
+    0.712,
+    0.71
+   ],
+   "sga_pct": [
+    0.25,
+    0.25,
+    0.25,
+    0.25,
+    0.25
+   ],
+   "dso_days": [
+    84,
+    84,
+    84,
+    84,
+    84
+   ],
+   "dih_days": [
+    185,
+    185,
+    185,
+    185,
+    185
+   ],
+   "dpo_days": [
+    33,
+    33,
+    33,
+    33,
+    33
+   ]
+  }
+ },
+ "investment_thesis": [
+  "Kuraray holds dominant global positions in specialty resins and optical film, and the latest year marks the bottom of the observed margin range rather than a loss of those positions; the shares trade at {per} earnings and {pb} book.",
+  "The stock changes hands well below the Japanese chemical peer median on EV/EBITDA, which is where the exit leg of this model finds value against a {wacc} cost of capital.",
+  "At {price} the market prices the trough margin as the new normal; restoring the midpoint between the observed peak and trough supports {target_price}, or {upside_pct} from here."
+ ],
+ "key_risks": [
+  "Reported net income collapsed to a fraction of the prior year while operating income fell far less, so the {per} the market pays at {price} is measured against an earnings base distorted by one-off charges.",
+  "Capital expenditure has risen to above 12% of revenue against depreciation of 10.5%, and the base case assumes the two converge rather than the spending staying elevated.",
+  "Demand for optical film and specialty resins is tied to display and automotive cycles, and a further downturn would hold margins at the trough used in the second downside case rather than at the level {target_price} assumes."
+ ],
+ "_beta_note": "実測（raw）β = 0.7613。出所: TOPIX 2y 1wk OLS (n=104, corr=0.462)。フェーズ2 #6 以降 overrides の beta は raw を入れる契約で、テンプレが Blume 調整 0.67×raw + 0.33×1.00 を掛け [0.3, 2.0] にクランプする（採用 0.8401、クランプ非発動）。■旧 overrides の値 0.6 は旧ルール [0.6, 1.75] のクランプ後の値であり raw ではない。■yfinance の beta フィールドは 0.054。日本株では市場を説明しないベンチマークで算出されており（NTT −0.165 / 大阪ガス −0.201 等）、採用しない。詳細は docs/phase2_pipeline_fixes_20260906.md の §2-4。"
+}

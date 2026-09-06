@@ -1,0 +1,315 @@
+{
+ "risk_free": 0.0297,
+ "erp": 0.065,
+ "size_premium": 0.01,
+ "tax_rate": 0.25,
+ "terminal_growth": 0.01,
+ "primary_multiple": "EV/EBITDA",
+ "nwc_method": "days",
+ "hist_years": [
+  "FY2023",
+  "FY2024",
+  "FY2025",
+  "FY2026"
+ ],
+ "hist_revenue": [
+  1278478.0,
+  1601688.0,
+  1886256.0,
+  2123045.0
+ ],
+ "hist_operating_income": [
+  120582.0,
+  211589.0,
+  331925.0,
+  229089.0
+ ],
+ "hist_net_income": [
+  109188.0,
+  200731.0,
+  295756.0,
+  259874.0
+ ],
+ "hist_cogs": [
+  363525.0,
+  415322.0,
+  415797.0,
+  669045.0
+ ],
+ "hist_sga": [
+  794371.0,
+  974777.0,
+  1138534.0,
+  1224911.0
+ ],
+ "base_year_revenue": 2123045.0,
+ "base_year_cogs": 669045.0,
+ "base_year_ar": 741145.0,
+ "base_year_inv": 692378.0,
+ "base_year_ap": 596856.0,
+ "book_value": 1664179.0,
+ "core_ebitda": 306549.0,
+ "_note": "バッチ生成 2026-09-05。型A。DRAFT。根拠は batch/per_ticker/4568_summary.md。",
+ "_prescreen_note": "追補1 §B / 追補2 §B のプレスクリーン実施済み（docID S100YEY0）。金融事業専用科目の検出なし → 型判定へ。",
+ "_wacc_note": "rf=2.97%。ERP6.5%固定。size_premium=1.0%（時価総額5.08兆円）。■**beta: yfinance が当社の beta を返さない（null）**。追補1 §A に従いテンプレのフォールバック値 1.0 を採用したが、**これは実測値ではなく推定である**。国内製薬同業の実測beta（4507 0.028 / 4523 −0.053 / 4503 0.088 / 4578 −0.049）はいずれも大幅に低く、Ke 9.47% は過大の可能性が高い（7974 任天堂と同じ問題）。ネットキャッシュ（net_debt −149,326）のため de_ratio = 0 → WACC = Ke。",
+ "_exit_note": "exit_multiple = Peer 4社の実測EV/EBITDA中央値 10.79x（4502 武田 / 4503 アステラス / 4578 大塚HD / 4507 塩野義）。自社の現在倍率 16.10x は算式に入れていない。**自社倍率が Peer 中央値の1.5倍あるため Exit 法は大きく保守側に振れる**。■4519 中外製薬は D&A が取得できず comps から除外（Peer 4社構成）。",
+ "_capex_note": "capex_method=direct。実績capexは売上比 5.3% → 7.7% → 10.0% → 7.0% と Enhertu 関連の生産能力投資で高止まり。5年で逓減させ、ターミナル年 102,400 ÷ D&A（Y5売上2,710,214 × 3.6% = 97,568）= 1.050x でレンジに収束。■**この逓減は会社が表明した計画ではなく本モデルの仮定である**。",
+ "_scenario_note": "実績OPM（FY2023-FY2026）: min 9.43 / p25 10.45 / med 12.00 / p75 14.31 / max 17.60%。直近 10.79% が中央値 12.00% を下回るため、Base は実績中央値 12.00% へ収束（Y1 11.0% → Y5 12.00%）。Upside は max(p75 14.31, 直近+1.0pt = 11.79) = 14.31%。Downside 1 は min(p25 10.45, 直近 10.79) = 10.45%。Downside 2 は実績トラフ 9.43%（FY2023/3 実績、直近実績と乖離した実在の谷）を起点に売上 −5% を重ねた。■**製薬の恒等式**: 当社は 売上 − COGS − SGA が営業利益にならない（研究開発費・無形資産償却が yfinance の SG&A に含まれないため）。テンプレは OP = 売上 − COGS − SGA で計算するので、**COGS% を実績水準に固定し SGA% = 100% − COGS% − 目標OPM で逆算**した。したがって本モデルの SGA 行は「販管費 + 研究開発費（+ 無形資産償却）」の合計を表す。COGS% は直近実績 31.5% を基準に置いた。既存銘柄からの流用なし。",
+ "ticker": "4568",
+ "company_name": "第一三共",
+ "exchange": "TSE Prime",
+ "sector": "医薬品",
+ "fiscal_year_end_month": 3,
+ "beta": 0.6073,
+ "exit_multiple": 10.8,
+ "capex_method": "direct",
+ "capex_pct": 0.0378,
+ "da_method": "revenue_pct",
+ "da_pct": 0.036,
+ "capex_direct": {
+  "projections": [
+   145000,
+   135000,
+   122000,
+   110000,
+   102400
+  ]
+ },
+ "scenarios": {
+  "Base": {
+   "revenue_growth": [
+    0.08,
+    0.06,
+    0.045,
+    0.035,
+    0.03
+   ],
+   "cogs_pct": [
+    0.315,
+    0.315,
+    0.315,
+    0.315,
+    0.315
+   ],
+   "sga_pct": [
+    0.575,
+    0.572,
+    0.569,
+    0.5665,
+    0.565
+   ],
+   "dso_days": [
+    127,
+    127,
+    127,
+    127,
+    127
+   ],
+   "dih_days": [
+    379,
+    379,
+    379,
+    379,
+    379
+   ],
+   "dpo_days": [
+    430,
+    430,
+    430,
+    430,
+    430
+   ]
+  },
+  "Upside": {
+   "revenue_growth": [
+    0.1,
+    0.08,
+    0.06,
+    0.045,
+    0.04
+   ],
+   "cogs_pct": [
+    0.31,
+    0.31,
+    0.31,
+    0.31,
+    0.31
+   ],
+   "sga_pct": [
+    0.572,
+    0.564,
+    0.556,
+    0.55,
+    0.5469
+   ],
+   "dso_days": [
+    122,
+    122,
+    122,
+    122,
+    122
+   ],
+   "dih_days": [
+    364,
+    364,
+    364,
+    364,
+    364
+   ],
+   "dpo_days": [
+    447,
+    447,
+    447,
+    447,
+    447
+   ]
+  },
+  "Management": {
+   "revenue_growth": [
+    0.08,
+    0.06,
+    0.045,
+    0.035,
+    0.03
+   ],
+   "cogs_pct": [
+    0.315,
+    0.315,
+    0.315,
+    0.315,
+    0.315
+   ],
+   "sga_pct": [
+    0.575,
+    0.572,
+    0.569,
+    0.5665,
+    0.565
+   ],
+   "dso_days": [
+    127,
+    127,
+    127,
+    127,
+    127
+   ],
+   "dih_days": [
+    379,
+    379,
+    379,
+    379,
+    379
+   ],
+   "dpo_days": [
+    430,
+    430,
+    430,
+    430,
+    430
+   ]
+  },
+  "Downside 1": {
+   "revenue_growth": [
+    0.02,
+    0.015,
+    0.01,
+    0.01,
+    0.01
+   ],
+   "cogs_pct": [
+    0.32,
+    0.32,
+    0.32,
+    0.32,
+    0.32
+   ],
+   "sga_pct": [
+    0.573,
+    0.574,
+    0.575,
+    0.5755,
+    0.5755
+   ],
+   "dso_days": [
+    133,
+    133,
+    133,
+    133,
+    133
+   ],
+   "dih_days": [
+    398,
+    398,
+    398,
+    398,
+    398
+   ],
+   "dpo_days": [
+    412,
+    412,
+    412,
+    412,
+    412
+   ]
+  },
+  "Downside 2": {
+   "revenue_growth": [
+    -0.05,
+    -0.01,
+    0.005,
+    0.01,
+    0.015
+   ],
+   "cogs_pct": [
+    0.33,
+    0.33,
+    0.33,
+    0.33,
+    0.33
+   ],
+   "sga_pct": [
+    0.58,
+    0.59,
+    0.585,
+    0.58,
+    0.5757
+   ],
+   "dso_days": [
+    139,
+    139,
+    139,
+    139,
+    139
+   ],
+   "dih_days": [
+    417,
+    417,
+    417,
+    417,
+    417
+   ],
+   "dpo_days": [
+    395,
+    395,
+    395,
+    395,
+    395
+   ]
+  }
+ },
+ "investment_thesis": [
+  "Daiichi Sankyo has built an antibody-drug-conjugate franchise around Enhertu and Datroway that has tripled revenue growth relative to the legacy business; the shares trade at {per} earnings and {pb} book.",
+  "The balance sheet holds net cash despite the capacity build-out, so the {wacc} discount rate is the cost of equity with no leverage assumed.",
+  "At {price} the market pays roughly half again the peer median EV/EBITDA; this model deliberately values the terminal year on the peer median, which is why {target_price} sits {upside_pct} from here."
+ ],
+ "key_risks": [
+  "The exit leg uses the peer median rather than the multiple the market awards this company, and that single choice accounts for most of the gap between {price} and {target_price}.",
+  "The discount rate uses an assumed beta of one because no measured beta is available; every listed Japanese pharmaceutical peer measures far lower, so {wacc} is probably too high.",
+  "Capital expenditure has run at up to ten percent of revenue against depreciation near three and a half percent, and the base case assumes it tapers — a commitment the filings do not make."
+ ],
+ "_edinet_note": "【追補2 §F-2 の予防的 EDINET 補完（生成前適用・必須）】根本原因は scripts/generate_dcf.py:66 の _val(data_dict, key, default=0) が欠損値を None ではなく 0 に落とすことで、hist_* 全系列・net_debt・core_ebitda に波及する。バッチ中はパイプラインを変更しない方針（追補2 §F-1）のため、全銘柄に生成前適用する回避策として hist_years を直近4期（P/L 4項目がすべて揃う年）に置換し、hist_revenue / hist_operating_income / hist_net_income / hist_cogs / hist_sga を yfinance連結財務諸表から供給した（配列長は全て4で hist_years と一致、契約遵守）。■hist_ocf / hist_cash / hist_debt / hist_capex / hist_depreciation は【供給していない】 — Step 4.6 の align_hist_series_to_years() が最終 hist_years に会計年度キーで再マッピングするため EDINET を一次ソースのまま使える。■hist_sga = 売上 − COGS − 営業利益 で逆算。■core_ebitda も追補2 §G に従い明示指定した（下記）。",
+ "current_price": 2794.0,
+ "shares_outstanding": 1819653230,
+ "_market_data_note": "【リトライ1回目・サイレントフォールバックの是正】初回生成では生成ログに 'Successfully fetched' 行が無く、yfinance の市場データ取得が失敗して **テンプレのプレースホルダ（株価 1,000円 / 株数 10,000,000株）にフォールバック**していた。その結果 時価総額が 10,000百万円（正しくは 5,084,111百万円）となり、Target が 294,427円 という無意味な値になった。**validate は FAIL 0 のまま通過している**（構造チェックは株価・株数の妥当性を見ない）。追補2 §F の『サイレントフォールバック禁止』の原則に従い、current_price = 2,794円（2026-09-04 終値）と shares_outstanding = 1,819,653,230株 を明示指定して再生成した。■検算: 2,794円 × 1,819,653,230株 = 5,084,111百万円 = yfinance の時価総額と一致。■再発防止として batch/check_market_data.py を新設し、全生成物の株価・株数をキャッシュと機械照合する運用にした（既存23銘柄は全件 OK、当社のみが該当）。■以後の全銘柄では batch/preemptive_block.py が current_price / shares_outstanding を予防的に明示供給する。",
+ "_beta_note": "実測（raw）β = 0.6073。出所: TOPIX 2y 1wk OLS (n=104, corr=0.261)。フェーズ2 #6 以降 overrides の beta は raw を入れる契約で、テンプレが Blume 調整 0.67×raw + 0.33×1.00 を掛け [0.3, 2.0] にクランプする（採用 0.7369、クランプ非発動）。■旧 overrides の値 1.0 は旧ルール [0.6, 1.75] のクランプ後の値であり raw ではない。■yfinance の beta フィールドは 取得不能（null）。日本株では市場を説明しないベンチマークで算出されており（NTT −0.165 / 大阪ガス −0.201 等）、採用しない。詳細は docs/phase2_pipeline_fixes_20260906.md の §2-4。"
+}

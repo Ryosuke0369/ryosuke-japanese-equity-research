@@ -1,0 +1,305 @@
+{
+ "risk_free": 0.0297,
+ "erp": 0.065,
+ "size_premium": 0.01,
+ "tax_rate": 0.25,
+ "terminal_growth": 0.01,
+ "primary_multiple": "EV/EBITDA",
+ "nwc_method": "days",
+ "hist_years": [
+  "FY2023",
+  "FY2024",
+  "FY2025",
+  "FY2026"
+ ],
+ "hist_revenue": [
+  744402.0,
+  741751.0,
+  789400.0,
+  825378.0
+ ],
+ "hist_operating_income": [
+  40040.0,
+  53407.0,
+  54377.0,
+  44139.0
+ ],
+ "hist_net_income": [
+  55432.0,
+  42406.0,
+  46432.0,
+  38558.0
+ ],
+ "hist_cogs": [
+  177837.0,
+  155333.0,
+  168807.0,
+  191223.0
+ ],
+ "hist_sga": [
+  526525.0,
+  533011.0,
+  566216.0,
+  590016.0
+ ],
+ "base_year_revenue": 825378.0,
+ "base_year_cogs": 191223.0,
+ "base_year_ar": 227002.0,
+ "base_year_inv": 257547.0,
+ "base_year_ap": 75892.0,
+ "book_value": 898992.0,
+ "core_ebitda": 83689.0,
+ "_note": "バッチ生成 2026-09-05。型A。DRAFT。根拠は batch/per_ticker/4523_summary.md。",
+ "_prescreen_note": "追補1 §B / 追補2 §B のプレスクリーン実施済み（docID S100YB05）。金融事業専用科目の検出なし → 型判定へ。",
+ "_wacc_note": "rf=2.97%。ERP6.5%固定。size_premium=1.0%（時価総額1.32兆円）。beta: yfinance実測 **−0.053** はクランプ域 [0.6, 1.75] の下限を大きく下回り無言で 1.0 に置換されるため、追補1 §A に従い下限 0.60 を明示指定した。ネットキャッシュ（net_debt −59,342）のため de_ratio = 0 → WACC = Ke = 7.87%、負債コストは寄与しないので interest_expense は指定しない。",
+ "_exit_note": "exit_multiple = Peer 4社の実測EV/EBITDA中央値 10.37x（4507 / 4151 / 4503 / 4568）。自社の現在倍率 15.12x は算式に入れていない。自社が Peer より高倍率のため Exit 法は保守側に振れる。■4519 中外製薬は D&A が取得できず EBITDA を算出できないため v2 §5 に従い comps から除外（Peer 4社構成）。",
+ "_capex_note": "capex_method / da_method とも revenue_pct（capex 5.04% / D&A 4.80%）。実績は capex 2.9-5.0% / D&A 4.8-5.4% で近接しており direct 方式の必要がない。ターミナル比率 1.050x（レンジ内）。",
+ "_scenario_note": "実績OPM（FY2023-FY2026）: min 5.35 / p25 5.37 / med 6.13 / p75 6.97 / max 7.20%。直近 5.35% が観測窓の最低かつ中央値を下回るため、Base は実績中央値 6.13% へ収束（Y1 5.5% → Y5 6.13%）。Upside は max(p75 6.97, 直近+1.0pt = 6.35) = 6.97%。Downside 1 は min(p25 5.37, 直近 5.35) = 5.35% を下回る 4.1%。Downside 2 は実績トラフ（5.35%）が直近実績そのものでトラフとして機能しないため、売上 −6% + OPM半減アーム（2.7-3.1%）。■**製薬の恒等式**: 当社は 売上 − COGS − SGA が営業利益にならない（研究開発費・無形資産償却が yfinance の SG&A に含まれないため）。テンプレは OP = 売上 − COGS − SGA で計算するので、**COGS% を実績水準に固定し SGA% = 100% − COGS% − 目標OPM で逆算**した。したがって本モデルの SGA 行は「販管費 + 研究開発費（+ 無形資産償却）」の合計を表す。COGS% は直近実績 23.2% を基準に置いた。既存銘柄からの流用なし。",
+ "ticker": "4523",
+ "company_name": "エーザイ",
+ "exchange": "TSE Prime",
+ "sector": "医薬品",
+ "fiscal_year_end_month": 3,
+ "beta": 0.8014,
+ "exit_multiple": 10.4,
+ "capex_method": "revenue_pct",
+ "capex_pct": 0.0504,
+ "da_method": "revenue_pct",
+ "da_pct": 0.048,
+ "scenarios": {
+  "Base": {
+   "revenue_growth": [
+    0.035,
+    0.03,
+    0.025,
+    0.025,
+    0.02
+   ],
+   "cogs_pct": [
+    0.232,
+    0.232,
+    0.232,
+    0.232,
+    0.232
+   ],
+   "sga_pct": [
+    0.713,
+    0.711,
+    0.709,
+    0.7075,
+    0.7067
+   ],
+   "dso_days": [
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "dih_days": [
+    414,
+    414,
+    414,
+    414,
+    414
+   ],
+   "dpo_days": [
+    173,
+    173,
+    173,
+    173,
+    173
+   ]
+  },
+  "Upside": {
+   "revenue_growth": [
+    0.05,
+    0.045,
+    0.035,
+    0.03,
+    0.03
+   ],
+   "cogs_pct": [
+    0.228,
+    0.228,
+    0.228,
+    0.228,
+    0.228
+   ],
+   "sga_pct": [
+    0.713,
+    0.709,
+    0.706,
+    0.703,
+    0.7023
+   ],
+   "dso_days": [
+    96,
+    96,
+    96,
+    96,
+    96
+   ],
+   "dih_days": [
+    398,
+    398,
+    398,
+    398,
+    398
+   ],
+   "dpo_days": [
+    179,
+    179,
+    179,
+    179,
+    179
+   ]
+  },
+  "Management": {
+   "revenue_growth": [
+    0.035,
+    0.03,
+    0.025,
+    0.025,
+    0.02
+   ],
+   "cogs_pct": [
+    0.232,
+    0.232,
+    0.232,
+    0.232,
+    0.232
+   ],
+   "sga_pct": [
+    0.713,
+    0.711,
+    0.709,
+    0.7075,
+    0.7067
+   ],
+   "dso_days": [
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "dih_days": [
+    414,
+    414,
+    414,
+    414,
+    414
+   ],
+   "dpo_days": [
+    173,
+    173,
+    173,
+    173,
+    173
+   ]
+  },
+  "Downside 1": {
+   "revenue_growth": [
+    0.005,
+    0.005,
+    0.005,
+    0.005,
+    0.005
+   ],
+   "cogs_pct": [
+    0.238,
+    0.238,
+    0.238,
+    0.238,
+    0.238
+   ],
+   "sga_pct": [
+    0.712,
+    0.716,
+    0.719,
+    0.721,
+    0.721
+   ],
+   "dso_days": [
+    105,
+    105,
+    105,
+    105,
+    105
+   ],
+   "dih_days": [
+    435,
+    435,
+    435,
+    435,
+    435
+   ],
+   "dpo_days": [
+    167,
+    167,
+    167,
+    167,
+    167
+   ]
+  },
+  "Downside 2": {
+   "revenue_growth": [
+    -0.06,
+    -0.01,
+    0.005,
+    0.01,
+    0.015
+   ],
+   "cogs_pct": [
+    0.245,
+    0.245,
+    0.245,
+    0.245,
+    0.245
+   ],
+   "sga_pct": [
+    0.725,
+    0.728,
+    0.728,
+    0.726,
+    0.724
+   ],
+   "dso_days": [
+    110,
+    110,
+    110,
+    110,
+    110
+   ],
+   "dih_days": [
+    455,
+    455,
+    455,
+    455,
+    455
+   ],
+   "dpo_days": [
+    161,
+    161,
+    161,
+    161,
+    161
+   ]
+  }
+ },
+ "investment_thesis": [
+  "Eisai has taken Leqembi through launch in Alzheimer's disease while the legacy neurology portfolio funds the spend; the shares trade at {per} earnings and {pb} book.",
+  "The balance sheet holds net cash, so enterprise value sits below market capitalisation and the {wacc} discount rate is the cost of equity with no leverage assumed.",
+  "At {price} the market capitalises the latest-year margin, the lowest of the four observed years; a return to the median supports {target_price}, or {upside_pct} from here."
+ ],
+ "key_risks": [
+  "Leqembi uptake has been slower than the launch case assumed, and the research spend behind it is what compressed the margin to the level implied by today's {price} and {per}.",
+  "The operating margin has stayed in a narrow low-single-digit band while revenue grew, so the base-case recovery depends on operating leverage the filings have not yet shown.",
+  "Inventory days are among the longest in this batch; a demand miss on a launch product ties up working capital before it appears in the {target_price} margin path."
+ ],
+ "_edinet_note": "【追補2 §F-2 の予防的 EDINET 補完（生成前適用・必須）】根本原因は scripts/generate_dcf.py:66 の _val(data_dict, key, default=0) が欠損値を None ではなく 0 に落とすことで、hist_* 全系列・net_debt・core_ebitda に波及する。バッチ中はパイプラインを変更しない方針（追補2 §F-1）のため、全銘柄に生成前適用する回避策として hist_years を直近4期（P/L 4項目がすべて揃う年）に置換し、hist_revenue / hist_operating_income / hist_net_income / hist_cogs / hist_sga を yfinance連結財務諸表から供給した（配列長は全て4で hist_years と一致、契約遵守）。■hist_ocf / hist_cash / hist_debt / hist_capex / hist_depreciation は【供給していない】 — Step 4.6 の align_hist_series_to_years() が最終 hist_years に会計年度キーで再マッピングするため EDINET を一次ソースのまま使える。■hist_sga = 売上 − COGS − 営業利益 で逆算。■core_ebitda も追補2 §G に従い明示指定した（下記）。",
+ "net_debt": -59342,
+ "_net_debt_note": "【リトライ1回目・EDINET自動値の誤りを訂正】初回生成の net_debt 自動値は **0** だった。原因は EDINET が当社の有利子負債を1年も抽出できていないこと（生成ログの FS align が [ocf+cash] のみ、Debt 0/4）。根本原因は scripts/generate_dcf.py:169 の net_debt = _val(base_data, 'net_debt') が欠損を 0 に落とすこと（§6-1 と同一原因、2801・2897 と同型）。実際は 有利子負債 186,081 − 現金及び現金同等物 245,423 = **−59,342**（ネットキャッシュ、FY2026/3期末、yfinance連結BS）。■差 59,342百万円 は1株あたり約210円（株数282,236,007）に相当し無視できない。■**validate は FAIL 0 のままこの誤りを通す**。追補1 §D / 追補2 §F-4 が数値照合を必須とする理由の実例。",
+ "_beta_note": "実測（raw）β = 0.8014。出所: TOPIX 2y 1wk OLS (n=104, corr=0.42)。フェーズ2 #6 以降 overrides の beta は raw を入れる契約で、テンプレが Blume 調整 0.67×raw + 0.33×1.00 を掛け [0.3, 2.0] にクランプする（採用 0.8669、クランプ非発動）。■旧 overrides の値 0.6 は旧ルール [0.6, 1.75] のクランプ後の値であり raw ではない。■yfinance の beta フィールドは 0.053。日本株では市場を説明しないベンチマークで算出されており（NTT −0.165 / 大阪ガス −0.201 等）、採用しない。詳細は docs/phase2_pipeline_fixes_20260906.md の §2-4。"
+}

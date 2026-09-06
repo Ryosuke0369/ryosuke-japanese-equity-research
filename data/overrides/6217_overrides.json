@@ -1,0 +1,139 @@
+{
+  "_README": "津田駒工業 (6217) overrides — 型B(シクリカル + 財務脆弱)、11月期決算。営業利益が △1,216(FY23/11) → 398(FY24/11) → △79(FY25/11) と符号反転するサイクル業種。自己資本比率9.3%、有利子負債11,288は親会社株主持分2,527の4.5倍。プロンプト(2026-08-21)の指定値を docs/overrides_schema.md の契約キー名に正規化。キー読み替え: risk_free_rate→risk_free / equity_risk_premium→erp / cost_of_debt(税前)→cost_of_debt_at(税引後) / hist_op→hist_operating_income / hist_da→hist_depreciation。minority_interest は契約に存在しないキーのため net_debt に織り込み(下記 _net_debt_note)。",
+
+  "ticker": "6217",
+  "company_name": "Tsudakoma Corp",
+  "exchange": "TSE Standard",
+  "sector": "Textile Machinery / Machine Tools",
+  "fiscal_year_end_month": 11,
+
+  "current_price": 841,
+  "_price_note": "841円 = 2026-08-21時点(プロンプト指定。yfinance の previousClose 841 と一致。同日の取得値は800円だがプロンプト指定値を優先)。時価総額 = 841 x 6,807,555 = 5,725百万円。",
+
+  "shares_outstanding": 6807555,
+  "shares": { "fully_diluted_shares": 6807555 },
+  "_shares_note": "プロンプト指示により 6,807,555株で固定。整合確認の結果: 6,807,555 は有価証券報告書 第115期(docID S100XMJD)および半期報告書 第116期(docID S100YQ5U)の議決権等の状況における【発行済株式総数】と完全一致した。ただし同表の期末自己株式数は 420,100株(2025/11末) / 420,200株(2026/5末)で、控除後は 6,387,355株(yfinance の sharesOutstanding 6,387,346 とほぼ一致)。すなわち 6,807,555 は自己株式を含む総数であり、控除後との差は 6.2%(6521の0.015%とは桁が違う)。プロンプトの明示指示に従い固定したが、1株価値を約6.2%過小評価する点を最終レポートで警告する。",
+
+  "net_debt": 8441,
+  "_net_debt_note": "8,441 = 純有利子負債 8,349 + 非支配株主持分 92。内訳(2026/5末、半期報告書 docID S100YQ5U で全項目を実データ照合済み): 短期借入金 10,088 + 長期借入金 1,200 = 有利子負債合計 11,288 − 現金及び預金 2,939 = 8,349。社債なし、リース債務は短信に記載なし。退職給付は資産3,888 > 負債3,357のため debt-like 加算はしない。非支配株主持分 92 は overrides契約に minority_interest キーが存在しないため net_debt に織り込んだ(手順書§2 型E の「MIをnet_debtに織込み」と同じ扱い)。この織り込みにより Executive Summary の PGM INVALID 判定式 IF('DCF Model'!C53 < 'DCF Model'!C16, ...) が「EV < net_debt + MI」を正しく判定する。",
+
+  "tax_rate": 0.306,
+  "_tax_note": "法定実効税率30.6%。繰越欠損金による軽減はBaseに織り込まない。",
+
+  "risk_free": 0.016,
+  "_risk_free_note": "yfinanceでの10年JGB利回り取得を試行したが失敗(JP10Y-JGB / ^JP10YB / JGB10Y.TO / ^JPNTNX / JP10YT=RR いずれも 404 または no data)。プロンプト指定のフォールバック 1.6% を使用。",
+  "erp": 0.055,
+  "beta": 0.92,
+  "_beta_note": "yfinanceで6217.Tの週次2年リターン(2026-08-21まで104週)をTOPIX連動ETF 1306.Tに対して回帰: beta = 0.924。プロンプトの許容レンジ[0.8, 2.0]内のためフォールバック1.3ではなく実測値0.92を採用。ただし相関は0.153と極めて低く(超小型・低流動性銘柄のため)、回帰の統計的信頼度は低い。参考: ^N225基準では1.163、yfinance info.beta は2.158。この低いbetaが WACC を 6.21% と 7% 未満に押し下げている(最終レポートで警告)。",
+  "size_premium": 0.040,
+  "_size_premium_note": "時価総額57億円の超小型。既存銘柄からの流用ではなく明示指定。",
+  "cost_of_debt_at": 0.01735,
+  "_cost_of_debt_note": "税引前 2.5% x (1 - 0.306) = 1.735%(テンプレのWACC式は cost_of_debt_at に(1-t)を掛けないため税引後で投入)。税引前2.5%の根拠: FY2025/11 支払利息256 ÷ 平均有利子負債12,290 = 2.1% に上乗せ。",
+  "de_ratio": 1.0,
+  "_wacc_note": "de_ratio = 1.0 を明示指定(必須指定項目)。実績の D/E は net_debt 8,441 ÷ 時価総額 5,725 ≒ 1.47(有利子負債総額11,288ベースなら約2.0)だが、実績値をそのまま使うと低コスト負債(税引後1.735%)のウェイトが過大になりWACCが不当に過小化する。目標資本構成として1.0を置く。結果: Ke = 0.016 + 0.92 x 0.055 + 0.040 = 10.66%、WACC = 10.66% x 0.5 + 1.735% x 0.5 = 6.20%。※ プロンプト§3-5 の「WACCが7%を下回る場合は警告」に該当する。原因は実測beta 0.92(低相関)であり、フォールバックbeta 1.3 を使えば WACC は 7.24% となる。プロンプトの取得ルール(レンジ内なら実測値)を優先したが、財務脆弱企業のWACCとしては不自然に低い点を最終レポートで警告する。",
+
+  "terminal_growth": 0.005,
+  "exit_multiple": 7.0,
+  "primary_multiple": "EV/EBITDA",
+  "_exit_note": "Exit倍率7.0倍。サイクルの山の利益 x 高倍率という二重計上を避けるための保守値。",
+
+  "capex_method": "revenue_pct",
+  "da_method": "revenue_pct",
+  "capex_pct": 0.016,
+  "da_pct": 0.016,
+  "_capex_note": "スキーマ上 capex_pct / da_pct は数値スカラーのみ(overrides_validator の ALLOWED_KEYS で _NUM 指定)で配列は契約違反となるため、プロンプトの Y1→Y5 テーパー(capex [0.010..0.016] / D&A [0.018..0.016])は表現できない。ターミナル整合(手順書 禁止事項#8「ターミナル年の capex は D&A に収束させる」)を優先し、Y5 の値(capex 1.6% / D&A 1.6%)を全年に適用。terminal capex/D&A = 0.016/0.016 = 1.00倍で、プロンプト要求の 0.95〜1.05 および validator の [0.90, 1.15] の双方を満たす(プロンプトの単一値フォールバック 0.014/0.017 は比率0.82倍で両基準を外すため不採用)。capex_method=direct による年次配列も検討したが、絶対額指定はシナリオ別の売上規模に連動せずサイクル型5シナリオの分散を歪めるため不採用。事業実態: 直近3期は capex(228/209/371)が D&A(1,049/841/694)の1/3〜1/2という過少投資であり、ターミナルでは維持投資=D&Aに収束させる。本設定では全年で D&A − capex = 0 となり、プロンプトのY1(D&A 1.8% − capex 1.0% = +0.8%)より保守的なFCFになる。",
+
+  "nwc_method": "days",
+  "base_year_ar": 5925,
+  "base_year_inv": 7855,
+  "base_year_ap": 2822,
+  "_nwc_note": "FY2025/11末(基準年)BS: AR 5,925 / INV 7,855(製品4,448 + 仕掛1,036 + 原材料2,371)/ AP 2,822。EDINET実データと完全一致。基準年日数は DSO 61.0日 / DIH 96.7日(COGS基準) / DPO 34.7日。在庫は売上の22.2%と重い。契約負債(前受金)821はテンプレートのNWC定義(AR + INV − AP)の外にあるため未反映 — 前受金は運転資本の資金負担を軽減する方向のため、本モデルのΔNWCは保守側に振れている。",
+
+  "projection_years": 5,
+  "base_year_revenue": 35447,
+  "base_year_cogs": 29658,
+  "_base_year_note": "予測Y1の起点は FY2025/11 実績 35,447百万円(LTM 34,599 ではない)。テンプレは base_year_revenue(直近本決算FY実績)を起点に revenue_growth を乗じるため、プロンプトが懸念した LTM 起点への成長率換算(Base +2.5%)は不要。",
+
+  "core_ebitda": 615,
+  "core_net_income": -262,
+  "book_value": 2527,
+  "_book_value_note": "2026/5末 親会社株主持分 = 純資産 2,619 − 非支配株主持分 92 = 2,527百万円(半期報告書 docID S100YQ5U 実データ)。自己資本比率 = 2,527 / 総資産 27,145 = 9.31%(プロンプト記載の9.3%と一致)。net_debt と同一の基準日(2026/5末)を採用し、PBR が最新BSを反映するようにした。参考: FY2025/11末の親会社株主持分は 2,847(純資産2,985 − MI 138)。",
+
+  "hist_years": ["FY2023/11", "FY2024/11", "FY2025/11"],
+  "hist_revenue": [39278, 36445, 35447],
+  "hist_operating_income": [-1216, 398, -79],
+  "hist_net_income": [-1246, 488, -262],
+  "hist_cogs": [34344, 30512, 29658],
+  "hist_sga": [6150, 5534, 5869],
+  "hist_ocf": [-1285, 801, 987],
+  "hist_cash": [2574, 2937, 3467],
+  "hist_debt": [13423, 12454, 12129],
+  "hist_capex": [228, 209, 371],
+  "hist_depreciation": [1049, 841, 694],
+  "_hist_note": "hist_debt は短期借入金 + 長期借入金(社債なし、リース債務は短信に記載なし)。hist_capex は有形固定資産取得のみ。hist_cogs / hist_sga / hist_net_income はプロンプト未指定だが、指定しないと EDINET側の6年配列(FY2020〜FY2025)が3年の hist_years に位置コピーされ年度ズレを起こすため(これらのキーは _FS_SERIES の年度キー突合の対象外)、EDINET一次情報から3年分を明示指定した(docID S100XMJD / S100VAUY / S100SYM7)。検算: 39,278−34,344−6,150 = −1,216 / 36,445−30,512−5,534 = 399 / 35,447−29,658−5,869 = −80(hist_operating_income の 398 / −79 と丸め誤差1以内)。なお EDINET実データとプロンプト指定値で2箇所の差異があり、契約(overrides優先)に従いプロンプト値を採用: (1) hist_cash FY2023/11 プロンプト 2,574 vs EDINET 2,544、(2) hist_depreciation FY2025/11 プロンプト 694 vs EDINET 684。いずれも短信CF計算書ベースの差と考えられ、影響は軽微。",
+
+  "_ltm_note": "ltm_revenue は指定しない(自動構築)。EDINET から半期報告書 第116期(docID S100YQ5U, 2026-05-31期)が取得でき、LTM(2Q 2026-05) が構築された。自動構築値 34,599 = 35,447 − 17,373 + 16,525 でプロンプトの期待値と完全一致。参考: LTM営業利益 △22、LTM D&A 663(694−337+306)。stub は 2Q 時点のため stub_months_elapsed = 6 / stub_fraction = 0.5 が自動設定される。",
+
+  "_scenario_design_note": "テンプレは営業利益率を直接受け取らず、営業利益率 = 1 − cogs_pct − sga_pct として算出する(scenarios の許容配列キーは revenue_growth / cogs_pct / sga_pct / dso_days / dih_days / dpo_days / nwc_pct のみ)。したがってプロンプト指定の営業利益率 Y1〜Y5 を、粗利率(cogs_pct)を主ドライバー・販管費率(sga_pct)を残差として分解した。基準年 FY2025/11 実績は cogs 83.67% / sga 16.56% / OPM △0.22%。サイクル業種のため上昇局面では粗利率が改善し、下降局面では粗利率悪化と固定費デレバレッジが同時に効く設計。Downside では販管費の実額削減(リストラ)を織り込んでいるため sga_pct が単調上昇しない年がある。",
+
+  "scenarios": {
+    "Base": {
+      "_desc": "ミッドサイクル。Y3に小さな山(OPM 2.5%)、Y4に調整、Y5に回復。営業利益率 Y1-Y5 = 0.5/1.5/2.5/1.0/1.5%。検算 Y1: 35,447 x 1.000 = 35,447 x 0.5% = 177百万円。粗利率 17.0%→18.6%→17.8%。",
+      "revenue_growth": [0.000, 0.04, 0.05, -0.03, 0.02],
+      "cogs_pct":       [0.830, 0.822, 0.814, 0.826, 0.822],
+      "sga_pct":        [0.165, 0.163, 0.161, 0.164, 0.163],
+      "dso_days":       [61, 61, 61, 61, 61],
+      "dih_days":       [97, 96, 95, 95, 94],
+      "dpo_days":       [35, 35, 35, 35, 35]
+    },
+    "Upside": {
+      "_desc": "新興国の織機更新需要が本格化するサイクル上昇局面。営業利益率 Y1-Y5 = 1.5/3.0/4.0/3.5/2.5%。粗利率 17.9%→19.7%。FY2024/11の山(OPM 1.1%)を大きく超える水準だが、過去のピーク(2010年代)の営業利益率を上限としている。",
+      "revenue_growth": [0.030, 0.08, 0.08, 0.03, 0.00],
+      "cogs_pct":       [0.821, 0.810, 0.803, 0.807, 0.815],
+      "sga_pct":        [0.164, 0.160, 0.157, 0.158, 0.160],
+      "dso_days":       [60, 59, 58, 58, 58],
+      "dih_days":       [95, 92, 90, 88, 88],
+      "dpo_days":       [35, 36, 36, 36, 36]
+    },
+    "Management": {
+      "_desc": "会社予想線。FY2026/11 会社予想 営業利益500に Y1 を合わせる。営業利益率 Y1-Y5 = 1.4/2.0/2.5/2.5/2.5%。検算 Y1: 35,447 x 1.016 = 36,014 x 1.4% = 504百万円(会社予想500と整合)。",
+      "revenue_growth": [0.016, 0.03, 0.03, 0.02, 0.02],
+      "cogs_pct":       [0.821, 0.817, 0.813, 0.813, 0.813],
+      "sga_pct":        [0.165, 0.163, 0.162, 0.162, 0.162],
+      "dso_days":       [61, 61, 61, 61, 61],
+      "dih_days":       [97, 96, 95, 95, 94],
+      "dpo_days":       [35, 35, 35, 35, 35]
+    },
+    "Downside 1": {
+      "_desc": "サイクル下降局面。Y1-Y2 で減収、営業赤字に再転落しY3まで赤字が続く。Y4以降で緩やかに回復。営業利益率 Y1-Y5 = △1.0/△3.0/△1.0/1.0/1.5%。粗利率 16.2%→15.0%→18.0%。",
+      "revenue_growth": [-0.050, -0.08, 0.02, 0.05, 0.03],
+      "cogs_pct":       [0.838, 0.850, 0.840, 0.825, 0.820],
+      "sga_pct":        [0.172, 0.180, 0.170, 0.165, 0.165],
+      "dso_days":       [63, 65, 64, 63, 62],
+      "dih_days":       [100, 106, 104, 101, 99],
+      "dpo_days":       [34, 33, 33, 34, 34]
+    },
+    "Downside 2": {
+      "_desc": "深い下降局面。売上が27,000台まで落ち込み、FY2021-22 級の営業赤字が再現。販管費の実額削減(リストラ)を織り込むため sga_pct は Y3 以降低下する。営業利益率 Y1-Y5 = △3.0/△6.0/△4.0/△1.0/0.5%。粗利率 15.0%→13.0%→16.2%。",
+      "revenue_growth": [-0.100, -0.15, -0.05, 0.03, 0.03],
+      "cogs_pct":       [0.850, 0.870, 0.860, 0.845, 0.838],
+      "sga_pct":        [0.180, 0.190, 0.180, 0.165, 0.157],
+      "dso_days":       [65, 68, 68, 66, 65],
+      "dih_days":       [104, 112, 112, 108, 105],
+      "dpo_days":       [33, 32, 32, 33, 33]
+    }
+  },
+
+  "_thesis_note": "プロンプト原文は「trades at {pb}x PBR」だったが、テンプレのトークン書式 {pb} = TEXT(...,\"0.00\\\"x\\\"\") が既に末尾に x を付与するため、原文のままでは「2.27xx PBR」と x が重複出力される(6521 で実測済みの挙動)。トークン直後のリテラル x のみを削除し、その他の文言はプロンプト原文どおり。",
+
+  "investment_thesis": [
+    "Tsudakoma is a pure-cycle play on emerging-market loom replacement; FY11/24 showed the upside (OP margin 1.1%) but FY11/25 slipped back to a loss.",
+    "Working capital release (receivables down ~JPY3.5bn in two years) has funded debt paydown, keeping operating cash flow positive despite operating losses.",
+    "At {price} the stock trades at {pb} PBR with WACC of {wacc}; our target of {target_price} implies {upside_pct}, reflecting mid-cycle margins of ~1.5%."
+  ],
+  "key_risks": [
+    "Equity ratio is ~9% and interest-bearing debt is ~4.5x parent equity; another down-cycle could require dilutive financing.",
+    "FY11/26 guidance (OP JPY500m) is back-loaded: H1 was a JPY89m loss, so a second-half miss is the base case risk.",
+    "Capex has run at one-third to one-half of D&A for three years; deferred maintenance may cap the next upturn."
+  ]
+}

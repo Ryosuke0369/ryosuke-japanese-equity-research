@@ -1,0 +1,306 @@
+{
+ "risk_free": 0.0297,
+ "erp": 0.065,
+ "size_premium": 0.01,
+ "tax_rate": 0.25,
+ "terminal_growth": 0.01,
+ "primary_multiple": "EV/EBITDA",
+ "nwc_method": "days",
+ "current_price": 1916.5,
+ "shares_outstanding": 2507140573,
+ "hist_years": [
+  "FY2023",
+  "FY2024",
+  "FY2025",
+  "FY2026"
+ ],
+ "hist_revenue": [
+  6401320.0,
+  7144733.0,
+  7161777.0,
+  7539975.0
+ ],
+ "hist_operating_income": [
+  426099.0,
+  380599.0,
+  518953.0,
+  552538.0
+ ],
+ "hist_net_income": [
+  314633.0,
+  312791.0,
+  419081.0,
+  443755.0
+ ],
+ "hist_cogs": [
+  5490176.0,
+  6054780.0,
+  6058910.0,
+  6370364.0
+ ],
+ "hist_sga": [
+  485045.0,
+  709354.0,
+  583914.0,
+  617073.0
+ ],
+ "base_year_revenue": 7539975.0,
+ "base_year_cogs": 6370364.0,
+ "base_year_ar": 1412240.0,
+ "base_year_inv": 1336844.0,
+ "base_year_ap": 1292736.0,
+ "book_value": 5492689.0,
+ "core_ebitda": 930612.0,
+ "net_debt": -377844,
+ "_note": "バッチ生成 2026-09-05。型A。DRAFT（part1）。根拠は batch/per_ticker/6902_summary.md。",
+ "_prescreen_note": "追補1 §B / 追補2 §B のプレスクリーン実施済み。金融事業専用科目の検出なし → 型判定へ。■トヨタグループの部品会社だが **captive finance は保有していない**（Debt/Revenue 0.11）→ 型C には該当しない。",
+ "_wacc_note": "rf=2.97%。ERP6.5%固定。size_premium=1.0%（時価総額4.80兆円）。beta: yfinance実測 **0.616** はクランプ域 [0.6, 1.75] の内側のため素通し（置換なし）。ネットキャッシュ（net_debt −377,844）のため de_ratio = 0 → WACC = Ke = 6.97%。実績Kd（支払利息 31,731）は WACC に寄与しないため interest_expense は指定しない。",
+ "_exit_note": "exit_multiple = Peer 5社の実測EV/EBITDA中央値 6.84x（7259 アイシン / 5108 ブリヂストン / 5802 住友電気工業 / 7282 豊田合成 / 6503 三菱電機）。自社の現在倍率 4.76x は算式に入れていない。■時価総額バンド（1.44〜14.4兆円）から外れる 7282 豊田合成(0.63兆) を自動車部品としての事業比較可能性で採用した。**自社倍率が Peer 中央値を下回るため Exit 法は現値より強気側に出る**。",
+ "_capex_note": "capex_method / da_method とも revenue_pct（capex 5.25% / D&A 5.00%）。実績は capex 5.8-6.5% / D&A 5.0-5.7% で近接し、直近は capex が低下傾向（6.5% → 5.8%）。ターミナル比率 1.050x（レンジ内）。",
+ "_scenario_note": "実績OPM（FY2023-FY2026）: min 5.33 / p25 6.32 / med 6.95 / p75 7.27 / max 7.33%。直近 7.33%（観測窓の最高）が中央値を上回るため Base 到達OPM =（直近実績 + p75）/2 = 7.30%（実質横ばい）。Upside は max(実績p75 7.27, 直近+1.0pt = 8.33) = 8.33%。Downside 1 は min(p25 6.32, 直近 7.33) = 6.32%。Downside 2 は実績トラフ **5.33%**（FY2024/3 実績、直近と乖離した実在の谷）を起点に売上 −8% を重ねた。■**恒等式の扱い**: 当社は 売上 − COGS − SGA が営業利益に完全一致しない（その他営業損益が存在する）。テンプレは OP = 売上 − COGS − SGA で計算するので、**COGS% を実績水準に固定し SGA% = 100% − COGS% − 目標OPM で逆算**した。したがって本モデルの SGA 行は「販管費 ± その他営業損益」を表す。COGS% は直近実績 84.5% に固定した（当社は COGS+SGA+OPM = 99.7% とほぼ恒等式が成立する）。既存銘柄からの流用なし。",
+ "ticker": "6902",
+ "company_name": "デンソー",
+ "exchange": "TSE Prime",
+ "sector": "輸送用機器",
+ "fiscal_year_end_month": 3,
+ "beta": 1.0939,
+ "exit_multiple": 6.8,
+ "capex_method": "revenue_pct",
+ "capex_pct": 0.0525,
+ "da_method": "revenue_pct",
+ "da_pct": 0.05,
+ "scenarios": {
+  "Base": {
+   "revenue_growth": [
+    0.04,
+    0.035,
+    0.03,
+    0.025,
+    0.025
+   ],
+   "cogs_pct": [
+    0.845,
+    0.845,
+    0.845,
+    0.845,
+    0.845
+   ],
+   "sga_pct": [
+    0.0818,
+    0.0819,
+    0.0819,
+    0.082,
+    0.082
+   ],
+   "dso_days": [
+    67,
+    67,
+    67,
+    67,
+    67
+   ],
+   "dih_days": [
+    74,
+    74,
+    74,
+    74,
+    74
+   ],
+   "dpo_days": [
+    77,
+    77,
+    77,
+    77,
+    77
+   ]
+  },
+  "Upside": {
+   "revenue_growth": [
+    0.055,
+    0.05,
+    0.04,
+    0.035,
+    0.03
+   ],
+   "cogs_pct": [
+    0.84,
+    0.84,
+    0.84,
+    0.84,
+    0.84
+   ],
+   "sga_pct": [
+    0.085,
+    0.083,
+    0.081,
+    0.079,
+    0.0767
+   ],
+   "dso_days": [
+    64,
+    64,
+    64,
+    64,
+    64
+   ],
+   "dih_days": [
+    70,
+    70,
+    70,
+    70,
+    70
+   ],
+   "dpo_days": [
+    80,
+    80,
+    80,
+    80,
+    80
+   ]
+  },
+  "Management": {
+   "revenue_growth": [
+    0.04,
+    0.035,
+    0.03,
+    0.025,
+    0.025
+   ],
+   "cogs_pct": [
+    0.845,
+    0.845,
+    0.845,
+    0.845,
+    0.845
+   ],
+   "sga_pct": [
+    0.0818,
+    0.0819,
+    0.0819,
+    0.082,
+    0.082
+   ],
+   "dso_days": [
+    67,
+    67,
+    67,
+    67,
+    67
+   ],
+   "dih_days": [
+    74,
+    74,
+    74,
+    74,
+    74
+   ],
+   "dpo_days": [
+    77,
+    77,
+    77,
+    77,
+    77
+   ]
+  },
+  "Downside 1": {
+   "revenue_growth": [
+    0.01,
+    0.01,
+    0.005,
+    0.005,
+    0.005
+   ],
+   "cogs_pct": [
+    0.852,
+    0.852,
+    0.852,
+    0.852,
+    0.852
+   ],
+   "sga_pct": [
+    0.078,
+    0.08,
+    0.083,
+    0.0845,
+    0.0848
+   ],
+   "dso_days": [
+    70,
+    70,
+    70,
+    70,
+    70
+   ],
+   "dih_days": [
+    78,
+    78,
+    78,
+    78,
+    78
+   ],
+   "dpo_days": [
+    73,
+    73,
+    73,
+    73,
+    73
+   ]
+  },
+  "Downside 2": {
+   "revenue_growth": [
+    -0.08,
+    -0.01,
+    0.005,
+    0.01,
+    0.015
+   ],
+   "cogs_pct": [
+    0.865,
+    0.865,
+    0.865,
+    0.865,
+    0.865
+   ],
+   "sga_pct": [
+    0.09,
+    0.095,
+    0.09,
+    0.085,
+    0.0817
+   ],
+   "dso_days": [
+    74,
+    74,
+    74,
+    74,
+    74
+   ],
+   "dih_days": [
+    82,
+    82,
+    82,
+    82,
+    82
+   ],
+   "dpo_days": [
+    70,
+    70,
+    70,
+    70,
+    70
+   ]
+  }
+ },
+ "investment_thesis": [
+  "Denso supplies thermal, powertrain and electrification systems across the Toyota group and beyond, and the operating margin has recovered to the top of its four-year range; the shares trade at {per} earnings and {pb} book.",
+  "Unlike the automotive OEMs, Denso carries no captive finance operation, so the balance sheet is a clean industrial one and the {wacc} discount rate applies to net cash rather than to a finance book.",
+  "At {price} the shares are valued below the auto-parts and industrial peer median on EV/EBITDA; valuing the exit on that peer median supports {target_price}, or {upside_pct} from here."
+ ],
+ "key_risks": [
+  "Revenue tracks Toyota group build rates, and a volume decline of the kind seen two years ago would take the margin back to the trough case rather than the level implied by today's {price} and {per}.",
+  "The electrification transition requires sustained investment in new product lines while internal-combustion components decline, and the base case assumes capital expenditure converges on depreciation rather than stepping up.",
+  "Customer concentration inside a single group is not reflected in the {wacc} used here, and pricing is negotiated annually rather than set in the market."
+ ],
+ "_edinet_note": "【追補2 §F-2 / 追補3 §L の予防的補完（生成前適用・必須）】根本原因は scripts/generate_dcf.py:66 の _val(data_dict, key, default=0) が欠損値を None ではなく 0 に落とすこと。hist_years を直近4期に置換し hist_revenue / hist_operating_income / hist_net_income / hist_cogs / hist_sga を yfinance連結財務諸表から供給（配列長は全て4で hist_years と一致、契約遵守）。■hist_ocf / hist_cash / hist_debt / hist_capex / hist_depreciation は【供給していない】 — Step 4.6 が最終 hist_years に会計年度キーで再マッピングするため EDINET を一次ソースのまま使える。■hist_sga = 売上 − COGS − 営業利益 で逆算。■追補3 §L に従い current_price / shares_outstanding も予防的に明示指定（プレースホルダ降格の回避＋再現性確保）。■net_debt も明示指定（EDINET の有利子負債抽出が 0 に落ちる既知パターンが3件発生しているため）。",
+ "_beta_note": "実測（raw）β = 1.0939。出所: TOPIX 2y 1wk OLS (n=104, corr=0.733)。フェーズ2 #6 以降 overrides の beta は raw を入れる契約で、テンプレが Blume 調整 0.67×raw + 0.33×1.00 を掛け [0.3, 2.0] にクランプする（採用 1.0629、クランプ非発動）。■旧 overrides の値 0.62 は旧ルール [0.6, 1.75] のクランプ後の値であり raw ではない。■yfinance の beta フィールドは 0.616。日本株では市場を説明しないベンチマークで算出されており（NTT −0.165 / 大阪ガス −0.201 等）、採用しない。詳細は docs/phase2_pipeline_fixes_20260906.md の §2-4。"
+}

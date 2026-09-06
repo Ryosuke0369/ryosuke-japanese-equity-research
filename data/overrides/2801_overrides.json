@@ -1,0 +1,311 @@
+{
+ "risk_free": 0.0297,
+ "erp": 0.065,
+ "size_premium": 0.01,
+ "tax_rate": 0.25,
+ "terminal_growth": 0.01,
+ "primary_multiple": "EV/EBITDA",
+ "nwc_method": "days",
+ "_note": "バッチ生成 2026-09-05。型A。DRAFT。根拠は batch/per_ticker/2801_summary.md。",
+ "_wacc_note": "rf=2.97%。ERP6.5%固定。size_premium=1.0%(時価総額1.66兆円)。beta: 実測0.039はクランプ下限0.6未満で無言で1.0に置換されるため下限0.60を明示指定。ネットキャッシュ(net_debt -50,341、明示指定。EDINET自動算出値は0で誤り)のため de_ratio=0 -> WACC=Ke、負債コストは寄与しないので interest_expense は指定しない。",
+ "_exit_note": "exit_multiple = Peer 5社の実測EV/EBITDA中央値 10.92x(2802 18.89 / 2503 10.21 / 2502 11.13 / 2269 8.35 / 2897 10.92)。自社の現在倍率 15.63x は算式に不使用。自社が Peer より高倍率のため Exit 法は保守側に振れる。",
+ "_capex_note": "capex_method=direct。FY2026の capex は売上比8.0%(59,612百万円)と過去3期(4.3-5.7%)から急増(北米の生産能力増強)。5年で逓減させ、ターミナル年 34,600 / D&A(Y5売上889,946 x 3.7% = 32,928) = 1.051x でレンジ内に収束。",
+ "_scenario_note": "実績OPM(FY2023-FY2026): min 8.95 / p25 9.81 / med 10.14 / p75 10.24 / max 10.40%。レンジ1.5ptと安定。直近10.19%が中央値(10.14%)を僅かに上回るため Base の到達OPMは『直近実績とp75の平均 = 10.22%』(実質横ばい)。Upside は max(p75 10.24, 直近+1.0pt=11.19) = 11.19%。Downside 1 は min(p25 9.81, 直近 10.19) = 9.81%。Downside 2 は実績トラフ8.95%がDownside 1(9.81%)と差別化しにくいため、売上-6%+OPM半減アーム。",
+ "ticker": "2801",
+ "company_name": "キッコーマン",
+ "exchange": "TSE Prime",
+ "sector": "食料品",
+ "fiscal_year_end_month": 3,
+ "beta": 0.3367,
+ "exit_multiple": 10.9,
+ "capex_method": "direct",
+ "capex_pct": 0.0389,
+ "da_method": "revenue_pct",
+ "da_pct": 0.037,
+ "capex_direct": {
+  "projections": [
+   58000,
+   52000,
+   45000,
+   39000,
+   34600
+  ]
+ },
+ "scenarios": {
+  "Base": {
+   "revenue_growth": [
+    0.045,
+    0.04,
+    0.035,
+    0.03,
+    0.025
+   ],
+   "cogs_pct": [
+    0.666,
+    0.666,
+    0.666,
+    0.666,
+    0.6658
+   ],
+   "sga_pct": [
+    0.232,
+    0.232,
+    0.232,
+    0.232,
+    0.232
+   ],
+   "dso_days": [
+    44,
+    44,
+    44,
+    44,
+    44
+   ],
+   "dih_days": [
+    81,
+    81,
+    81,
+    81,
+    81
+   ],
+   "dpo_days": [
+    52,
+    52,
+    52,
+    52,
+    52
+   ]
+  },
+  "Upside": {
+   "revenue_growth": [
+    0.06,
+    0.055,
+    0.045,
+    0.04,
+    0.035
+   ],
+   "cogs_pct": [
+    0.666,
+    0.664,
+    0.662,
+    0.66,
+    0.6591
+   ],
+   "sga_pct": [
+    0.229,
+    0.229,
+    0.229,
+    0.229,
+    0.229
+   ],
+   "dso_days": [
+    42,
+    42,
+    42,
+    42,
+    42
+   ],
+   "dih_days": [
+    77,
+    77,
+    77,
+    77,
+    77
+   ],
+   "dpo_days": [
+    54,
+    54,
+    54,
+    54,
+    54
+   ]
+  },
+  "Management": {
+   "revenue_growth": [
+    0.045,
+    0.04,
+    0.035,
+    0.03,
+    0.025
+   ],
+   "cogs_pct": [
+    0.666,
+    0.666,
+    0.666,
+    0.666,
+    0.6658
+   ],
+   "sga_pct": [
+    0.232,
+    0.232,
+    0.232,
+    0.232,
+    0.232
+   ],
+   "dso_days": [
+    44,
+    44,
+    44,
+    44,
+    44
+   ],
+   "dih_days": [
+    81,
+    81,
+    81,
+    81,
+    81
+   ],
+   "dpo_days": [
+    52,
+    52,
+    52,
+    52,
+    52
+   ]
+  },
+  "Downside 1": {
+   "revenue_growth": [
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01
+   ],
+   "cogs_pct": [
+    0.664,
+    0.6645,
+    0.665,
+    0.6655,
+    0.6659
+   ],
+   "sga_pct": [
+    0.236,
+    0.236,
+    0.236,
+    0.236,
+    0.236
+   ],
+   "dso_days": [
+    46,
+    46,
+    46,
+    46,
+    46
+   ],
+   "dih_days": [
+    85,
+    85,
+    85,
+    85,
+    85
+   ],
+   "dpo_days": [
+    50,
+    50,
+    50,
+    50,
+    50
+   ]
+  },
+  "Downside 2": {
+   "revenue_growth": [
+    -0.06,
+    -0.01,
+    0.005,
+    0.01,
+    0.015
+   ],
+   "cogs_pct": [
+    0.7,
+    0.704,
+    0.704,
+    0.702,
+    0.7
+   ],
+   "sga_pct": [
+    0.245,
+    0.245,
+    0.245,
+    0.245,
+    0.245
+   ],
+   "dso_days": [
+    48,
+    48,
+    48,
+    48,
+    48
+   ],
+   "dih_days": [
+    89,
+    89,
+    89,
+    89,
+    89
+   ],
+   "dpo_days": [
+    47,
+    47,
+    47,
+    47,
+    47
+   ]
+  }
+ },
+ "investment_thesis": [
+  "Kikkoman earns most of its profit from soy sauce and Asian foods in North America, where the brand supports pricing that the domestic food peers do not have; the shares trade at {per} earnings and {pb} book.",
+  "The balance sheet holds net cash, so enterprise value sits below market capitalisation and the {wacc} discount rate is the cost of equity with no leverage assumed.",
+  "At {price} the shares are held at a clear premium to the food peer group on EV/EBITDA; the base case, which values the exit on the peer median rather than on the multiple the market awards this company, supports {target_price}, or {upside_pct} from here."
+ ],
+ "key_risks": [
+  "The valuation premium over the food peer group is the single largest driver of the gap between {price} and {target_price}: the exit leg here deliberately does not assume the premium persists.",
+  "North American demand and the dollar drive group earnings, and neither the currency nor the regional concentration is reflected in the {wacc} applied here.",
+  "Capital expenditure ran at twice the historical rate in the latest year; if the elevated level persists rather than tapering, the free cash flow behind {per} and {target_price} does not materialise."
+ ],
+ "hist_years": [
+  "FY2023",
+  "FY2024",
+  "FY2025",
+  "FY2026"
+ ],
+ "hist_revenue": [
+  618899,
+  660835,
+  708979,
+  745539
+ ],
+ "hist_operating_income": [
+  55370,
+  66734,
+  73699,
+  75940
+ ],
+ "hist_net_income": [
+  43733,
+  56441,
+  61695,
+  61615
+ ],
+ "hist_cogs": [
+  414474,
+  432114,
+  469746,
+  492926
+ ],
+ "hist_sga": [
+  149055,
+  161987,
+  165534,
+  176673
+ ],
+ "base_year_revenue": 745539,
+ "base_year_cogs": 492926,
+ "base_year_ar": 90640,
+ "base_year_inv": 110358,
+ "base_year_ap": 72002,
+ "net_debt": -50341,
+ "book_value": 560924,
+ "_edinet_note": "【リトライ1回目・EDINET補完 §3-2】初回生成は FAIL 1(Financial Statements!H16 = #DIV/0!)。原因は EDINET が hist_years を FY2019-FY2026 の8期で構築し、うち FY2023 の営業利益を 0 で抽出していたため『FY2024 の営業利益YoY成長率 = /0』となったこと。対処: hist_years を FY2023-FY2026 の4期に置換し hist_revenue / hist_operating_income / hist_net_income / hist_cogs / hist_sga を yfinance連結財務諸表から供給(配列長は全て4)。hist_ocf / hist_cash / hist_debt / hist_capex / hist_depreciation は供給していない(Step 4.6 が会計年度キーで再マッピングする)。■hist_sga = 売上 - COGS - 営業利益 で逆算。■net_debt を明示指定した理由: EDINET は当社の有利子負債を FY2021 以降1年も抽出できておらず(FS align が [ocf+cash] のみ)、初回生成の自動算出値は net_debt = 0 だった。実際は 有利子負債 61,429 - 現金及び現金同等物 111,770 = -50,341(ネットキャッシュ)。この差 50,341百万円 は1株あたり約54円(株数927,739,554)に相当し、無視できない。■その結果 Financial Statements の有利子負債行は空欄のままだが、net_debt(C16)は明示指定済みのためバリュエーションには影響しない。",
+ "_beta_note": "実測（raw）β = 0.3367。出所: TOPIX 2y 1wk OLS (n=104, corr=0.196)。フェーズ2 #6 以降 overrides の beta は raw を入れる契約で、テンプレが Blume 調整 0.67×raw + 0.33×1.00 を掛け [0.3, 2.0] にクランプする（採用 0.5556、クランプ非発動）。■旧 overrides の値 0.6 は旧ルール [0.6, 1.75] のクランプ後の値であり raw ではない。■yfinance の beta フィールドは 0.039。日本株では市場を説明しないベンチマークで算出されており（NTT −0.165 / 大阪ガス −0.201 等）、採用しない。詳細は docs/phase2_pipeline_fixes_20260906.md の §2-4。"
+}

@@ -1,0 +1,328 @@
+{
+ "risk_free": 0.0297,
+ "erp": 0.065,
+ "size_premium": 0.01,
+ "tax_rate": 0.25,
+ "terminal_growth": 0.01,
+ "primary_multiple": "EV/EBITDA",
+ "nwc_method": "days",
+ "_note": "バッチ生成 2026-09-05。型A。DRAFT。根拠は batch/per_ticker/4151_summary.md。",
+ "_prescreen_note": "追補1 §B の金融事業プレスクリーン実施済み(docID S100XPTY)。金融事業科目の検出なし → 型判定へ。",
+ "_wacc_note": "rf=2.97%。ERP6.5%固定。size_premium=1.0%(時価総額1.26兆円)。beta: yfinance実測 0.138。追補1 §A に従い max(0.6, min(1.75, 実測)) = 0.60 を明示指定。テンプレは [0.6, 1.75] の範囲外を無言で 1.0 に置換するため、そのまま渡すとサイレントフォールバックが発動する。ネットキャッシュ(net_debt -218,769)のため de_ratio=0 -> WACC=Ke、負債コストは寄与しないので interest_expense は指定しない。",
+ "_net_debt_note": "net_debt = 有利子負債 0 - 現金及び現金同等物 218,769 = -218,769百万円(ネットキャッシュ)。■有利子負債ゼロは抽出漏れではなく事実(yfinance の Total Debt / Current Debt / Long Term Debt 行がいずれも存在しない)。■短期投資 1,054百万円 は現金及び現金同等物に含めず、保守側に置いた。",
+ "_exit_note": "exit_multiple = Peer 5社の実測EV/EBITDA中央値 12.64x(4507 塩野義 / 4523 エーザイ / 4503 アステラス / 4568 第一三共 / 4578 大塚HD)。自社の現在倍率 8.10x は算式に不使用。■自社倍率が Peer 中央値を大きく下回るため Exit 法は現値より強気側に出る。",
+ "_capex_note": "capex_method=direct。実績capexは売上比7.2% -> 21.2% -> 16.8% と生産設備投資のピークにある。5年で逓減させ、ターミナル年 31,400 / D&A(Y5売上564,950 x 5.3% = 29,942) = 1.049x でレンジ内に収束。",
+ "_scenario_note": "実績OPM(FY2022-FY2025 いずれも12月期): min 18.54 / p25 20.07 / med 20.63 / p75 20.93 / max 21.67%。レンジ3.1ptと安定。直近 20.59% が中央値 20.63% を僅かに下回るため Base は実績中央値 20.63% へ収束(実質横ばい)。■Upside は max(p75 20.93, 直近+1.0pt = 21.59) = 21.59%。■Downside 1 は min(p25 20.07, 直近 20.59) = 20.07%。■Downside 2 は実績トラフ 18.54%(FY2024/12 実績、直近実績と乖離した実在の谷)を起点に売上-5%を重ね 16.0-17.5% とした。■製薬の恒等式について: 当社は 売上 - COGS - SGA が営業利益にならない(研究開発費・無形資産償却が yfinance の SG&A に含まれないため)。テンプレは OP = 売上 - COGS - SGA で計算するので、COGS% を実績水準に固定し SGA% = 100% - COGS% - 目標OPM で逆算した。したがって本モデルの SGA 行は「販管費 + 研究開発費 + 無形資産償却」の合計を表す。COGS% は直近実績 25.8% に固定した。既存銘柄からの流用なし。",
+ "_nwc_note": "DSO 112日 / DIH 231日 / DPO 323日(実績4期平均)。■DPO が極端に長いのは、当社の COGS 比率が 25.8% と低く、仕入債務・未払費用を COGS で割ると日数が膨らむため。テンプレは AP = COGS x DPO/365 で計算するので、cogs_pct を実績水準に固定している限り仕入債務残高は実績を再現する。ただしシナリオ間で cogs_pct を動かすと AP が比例して動く点には留保が必要。",
+ "ticker": "4151",
+ "company_name": "協和キリン",
+ "exchange": "TSE Prime",
+ "sector": "医薬品",
+ "fiscal_year_end_month": 12,
+ "beta": 0.4714,
+ "exit_multiple": 12.6,
+ "net_debt": -218769,
+ "book_value": 893332,
+ "capex_method": "direct",
+ "capex_pct": 0.0556,
+ "da_method": "revenue_pct",
+ "da_pct": 0.053,
+ "capex_direct": {
+  "projections": [
+   75000,
+   60000,
+   48000,
+   38000,
+   31400
+  ]
+ },
+ "scenarios": {
+  "Base": {
+   "revenue_growth": [
+    0.02,
+    0.03,
+    0.03,
+    0.025,
+    0.025
+   ],
+   "cogs_pct": [
+    0.258,
+    0.258,
+    0.258,
+    0.258,
+    0.258
+   ],
+   "sga_pct": [
+    0.536,
+    0.536,
+    0.536,
+    0.5357,
+    0.5357
+   ],
+   "dso_days": [
+    112,
+    112,
+    112,
+    112,
+    112
+   ],
+   "dih_days": [
+    231,
+    231,
+    231,
+    231,
+    231
+   ],
+   "dpo_days": [
+    323,
+    323,
+    323,
+    323,
+    323
+   ]
+  },
+  "Upside": {
+   "revenue_growth": [
+    0.035,
+    0.045,
+    0.04,
+    0.035,
+    0.035
+   ],
+   "cogs_pct": [
+    0.254,
+    0.254,
+    0.254,
+    0.254,
+    0.254
+   ],
+   "sga_pct": [
+    0.536,
+    0.534,
+    0.532,
+    0.5305,
+    0.5301
+   ],
+   "dso_days": [
+    108,
+    108,
+    108,
+    108,
+    108
+   ],
+   "dih_days": [
+    222,
+    222,
+    222,
+    222,
+    222
+   ],
+   "dpo_days": [
+    330,
+    330,
+    330,
+    330,
+    330
+   ]
+  },
+  "Management": {
+   "revenue_growth": [
+    0.02,
+    0.03,
+    0.03,
+    0.025,
+    0.025
+   ],
+   "cogs_pct": [
+    0.258,
+    0.258,
+    0.258,
+    0.258,
+    0.258
+   ],
+   "sga_pct": [
+    0.536,
+    0.536,
+    0.536,
+    0.5357,
+    0.5357
+   ],
+   "dso_days": [
+    112,
+    112,
+    112,
+    112,
+    112
+   ],
+   "dih_days": [
+    231,
+    231,
+    231,
+    231,
+    231
+   ],
+   "dpo_days": [
+    323,
+    323,
+    323,
+    323,
+    323
+   ]
+  },
+  "Downside 1": {
+   "revenue_growth": [
+    0.005,
+    0.005,
+    0.005,
+    0.005,
+    0.005
+   ],
+   "cogs_pct": [
+    0.262,
+    0.262,
+    0.262,
+    0.262,
+    0.262
+   ],
+   "sga_pct": [
+    0.535,
+    0.536,
+    0.537,
+    0.5373,
+    0.5373
+   ],
+   "dso_days": [
+    117,
+    117,
+    117,
+    117,
+    117
+   ],
+   "dih_days": [
+    241,
+    241,
+    241,
+    241,
+    241
+   ],
+   "dpo_days": [
+    313,
+    313,
+    313,
+    313,
+    313
+   ]
+  },
+  "Downside 2": {
+   "revenue_growth": [
+    -0.05,
+    -0.01,
+    0.005,
+    0.01,
+    0.015
+   ],
+   "cogs_pct": [
+    0.27,
+    0.27,
+    0.27,
+    0.27,
+    0.27
+   ],
+   "sga_pct": [
+    0.56,
+    0.57,
+    0.565,
+    0.56,
+    0.555
+   ],
+   "dso_days": [
+    122,
+    122,
+    122,
+    122,
+    122
+   ],
+   "dih_days": [
+    252,
+    252,
+    252,
+    252,
+    252
+   ],
+   "dpo_days": [
+    303,
+    303,
+    303,
+    303,
+    303
+   ]
+  }
+ },
+ "investment_thesis": [
+  "Kyowa Kirin has built a global rare-disease franchise around Crysvita and Poteligeo, and the operating margin has held inside a three-point band for four years; the shares trade at {per} earnings and {pb} book.",
+  "The balance sheet holds net cash with no interest-bearing debt, so enterprise value sits below market capitalisation and the {wacc} discount rate is the cost of equity with no leverage assumed.",
+  "At {price} the shares are valued well below the Japanese pharmaceutical peer median on EV/EBITDA; a base case that merely holds the current margin supports {target_price}, or {upside_pct} from here."
+ ],
+ "key_risks": [
+  "Revenue growth stalled to almost nothing in the latest year, so the base case growth path behind {target_price} depends on a pipeline that has not yet shown up in reported sales.",
+  "Capital expenditure ran at more than three times depreciation in the last two years; if the production build-out does not taper, the free cash flow implied by {price} and {per} does not appear.",
+  "A rare-disease portfolio concentrates revenue in a small number of products, and a single reimbursement or competitive setback moves earnings more than the {wacc} single-path discounting represents."
+ ],
+ "hist_years": [
+  "FY2022",
+  "FY2023",
+  "FY2024",
+  "FY2025"
+ ],
+ "hist_revenue": [
+  398371,
+  442233,
+  495558,
+  496826
+ ],
+ "hist_operating_income": [
+  82374,
+  95842,
+  91866,
+  102275
+ ],
+ "hist_net_income": [
+  53573,
+  81188,
+  59870,
+  67040
+ ],
+ "hist_cogs": [
+  86915,
+  111207,
+  132611,
+  127934
+ ],
+ "hist_sga": [
+  229082,
+  235184,
+  271081,
+  266617
+ ],
+ "base_year_revenue": 496826,
+ "base_year_cogs": 127934,
+ "base_year_ar": 181205,
+ "base_year_inv": 67440,
+ "base_year_ap": 125041,
+ "_edinet_note": "【予防的な EDINET 補完・§3-2 / 追補1 §D】本バッチではここまで生成した14銘柄中8銘柄で EDINET が古い年度の営業利益を 0 で抽出し、Financial Statements の『営業利益YoY成長率』が 0 除算になって validate FAIL 1(#DIV/0!)を引き起こしている。根本原因は scripts/generate_dcf.py:66 の _val(data_dict, key, default=0) が【欠損値を None ではなく 0 に落とす】ことにある(バッチ中はパイプラインを変更しない方針のため未修正)。そこで本銘柄では発生を待たずに予防的に対処した: hist_years を直近4期に置換し hist_revenue / hist_operating_income / hist_net_income / hist_cogs / hist_sga を yfinance連結財務諸表から供給する(配列長は全て4で hist_years と一致、契約遵守)。■hist_ocf / hist_cash / hist_debt / hist_capex / hist_depreciation は【供給していない】 — パイプラインの Step 4.6 align_hist_series_to_years() が最終 hist_years に対し会計年度キーで再マッピングするため、EDINET を一次ソースのまま安全に使える(位置コピーによる年度ズレ事故も起きない)。■hist_sga = 売上 - COGS - 営業利益 で逆算(yfinance の SG&A 単独値は その他営業損益・研究開発費 を含まず恒等式が成立しないため)。",
+ "hist_depreciation": [
+  18476,
+  21096,
+  24780,
+  26144
+ ],
+ "hist_capex": [
+  28666,
+  32852,
+  105268,
+  83519
+ ],
+ "core_ebitda": 128419,
+ "_ebitda_note": "【リトライ1回目・core_ebitda の欠落を修正】初回生成では Comps Analysis の『Via EV/EBITDA (Median)』が N/A(注記: EBITDA <= 0)になり、Comps 参考値2本のうち1本が失われていた。原因: EDINET は当社の減価償却費を1期も抽出できておらず(生成ログの FS align が [ocf+cash] のみ、Debt 0/4)、hist_depreciation[-1] が None のため generate_dcf.py の core_ebitda 自動計算(hist_operating_income[-1] + hist_depreciation[-1])が成立しなかった。テンプレはこれを『EBITDA <= 0』と解釈して EV/EBITDA 法を除外する。対処: hist_depreciation / hist_capex を yfinance連結キャッシュフロー計算書から供給し、core_ebitda = 営業利益 102,275 + D&A 26,144 = 128,419 を明示指定した(comps CSV の自社行 EBITDA と同一値で整合)。■この欠落は validate では検出されない(FAIL 0 / WARN 0 のまま Comps 1本が消えていた)。生成後に Executive Summary の Comps 行が数値になっているかを目視確認する必要がある。",
+ "_beta_note": "実測（raw）β = 0.4714。出所: TOPIX 2y 1wk OLS (n=104, corr=0.232)。フェーズ2 #6 以降 overrides の beta は raw を入れる契約で、テンプレが Blume 調整 0.67×raw + 0.33×1.00 を掛け [0.3, 2.0] にクランプする（採用 0.6458、クランプ非発動）。■旧 overrides の値 0.6 は旧ルール [0.6, 1.75] のクランプ後の値であり raw ではない。■yfinance の beta フィールドは 0.138。日本株では市場を説明しないベンチマークで算出されており（NTT −0.165 / 大阪ガス −0.201 等）、採用しない。詳細は docs/phase2_pipeline_fixes_20260906.md の §2-4。"
+}

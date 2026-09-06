@@ -1,0 +1,317 @@
+{
+ "risk_free": 0.0297,
+ "erp": 0.065,
+ "size_premium": 0.01,
+ "tax_rate": 0.25,
+ "terminal_growth": 0.01,
+ "primary_multiple": "EV/EBITDA",
+ "nwc_method": "days",
+ "_note": "バッチ生成 2026-09-05。型A。DRAFT。根拠は batch/per_ticker/2897_summary.md。",
+ "_prescreen_note": "追補1 §B の金融事業プレスクリーン実施済み。EDINET有報XBRL に ForFinancialBusiness / Banking / Deposits / CallLoan 系の科目は検出されず → 型判定へ進んだ。",
+ "_wacc_note": "rf=2.97%(財務省 jgbcm.csv 10年 R8.9.3)。ERP6.5%固定。size_premium=1.0%(時価総額0.85兆円)。beta: yfinance実測 -0.025。追補1 §A に従い max(0.6, min(1.75, 実測)) = 0.60 を明示指定した。テンプレは [0.6, 1.75] の範囲外を無言で 1.0 に置換するため、そのまま渡すとサイレントフォールバックが発動する。負債コストは実績Kd(支払利息2,542 / 平均有利子負債(115,559+175,534)/2=145,547 = 1.75%税引前 -> 税引後1.31%)。",
+ "_exit_note": "exit_multiple = Peer 5社の実測EV/EBITDA中央値 10.21x。自社の現在倍率 10.92x は算式に不使用。",
+ "_capex_note": "capex_method=direct。実績capexは売上比3.8%->10.7%と急拡大(能力増強のピーク)。5年で逓減させ、ターミナル年 44,300 / D&A(Y5売上917,070 x 4.6% = 42,185) = 1.050x でレンジ[0.90,1.15]に収束。",
+ "_scenario_note": "実績OPM(FY2023-FY2026): min 6.27 / p25 6.91 / med 7.50 / p75 7.96 / max 8.23%。直近6.27%が中央値を下回るため Base は実績中央値 7.50% へ収束(Y1 6.6% -> Y5 7.50%)。Upside は max(p75 7.96, 直近+1.0pt=7.27) = 7.96%。Downside 1 は min(p25 6.91, 直近 6.27) = 6.27% を下回る 5.5%。Downside 2 は実績トラフ(6.27%)が直近実績そのものでトラフとして機能しないため、売上-6%+OPM半減アーム(3.1-3.5%)。SGA% は実績26.0->27.7%の直近水準27.5%を基準に調整し COGS% = 100% - OPM - SGA% で逆算。既存銘柄からの流用なし。",
+ "ticker": "2897",
+ "company_name": "日清食品ホールディングス",
+ "exchange": "TSE Prime",
+ "sector": "食料品",
+ "fiscal_year_end_month": 3,
+ "beta": 0.3833,
+ "exit_multiple": 10.2,
+ "interest_expense": 2542,
+ "debt_beginning": 115559,
+ "debt_ending": 175534,
+ "capex_method": "direct",
+ "capex_pct": 0.0483,
+ "da_method": "revenue_pct",
+ "da_pct": 0.046,
+ "capex_direct": {
+  "projections": [
+   85000,
+   78000,
+   65000,
+   53000,
+   44300
+  ]
+ },
+ "scenarios": {
+  "Base": {
+   "revenue_growth": [
+    0.03,
+    0.03,
+    0.025,
+    0.025,
+    0.025
+   ],
+   "cogs_pct": [
+    0.659,
+    0.656,
+    0.653,
+    0.651,
+    0.65
+   ],
+   "sga_pct": [
+    0.275,
+    0.275,
+    0.275,
+    0.275,
+    0.275
+   ],
+   "dso_days": [
+    55,
+    55,
+    55,
+    55,
+    55
+   ],
+   "dih_days": [
+    50,
+    50,
+    50,
+    50,
+    50
+   ],
+   "dpo_days": [
+    112,
+    112,
+    112,
+    112,
+    112
+   ]
+  },
+  "Upside": {
+   "revenue_growth": [
+    0.045,
+    0.04,
+    0.035,
+    0.03,
+    0.03
+   ],
+   "cogs_pct": [
+    0.658,
+    0.654,
+    0.651,
+    0.649,
+    0.6484
+   ],
+   "sga_pct": [
+    0.272,
+    0.272,
+    0.272,
+    0.272,
+    0.272
+   ],
+   "dso_days": [
+    53,
+    53,
+    53,
+    53,
+    53
+   ],
+   "dih_days": [
+    47,
+    47,
+    47,
+    47,
+    47
+   ],
+   "dpo_days": [
+    115,
+    115,
+    115,
+    115,
+    115
+   ]
+  },
+  "Management": {
+   "revenue_growth": [
+    0.03,
+    0.03,
+    0.025,
+    0.025,
+    0.025
+   ],
+   "cogs_pct": [
+    0.659,
+    0.656,
+    0.653,
+    0.651,
+    0.65
+   ],
+   "sga_pct": [
+    0.275,
+    0.275,
+    0.275,
+    0.275,
+    0.275
+   ],
+   "dso_days": [
+    55,
+    55,
+    55,
+    55,
+    55
+   ],
+   "dih_days": [
+    50,
+    50,
+    50,
+    50,
+    50
+   ],
+   "dpo_days": [
+    112,
+    112,
+    112,
+    112,
+    112
+   ]
+  },
+  "Downside 1": {
+   "revenue_growth": [
+    0.005,
+    0.005,
+    0.005,
+    0.005,
+    0.005
+   ],
+   "cogs_pct": [
+    0.658,
+    0.66,
+    0.662,
+    0.663,
+    0.663
+   ],
+   "sga_pct": [
+    0.282,
+    0.282,
+    0.282,
+    0.282,
+    0.282
+   ],
+   "dso_days": [
+    58,
+    58,
+    58,
+    58,
+    58
+   ],
+   "dih_days": [
+    54,
+    54,
+    54,
+    54,
+    54
+   ],
+   "dpo_days": [
+    108,
+    108,
+    108,
+    108,
+    108
+   ]
+  },
+  "Downside 2": {
+   "revenue_growth": [
+    -0.06,
+    -0.01,
+    0.005,
+    0.01,
+    0.015
+   ],
+   "cogs_pct": [
+    0.675,
+    0.679,
+    0.679,
+    0.677,
+    0.675
+   ],
+   "sga_pct": [
+    0.29,
+    0.29,
+    0.29,
+    0.29,
+    0.29
+   ],
+   "dso_days": [
+    61,
+    61,
+    61,
+    61,
+    61
+   ],
+   "dih_days": [
+    58,
+    58,
+    58,
+    58,
+    58
+   ],
+   "dpo_days": [
+    103,
+    103,
+    103,
+    103,
+    103
+   ]
+  }
+ },
+ "investment_thesis": [
+  "Nissin holds the leading share of a domestic instant-noodle market with stable volumes and repeated price increases, and is spending heavily to build overseas capacity; the shares trade at {per} earnings and {pb} book.",
+  "The margin fell to the bottom of its four-year range in the latest year while capital expenditure ran at its highest level, so this is a business absorbing investment rather than one losing pricing power against a {wacc} cost of capital.",
+  "At {price} the market capitalises the depressed margin; a base case that returns to the four-year median supports {target_price}, or {upside_pct} from here."
+ ],
+ "key_risks": [
+  "Capital expenditure reached 10.7% of revenue in the latest year against depreciation of 4.6%; if the overseas build-out does not taper as the base case assumes, the free cash flow behind {target_price} does not appear.",
+  "Wheat, palm oil and packaging costs have compressed the margin twice in four years, and a repeat would hold earnings near the trough case rather than the {per} implied by {price}.",
+  "Overseas growth is concentrated in the Americas and China, and neither the currency exposure nor that concentration is reflected in the {wacc} used here."
+ ],
+ "hist_years": [
+  "FY2023",
+  "FY2024",
+  "FY2025",
+  "FY2026"
+ ],
+ "hist_revenue": [
+  669248,
+  732933,
+  776594,
+  788131
+ ],
+ "hist_operating_income": [
+  47639,
+  60324,
+  61151,
+  49380
+ ],
+ "hist_net_income": [
+  44760,
+  54170,
+  55019,
+  45380
+ ],
+ "hist_cogs": [
+  448170,
+  474303,
+  503642,
+  519064
+ ],
+ "hist_sga": [
+  173439,
+  198306,
+  211801,
+  219687
+ ],
+ "base_year_revenue": 788131,
+ "base_year_cogs": 519064,
+ "base_year_ar": 114338,
+ "base_year_inv": 76018,
+ "base_year_ap": 149668,
+ "net_debt": 77200,
+ "book_value": 517168,
+ "_edinet_note": "【リトライ1回目・§3-2 の補完】初回生成は FAIL 1(Financial Statements!D16・H16 = #DIV/0!)。原因は EDINET が hist_years を FY2018-FY2026 の9期で構築し、うち FY2018・FY2023 の営業利益を 0 で抽出していたため『営業利益YoY成長率 = 0/0』となったこと。対処: hist_years を FY2023-FY2026 の4期に置換し P/L 5系列を yfinance連結財務諸表から供給(配列長は全て4)。hist_ocf / hist_cash / hist_debt / hist_capex / hist_depreciation は供給していない(Step 4.6 が会計年度キーで再マッピングする)。■hist_sga = 売上 - COGS - 営業利益 で逆算。■net_debt を明示指定した理由(追補1 §D の数値照合で検出): 初回生成の自動算出値は 4,418百万円 だったが、生成ログの FS align は有利子負債の充足を Debt 3/9 と報告しており、EDINET は9期中6期の有利子負債を抽出できていない。実際は 有利子負債 175,534 - 現金及び現金同等物 98,334 = 77,200(FY2026/3期末、yfinance 連結BS)。差 72,782百万円 は1株あたり約254円(株数286,578,095)に相当し無視できない。■validate は FAIL 0 でもこの誤りを検出しない(構造チェックをすり抜ける)。追補1 §D が数値照合を必須とする理由の実例。",
+ "core_ebitda": 85277,
+ "_core_ebitda_note": "【core_ebitda の明示指定 — validate では検出されない不整合の是正】Comps Analysis の『自社 Financials』ブロックの EBITDA(および そこから計算される Via EV/EBITDA (Median) 参考株価)は comps CSV の自社行ではなく config の core_ebitda を使う。core_ebitda は EDINET 由来の hist_operating_income[-1] + hist_depreciation[-1] で自動計算されるが、EDINET の減価償却費の抽出は銘柄により信頼できない。当社では EDINET 由来 D&A = 48,847 に対し CF計算書実績(yfinance) = 35,897 で乖離があり、Comps の自社EBITDAが EDINET 由来の値で表示されていた(Peer 行は yfinance 定義)。Peer と同一定義(EBITDA = 営業利益 + CF計算書の減価償却費)に揃えるため core_ebitda = 営業利益 49,380 + D&A 35,897 = 85,277 を明示指定した(comps CSV の自社行と同値)。■この不整合は validate では検出されない(FAIL 0 / WARN 0 のまま)。batch/check_core_ebitda.py で全銘柄を機械照合している。■Comps は Target 不算入([参考])のため Target Price への影響はない。",
+ "_beta_note": "実測（raw）β = 0.3833。出所: TOPIX 2y 1wk OLS (n=104, corr=0.294)。フェーズ2 #6 以降 overrides の beta は raw を入れる契約で、テンプレが Blume 調整 0.67×raw + 0.33×1.00 を掛け [0.3, 2.0] にクランプする（採用 0.5868、クランプ非発動）。■旧 overrides の値 0.6 は旧ルール [0.6, 1.75] のクランプ後の値であり raw ではない。■yfinance の beta フィールドは -0.025。日本株では市場を説明しないベンチマークで算出されており（NTT −0.165 / 大阪ガス −0.201 等）、採用しない。詳細は docs/phase2_pipeline_fixes_20260906.md の §2-4。"
+}

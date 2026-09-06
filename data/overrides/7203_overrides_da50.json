@@ -1,0 +1,361 @@
+{
+  "ticker": "7203",
+  "company_name": "トヨタ自動車株式会社",
+  "_company_name_en": "Toyota Motor Corporation",
+  "sector": "Automotive (ex-captive finance)",
+  "fiscal_year_end_month": 3,
+  "projection_start_fy": "FY2027",
+  "projection_years": 5,
+  "current_price": 3152,
+  "shares": {
+    "shares_issued": 15794987460,
+    "treasury_shares": 2785928500,
+    "fully_diluted_shares": 13009058960,
+    "unit": "shares"
+  },
+  "_shares_note": "EDINET FY2026/3 有報 (docID S100Y8NY, filed 2026-06-10; NOT surfaced by edinet_fetcher.py's own annual-report search window -- found via direct EDINET documents.json query for E02144/docTypeCode=120 in June 2026, worth investigating as a fetcher bug separately). Cover page: NumberOfIssuedSharesAsOfFilingDateIssuedSharesTotalNumberOfSharesEtc=15,794,987,460; TotalNumberOfSharesHeldTreasurySharesEtc(CurrentYearInstant, un-suffixed aggregate)=2,785,928,500. Net = 13,009,058,960, vs the prompt's own NI/EPS-derived estimate of 13,033,000,000 (0.18% lower, consistent with continued buybacks after FY-end reducing the point-in-time count below the FY-average used for basic EPS). Used the EDINET point-in-time figure per the schema's 'shares.fully_diluted_shares is single source of truth' convention.",
+  "hist_years": [
+    "FY2023/3",
+    "FY2024/3",
+    "FY2025/3",
+    "FY2026/3"
+  ],
+  "_hist_period_months": [
+    12,
+    12,
+    12,
+    12
+  ],
+  "_hist_note": "Automotive-segment-only figures (commercial/product sales revenue minus COGS minus full SGA allocation), NOT EDINET's consolidated RevenueIFRS tag. Per prompt design: automotive OP + financial-services OP reconciles exactly to consolidated operating income (verified in prompt to within JPY 11mn rounding). Consolidated EDINET figures (e.g. FY2025/3 revenue 18,277,671 per edinet_fetcher.py -- note EDINET's FY-label convention there is calendar-year-of-filing so 'FY2025' = fiscal year ended 2025-03-31) are an order of magnitude smaller than these because EDINET's own annual-report search did not surface the FY2026/3 filing at all (see _shares_note) and consolidated Revenue also includes financial-services revenue that automotive-only figures exclude. This mismatch is expected and accepted per the prompt's own instruction (all hist_* are overridden; EDINET cross-check is non-blocking here).",
+  "hist_revenue": [
+    34367619,
+    41648130,
+    43598877,
+    45865949
+  ],
+  "hist_cogs": [
+    29128561,
+    33600612,
+    35510157,
+    39141418
+  ],
+  "hist_sga": [
+    3587990,
+    4015383,
+    4782452,
+    4697524
+  ],
+  "hist_operating_income": [
+    1651068,
+    4032135,
+    3306268,
+    2027007
+  ],
+  "hist_net_income": [
+    2451318,
+    4944933,
+    4765086,
+    3848098
+  ],
+  "hist_depreciation": [
+    1019980,
+    1043533,
+    1125616,
+    1196260
+  ],
+  "hist_capex": [
+    1798476,
+    2180734,
+    2260608,
+    2526996
+  ],
+  "base_year_revenue": 45865949,
+  "base_year_cogs": 39141418,
+  "core_ebitda": 3223267,
+  "core_net_income": 3848098,
+  "_core_net_income_note": "SAME BUG CLASS AS core_ebitda, found on this run: config['core_net_income'] is auto-derived from EDINET's own raw latest_fy_data net_income BEFORE overrides are applied (generate_dcf.py L290), independent of hist_net_income override. Without this explicit override, Comps Analysis!C22 silently showed 3,392,326 (some EDINET-parsed figure that doesn't match the consolidated parent-attributable net income of 3,848,098 used throughout this model and the prompt), corrupting the PER-implied price (Comps Analysis!C28) and the Executive Summary 'Comps - PER Median' line. Fixed by setting explicitly to hist_net_income[-1] = 3,848,098 (consolidated parent-attributable NI, used per the prompt's own design as a reference-only value not entering automotive FCF).",
+  "nwc_method": "days",
+  "base_year_ar": 3795986,
+  "base_year_inv": 5134996,
+  "base_year_ap": 5856945,
+  "net_debt": -9800000,
+  "_net_debt_note": "FALLBACK USED. Research confirmed Toyota DOES disclose an automotive-only (ex-financial-services) net cash metric: FY2026/3 決算説明会資料 (2026-05-08), page 29 reference slide has 総資金量/有利子負債/ネット資金量 charts spanning FY2023.3-FY2027.3(E), footnote explicitly 'excluding the financial business'. However global.toyota's PDF host returned HTTP 403 to automated fetch (tried twice, both the full presentation and the summary PDF), and the research agent's text-layer extraction of the chart could not reliably isolate the FY2026/3 data label. Falling back to the prompt's derived estimate per instructions: consolidated interest-bearing debt 43,205,469 minus financial-services funding assets (financial receivables 38,966,656 + estimated net lease assets ~4,530,000 = ~43,496,656) leaves automotive interest-bearing debt at ~-291,187 (net-zero); automotive-attributable cash (75% of consolidated 12,659,622) = -9,494,717; combined and rounded = -9,800,000. This makes de_ratio auto-compute to 0.0 (net_debt <= 0), so WACC = cost of equity by design. A user with PDF access could pull the exact figure from page 29 of https://global.toyota/pages/global_toyota/ir/financial-results/2026_4q_presentation_jp.pdf to replace this estimate.",
+  "risk_free": 0.023,
+  "beta": 0.85,
+  "_beta_note": "FALLBACK USED. stockanalysis.com reports a live 5Y beta of 0.31-0.32 for 7203.T (two fetches of the same page returned slightly different live values), well outside the prompt's 0.70-1.00 acceptance range, so per instruction the raw value is discarded and the 0.85 fallback is kept. 0.85 is within the template's [0.6,1.5] normalization range so it passes through unchanged. Note for the report: a sub-0.4 raw beta reading is itself informative (extreme low-beta defensive characteristics, consistent with Toyota's large-cap low-volatility profile), even though it's too low to use directly as a discount-rate input relative to the prompt's own judgment-based range.",
+  "erp": 0.06,
+  "size_premium": 0.0,
+  "cost_of_debt_at": 0.01,
+  "tax_rate": 0.26,
+  "terminal_growth": 0.01,
+  "exit_multiple": 6.0,
+  "primary_multiple": "EV/EBITDA",
+  "capex_method": "direct",
+  "capex_direct": {
+    "historical": [
+      1798476,
+      2180734,
+      2260608,
+      2526996
+    ],
+    "projections": [
+      2600000,
+      2650000,
+      2700000,
+      2750000,
+      2800000
+    ]
+  },
+  "capex_pct": 0.055,
+  "da_method": "direct",
+  "da_direct": {
+    "historical": [
+      1019980,
+      1043533,
+      1125616,
+      1196260
+    ],
+    "projections": [
+      1250000,
+      1308333,
+      1366667,
+      1425000,
+      1483333
+    ]
+  },
+  "da_pct": 0.031,
+  "scenarios": {
+    "Base": {
+      "revenue_growth": [
+        0.03,
+        0.04,
+        0.03,
+        0.03,
+        0.02
+      ],
+      "cogs_pct": [
+        0.845,
+        0.836,
+        0.832,
+        0.83,
+        0.83
+      ],
+      "sga_pct": [
+        0.1,
+        0.099,
+        0.098,
+        0.098,
+        0.098
+      ],
+      "dso_days": [
+        30,
+        30,
+        30,
+        30,
+        30
+      ],
+      "dih_days": [
+        48,
+        47,
+        46,
+        46,
+        46
+      ],
+      "dpo_days": [
+        55,
+        55,
+        55,
+        55,
+        55
+      ]
+    },
+    "Upside": {
+      "revenue_growth": [
+        0.06,
+        0.06,
+        0.05,
+        0.04,
+        0.04
+      ],
+      "cogs_pct": [
+        0.836,
+        0.822,
+        0.815,
+        0.812,
+        0.809
+      ],
+      "sga_pct": [
+        0.099,
+        0.098,
+        0.097,
+        0.096,
+        0.096
+      ],
+      "dso_days": [
+        29,
+        29,
+        28,
+        28,
+        28
+      ],
+      "dih_days": [
+        46,
+        45,
+        44,
+        43,
+        43
+      ],
+      "dpo_days": [
+        56,
+        56,
+        57,
+        57,
+        57
+      ]
+    },
+    "Management": {
+      "_note": "Y1 (FY2027) DERIVED FROM ACTUAL COMPANY GUIDANCE, Y2-Y5 remain the prompt's fallback. Source: FY2026/3 kessan tanshin (IFRS, consolidated), dated 2026-05-08, section 3 'FY2027/3 consolidated forecast': Revenue 51,000,000 (consol., +0.6% YoY), Operating income 3,000,000 (consol., -20.3% YoY). Per prompt instruction, backed out automotive-only Y1 by extending financial-segment OP +5% from FY2026/3 actual (1,739,209 x 1.05 = 1,826,169) and subtracting from guided consolidated OP: automotive OP FY2027E = 3,000,000 - 1,826,169 = 1,173,831. Automotive revenue FY2027E approximated at the same +0.62% consolidated growth rate applied to the automotive-only base (45,865,949 x 1.00622 = 46,151,222) since the tanshin does not split forward revenue guidance by segment. Implied automotive OPM = 1,173,831/46,151,222 = 2.54% -- MATERIALLY WORSE than the prompt's own fallback assumption of 5.8% OPM for Y1, because consolidated guided OP fell -20.3% YoY and financial-segment OP is assumed to keep growing, so ALL of the guided consolidated decline maps onto automotive. cogs_pct/sga_pct rescaled from the fallback's 0.843/0.099 split (sum 0.942) to a new sum of 1-0.0254=0.9746 holding the same relative cogs:sga proportion (scale factor 1.034686): cogs_pct=0.8722, sga_pct=0.1024. See final report for the significance of this divergence.",
+      "revenue_growth": [
+        0.0062,
+        0.03,
+        0.03,
+        0.02,
+        0.02
+      ],
+      "cogs_pct": [
+        0.8722,
+        0.836,
+        0.834,
+        0.832,
+        0.832
+      ],
+      "sga_pct": [
+        0.1024,
+        0.099,
+        0.098,
+        0.098,
+        0.098
+      ],
+      "dso_days": [
+        30,
+        30,
+        30,
+        30,
+        30
+      ],
+      "dih_days": [
+        48,
+        47,
+        47,
+        46,
+        46
+      ],
+      "dpo_days": [
+        55,
+        55,
+        55,
+        55,
+        55
+      ]
+    },
+    "Downside 1": {
+      "revenue_growth": [
+        0.0,
+        0.01,
+        0.01,
+        0.01,
+        0.01
+      ],
+      "cogs_pct": [
+        0.863,
+        0.868,
+        0.864,
+        0.859,
+        0.859
+      ],
+      "sga_pct": [
+        0.102,
+        0.102,
+        0.101,
+        0.101,
+        0.101
+      ],
+      "dso_days": [
+        31,
+        32,
+        32,
+        32,
+        32
+      ],
+      "dih_days": [
+        52,
+        55,
+        54,
+        52,
+        52
+      ],
+      "dpo_days": [
+        54,
+        53,
+        53,
+        54,
+        54
+      ]
+    },
+    "Downside 2": {
+      "revenue_growth": [
+        -0.03,
+        -0.04,
+        -0.02,
+        0.0,
+        0.0
+      ],
+      "cogs_pct": [
+        0.875,
+        0.89,
+        0.885,
+        0.88,
+        0.88
+      ],
+      "sga_pct": [
+        0.105,
+        0.105,
+        0.105,
+        0.105,
+        0.105
+      ],
+      "dso_days": [
+        33,
+        34,
+        34,
+        34,
+        34
+      ],
+      "dih_days": [
+        56,
+        62,
+        60,
+        58,
+        58
+      ],
+      "dpo_days": [
+        52,
+        50,
+        50,
+        51,
+        51
+      ]
+    }
+  },
+  "investment_thesis": [
+    "1. The reported earnings decline is entirely automotive, and the market may be mispricing the recovery path. Automotive operating margin fell from 9.68% (FY2024/3) to 4.42% (FY2026/3) while the captive finance arm grew from 24.7% to 46.2% of consolidated operating profit. Stripping finance out reveals an industrial business near a cyclical trough, not a structurally broken one.",
+    "2. Fortress balance sheet with unrecognised asset value. Automotive net cash of roughly 9,800,000 plus equity-method investments at 5,342,548 book value and other financial assets of 15,118,244 sit outside the DCF. Combined, the non-operating assets not captured in automotive FCF exceed 20,000,000, or more than 1,500 per share against a 3,152 price.",
+    "3. Hybrid franchise is the cash engine funding the transition. Toyota is monetising HEV demand at a time when pure-BEV competitors are diluting margins, giving it a self-funded path through the electrification capex cycle without external financing."
+  ],
+  "key_risks": [
+    "1. Tariff and cost persistence. The 526,000 swing in automotive operating profit between FY2025/3 and FY2026/3 shows how little margin cushion exists. If US tariff costs prove permanent rather than transitional, the Downside 1 path of 3-4% automotive margin becomes the base case.",
+    "2. Chinese competition and BEV transition risk. Chinese OEMs are expanding into ASEAN and Europe where Toyota holds dominant share. Automotive capex of 2,526,996 against D&A of roughly 1,435,511 means the investment burden continues regardless of demand, compressing free cash flow.",
+    "3. Valuation depends heavily on segment allocation assumptions. Automotive D&A is estimated at 60% of consolidated D&A, and automotive net cash is derived rather than disclosed at this granularity. A 10-point shift in the D&A split moves automotive EBITDA by roughly 240,000, or 0.4x on the exit multiple."
+  ],
+  "_sensitivity_variant_note": "D&A SENSITIVITY VARIANT (da50): automotive D&A = consolidated D&A x 0.5 (historical), projections scaled from the prompt original 0.60-baseline by x0.83333. Not the primary model -- see main 7203_overrides.json (uses actual disclosed ratio 0.615288)."
+}

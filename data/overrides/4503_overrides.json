@@ -1,0 +1,320 @@
+{
+ "risk_free": 0.0297,
+ "erp": 0.065,
+ "size_premium": 0.01,
+ "tax_rate": 0.25,
+ "terminal_growth": 0.01,
+ "primary_multiple": "EV/EBITDA",
+ "nwc_method": "days",
+ "_note": "バッチ生成 2026-09-05。型A。DRAFT。根拠は batch/per_ticker/4503_summary.md。",
+ "_prescreen_note": "追補1 §B の金融事業プレスクリーン実施済み(docID S100YBPK)。金融事業科目の検出なし → 型判定へ。",
+ "_type_note": "型A。実績OPMレンジは16.6pt(閾値12pt超)だが、要因は市況サイクルではなく FY2024/3・FY2025/3 の無形資産減損である(トリアージレポート §型A の注記参照)。したがって型Bのミッドサイクル正常化は適用せず、Downside 2 も減損想定ではなく事業悪化で設計した。",
+ "_wacc_note": "rf=2.97%。ERP6.5%固定。size_premium=1.0%(時価総額4.22兆円)。beta: yfinance実測 0.088。追補1 §A に従い max(0.6, min(1.75, 実測)) = 0.60 を明示指定。テンプレは [0.6, 1.75] の範囲外を無言で 1.0 に置換するため、そのまま渡すとサイレントフォールバックが発動する。負債コストは実績Kd(支払利息14,072 / 平均有利子負債(831,426+565,952)/2=698,689 = 2.01%税引前 -> 税引後1.51%)。",
+ "_exit_note": "exit_multiple = Peer 4社の実測EV/EBITDA中央値 12.00x(4568 第一三共 / 4578 大塚HD / 4507 塩野義 / 4502 武田薬品)。自社の現在倍率 7.84x は算式に不使用。■自社倍率が Peer 中央値を大きく下回るため Exit 法は現値より強気側に出る。■4519 中外製薬は D&A 取得不能のため §5 に従い comps から除外(Peer 4社構成)。",
+ "_capex_note": "capex_method / da_method とも revenue_pct。実績は capex 3.0-5.8% / D&A 7.0-10.4% で D&A が capex を大きく上回る(買収無形資産の償却)。武田(4502)と同じ構造だが乖離幅は小さいため、ターミナル収束は capex_pct 9.56% / da_pct 9.10% の比率設定で満たした(1.051x、レンジ内)。■留保: capex_pct 9.56% は直近実績 4.0% の2倍以上であり、ターミナル収束要件を満たすために置いた水準である。近い将来のFCFはこの分だけ保守的に(低く)出る。無形資産償却の剥落を織り込むなら 4502 と同様に da_direct で D&A を逓減させる設計もあり得る(人間の判断を要する)。",
+ "_scenario_note": "実績OPM(FY2023-FY2026): min 1.18 / p25 1.87 / med 5.38 / p75 10.94 / max 17.77%。直近は 17.77%(観測窓の最高)。■中間2期(1.18% / 2.10%)は無形資産減損による一過性の落ち込みで、分布そのものが歪んでいる。直近が中央値を上回るため Base 到達OPM = 『直近実績と p75 の平均 = 14.36%』とし、Xtandi/Padcev の伸長を認めつつ減損の再発リスク分を割り引いた(Y1 17.0% -> Y5 14.36%)。■Upside は max(p75 10.94, 直近+1.0pt = 18.77) = 18.77%。■Downside 1 は min(p25 1.87, 直近 17.77) = 1.87% だが、これは減損年の値であり『緩やかな悪化』を表さない。実績中央値 5.38% を Downside 1 の到達点とした(住友化学 4005 と同じ扱い)。■Downside 2 は減損の再現ではなく事業悪化として設計し、売上-8% + OPM 2.0-3.0% とした。■製薬の恒等式について: 当社は 売上 - COGS - SGA が営業利益にならない(研究開発費・無形資産償却が yfinance の SG&A に含まれないため)。テンプレは OP = 売上 - COGS - SGA で計算するので、COGS% を実績水準に固定し SGA% = 100% - COGS% - 目標OPM で逆算した。したがって本モデルの SGA 行は「販管費 + 研究開発費 + 無形資産償却」の合計を表す。COGS% は直近実績 19.1% を基準にシナリオ別に調整した。既存銘柄からの流用なし。",
+ "ticker": "4503",
+ "company_name": "アステラス製薬",
+ "exchange": "TSE Prime",
+ "sector": "医薬品",
+ "fiscal_year_end_month": 3,
+ "beta": 0.7234,
+ "exit_multiple": 12.0,
+ "interest_expense": 14072,
+ "debt_beginning": 831426,
+ "debt_ending": 565952,
+ "capex_method": "revenue_pct",
+ "capex_pct": 0.0956,
+ "da_method": "revenue_pct",
+ "da_pct": 0.091,
+ "scenarios": {
+  "Base": {
+   "revenue_growth": [
+    0.06,
+    0.045,
+    0.035,
+    0.03,
+    0.025
+   ],
+   "cogs_pct": [
+    0.191,
+    0.191,
+    0.191,
+    0.191,
+    0.191
+   ],
+   "sga_pct": [
+    0.639,
+    0.647,
+    0.655,
+    0.661,
+    0.6654
+   ],
+   "dso_days": [
+    118,
+    118,
+    118,
+    118,
+    118
+   ],
+   "dih_days": [
+    284,
+    284,
+    284,
+    284,
+    284
+   ],
+   "dpo_days": [
+    196,
+    196,
+    196,
+    196,
+    196
+   ]
+  },
+  "Upside": {
+   "revenue_growth": [
+    0.08,
+    0.06,
+    0.045,
+    0.04,
+    0.035
+   ],
+   "cogs_pct": [
+    0.188,
+    0.188,
+    0.188,
+    0.188,
+    0.188
+   ],
+   "sga_pct": [
+    0.632,
+    0.63,
+    0.628,
+    0.626,
+    0.6243
+   ],
+   "dso_days": [
+    113,
+    113,
+    113,
+    113,
+    113
+   ],
+   "dih_days": [
+    272,
+    272,
+    272,
+    272,
+    272
+   ],
+   "dpo_days": [
+    202,
+    202,
+    202,
+    202,
+    202
+   ]
+  },
+  "Management": {
+   "revenue_growth": [
+    0.06,
+    0.045,
+    0.035,
+    0.03,
+    0.025
+   ],
+   "cogs_pct": [
+    0.191,
+    0.191,
+    0.191,
+    0.191,
+    0.191
+   ],
+   "sga_pct": [
+    0.639,
+    0.647,
+    0.655,
+    0.661,
+    0.6654
+   ],
+   "dso_days": [
+    118,
+    118,
+    118,
+    118,
+    118
+   ],
+   "dih_days": [
+    284,
+    284,
+    284,
+    284,
+    284
+   ],
+   "dpo_days": [
+    196,
+    196,
+    196,
+    196,
+    196
+   ]
+  },
+  "Downside 1": {
+   "revenue_growth": [
+    0.02,
+    0.01,
+    0.005,
+    0.005,
+    0.005
+   ],
+   "cogs_pct": [
+    0.196,
+    0.196,
+    0.196,
+    0.196,
+    0.196
+   ],
+   "sga_pct": [
+    0.664,
+    0.694,
+    0.72,
+    0.74,
+    0.7502
+   ],
+   "dso_days": [
+    124,
+    124,
+    124,
+    124,
+    124
+   ],
+   "dih_days": [
+    298,
+    298,
+    298,
+    298,
+    298
+   ],
+   "dpo_days": [
+    190,
+    190,
+    190,
+    190,
+    190
+   ]
+  },
+  "Downside 2": {
+   "revenue_growth": [
+    -0.08,
+    -0.02,
+    0.005,
+    0.01,
+    0.015
+   ],
+   "cogs_pct": [
+    0.205,
+    0.205,
+    0.205,
+    0.205,
+    0.205
+   ],
+   "sga_pct": [
+    0.765,
+    0.775,
+    0.775,
+    0.77,
+    0.765
+   ],
+   "dso_days": [
+    130,
+    130,
+    130,
+    130,
+    130
+   ],
+   "dih_days": [
+    313,
+    313,
+    313,
+    313,
+    313
+   ],
+   "dpo_days": [
+    184,
+    184,
+    184,
+    184,
+    184
+   ]
+  }
+ },
+ "investment_thesis": [
+  "Astellas has replaced the Xtandi patent cliff with Padcev and Izervay, and the latest year lifted the operating margin to the top of its four-year range after two years depressed by impairments; the shares trade at {per} earnings and {pb} book.",
+  "The stock changes hands well below the Japanese pharmaceutical peer median on EV/EBITDA, which is where the exit leg of this model finds value against a {wacc} cost of capital.",
+  "At {price} the market has not accepted the margin recovery as durable; a base case that gives back part of it still supports {target_price}, or {upside_pct} from here."
+ ],
+ "key_risks": [
+  "The company has written down acquired intangibles twice in four years, which is why the historical margin range is so wide; a third write-down would put earnings far below the {per} implied by {price}.",
+  "Revenue is concentrated in a small number of oncology products whose exclusivity periods are finite, and the terminal growth assumed in this model does not price a cliff.",
+  "Capital expenditure in this model is set well above the recent actual level in order to converge on depreciation in the terminal year, so near-term free cash flow behind {target_price} is understated by construction."
+ ],
+ "hist_years": [
+  "FY2023",
+  "FY2024",
+  "FY2025",
+  "FY2026"
+ ],
+ "hist_revenue": [
+  1518619,
+  1603672,
+  1912323,
+  2139245
+ ],
+ "hist_operating_income": [
+  131557,
+  18947,
+  40248,
+  380059
+ ],
+ "hist_net_income": [
+  98714,
+  17045,
+  50747,
+  291535
+ ],
+ "hist_cogs": [
+  288353,
+  292485,
+  349206,
+  408426
+ ],
+ "hist_sga": [
+  1098709,
+  1292240,
+  1522869,
+  1350760
+ ],
+ "base_year_revenue": 2139245,
+ "base_year_cogs": 408426,
+ "base_year_ar": 746808,
+ "base_year_inv": 331014,
+ "base_year_ap": 199752,
+ "book_value": 1829044,
+ "_edinet_note": "【予防的な EDINET 補完・§3-2 / 追補1 §D】本バッチではここまで生成した14銘柄中8銘柄で EDINET が古い年度の営業利益を 0 で抽出し、Financial Statements の『営業利益YoY成長率』が 0 除算になって validate FAIL 1(#DIV/0!)を引き起こしている。根本原因は scripts/generate_dcf.py:66 の _val(data_dict, key, default=0) が【欠損値を None ではなく 0 に落とす】ことにある(バッチ中はパイプラインを変更しない方針のため未修正)。そこで本銘柄では発生を待たずに予防的に対処した: hist_years を直近4期に置換し hist_revenue / hist_operating_income / hist_net_income / hist_cogs / hist_sga を yfinance連結財務諸表から供給する(配列長は全て4で hist_years と一致、契約遵守)。■hist_ocf / hist_cash / hist_debt / hist_capex / hist_depreciation は【供給していない】 — パイプラインの Step 4.6 align_hist_series_to_years() が最終 hist_years に対し会計年度キーで再マッピングするため、EDINET を一次ソースのまま安全に使える(位置コピーによる年度ズレ事故も起きない)。■hist_sga = 売上 - COGS - 営業利益 で逆算(yfinance の SG&A 単独値は その他営業損益・研究開発費 を含まず恒等式が成立しないため)。",
+ "core_ebitda": 574653,
+ "_core_ebitda_note": "【core_ebitda の明示指定 — validate では検出されない不整合の是正】Comps Analysis の『自社 Financials』ブロックの EBITDA(および そこから計算される Via EV/EBITDA (Median) 参考株価)は comps CSV の自社行ではなく config の core_ebitda を使う。core_ebitda は EDINET 由来の hist_operating_income[-1] + hist_depreciation[-1] で自動計算されるが、EDINET の減価償却費の抽出は銘柄により信頼できない。当社では EDINET 由来 D&A = 2,574 に対し CF計算書実績(yfinance) = 194,594 で乖離があり、Comps の自社EBITDAが EDINET 由来の値で表示されていた(Peer 行は yfinance 定義)。Peer と同一定義(EBITDA = 営業利益 + CF計算書の減価償却費)に揃えるため core_ebitda = 営業利益 380,059 + D&A 194,594 = 574,653 を明示指定した(comps CSV の自社行と同値)。■この不整合は validate では検出されない(FAIL 0 / WARN 0 のまま)。batch/check_core_ebitda.py で全銘柄を機械照合している。■Comps は Target 不算入([参考])のため Target Price への影響はない。■あわせて hist_depreciation / hist_capex も yfinance連結キャッシュフロー計算書から供給し、Financial Statements の D&A・capex 行の表示も Peer と同じ定義に揃えた(EDINET は当社の減価償却費をほとんど抽出できていなかった)。",
+ "hist_depreciation": [
+  105738,
+  157840,
+  199132,
+  194594
+ ],
+ "hist_capex": [
+  88541,
+  82497,
+  57330,
+  84645
+ ],
+ "_beta_note": "実測（raw）β = 0.7234。出所: TOPIX 2y 1wk OLS (n=104, corr=0.44)。フェーズ2 #6 以降 overrides の beta は raw を入れる契約で、テンプレが Blume 調整 0.67×raw + 0.33×1.00 を掛け [0.3, 2.0] にクランプする（採用 0.8147、クランプ非発動）。■旧 overrides の値 0.6 は旧ルール [0.6, 1.75] のクランプ後の値であり raw ではない。■yfinance の beta フィールドは 0.088。日本株では市場を説明しないベンチマークで算出されており（NTT −0.165 / 大阪ガス −0.201 等）、採用しない。詳細は docs/phase2_pipeline_fixes_20260906.md の §2-4。"
+}

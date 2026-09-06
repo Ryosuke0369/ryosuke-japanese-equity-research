@@ -1,0 +1,122 @@
+{
+  "ticker": "285A",
+  "company_name": "キオクシアホールディングス株式会社",
+  "_company_name_en": "Kioxia Holdings Corporation",
+  "sector": "Semiconductors / NAND Flash Memory",
+  "fiscal_year_end_month": 3,
+  "projection_start_fy": "FY2027",
+  "projection_years": 5,
+  "current_price": 39800,
+
+  "shares": {
+    "shares_issued": 547242648,
+    "treasury_shares": 0,
+    "fully_diluted_shares": 547242648,
+    "unit": "shares"
+  },
+  "_shares_note": "EDINET FY2026/3 有報 (S100YJ18) cover page tag NumberOfIssuedSharesAsOfFilingDateIssuedSharesTotalNumberOfSharesEtc = 547,242,648 (as of filing date 2026-06-24, more current than FY-end 546,086,290). Treasury share count tag not separately exposed in XBRL facts; FY2026 treasury purchase per equity-changes statement was only JPY 2mn (PurchaseOfTreasurySharesSSIFRS = -2,000,000 yen) -> treasury shares immaterial, treated as 0. This differs slightly from the prompt's EPS-weighted-average approximation (~549.4mn diluted) because that figure includes in-the-money dilutive options as if converted; the EDINET issued-share count is the point-in-time single source of truth used here.",
+
+  "hist_years": ["FY2024/3", "FY2025/3", "FY2026/3"],
+  "_hist_period_months": [12, 12, 12],
+  "hist_revenue":          [1076584, 1706460, 2337628],
+  "hist_cogs":             [1205927, 1137027, 1324724],
+  "hist_sga":              [128774,  127851,  146581],
+  "hist_operating_income": [-252698, 451748,  870369],
+  "hist_net_income":       [-243721, 272321,  554496],
+  "hist_depreciation":     [346066,  312307,  312826],
+  "hist_capex":            [305097,  225603,  283674],
+
+  "base_year_revenue": 2337628,
+  "base_year_cogs": 1324724,
+  "core_ebitda": 1183195,
+  "_core_ebitda_note": "BUG FOUND & FIXED (2026-07-30): without this override, generate_dcf.py computes core_ebitda = latest_oi + latest_dep using EDINET's own parsed 'depreciation' field BEFORE overrides are applied. EDINET's D&A extraction returned N/A for 285A (all years), so latest_dep silently defaulted to 0, leaving core_ebitda = 870,369 (== operating income only, not EBITDA). The null-guard at generate_dcf.py L695-701 only fires when core_ebitda is explicitly None, so a merely-wrong non-null auto value was never corrected. This value (1,183,195 = hist_operating_income[-1] 870,369 + hist_depreciation[-1] 312,826, matching the comps CSV self-row EBITDA) feeds Comps Analysis!C21/C27 (Implied Valuation section) which is otherwise silently wrong.",
+
+  "nwc_method": "days",
+  "base_year_ar":  660559,
+  "base_year_inv": 412612,
+  "base_year_ap":  594917,
+
+  "net_debt": 782482,
+  "_net_debt_note": "社債及び借入金(流動175,452+非流動872,116=1,047,568) + リース負債(流動43,911+非流動161,710=205,621) - 現金及び現金同等物470,707 = 782,482。リース負債はIFRS16下の製造設備リースが大きいため含める。その他の金融資産(非流動)+156,051の余剰資金控除は行わない(中身未確定、報告事項参照)。",
+
+  "risk_free": 0.023,
+  "beta": 1.5,
+  "_beta_note": "CONFIRMED. validator ALLOWED_KEYS types beta as _NUM only (str '__CONFIRM__' is rejected, unlike current_price/shares_outstanding/net_debt which are _STR_OR_NUM) -- schema code does not support a literal CONFIRM placeholder here, deviating from the prompt's assumption. Value = prompt's own recommended initial value within the specified 1.4-1.7 range. Research check: raw MU beta (2.1-3.3 depending on source) and SNDK beta (3.9-5.4, source-dispersed/unusable) are both inflated by the current AI-memory-cycle volatility, supporting a moderated 1.4-1.7 rather than raw peer readings.",
+  "erp": 0.060,
+  "size_premium": 0.0,
+  "cost_of_debt_at": 0.0224,
+  "_cost_of_debt_note": "CONFIRMED. Pre-tax blended estimate 3.2% x (1-0.30) = 2.24%. Basis: FY2026/3 annual report Note 25 shows total finance costs JPY96,708mn = lease interest 5,823 + interest on amortized-cost financial liabilities 65,570 (bonds+loans+preferred shares combined, not separately broken out) + other 773 + FX-forward derivative losses 24,542. Note 20 confirms preferred shares (redeemed JPY322,996mn, 4/1-7/25/2025 only) are IFRS financial liabilities whose 7.05-9.65% dividend sits inside the 65,570 line. Backing out an estimated preferred-share interest (~7-8bn over the 116-day stub) leaves pure bond+loan interest / average bonds+loans (777,706+1,047,568)/2=912,637 implying pre-tax cost ~6.3% -- still elevated because the new USD bonds carry 6.25%/6.625% coupons. Note 14 discloses these are swapped via cross-currency swaps to JPY-equivalent 3.29%/3.66%, but swap gains sit in OCI (not netted against P&L interest), so the raw ratio overstates true funding cost. Used blended pre-tax 3.2% (swap-adjusted USD bonds ~3.3-3.7% blended with an assumed lower JPY bank-loan rate ~1.5-2.5%). Materiality note: D/(D+E) is only ~3.5% (de_ratio 0.036), so WACC sensitivity to this input is small regardless of the exact figure chosen.",
+  "tax_rate": 0.30,
+
+  "terminal_growth": 0.010,
+  "exit_multiple": 5.0,
+  "primary_multiple": "EV/EBITDA",
+
+  "capex_method": "direct",
+  "capex_direct": {
+    "historical":  [305097, 225603, 283674],
+    "projections": [290000, 240000, 250000, 300000, 320000]
+  },
+  "capex_pct": 0.14,
+
+  "da_method": "direct",
+  "da_direct": {
+    "historical":  [346066, 312307, 312826],
+    "projections": [315000, 315000, 310000, 315000, 325000]
+  },
+  "da_pct": 0.14,
+
+  "scenarios": {
+    "Base": {
+      "revenue_growth": [-0.15, -0.20, 0.10, 0.30, 0.15],
+      "cogs_pct":       [0.60, 0.68, 0.64, 0.57, 0.58],
+      "sga_pct":        [0.065, 0.075, 0.070, 0.060, 0.062],
+      "dso_days":       [100, 98, 96, 95, 95],
+      "dih_days":       [115, 125, 118, 108, 108],
+      "dpo_days":       [160, 158, 158, 160, 160]
+    },
+    "Upside": {
+      "revenue_growth": [0.05, -0.05, 0.15, 0.20, 0.15],
+      "cogs_pct":       [0.57, 0.60, 0.58, 0.56, 0.55],
+      "sga_pct":        [0.060, 0.065, 0.062, 0.058, 0.058],
+      "dso_days":       [98, 95, 93, 92, 90],
+      "dih_days":       [110, 112, 105, 100, 98],
+      "dpo_days":       [162, 162, 165, 165, 165]
+    },
+    "Management": {
+      "_note": "FY2027/3 full-year company guidance is NOT disclosed (tanshin 2026-05-15 explicitly omits annual figures, citing rapid memory-industry environment shifts, per Note/summary section 3). Only isolated Q1 FY2027/3 (Apr-Jun 2026) guidance exists (Revenue 1,750,000 / OP 1,298,000 / NI 869,000), independently verified via Nikkei and EE Times Japan. Per user decision (2026-07-30): a single quarter's guidance is not extrapolated into the 5-year DCF scenario array (would double-count a cycle peak); revenue_growth key is intentionally omitted here so the pipeline's CAGR-based auto-estimate fills it, per the prompt's own designed fallback path. cogs_pct/sga_pct/dso/dih/dpo remain overridden per the prompt's Management scenario design.",
+      "cogs_pct":       [0.61, 0.66, 0.63, 0.59, 0.59],
+      "sga_pct":        [0.063, 0.070, 0.067, 0.062, 0.062],
+      "dso_days":       [100, 98, 96, 95, 95],
+      "dih_days":       [115, 122, 116, 108, 108],
+      "dpo_days":       [160, 160, 160, 160, 160]
+    },
+    "Downside 1": {
+      "revenue_growth": [-0.30, -0.25, 0.05, 0.15, 0.10],
+      "cogs_pct":       [0.72, 0.85, 0.78, 0.70, 0.68],
+      "sga_pct":        [0.080, 0.095, 0.088, 0.078, 0.075],
+      "dso_days":       [105, 110, 108, 105, 103],
+      "dih_days":       [130, 150, 140, 125, 120],
+      "dpo_days":       [155, 148, 150, 155, 155]
+    },
+    "Downside 2": {
+      "revenue_growth": [-0.35, -0.30, -0.05, 0.05, 0.05],
+      "cogs_pct":       [0.78, 0.95, 0.92, 0.85, 0.82],
+      "sga_pct":        [0.085, 0.105, 0.100, 0.092, 0.088],
+      "dso_days":       [110, 118, 118, 115, 115],
+      "dih_days":       [145, 175, 170, 160, 155],
+      "dpo_days":       [150, 140, 142, 145, 148]
+    }
+  },
+
+  "investment_thesis": [
+    "1. Cycle position is the entire investment question — FY2026/3 operating margin of 37.2% is not sustainable. The stock trades at 19.1x peak EBITDA against a 4-6x mid-cycle norm, implying the market either expects structural change or has priced in a very different normalization path than a standard DCF.",
+    "2. Potential AI-driven structural shift — enterprise SSD demand for AI datacenters may flatten the traditional smartphone/PC-led NAND cycle. If durable, mid-cycle margins reset materially higher.",
+    "3. Balance sheet materially repaired — preferred shares fully redeemed (322,996), cash of 470,707, equity attributable to owners nearly doubled to 1,398,929 from 737,565, net debt down to 782,482 from 831,589."
+  ],
+  "key_risks": [
+    "1. Extreme cyclicality — operating profit swung from △252,698 (FY2024/3) to +870,369 (FY2026/3), a 1,123,067 range in three years. Applying any multiple to peak earnings is hazardous.",
+    "2. Chinese supply expansion — CXMT/YMTC 3D NAND ramp could impose structural price deflation independent of the demand cycle.",
+    "3. Working capital deterioration plus non-deferrable capex — receivables rose 2.77x (238,594 to 660,559) against 1.37x revenue growth; DSO doubled from 51 to 103 days. Capex at 12-14% of revenue cannot pause during a downturn without ceding technology generations."
+  ]
+}

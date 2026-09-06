@@ -1,0 +1,271 @@
+{
+ "_note": "バッチ生成 2026-09-05。型A(通常の事業会社)。DRAFT。根拠は batch/per_ticker/9022_summary.md。 ■**追補8 §AE の rework wave により Base を再設計（第8セッション）**。",
+ "_edinet_note": "EDINET カバレッジ良好(hist_years FY2021-FY2026、OCF/Cash/Debt とも 6/6)。hist_* 配列の補完は不要のため供給していない。LTM は四半期分解が得られず latest FY (no LTM) = FY2026/3 実績 2,006,218百万円。",
+ "_wacc_note": "rf=2.97%(財務省 jgbcm.csv 10年 R8.9.3)。ERP6.5%固定。size_premium=1.0%(時価総額3.66兆円->3,000億超バンド)。beta: yfinance実測0.165はテンプレのクランプ下限0.6を下回り、そのまま渡すと無言で1.0に置換されるため(生成ログで確認)、許容域下限の0.6を明示指定して低ベータ性を保持。負債コストは実績Kd(支払利息78,779 / 平均有利子負債(4,308,098+4,308,084)/2=4,308,091 = 1.83%税引前)を使用。有利子負債が時価総額を上回るためKdのWACC寄与は大きい。",
+ "_exit_note": "exit_multiple = Peer 4社の実測 EV/EBITDA 中央値 10.87x(9020 10.17 / 9021 7.27 / 9042 12.41 / 9005 11.57)。自社の現在倍率 7.36x は算式に入れていない。結果として Exit 法は現値より強気側に出る(Peer 対比の割安さがそのまま表れる)。",
+ "_capex_note": "capex_method=direct。リニア中央新幹線建設によりFY2026実績のcapexは売上比26.1%(D&A比2.55倍)。ターミナル年のFCFは定常状態を表すべきなので、Y1-Y4 は建設継続を織り込んだ高水準を置きつつ Y5 で240,000百万円(D&A 220,792 の1.087倍)まで収束させた。■重要な留保: 実際のリニア開業は2030年代であり、Y5(FY2031)時点でも建設支出は継続している蓋然性が高い。したがって PGM はターミナル近傍のFCFを過大評価している可能性がある。Exit法(Peer中央値倍率)がそのクロスチェックになる。この判断は Adjustments Log に「設計判断」として記録。",
+ "_scenario_note": "【追補8 §AE の rework wave（第8セッション）】追補7 §Y の単調性判定と、追補8 §AE-2 が確定した方向別の定義に従って **Base を再設計**した。■実績OPM: 0.27% → 0.36% → 0.38% → 0.41%。**判定: 単調増加**。■**適用ルール: 単調増加 → 直近水準の維持** により Base 到達OPM = **41.38%**（旧: 40.30%、差 +1.08pt）。■**平均回帰（§4-4 の中央値収束）は使わない**: トレンドに平均回帰を当てるのは統計的な誤りであり、その理由は符号で変わらない（追補8 §AE-2）。**単調増加では『さらなる上積みの外挿はしない』という保守側のガード**を置き、直近水準の維持とした。■Upside / Downside 1 / Downside 2 は本 rework の対象外で、従前の設計を維持している。■COGS% は据え置き、SGA% = 100% − COGS% − 目標OPM で逆算した。",
+ "ticker": "9022",
+ "company_name": "東海旅客鉄道",
+ "exchange": "TSE Prime",
+ "sector": "陸運業",
+ "fiscal_year_end_month": 3,
+ "risk_free": 0.0297,
+ "erp": 0.065,
+ "size_premium": 0.01,
+ "tax_rate": 0.25,
+ "beta": 0.2848,
+ "interest_expense": 78779,
+ "debt_beginning": 4308098,
+ "debt_ending": 4308084,
+ "terminal_growth": 0.01,
+ "exit_multiple": 10.9,
+ "primary_multiple": "EV/EBITDA",
+ "capex_method": "direct",
+ "capex_pct": 0.107,
+ "da_method": "revenue_pct",
+ "da_pct": 0.098,
+ "capex_direct": {
+  "projections": [
+   520000,
+   500000,
+   450000,
+   350000,
+   240000
+  ]
+ },
+ "nwc_method": "days",
+ "scenarios": {
+  "Base": {
+   "revenue_growth": [
+    0.03,
+    0.025,
+    0.02,
+    0.02,
+    0.02
+   ],
+   "cogs_pct": [
+    0.482,
+    0.484,
+    0.487,
+    0.489,
+    0.489
+   ],
+   "sga_pct": [
+    0.104202,
+    0.102202,
+    0.099202,
+    0.097202,
+    0.097202
+   ],
+   "dso_days": [
+    40,
+    40,
+    40,
+    40,
+    40
+   ],
+   "dih_days": [
+    17,
+    17,
+    17,
+    17,
+    17
+   ],
+   "dpo_days": [
+    37,
+    37,
+    37,
+    37,
+    37
+   ]
+  },
+  "Upside": {
+   "revenue_growth": [
+    0.04,
+    0.035,
+    0.03,
+    0.03,
+    0.03
+   ],
+   "cogs_pct": [
+    0.478,
+    0.475,
+    0.472,
+    0.47,
+    0.47
+   ],
+   "sga_pct": [
+    0.106,
+    0.106,
+    0.106,
+    0.106,
+    0.106
+   ],
+   "dso_days": [
+    38,
+    38,
+    38,
+    38,
+    38
+   ],
+   "dih_days": [
+    16,
+    16,
+    16,
+    16,
+    16
+   ],
+   "dpo_days": [
+    38,
+    38,
+    38,
+    38,
+    38
+   ]
+  },
+  "Management": {
+   "revenue_growth": [
+    0.03,
+    0.025,
+    0.02,
+    0.02,
+    0.02
+   ],
+   "cogs_pct": [
+    0.482,
+    0.484,
+    0.487,
+    0.489,
+    0.489
+   ],
+   "sga_pct": [
+    0.104202,
+    0.102202,
+    0.099202,
+    0.097202,
+    0.097202
+   ],
+   "dso_days": [
+    40,
+    40,
+    40,
+    40,
+    40
+   ],
+   "dih_days": [
+    17,
+    17,
+    17,
+    17,
+    17
+   ],
+   "dpo_days": [
+    37,
+    37,
+    37,
+    37,
+    37
+   ]
+  },
+  "Downside 1": {
+   "revenue_growth": [
+    0.0,
+    0.0,
+    0.005,
+    0.005,
+    0.005
+   ],
+   "cogs_pct": [
+    0.498,
+    0.518,
+    0.538,
+    0.553,
+    0.555
+   ],
+   "sga_pct": [
+    0.112,
+    0.112,
+    0.112,
+    0.112,
+    0.112
+   ],
+   "dso_days": [
+    42,
+    42,
+    42,
+    42,
+    42
+   ],
+   "dih_days": [
+    18,
+    18,
+    18,
+    18,
+    18
+   ],
+   "dpo_days": [
+    36,
+    36,
+    36,
+    36,
+    36
+   ]
+  },
+  "Downside 2": {
+   "revenue_growth": [
+    -0.08,
+    -0.01,
+    0.005,
+    0.01,
+    0.015
+   ],
+   "cogs_pct": [
+    0.58,
+    0.605,
+    0.613,
+    0.613,
+    0.61
+   ],
+   "sga_pct": [
+    0.12,
+    0.12,
+    0.12,
+    0.12,
+    0.12
+   ],
+   "dso_days": [
+    44,
+    44,
+    44,
+    44,
+    44
+   ],
+   "dih_days": [
+    20,
+    20,
+    20,
+    20,
+    20
+   ],
+   "dpo_days": [
+    34,
+    34,
+    34,
+    34,
+    34
+   ]
+  }
+ },
+ "investment_thesis": [
+  "The Tokaido Shinkansen is a near-monopoly corridor with pricing power, and the post-pandemic recovery has taken the operating margin above its pre-pandemic level; the shares are valued at {per} earnings and {pb} book.",
+  "The stock trades at a materially lower EV/EBITDA than the listed private-railway peer group, so the exit-multiple leg of this model is where the peer discount shows up against a {wacc} cost of capital.",
+  "At {price} the market is paying for the current corridor economics while funding the Chuo Shinkansen build; our base case supports {target_price}, or {upside_pct} from here."
+ ],
+ "key_risks": [
+  "Chuo Shinkansen construction keeps capital expenditure far above depreciation well past the projection window, so the perpetuity leg behind {target_price} assumes a steady state the company will not reach for years.",
+  "Interest-bearing debt exceeds the equity market value, which makes the {wacc} discount rate unusually sensitive to the cost of debt and to any rise in long-dated JGB yields.",
+  "Corridor demand is concentrated on one route: a repeat of the pandemic-era collapse would take margins back to the trough used in the second downside case, far below what {price} and {per} imply."
+ ],
+ "_beta_note": "実測（raw）β = 0.2848。出所: TOPIX 2y 1wk OLS (n=104, corr=0.191)。フェーズ2 #6 以降 overrides の beta は raw を入れる契約で、テンプレが Blume 調整 0.67×raw + 0.33×1.00 を掛け [0.3, 2.0] にクランプする（採用 0.5208、クランプ非発動）。■旧 overrides の値 0.6 は旧ルール [0.6, 1.75] のクランプ後の値であり raw ではない。■yfinance の beta フィールドは 0.165。日本株では市場を説明しないベンチマークで算出されており（NTT −0.165 / 大阪ガス −0.201 等）、採用しない。詳細は docs/phase2_pipeline_fixes_20260906.md の §2-4。"
+}

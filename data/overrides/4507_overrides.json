@@ -1,0 +1,312 @@
+{
+ "risk_free": 0.0297,
+ "erp": 0.065,
+ "size_premium": 0.01,
+ "tax_rate": 0.25,
+ "terminal_growth": 0.01,
+ "primary_multiple": "EV/EBITDA",
+ "nwc_method": "days",
+ "hist_years": [
+  "FY2023",
+  "FY2024",
+  "FY2025",
+  "FY2026"
+ ],
+ "hist_revenue": [
+  426684.0,
+  435081.0,
+  438268.0,
+  499677.0
+ ],
+ "hist_operating_income": [
+  149004.0,
+  153312.0,
+  156604.0,
+  166725.0
+ ],
+ "hist_net_income": [
+  184965.0,
+  162030.0,
+  170435.0,
+  205159.0
+ ],
+ "hist_cogs": [
+  62246.0,
+  57602.0,
+  63826.0,
+  82450.0
+ ],
+ "hist_sga": [
+  215434.0,
+  224167.0,
+  217838.0,
+  250502.0
+ ],
+ "base_year_revenue": 499677.0,
+ "base_year_cogs": 82450.0,
+ "base_year_ar": 159773.0,
+ "base_year_inv": 99396.0,
+ "base_year_ap": 22149.0,
+ "book_value": 1685215.0,
+ "core_ebitda": 193693.0,
+ "_note": "バッチ生成 2026-09-05。型A。DRAFT。根拠は batch/per_ticker/4507_summary.md。",
+ "_prescreen_note": "追補1 §B / 追補2 §B の金融事業プレスクリーン実施済み（docID S100YF57）。金融事業専用科目の検出なし → 型判定へ。",
+ "_wacc_note": "rf=2.97%（財務省 jgbcm.csv 10年 R8.9.3）。ERP6.5%固定。size_premium=1.0%（時価総額2.48兆円）。beta: yfinance実測 0.028 はテンプレのクランプ域 [0.6, 1.75] の下限を大きく下回り、そのまま渡すと無言で 1.0 に置換される。追補1 §A に従い max(0.6, min(1.75, 実測)) = 0.60 を明示指定した。■**net_debt がネットキャッシュ（−27,003）のため de_ratio = 0 → WACC = Ke = 7.87%**。ただし当社は FY2026/3 に有利子負債を 21,882 → **684,394百万円** へ急増させており（現金も 374,795 → 711,397 へ増加）、『ネットキャッシュだから負債コストは無関係』という型A定義の帰結は当社の実態をやや単純化している。実績Kd は 支払利息 8,605 ÷ 平均有利子負債 353,138 = 2.44%（税引前）だが、D/E=0 のため WACC に寄与しないので指定していない。",
+ "_exit_note": "exit_multiple = Peer 5社の実測EV/EBITDA中央値 10.22x（4523 / 4151 / 4503 / 4568 / 4578）。自社の現在倍率 12.64x は算式に入れていない（市場価格への循環参照回避）。自社が Peer より高倍率のため Exit 法は保守側に振れる。",
+ "_capex_note": "capex_method=direct。実績capexは売上比 6.3-11.9% と振れが大きい。5年で緩やかに逓減させ、ターミナル年 34,400 ÷ D&A（Y5売上607,336 × 5.4% = 32,796）= 1.049x でレンジ[0.90,1.15]に収束。",
+ "_scenario_note": "実績OPM（FY2023-FY2026）: min 33.37 / p25 34.53 / med 35.08 / p75 35.36 / max 35.73%。直近 33.37% が観測窓の最低かつ中央値を下回るため、Base は実績中央値 35.08% へ収束（Y1 33.8% → Y5 35.08%）。Upside は max(p75 35.36, 直近+1.0pt = 34.37) = 35.36%。Downside 1 は min(p25 34.53, 直近 33.37) = 33.37% を下回る 30.0%。Downside 2 は実績トラフ（33.37%）が直近実績そのものでトラフとして機能しないため、売上 −8% + OPM半減アーム（16.7-20.0%）。■**製薬の恒等式**: 当社は 売上 − COGS − SGA が営業利益にならない（研究開発費・無形資産償却が yfinance の SG&A に含まれないため）。テンプレは OP = 売上 − COGS − SGA で計算するので、**COGS% を実績水準に固定し SGA% = 100% − COGS% − 目標OPM で逆算**した。したがって本モデルの SGA 行は「販管費 + 研究開発費（+ 無形資産償却）」の合計を表す。COGS% は直近実績 16.5% を基準に置いた。既存銘柄からの流用なし。",
+ "ticker": "4507",
+ "company_name": "塩野義製薬",
+ "exchange": "TSE Prime",
+ "sector": "医薬品",
+ "fiscal_year_end_month": 3,
+ "beta": 0.3646,
+ "exit_multiple": 10.2,
+ "capex_method": "direct",
+ "capex_pct": 0.0566,
+ "da_method": "revenue_pct",
+ "da_pct": 0.054,
+ "capex_direct": {
+  "projections": [
+   40000,
+   38000,
+   36000,
+   35000,
+   34400
+  ]
+ },
+ "scenarios": {
+  "Base": {
+   "revenue_growth": [
+    0.06,
+    0.045,
+    0.035,
+    0.03,
+    0.025
+   ],
+   "cogs_pct": [
+    0.165,
+    0.165,
+    0.165,
+    0.165,
+    0.165
+   ],
+   "sga_pct": [
+    0.497,
+    0.493,
+    0.489,
+    0.486,
+    0.4842
+   ],
+   "dso_days": [
+    104,
+    104,
+    104,
+    104,
+    104
+   ],
+   "dih_days": [
+    391,
+    391,
+    391,
+    391,
+    391
+   ],
+   "dpo_days": [
+    88,
+    88,
+    88,
+    88,
+    88
+   ]
+  },
+  "Upside": {
+   "revenue_growth": [
+    0.075,
+    0.06,
+    0.05,
+    0.045,
+    0.04
+   ],
+   "cogs_pct": [
+    0.162,
+    0.162,
+    0.162,
+    0.162,
+    0.162
+   ],
+   "sga_pct": [
+    0.496,
+    0.492,
+    0.488,
+    0.485,
+    0.4844
+   ],
+   "dso_days": [
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "dih_days": [
+    375,
+    375,
+    375,
+    375,
+    375
+   ],
+   "dpo_days": [
+    91,
+    91,
+    91,
+    91,
+    91
+   ]
+  },
+  "Management": {
+   "revenue_growth": [
+    0.06,
+    0.045,
+    0.035,
+    0.03,
+    0.025
+   ],
+   "cogs_pct": [
+    0.165,
+    0.165,
+    0.165,
+    0.165,
+    0.165
+   ],
+   "sga_pct": [
+    0.497,
+    0.493,
+    0.489,
+    0.486,
+    0.4842
+   ],
+   "dso_days": [
+    104,
+    104,
+    104,
+    104,
+    104
+   ],
+   "dih_days": [
+    391,
+    391,
+    391,
+    391,
+    391
+   ],
+   "dpo_days": [
+    88,
+    88,
+    88,
+    88,
+    88
+   ]
+  },
+  "Downside 1": {
+   "revenue_growth": [
+    0.005,
+    0.005,
+    0.005,
+    0.005,
+    0.005
+   ],
+   "cogs_pct": [
+    0.17,
+    0.17,
+    0.17,
+    0.17,
+    0.17
+   ],
+   "sga_pct": [
+    0.505,
+    0.515,
+    0.525,
+    0.53,
+    0.53
+   ],
+   "dso_days": [
+    109,
+    109,
+    109,
+    109,
+    109
+   ],
+   "dih_days": [
+    411,
+    411,
+    411,
+    411,
+    411
+   ],
+   "dpo_days": [
+    84,
+    84,
+    84,
+    84,
+    84
+   ]
+  },
+  "Downside 2": {
+   "revenue_growth": [
+    -0.08,
+    -0.01,
+    0.005,
+    0.01,
+    0.015
+   ],
+   "cogs_pct": [
+    0.18,
+    0.18,
+    0.18,
+    0.18,
+    0.18
+   ],
+   "sga_pct": [
+    0.62,
+    0.65,
+    0.653,
+    0.65,
+    0.64
+   ],
+   "dso_days": [
+    114,
+    114,
+    114,
+    114,
+    114
+   ],
+   "dih_days": [
+    430,
+    430,
+    430,
+    430,
+    430
+   ],
+   "dpo_days": [
+    80,
+    80,
+    80,
+    80,
+    80
+   ]
+  }
+ },
+ "investment_thesis": [
+  "Shionogi earns an operating margin above thirty percent from a royalty-rich portfolio and the Cefiderocol and Xocova franchises; the shares trade at {per} earnings and {pb} book.",
+  "The balance sheet is net cash even after a large debt raise in the latest year, so the {wacc} discount rate is the cost of equity with no leverage benefit assumed.",
+  "At {price} the market capitalises the latest-year margin dip; a base case that returns to the four-year median margin supports {target_price}, or {upside_pct} from here."
+ ],
+ "key_risks": [
+  "Royalty income is concentrated and finite, and the {per} the market pays at {price} rests on an earnings base that includes payments the company does not control.",
+  "The company raised interest-bearing debt roughly thirty-fold in the latest year while holding the cash; the net-cash treatment behind {wacc} understates the gross leverage now on the balance sheet.",
+  "Inventory days sit far above the medical-device and food peers used elsewhere in this batch, so a demand miss ties up working capital before it shows in the {target_price} margin path."
+ ],
+ "_edinet_note": "【追補2 §F-2 の予防的 EDINET 補完（生成前適用・必須）】根本原因は scripts/generate_dcf.py:66 の _val(data_dict, key, default=0) が欠損値を None ではなく 0 に落とすことで、hist_* 全系列・net_debt・core_ebitda に波及する。バッチ中はパイプラインを変更しない方針（追補2 §F-1）のため、全銘柄に生成前適用する回避策として hist_years を直近4期（P/L 4項目がすべて揃う年）に置換し、hist_revenue / hist_operating_income / hist_net_income / hist_cogs / hist_sga を yfinance連結財務諸表から供給した（配列長は全て4で hist_years と一致、契約遵守）。■hist_ocf / hist_cash / hist_debt / hist_capex / hist_depreciation は【供給していない】 — Step 4.6 の align_hist_series_to_years() が最終 hist_years に会計年度キーで再マッピングするため EDINET を一次ソースのまま使える。■hist_sga = 売上 − COGS − 営業利益 で逆算。■core_ebitda も追補2 §G に従い明示指定した（下記）。",
+ "_beta_note": "実測（raw）β = 0.3646。出所: TOPIX 2y 1wk OLS (n=104, corr=0.255)。フェーズ2 #6 以降 overrides の beta は raw を入れる契約で、テンプレが Blume 調整 0.67×raw + 0.33×1.00 を掛け [0.3, 2.0] にクランプする（採用 0.5743、クランプ非発動）。■旧 overrides の値 0.6 は旧ルール [0.6, 1.75] のクランプ後の値であり raw ではない。■yfinance の beta フィールドは 0.028。日本株では市場を説明しないベンチマークで算出されており（NTT −0.165 / 大阪ガス −0.201 等）、採用しない。詳細は docs/phase2_pipeline_fixes_20260906.md の §2-4。"
+}

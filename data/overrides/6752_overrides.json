@@ -1,0 +1,320 @@
+{
+ "risk_free": 0.0297,
+ "erp": 0.065,
+ "size_premium": 0.01,
+ "tax_rate": 0.25,
+ "terminal_growth": 0.01,
+ "primary_multiple": "EV/EBITDA",
+ "nwc_method": "days",
+ "current_price": 4163.0,
+ "shares_outstanding": 2334925020,
+ "hist_years": [
+  "FY2023",
+  "FY2024",
+  "FY2025",
+  "FY2026"
+ ],
+ "hist_revenue": [
+  8378942.0,
+  8496420.0,
+  8458185.0,
+  8048722.0
+ ],
+ "hist_operating_income": [
+  287138.0,
+  356667.0,
+  406534.0,
+  209963.0
+ ],
+ "hist_net_income": [
+  265502.0,
+  443994.0,
+  366205.0,
+  189540.0
+ ],
+ "hist_cogs": [
+  6117494.0,
+  6002065.0,
+  5829569.0,
+  5521854.0
+ ],
+ "hist_sga": [
+  1974310.0,
+  2137688.0,
+  2222082.0,
+  2316905.0
+ ],
+ "base_year_revenue": 8048722.0,
+ "base_year_cogs": 5521854.0,
+ "base_year_ar": 1379750.0,
+ "base_year_inv": 1066123.0,
+ "base_year_ap": 1017061.0,
+ "book_value": 5211272.0,
+ "core_ebitda": 614305,
+ "net_debt": 833018,
+ "_note": "バッチ生成 2026-09-05 / **追補5 §V-1 により再生成（第6セッション）**。**型B疑い（分母トラフ型）・要目視レビュー**。DRAFT（part1）。根拠は batch/per_ticker/6752_summary.md。",
+ "_prescreen_note": "追補1 §B / 追補2 §B のプレスクリーン実施済み（docID S100YETA）。金融事業専用科目の検出なし → 型判定へ。■追補2 §C が『金融子会社リスクが相対的に高い』と指摘した3銘柄の1つだったが、連結BSに金融事業専用科目は存在せず **CLEAN**。型A として処理する。",
+ "_wacc_note": "rf=2.97%。ERP6.5%固定。size_premium=1.0%（時価総額9.72兆円）。beta: yfinance実測 **0.846** はクランプ域 [0.6, 1.75] の内側のため素通し（置換なし）。負債コストは実績Kd（支払利息 41,998 ÷ 平均有利子負債 (1,568,243+1,603,197)/2 = 1,585,720 = 2.65%税引前 → 税引後1.99%）。",
+ "_exit_note": "exit_multiple = Peer 5社の実測EV/EBITDA中央値 14.33x（6501 日立 / 6503 三菱電機 / 6702 富士通 / 6701 NEC / 6981 村田製作所）。自社の現在倍率 17.18x は算式に入れていない。■自社倍率が Peer 中央値を上回るのは**直近の営業利益が観測窓の最低（OPM 2.61%）で EBITDA 分母が小さいため**であり、プレミアム評価ではない点に注意。",
+ "_capex_note": "capex_method=direct。**Y1 を仮定値ではなく実績で置いた**（追補5 §V-1 の再生成にあたり一次ソースから取得）: EDINET 有価証券報告書 **docID S100YETA**（FY2026/3）の `PurchaseOfPropertyPlantAndEquipmentInvCFIFRS` 622,955 + `PurchaseOfIntangibleAssetsInvCFIFRS` 73,063 = **696,018百万円**。**検証**: 同2要素の前期合計 772,332 + 91,038 = 863,370 が yfinance の FY2025/3 capex と完全一致し、同一定義であることを確認した（取得日 2026-09-05）。■実績 capex/D&A 比は 0.97 → 1.62 → **2.13** → 1.72 と車載電池の能力投資で高止まりしている。投影 [680,000 / 620,000 / 560,000 / 505,000 / 466,000] で5年かけて逓減させ、ターミナル年 466,000 ÷ D&A(Y5売上8,876,935 × 5.0% = 443,847) = 1.050x でレンジ[0.90,1.15]に収束。■**この逓減は会社が表明した計画ではなく本モデルの仮定である**。■**本銘柄の PGM と Exit の乖離の構造的な原因**: capex が D&A の 1.7倍で持続しているため EBITDA（782,058百万円規模）とFCF（231,505百万円規模）が **3倍以上開く**。EBITDA倍率を使う Exit 法と FCF を永久還元する PGM 法が機械的に乖離するのはこのためであり、利益率の谷だけが原因ではない（再生成後の WARN11 再判定で確認する）。 ■**overrides への hist_capex / hist_depreciation の明示指定は取り下げた**: この2系列は `align_hist_series_to_years()` が会計年度キーで再マップする5系列に含まれ、hist_years を置換した状態で与えると、validate チェック7 の C5 の根拠が明示前提 5.25% から**実績3期平均 8.82% に切り替わり capex_direct の投影と不整合になる**ことを確認したため（第6セッションで実測）。**capex の一次ソース実績は本ログに記録する形で保持し、overrides には入れない。**",
+ "_da_note": "■**FY2026/3 の D&A は一次ソースから取得した**（追補3 §S で承認された 7011 の手順を踏襲）: EDINET 有価証券報告書 **docID S100YETA**（FY2026/3）の XBRL 要素 `DepreciationAndAmortizationOpeCFIFRS` / CurrentYearDuration = **404,342百万円**。yfinance は当期のキャッシュフロー計算書を未収録で D&A を取得できなかった。**検証**: 同要素の Prior1YearDuration = 405,729 が yfinance の FY2025/3 D&A と完全一致し、同一系列であることを確認した。取得日 2026-09-05。core_ebitda = 営業利益 209,963 + D&A 404,342 = **614,305** を明示指定している。",
+ "_scenario_note": "【追補5 §U / §4-4 のミッドサイクル正常化】実績OPM（FY2023-FY2026）: 3.43 → 4.20 → 4.81 → **2.61%**。min 2.61 / p25 3.22 / med 3.81 / p75 4.35 / max 4.81%。**直近が観測窓の最低（サイクルの谷）**。■初回生成では型A規則（直近 ≤ 中央値 → 中央値へ収束）で Base 到達OPM = 3.81% としたが、**Y1 を 2.9%（谷とほぼ同水準）に置いており、明示予測期間の前半で谷の利益を資本化していた**。■再生成では **§4-4 の型B規則に切り替え、Base 到達OPM = ピークとトラフの中間 =（4.81 + 2.61）/2 = 3.71%** とし、**谷の側からミッドサイクルへ decisively に回復するパス**（Y1 3.1% → Y5 3.71%）を置いた（型Bで現在が谷側にある場合、§4-4 の『緩やかな正常化』はピーク側の話であり、谷側では回復を織り込むのが正しい読み方）。■Upside は型B規則により max(実績max 4.81, 直近+1.0pt = 3.61) = **4.81%**（サイクルピークの再現）。■Downside 1 は min(p25 3.22, 直近 2.61) = 2.61% を下回る 1.9%。■Downside 2 は実績トラフ(2.61%)が直近実績そのものでトラフとして機能しないため、売上 −8% + OPM 1.2-1.7%。■COGS% を直近実績 68.6% に固定し SGA% = 100% − COGS% − 目標OPM で逆算した。既存銘柄からの流用なし。",
+ "ticker": "6752",
+ "company_name": "パナソニックホールディングス",
+ "exchange": "TSE Prime",
+ "sector": "電気機器",
+ "fiscal_year_end_month": 3,
+ "beta": 1.3934,
+ "exit_multiple": 14.3,
+ "interest_expense": 41998,
+ "debt_beginning": 1568243,
+ "debt_ending": 1603197,
+ "capex_method": "direct",
+ "capex_pct": 0.0525,
+ "da_method": "revenue_pct",
+ "da_pct": 0.05,
+ "capex_direct": {
+  "projections": [
+   680000,
+   620000,
+   560000,
+   505000,
+   466000
+  ]
+ },
+ "scenarios": {
+  "Base": {
+   "revenue_growth": [
+    0.01,
+    0.02,
+    0.025,
+    0.025,
+    0.02
+   ],
+   "cogs_pct": [
+    0.686,
+    0.686,
+    0.686,
+    0.686,
+    0.686
+   ],
+   "sga_pct": [
+    0.283,
+    0.28,
+    0.278,
+    0.277,
+    0.2769
+   ],
+   "dso_days": [
+    59,
+    59,
+    59,
+    59,
+    59
+   ],
+   "dih_days": [
+    71,
+    71,
+    71,
+    71,
+    71
+   ],
+   "dpo_days": [
+    68,
+    68,
+    68,
+    68,
+    68
+   ]
+  },
+  "Upside": {
+   "revenue_growth": [
+    0.025,
+    0.035,
+    0.035,
+    0.03,
+    0.03
+   ],
+   "cogs_pct": [
+    0.68,
+    0.68,
+    0.68,
+    0.68,
+    0.68
+   ],
+   "sga_pct": [
+    0.285,
+    0.281,
+    0.277,
+    0.274,
+    0.2719
+   ],
+   "dso_days": [
+    56,
+    56,
+    56,
+    56,
+    56
+   ],
+   "dih_days": [
+    68,
+    68,
+    68,
+    68,
+    68
+   ],
+   "dpo_days": [
+    71,
+    71,
+    71,
+    71,
+    71
+   ]
+  },
+  "Management": {
+   "revenue_growth": [
+    0.01,
+    0.02,
+    0.025,
+    0.025,
+    0.02
+   ],
+   "cogs_pct": [
+    0.686,
+    0.686,
+    0.686,
+    0.686,
+    0.686
+   ],
+   "sga_pct": [
+    0.283,
+    0.28,
+    0.278,
+    0.277,
+    0.2769
+   ],
+   "dso_days": [
+    59,
+    59,
+    59,
+    59,
+    59
+   ],
+   "dih_days": [
+    71,
+    71,
+    71,
+    71,
+    71
+   ],
+   "dpo_days": [
+    68,
+    68,
+    68,
+    68,
+    68
+   ]
+  },
+  "Downside 1": {
+   "revenue_growth": [
+    -0.01,
+    0.0,
+    0.005,
+    0.005,
+    0.005
+   ],
+   "cogs_pct": [
+    0.694,
+    0.694,
+    0.694,
+    0.694,
+    0.694
+   ],
+   "sga_pct": [
+    0.282,
+    0.284,
+    0.286,
+    0.287,
+    0.287
+   ],
+   "dso_days": [
+    62,
+    62,
+    62,
+    62,
+    62
+   ],
+   "dih_days": [
+    75,
+    75,
+    75,
+    75,
+    75
+   ],
+   "dpo_days": [
+    65,
+    65,
+    65,
+    65,
+    65
+   ]
+  },
+  "Downside 2": {
+   "revenue_growth": [
+    -0.08,
+    -0.01,
+    0.005,
+    0.01,
+    0.015
+   ],
+   "cogs_pct": [
+    0.71,
+    0.71,
+    0.71,
+    0.71,
+    0.71
+   ],
+   "sga_pct": [
+    0.275,
+    0.278,
+    0.277,
+    0.275,
+    0.273
+   ],
+   "dso_days": [
+    65,
+    65,
+    65,
+    65,
+    65
+   ],
+   "dih_days": [
+    78,
+    78,
+    78,
+    78,
+    78
+   ],
+   "dpo_days": [
+    61,
+    61,
+    61,
+    61,
+    61
+   ]
+  }
+ },
+ "investment_thesis": [
+  "Panasonic is in the middle of a group restructuring while automotive battery capacity ramps in North America, and the operating margin fell to the bottom of its four-year range in the latest year; the shares trade at {per} earnings and {pb} book.",
+  "The realised cost of debt in this model comes from the filings rather than an assumed spread, which matters because interest-bearing debt is twenty percent of revenue.",
+  "At {price} the market capitalises the depressed margin; a base case that returns to the four-year median supports {target_price}, or {upside_pct} from here."
+ ],
+ "key_risks": [
+  "Capital expenditure reached ten percent of revenue on battery capacity and the base case assumes it halves over five years; if the ramp continues, the free cash flow behind {target_price} does not appear.",
+  "Revenue has fallen for two years while the margin also fell, so this is not a mix-shift story — the base-case recovery depends on the restructuring delivering.",
+  "The apparent EV/EBITDA premium to peers is an artefact of a depressed earnings base rather than a quality rating, so the {per} comparison flatters the shares."
+ ],
+ "_edinet_note": "【追補2 §F-2 / 追補3 §L の予防的補完（生成前適用・必須）】根本原因は scripts/generate_dcf.py:66 の _val(data_dict, key, default=0) が欠損値を None ではなく 0 に落とすこと。hist_years を直近4期に置換し hist_revenue / hist_operating_income / hist_net_income / hist_cogs / hist_sga を yfinance連結財務諸表から供給（配列長は全て4で hist_years と一致、契約遵守）。CF/BS 5系列は供給せず Step 4.6 の年度キー再マッピングに委ねる。hist_sga = 売上 − COGS − 営業利益 で逆算。**追補3 §L に従い current_price / shares_outstanding も予防的に明示指定**。**net_debt も明示指定**（EDINET の有利子負債抽出が 0 に落ちる既知パターンの予防）。**追補2 §G に従い core_ebitda も明示指定**（Peer と同一定義に統一）。",
+ "_type_note": "【追補5 §U による型B疑いへの再分類】`batch/check_trough_artifact.py` の全件スキャン（39銘柄）で**本銘柄のみが §U シグネチャに該当**した: (1) 直近OPM **2.61%** ≤ 観測窓p25 **3.22%**（サイクルの谷）、(2) WARN11 乖離 **4.31倍** > 3.0倍、(3) 仮定Exit **14.30倍** ≤ 25倍（§Q 非該当）。初回生成の Target 1,661円（PGM 459円 と Exit 2,863円 の中点）は**どちらの世界観にも属さない数値**であり、§U に従い型B疑いとして §4-4 のミッドサイクル正常化を適用して再生成する。",
+ "_beta_note": "実測（raw）β = 1.3934。出所: TOPIX 2y 1wk OLS (n=104, corr=0.55)。フェーズ2 #6 以降 overrides の beta は raw を入れる契約で、テンプレが Blume 調整 0.67×raw + 0.33×1.00 を掛け [0.3, 2.0] にクランプする（採用 1.2636、クランプ非発動）。■旧 overrides の値 0.85 は旧ルール [0.6, 1.75] のクランプ後の値であり raw ではない。■yfinance の beta フィールドは 0.846。日本株では市場を説明しないベンチマークで算出されており（NTT −0.165 / 大阪ガス −0.201 等）、採用しない。詳細は docs/phase2_pipeline_fixes_20260906.md の §2-4。"
+}

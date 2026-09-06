@@ -1,0 +1,307 @@
+{
+ "risk_free": 0.0297,
+ "erp": 0.065,
+ "size_premium": 0.01,
+ "tax_rate": 0.25,
+ "terminal_growth": 0.01,
+ "primary_multiple": "EV/EBITDA",
+ "nwc_method": "days",
+ "_note": "バッチ生成 2026-09-05。型B(シクリカル・石化サイクル)。要目視レビュー。DRAFT。根拠は batch/per_ticker/4188_summary.md。",
+ "_prescreen_note": "追補1 §B の金融事業プレスクリーン実施済み(docID S100YFSR)。金融事業科目の検出なし → 型判定へ。",
+ "_type_note": "型B。実績OPM 3.69 -> 5.78 -> 3.39 -> 0.87% と振れ、直近は 0.87% まで低下。NonOp/OP -97.8% は減損の常習を示す。",
+ "_wacc_note": "rf=2.97%。ERP6.5%固定。size_premium=1.0%(時価総額1.68兆円)。beta: yfinance実測 0.686 はクランプ域[0.6, 1.75]の内側のため素通し。負債コストは実績Kd(支払利息38,587 / 平均有利子負債(2,040,987+1,890,521)/2=1,965,754 = 1.96%税引前 -> 税引後1.47%)。D/E 0.81 と負債比率が高い。",
+ "_exit_note": "exit_multiple = Peer 5社の実測EV/EBITDA中央値 6.54x(4005 6.09 / 4183 8.70 / 3407 6.54 / 4091 9.63 / 3405 5.12)。型Bの上限は binding しない。自社の現在倍率 10.03x は算式に不使用。■自社倍率が Peer 中央値の1.5倍あるため Exit 法は大きく保守側に振れる(直近の営業利益が谷で EBITDA 分母が小さいことも寄与)。",
+ "_capex_note": "capex_method / da_method とも revenue_pct。実績は capex 6.1-8.2% / D&A 5.8-7.3% で既に近接(直近 292,133 / 271,157 = 1.077倍)。capex_pct 7.66% / da_pct 7.30% でターミナル比率 1.049x(レンジ内)。",
+ "_scenario_note": "実績OPM(FY2023-FY2026): min 0.87 / p25 2.76 / med 3.54 / p75 4.21 / max 5.78%。直近は 0.87%(観測窓の最低)。■型Bのため §4-4 に従い Base 到達OPM = ピークとトラフの中間 = (5.78 + 0.87)/2 = 3.33%。Y1 1.6% -> Y5 3.33%。■Upside は 実績max 5.78%(サイクルピークの再現)。■Downside 1 は min(p25 2.76, 直近 0.87) = 0.87% を下回る 0.0%(営業利益ゼロ)。■Downside 2 は営業赤字(-3.0〜0.0%)+ 売上-12%。EV が net_debt を下回れば PGM/Exit は INVALID 化するが、それ自体が負債過大銘柄の情報である(メモ§2)。SGA% は実績19.9->22.0%の直近水準22.0%を基準に調整し COGS% = 100% - OPM - SGA% で逆算。既存銘柄からの流用なし。",
+ "ticker": "4188",
+ "company_name": "三菱ケミカルグループ",
+ "exchange": "TSE Prime",
+ "sector": "化学",
+ "fiscal_year_end_month": 3,
+ "beta": 1.1378,
+ "exit_multiple": 6.5,
+ "interest_expense": 38587,
+ "debt_beginning": 2040987,
+ "debt_ending": 1890521,
+ "capex_method": "revenue_pct",
+ "capex_pct": 0.0766,
+ "da_method": "revenue_pct",
+ "da_pct": 0.073,
+ "scenarios": {
+  "Base": {
+   "revenue_growth": [
+    0.0,
+    0.01,
+    0.015,
+    0.02,
+    0.02
+   ],
+   "cogs_pct": [
+    0.764,
+    0.758,
+    0.752,
+    0.748,
+    0.7467
+   ],
+   "sga_pct": [
+    0.22,
+    0.22,
+    0.22,
+    0.22,
+    0.22
+   ],
+   "dso_days": [
+    68,
+    68,
+    68,
+    68,
+    68
+   ],
+   "dih_days": [
+    91,
+    91,
+    91,
+    91,
+    91
+   ],
+   "dpo_days": [
+    54,
+    54,
+    54,
+    54,
+    54
+   ]
+  },
+  "Upside": {
+   "revenue_growth": [
+    0.02,
+    0.025,
+    0.025,
+    0.025,
+    0.025
+   ],
+   "cogs_pct": [
+    0.76,
+    0.75,
+    0.74,
+    0.732,
+    0.7272
+   ],
+   "sga_pct": [
+    0.215,
+    0.215,
+    0.215,
+    0.215,
+    0.215
+   ],
+   "dso_days": [
+    65,
+    65,
+    65,
+    65,
+    65
+   ],
+   "dih_days": [
+    86,
+    86,
+    86,
+    86,
+    86
+   ],
+   "dpo_days": [
+    56,
+    56,
+    56,
+    56,
+    56
+   ]
+  },
+  "Management": {
+   "revenue_growth": [
+    0.0,
+    0.01,
+    0.015,
+    0.02,
+    0.02
+   ],
+   "cogs_pct": [
+    0.764,
+    0.758,
+    0.752,
+    0.748,
+    0.7467
+   ],
+   "sga_pct": [
+    0.22,
+    0.22,
+    0.22,
+    0.22,
+    0.22
+   ],
+   "dso_days": [
+    68,
+    68,
+    68,
+    68,
+    68
+   ],
+   "dih_days": [
+    91,
+    91,
+    91,
+    91,
+    91
+   ],
+   "dpo_days": [
+    54,
+    54,
+    54,
+    54,
+    54
+   ]
+  },
+  "Downside 1": {
+   "revenue_growth": [
+    -0.02,
+    0.0,
+    0.005,
+    0.005,
+    0.005
+   ],
+   "cogs_pct": [
+    0.769,
+    0.772,
+    0.774,
+    0.774,
+    0.774
+   ],
+   "sga_pct": [
+    0.226,
+    0.226,
+    0.226,
+    0.226,
+    0.226
+   ],
+   "dso_days": [
+    72,
+    72,
+    72,
+    72,
+    72
+   ],
+   "dih_days": [
+    97,
+    97,
+    97,
+    97,
+    97
+   ],
+   "dpo_days": [
+    51,
+    51,
+    51,
+    51,
+    51
+   ]
+  },
+  "Downside 2": {
+   "revenue_growth": [
+    -0.12,
+    -0.03,
+    0.0,
+    0.01,
+    0.015
+   ],
+   "cogs_pct": [
+    0.78,
+    0.79,
+    0.78,
+    0.77,
+    0.76
+   ],
+   "sga_pct": [
+    0.24,
+    0.24,
+    0.24,
+    0.24,
+    0.24
+   ],
+   "dso_days": [
+    76,
+    76,
+    76,
+    76,
+    76
+   ],
+   "dih_days": [
+    103,
+    103,
+    103,
+    103,
+    103
+   ],
+   "dpo_days": [
+    48,
+    48,
+    48,
+    48,
+    48
+   ]
+  }
+ },
+ "investment_thesis": [
+  "Mitsubishi Chemical Group is midway through separating its commodity petrochemical and pharmaceutical businesses, and the latest operating margin of under one percent marks the bottom of the observed cycle; the shares trade at {per} earnings and {pb} book.",
+  "Net debt is close to the market value of the equity, so the {wacc} discount rate rests heavily on an actual, filing-derived cost of debt and small changes in the terminal margin move the equity value a long way.",
+  "At {price} the market capitalises the trough as permanent; restoring the midpoint between the observed peak and trough supports {target_price}, or {upside_pct} from here."
+ ],
+ "key_risks": [
+  "The group has taken impairments repeatedly, and pre-tax income fell close to zero against a positive operating result in the latest year; the {per} the market pays is measured against an earnings base that has not been stable.",
+  "A downside case in which operating income turns negative can drive enterprise value below net debt, at which point the perpetuity and exit legs behind {target_price} are marked invalid rather than merely low.",
+  "The portfolio separation is not complete, so both the revenue base and the {wacc} capital structure assumed here may not describe the company that emerges."
+ ],
+ "hist_years": [
+  "FY2023",
+  "FY2024",
+  "FY2025",
+  "FY2026"
+ ],
+ "hist_revenue": [
+  4634532,
+  4387218,
+  3947566,
+  3703988
+ ],
+ "hist_operating_income": [
+  170975,
+  253741,
+  133714,
+  32333
+ ],
+ "hist_net_income": [
+  96461,
+  119596,
+  45020,
+  11829
+ ],
+ "hist_cogs": [
+  3395045,
+  3240394,
+  2908249,
+  2632886
+ ],
+ "hist_sga": [
+  1068512,
+  893083,
+  905603,
+  1038769
+ ],
+ "base_year_revenue": 3703988,
+ "base_year_cogs": 2632886,
+ "base_year_ar": 671912,
+ "base_year_inv": 669126,
+ "base_year_ap": 383664,
+ "book_value": 1761675,
+ "_edinet_note": "【リトライ1回目・§3-2 の補完】初回生成は FAIL 1(Financial Statements!D16:F16 = #DIV/0!)。原因は EDINET が hist_years を9期で構築し、うち3期の営業利益を 0 で抽出していたこと。対処: hist_years を FY2023-FY2026 の4期に置換し P/L 5系列を yfinance連結財務諸表から供給。hist_ocf / hist_cash / hist_debt / hist_capex / hist_depreciation は供給していない(Step 4.6 が会計年度キーで再マッピングする)。■hist_sga = 売上 - COGS - 営業利益 で逆算。■追補1 §D の数値照合: net_debt 自動値 1,363,417百万円 は yfinance 独立計算(1,890,521 - 527,104 = 1,363,417)と【完全一致】。override せず。",
+ "_warn_note": "初回生成で WARN 11(PGM逆算Exit倍率 3.59x vs 仮定Exit倍率 6.50x、1.81倍の乖離)が出た。原因は当社の直近営業利益が観測窓の谷(OPM 0.87%)にあり EBITDA 分母が小さいこと、および Peer中央値 6.50x が自社の現在倍率 10.03x を大きく下回ること。意図的な設計であり capex 予測の見直しでは解消しない(capex/D&A は 292,133/271,157 = 1.077倍で既にレンジ内)。手順書§5-1 に従い判断を記録して受容する。",
+ "_beta_note": "実測（raw）β = 1.1378。出所: TOPIX 2y 1wk OLS (n=104, corr=0.639)。フェーズ2 #6 以降 overrides の beta は raw を入れる契約で、テンプレが Blume 調整 0.67×raw + 0.33×1.00 を掛け [0.3, 2.0] にクランプする（採用 1.0923、クランプ非発動）。■旧 overrides の値 0.69 は旧ルール [0.6, 1.75] のクランプ後の値であり raw ではない。■yfinance の beta フィールドは 0.686。日本株では市場を説明しないベンチマークで算出されており（NTT −0.165 / 大阪ガス −0.201 等）、採用しない。詳細は docs/phase2_pipeline_fixes_20260906.md の §2-4。"
+}

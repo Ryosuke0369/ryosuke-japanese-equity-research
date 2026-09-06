@@ -1,0 +1,308 @@
+{
+ "risk_free": 0.0297,
+ "erp": 0.065,
+ "size_premium": 0.01,
+ "tax_rate": 0.25,
+ "terminal_growth": 0.01,
+ "primary_multiple": "EV/EBITDA",
+ "nwc_method": "days",
+ "_note": "バッチ生成 2026-09-05。型B(シクリカル・石化+住宅+ヘルスケアの複合)。要目視レビュー。DRAFT。根拠は batch/per_ticker/3407_summary.md。 ■**追補8 §AE の rework wave により Base を再設計（第8セッション）**。",
+ "_prescreen_note": "追補1 §B の金融事業プレスクリーン実施済み(docID S100YGRD)。金融事業科目の検出なし → 型判定へ。",
+ "_type_note": "型B。実績OPM 4.68 -> 5.05 -> 6.98 -> 7.52% と4期【単調上昇】で、直近が観測窓の最高。FY2023/3 は純利益 -91,947(赤字)を計上しており、営業段階では黒字でも減損リスクを抱える構造。",
+ "_wacc_note": "rf=2.97%。ERP6.5%固定。size_premium=1.0%(時価総額2.16兆円)。beta: yfinance実測 0.645 はテンプレのクランプ域 [0.6, 1.75] の内側のため素通し(クランプ・フォールバック1.0への置換は発動していない)。負債コストは実績Kd(支払利息12,449 / 平均有利子負債(1,195,045+1,011,221)/2=1,103,133 = 1.13%税引前 -> 税引後0.85%)。",
+ "_exit_note": "exit_multiple = Peer 5社の実測EV/EBITDA中央値 9.22x(4005 6.09 / 4183 8.70 / 4188 10.03 / 4091 9.63 / 4901 9.22)。型Bのため §4-4 により Peer中央値が上限だが、本ルールは中央値そのものを採るため上限は binding しない。自社の現在倍率 6.54x は算式に不使用。■自社倍率が Peer 中央値を下回るため Exit 法は現値より強気側に出る。",
+ "_capex_note": "capex_method / da_method とも revenue_pct。実績は capex 6.2-7.2% / D&A 6.1-6.5% で既に近接(直近 211,050 / 196,344 = 1.075倍)。capex_pct 6.72% / da_pct 6.40% でターミナル比率 1.050x(レンジ内)。",
+ "_scenario_note": "【追補8 §AE の rework wave（第8セッション）】追補7 §Y の単調性判定と、追補8 §AE-2 が確定した方向別の定義に従って **Base を再設計**した。■実績OPM: 0.05% → 0.05% → 0.07% → 0.08%。**判定: 単調増加**。■**適用ルール: 単調増加 → 直近水準の維持** により Base 到達OPM = **7.52%**（旧: 6.10%、差 +1.42pt）。■**平均回帰（§4-4 の中央値収束）は使わない**: トレンドに平均回帰を当てるのは統計的な誤りであり、その理由は符号で変わらない（追補8 §AE-2）。**単調増加では『さらなる上積みの外挿はしない』という保守側のガード**を置き、直近水準の維持とした。■Upside / Downside 1 / Downside 2 は本 rework の対象外で、従前の設計を維持している。■COGS% は据え置き、SGA% = 100% − COGS% − 目標OPM で逆算した。",
+ "ticker": "3407",
+ "company_name": "旭化成",
+ "exchange": "TSE Prime",
+ "sector": "化学",
+ "fiscal_year_end_month": 3,
+ "beta": 1.0084,
+ "exit_multiple": 9.2,
+ "interest_expense": 12449,
+ "debt_beginning": 1195045,
+ "debt_ending": 1011221,
+ "capex_method": "revenue_pct",
+ "capex_pct": 0.0672,
+ "da_method": "revenue_pct",
+ "da_pct": 0.064,
+ "scenarios": {
+  "Base": {
+   "revenue_growth": [
+    0.02,
+    0.025,
+    0.025,
+    0.025,
+    0.025
+   ],
+   "cogs_pct": [
+    0.672,
+    0.672,
+    0.672,
+    0.672,
+    0.672
+   ],
+   "sga_pct": [
+    0.252801,
+    0.252801,
+    0.252801,
+    0.252801,
+    0.252801
+   ],
+   "dso_days": [
+    61,
+    61,
+    61,
+    61,
+    61
+   ],
+   "dih_days": [
+    128,
+    128,
+    128,
+    128,
+    128
+   ],
+   "dpo_days": [
+    35,
+    35,
+    35,
+    35,
+    35
+   ]
+  },
+  "Upside": {
+   "revenue_growth": [
+    0.035,
+    0.035,
+    0.03,
+    0.03,
+    0.03
+   ],
+   "cogs_pct": [
+    0.666,
+    0.666,
+    0.666,
+    0.666,
+    0.666
+   ],
+   "sga_pct": [
+    0.256,
+    0.253,
+    0.251,
+    0.2495,
+    0.2488
+   ],
+   "dso_days": [
+    58,
+    58,
+    58,
+    58,
+    58
+   ],
+   "dih_days": [
+    122,
+    122,
+    122,
+    122,
+    122
+   ],
+   "dpo_days": [
+    36,
+    36,
+    36,
+    36,
+    36
+   ]
+  },
+  "Management": {
+   "revenue_growth": [
+    0.02,
+    0.025,
+    0.025,
+    0.025,
+    0.025
+   ],
+   "cogs_pct": [
+    0.672,
+    0.672,
+    0.672,
+    0.672,
+    0.672
+   ],
+   "sga_pct": [
+    0.252801,
+    0.252801,
+    0.252801,
+    0.252801,
+    0.252801
+   ],
+   "dso_days": [
+    61,
+    61,
+    61,
+    61,
+    61
+   ],
+   "dih_days": [
+    128,
+    128,
+    128,
+    128,
+    128
+   ],
+   "dpo_days": [
+    35,
+    35,
+    35,
+    35,
+    35
+   ]
+  },
+  "Downside 1": {
+   "revenue_growth": [
+    0.0,
+    0.005,
+    0.005,
+    0.005,
+    0.005
+   ],
+   "cogs_pct": [
+    0.678,
+    0.678,
+    0.678,
+    0.678,
+    0.678
+   ],
+   "sga_pct": [
+    0.257,
+    0.264,
+    0.269,
+    0.272,
+    0.2724
+   ],
+   "dso_days": [
+    64,
+    64,
+    64,
+    64,
+    64
+   ],
+   "dih_days": [
+    135,
+    135,
+    135,
+    135,
+    135
+   ],
+   "dpo_days": [
+    33,
+    33,
+    33,
+    33,
+    33
+   ]
+  },
+  "Downside 2": {
+   "revenue_growth": [
+    -0.1,
+    -0.02,
+    0.005,
+    0.01,
+    0.015
+   ],
+   "cogs_pct": [
+    0.69,
+    0.69,
+    0.69,
+    0.69,
+    0.69
+   ],
+   "sga_pct": [
+    0.27,
+    0.275,
+    0.274,
+    0.272,
+    0.27
+   ],
+   "dso_days": [
+    67,
+    67,
+    67,
+    67,
+    67
+   ],
+   "dih_days": [
+    143,
+    143,
+    143,
+    143,
+    143
+   ],
+   "dpo_days": [
+    32,
+    32,
+    32,
+    32,
+    32
+   ]
+  }
+ },
+ "investment_thesis": [
+  "Asahi Kasei spans petrochemicals, homes and healthcare, and the operating margin has risen in each of the last four years as the healthcare mix has grown; the shares trade at {per} earnings and {pb} book.",
+  "The stock is valued below the Japanese chemical peer median on EV/EBITDA despite that margin trajectory, which is where the exit leg of this model finds value against a {wacc} cost of capital.",
+  "At {price} the market pays for the current mix; a base case that normalises back to the midpoint of the observed cycle still supports {target_price}, or {upside_pct} from here."
+ ],
+ "key_risks": [
+  "The company reported a net loss three years ago on impairments even while operating income was positive, so the {per} the market pays at {price} rests on an earnings base that has not been reliable.",
+  "Petrochemical spreads and the domestic housing cycle both feed the segment mix, and a downturn in either would take margins back toward the trough case rather than the level behind {target_price}.",
+  "The margin has risen for four straight years; treating that as a trend rather than the upswing of a cycle would overstate the terminal value the {wacc} discounting produces."
+ ],
+ "hist_years": [
+  "FY2023",
+  "FY2024",
+  "FY2025",
+  "FY2026"
+ ],
+ "hist_revenue": [
+  2726485,
+  2784878,
+  3037312,
+  3074505
+ ],
+ "hist_operating_income": [
+  127716,
+  140746,
+  211920,
+  231200
+ ],
+ "hist_net_income": [
+  -91947,
+  43806,
+  134997,
+  158794
+ ],
+ "hist_cogs": [
+  1952709,
+  1968909,
+  2079051,
+  2065913
+ ],
+ "hist_sga": [
+  646060,
+  675223,
+  746341,
+  777392
+ ],
+ "base_year_revenue": 3074505,
+ "base_year_cogs": 2065913,
+ "base_year_ar": 513807,
+ "base_year_inv": 793725,
+ "base_year_ap": 195002,
+ "book_value": 2088459,
+ "_edinet_note": "【予防的な EDINET 補完・§3-2 / 追補1 §D】本バッチではここまで生成した14銘柄中8銘柄で EDINET が古い年度の営業利益を 0 で抽出し、Financial Statements の『営業利益YoY成長率』が 0 除算になって validate FAIL 1(#DIV/0!)を引き起こしている。根本原因は scripts/generate_dcf.py:66 の _val(data_dict, key, default=0) が【欠損値を None ではなく 0 に落とす】ことにある(バッチ中はパイプラインを変更しない方針のため未修正)。そこで本銘柄では発生を待たずに予防的に対処した: hist_years を直近4期に置換し hist_revenue / hist_operating_income / hist_net_income / hist_cogs / hist_sga を yfinance連結財務諸表から供給する(配列長は全て4で hist_years と一致、契約遵守)。■hist_ocf / hist_cash / hist_debt / hist_capex / hist_depreciation は【供給していない】 — パイプラインの Step 4.6 align_hist_series_to_years() が最終 hist_years に対し会計年度キーで再マッピングするため、EDINET を一次ソースのまま安全に使える(位置コピーによる年度ズレ事故も起きない)。■hist_sga = 売上 - COGS - 営業利益 で逆算(yfinance の SG&A 単独値は その他営業損益・研究開発費 を含まず恒等式が成立しないため)。",
+ "core_ebitda": 427544,
+ "_core_ebitda_note": "【core_ebitda の明示指定 — validate では検出されない不整合の是正】Comps Analysis の『自社 Financials』ブロックの EBITDA(および そこから計算される Via EV/EBITDA (Median) 参考株価)は comps CSV の自社行ではなく config の core_ebitda を使う。core_ebitda は EDINET 由来の hist_operating_income[-1] + hist_depreciation[-1] で自動計算されるが、EDINET の減価償却費の抽出は銘柄により信頼できない。当社では EDINET 由来 D&A = 162,598 に対し CF計算書実績(yfinance) = 196,344 で乖離があり、Comps の自社EBITDAが EDINET 由来の値で表示されていた(Peer 行は yfinance 定義)。Peer と同一定義(EBITDA = 営業利益 + CF計算書の減価償却費)に揃えるため core_ebitda = 営業利益 231,200 + D&A 196,344 = 427,544 を明示指定した(comps CSV の自社行と同値)。■この不整合は validate では検出されない(FAIL 0 / WARN 0 のまま)。batch/check_core_ebitda.py で全銘柄を機械照合している。■Comps は Target 不算入([参考])のため Target Price への影響はない。",
+ "_beta_note": "実測（raw）β = 1.0084。出所: TOPIX 2y 1wk OLS (n=104, corr=0.616)。フェーズ2 #6 以降 overrides の beta は raw を入れる契約で、テンプレが Blume 調整 0.67×raw + 0.33×1.00 を掛け [0.3, 2.0] にクランプする（採用 1.0056、クランプ非発動）。■旧 overrides の値 0.65 は旧ルール [0.6, 1.75] のクランプ後の値であり raw ではない。■yfinance の beta フィールドは 0.645。日本株では市場を説明しないベンチマークで算出されており（NTT −0.165 / 大阪ガス −0.201 等）、採用しない。詳細は docs/phase2_pipeline_fixes_20260906.md の §2-4。"
+}

@@ -1,0 +1,308 @@
+{
+ "risk_free": 0.0297,
+ "erp": 0.065,
+ "size_premium": 0.01,
+ "tax_rate": 0.25,
+ "terminal_growth": 0.01,
+ "primary_multiple": "EV/EBITDA",
+ "nwc_method": "days",
+ "current_price": 6217.0,
+ "shares_outstanding": 196629396,
+ "hist_years": [
+  "FY2023",
+  "FY2024",
+  "FY2025",
+  "FY2026"
+ ],
+ "hist_revenue": [
+  876082.0,
+  818761.0,
+  715379.0,
+  767351.0
+ ],
+ "hist_operating_income": [
+  98409.0,
+  34953.0,
+  56926.0,
+  55188.0
+ ],
+ "hist_net_income": [
+  73861.0,
+  8105.0,
+  16271.0,
+  28487.0
+ ],
+ "hist_cogs": [
+  482199.0,
+  472297.0,
+  385092.0,
+  416350.0
+ ],
+ "hist_sga": [
+  295474.0,
+  311511.0,
+  273361.0,
+  295813.0
+ ],
+ "base_year_revenue": 767351.0,
+ "base_year_cogs": 416350.0,
+ "base_year_ar": 168586.0,
+ "base_year_inv": 154215.0,
+ "base_year_ap": 86677.0,
+ "book_value": 835885.0,
+ "core_ebitda": 88966.0,
+ "net_debt": 74668,
+ "ticker": "6645",
+ "company_name": "オムロン",
+ "exchange": "TSE Prime",
+ "sector": "電気機器",
+ "fiscal_year_end_month": 3,
+ "beta": 1.5242,
+ "exit_multiple": 15.6,
+ "debt_beginning": 177991,
+ "debt_ending": 241209,
+ "capex_method": "direct",
+ "capex_pct": 0.0462,
+ "da_method": "revenue_pct",
+ "da_pct": 0.044,
+ "capex_direct": {
+  "projections": [
+   50000,
+   47000,
+   44000,
+   42000,
+   40200
+  ]
+ },
+ "scenarios": {
+  "Base": {
+   "revenue_growth": [
+    0.03,
+    0.03,
+    0.025,
+    0.025,
+    0.02
+   ],
+   "cogs_pct": [
+    0.543,
+    0.543,
+    0.543,
+    0.543,
+    0.543
+   ],
+   "sga_pct": [
+    0.3845,
+    0.3835,
+    0.3825,
+    0.3818,
+    0.3813
+   ],
+   "dso_days": [
+    78,
+    78,
+    78,
+    78,
+    78
+   ],
+   "dih_days": [
+    134,
+    134,
+    134,
+    134,
+    134
+   ],
+   "dpo_days": [
+    71,
+    71,
+    71,
+    71,
+    71
+   ]
+  },
+  "Upside": {
+   "revenue_growth": [
+    0.05,
+    0.045,
+    0.04,
+    0.035,
+    0.03
+   ],
+   "cogs_pct": [
+    0.533,
+    0.533,
+    0.533,
+    0.533,
+    0.533
+   ],
+   "sga_pct": [
+    0.387,
+    0.3845,
+    0.382,
+    0.3805,
+    0.3792
+   ],
+   "dso_days": [
+    75,
+    75,
+    75,
+    75,
+    75
+   ],
+   "dih_days": [
+    128,
+    128,
+    128,
+    128,
+    128
+   ],
+   "dpo_days": [
+    73,
+    73,
+    73,
+    73,
+    73
+   ]
+  },
+  "Management": {
+   "revenue_growth": [
+    0.03,
+    0.03,
+    0.025,
+    0.025,
+    0.02
+   ],
+   "cogs_pct": [
+    0.543,
+    0.543,
+    0.543,
+    0.543,
+    0.543
+   ],
+   "sga_pct": [
+    0.3845,
+    0.3835,
+    0.3825,
+    0.3818,
+    0.3813
+   ],
+   "dso_days": [
+    78,
+    78,
+    78,
+    78,
+    78
+   ],
+   "dih_days": [
+    134,
+    134,
+    134,
+    134,
+    134
+   ],
+   "dpo_days": [
+    71,
+    71,
+    71,
+    71,
+    71
+   ]
+  },
+  "Downside 1": {
+   "revenue_growth": [
+    0.0,
+    0.01,
+    0.015,
+    0.015,
+    0.015
+   ],
+   "cogs_pct": [
+    0.553,
+    0.553,
+    0.553,
+    0.553,
+    0.553
+   ],
+   "sga_pct": [
+    0.378,
+    0.38,
+    0.3815,
+    0.382,
+    0.3824
+   ],
+   "dso_days": [
+    82,
+    82,
+    82,
+    82,
+    82
+   ],
+   "dih_days": [
+    140,
+    140,
+    140,
+    140,
+    140
+   ],
+   "dpo_days": [
+    68,
+    68,
+    68,
+    68,
+    68
+   ]
+  },
+  "Downside 2": {
+   "revenue_growth": [
+    -0.08,
+    -0.01,
+    0.01,
+    0.015,
+    0.015
+   ],
+   "cogs_pct": [
+    0.57,
+    0.57,
+    0.57,
+    0.57,
+    0.57
+   ],
+   "sga_pct": [
+    0.384,
+    0.387,
+    0.387,
+    0.386,
+    0.385
+   ],
+   "dso_days": [
+    88,
+    88,
+    88,
+    88,
+    88
+   ],
+   "dih_days": [
+    150,
+    150,
+    150,
+    150,
+    150
+   ],
+   "dpo_days": [
+    64,
+    64,
+    64,
+    64,
+    64
+   ]
+  }
+ },
+ "_note": "バッチ生成 2026-09-05（第6セッション）。DRAFT（part1）。根拠は batch/per_ticker/6645_summary.md。_FINAL は付けない。",
+ "_prescreen_note": "追補1 §B のプレスクリーン実施済み（docID S100YG81）。EDINET有報XBRL の金融事業専用科目（ForFinancialBusiness / Banking / Deposits / CallLoan / InstallmentReceivable 系）を機械チェックし、検出結果は **CLEAN**（1件も検出されず）。銀行・captive finance なし → 型A として処理。",
+ "_wacc_note": "rf=2.97%（財務省 jgbcm.csv 10年 R8.9.3、バッチ共通の一次ソース）。ERP 6.5% 固定。size_premium=1.0%（時価総額 1兆2,224億円、v2 §1-3 のバンドによる機械決定。テンプレの自動規則なら 0.0% になるため明示指定で上書き）。beta: yfinance実測 **1.144** はクランプ域の内側のため素通し（置換なし）。",
+ "_exit_note": "exit_multiple = Peer 5社の実測 EV/EBITDA 中央値 **15.55x**（6506 安川電機 / 6954 ファナック / 6273 SMC / 6503 三菱電機 / 6501 日立製作所）。自社の現在倍率 14.58x は算式に入れていない（市場価格への循環参照回避）。■制御機器・FA で事業比較可能性を優先。自社倍率 14.58x と Peer中央値 15.55x が近く、Peer選定の妥当性の傍証となる。 ■マージン品質調整式はバッチ全体で棄却済み（EV/EBITDA が既に資本集約度を織り込むため、営業利益率による上方調整は資本集約型で逆方向に働く。9022 で実測して確認）。",
+ "_scenario_note": "実績OPM(FY2023-FY2026): 11.23 → 4.27 → 7.96 → **7.19%**。min 4.27 / p25 6.46 / med 7.57 / p75 8.78 / max 11.23。■直近 7.19% ≤ 中央値 7.57% のため**型A規則により中央値へ収束**（到達 **7.57%**）。直近 7.19% は p25 6.46% を上回るため追補5 §U の第1条件には該当しない。■Upside = max(p75 8.78, 直近+1.0pt = 8.19) = **8.78%**。■Downside 1 = min(p25 6.46, 直近 7.19) = **6.46%**。■Downside 2 は FY2024 の実績トラフ **4.27%**（構造改革費用の年）が直近と別年で機能するため、売上 −8% + OPM 4.3〜4.6%。■COGS% は直近実績 **54.3%** に固定し SGA% を逆算。他銘柄からの流用なし。",
+ "_capex_note": "capex_method=direct。実績 capex 53,105（売上比 6.9%）に対し D&A 33,778（4.4%）で capex/D&A = 1.57倍。投影 [50,000 / 47,000 / 44,000 / 42,000 / 40,200] で逓減させ、ターミナルは 4.62% ÷ 4.40% = **1.05倍**。■**逓減は本モデルの仮定（推定）**。",
+ "_edinet_note": "【追補2 §F-2 / 追補3 §L / 追補2 §G の予防的補完（生成前適用・必須）】根本原因は scripts/generate_dcf.py:66 の _val(data_dict, key, default=0) が欠損値を None ではなく 0 に落とすこと。hist_years を直近4期に置換し hist_revenue / hist_operating_income / hist_net_income / hist_cogs / hist_sga のP/L 5系列を明示指定した。**CF/BS の5系列（hist_ocf / hist_cash / hist_debt / hist_capex / hist_depreciation）はalign_hist_series_to_years() が会計年度キーで再マップするため渡していない**（第6セッションで hist_capex / hist_depreciation を渡すと validate チェック7 の C5 の根拠が明示前提から実績3期平均に切り替わり capex_direct と不整合になることを実測）。あわせて net_debt / core_ebitda / current_price / shares_outstanding を明示指定した。",
+ "_kd_note": "■**実績Kd を算出できなかった（フォールバック使用・サイレントではない）**: yfinance の損益計算書に `Interest Expense` 行が存在せず、支払利息の実額が取得できない。そのため `interest_expense` を明示指定せず、**テンプレートの既定 Kd をそのまま使用している**。有利子負債 241,209百万円 は株主資本 835,885百万円 に対して小さく、Kd の誤差が WACC に与える影響は限定的だが、**実績ベースではない点は確定事項ではない**。解除には有価証券報告書から支払利息の実額を取得する必要がある（追補3 §O）。",
+ "_beta_note": "実測（raw）β = 1.5242。出所: TOPIX 2y 1wk OLS (n=104, corr=0.564)。フェーズ2 #6 以降 overrides の beta は raw を入れる契約で、テンプレが Blume 調整 0.67×raw + 0.33×1.00 を掛け [0.3, 2.0] にクランプする（採用 1.3512、クランプ非発動）。■旧 overrides の値 1.144 は旧ルール [0.6, 1.75] のクランプ後の値であり raw ではない。■yfinance の beta フィールドは 1.144。日本株では市場を説明しないベンチマークで算出されており（NTT −0.165 / 大阪ガス −0.201 等）、採用しない。詳細は docs/phase2_pipeline_fixes_20260906.md の §2-4。"
+}

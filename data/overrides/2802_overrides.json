@@ -1,0 +1,331 @@
+{
+ "_note": "バッチ生成 2026-09-05。型A。DRAFT。根拠は batch/per_ticker/2802_summary.md。",
+ "_edinet_note": "EDINET の当社データは2重の欠陥があった。(1) 探索窓がFY2026/3有報を捕捉できず最新本決算がFY2025/3(docID S100VXJA)止まり。(2) さらにFY2022-FY2024 の COGS が売上と同値・営業利益が 0 で抽出されており(初回生成で Financial Statements!D16:F16 が #DIV/0! となり validate FAIL)、履歴系列そのものが使用不能だった。対処: schema の fundamentals_fy2026 でFY2026/3実績をEDINETより優先注入し、あわせて hist_years を FY2023-FY2026 の4期に置き換えて hist_revenue / hist_operating_income / hist_net_income / hist_cogs / hist_sga / hist_capex / hist_depreciation を yfinance連結財務諸表から供給した(配列長は全て4でhist_yearsと一致)。OCF/現金/有利子負債は Step 4.6 が最終 hist_years に年度キーで再マッピングするため供給していない。FY2022 を落としたのは、EDINET の COGS/営業利益が壊れており検証可能な代替値が無いため(推測で埋めない)。■ソース定義の差: EDINET の FY2025 営業利益 113,968 に対し yfinance は 107,656(+5.9%の差)。IFRS の事業利益/営業利益の定義差と解される。系列の一貫性を優先し全期 yfinance 定義で統一した。",
+ "_wacc_note": "rf=2.97%(財務省 jgbcm.csv 10年 R8.9.3)。ERP6.5%固定。size_premium=1.0%(時価総額4.93兆円->3,000億超バンド)。beta: yfinance実測0.372はテンプレのクランプ下限0.6を下回り、そのまま渡すと無言でフォールバック1.0に置換される(生成ログで確認済み)。サイレントフォールバック禁止の原則により、許容域の下限0.6を明示指定して低ベータ性を保持した。負債コストは実績Kd(支払利息12,318 / 平均有利子負債(455,353+421,355)/2=438,354 = 2.81%税引前)を使用。",
+ "_exit_note": "exit_multiple = Peer 5社の実測 EV/EBITDA 中央値 10.92x をそのまま採用(2502 11.13 / 2503 10.21 / 2801 15.63 / 2897 10.92 / 2269 8.35)。自社の現在倍率 18.89x は算式に入れていない(市場価格への循環参照回避)。結果として Exit 法は保守側に振れる。",
+ "_capex_note": "capex_method=direct。ABF/バイオファイン向け増強を織り込み初期3年を厚くし、ターミナル年 112,000 / D&A(Y5売上1,844,825 x 5.8%=106,999) = 1.047x でレンジ[0.90,1.15]に収束させる。capex_pct 0.061 は direct のフォールバックで、ターミナル比率と整合する水準に置いた。",
+ "_scenario_note": "実績OPM(FY2023-FY2026): min 7.03 / p25 9.16 / med 10.25 / p75 11.00 / max 12.08%。直近実績12.08%が中央値を上回るため、Base の到達OPMは『直近実績とp75の平均=11.5%』とし、緩やかな平均回帰を置いた(直近が中央値を下回る銘柄では中央値へ収束させる、というバッチ共通ルールの対称形)。Upside は直近実績+1.0pt。Downside 1 は p25 の9.2%。Downside 2 は実績トラフ7.0%(FY2025実績、一過性要因を含む実在の谷)。SGA% = 100% - OPM - COGS% で構成し、yfinance の SG&A に含まれないその他営業費用を SGA 側に寄せている。",
+ "ticker": "2802",
+ "company_name": "味の素",
+ "exchange": "TSE Prime",
+ "sector": "食料品",
+ "fiscal_year_end_month": 3,
+ "risk_free": 0.0297,
+ "erp": 0.065,
+ "size_premium": 0.01,
+ "tax_rate": 0.25,
+ "beta": 1.0994,
+ "interest_expense": 12318,
+ "debt_beginning": 455353,
+ "debt_ending": 421355,
+ "net_debt": 314662,
+ "terminal_growth": 0.01,
+ "exit_multiple": 10.9,
+ "primary_multiple": "EV/EBITDA",
+ "capex_method": "direct",
+ "capex_pct": 0.061,
+ "da_method": "revenue_pct",
+ "da_pct": 0.058,
+ "capex_direct": {
+  "projections": [
+   115000,
+   118000,
+   118000,
+   115000,
+   112000
+  ]
+ },
+ "nwc_method": "days",
+ "fundamentals_fy2026": {
+  "revenue": 1583719,
+  "operating_income": 191301,
+  "net_income": 134675,
+  "ebitda": 280763,
+  "total_assets": 1812346,
+  "total_liabilities": 968071,
+  "net_assets": 844275
+ },
+ "book_value": 770819,
+ "scenarios": {
+  "Base": {
+   "revenue_growth": [
+    0.035,
+    0.035,
+    0.03,
+    0.03,
+    0.025
+   ],
+   "cogs_pct": [
+    0.63,
+    0.631,
+    0.632,
+    0.634,
+    0.635
+   ],
+   "sga_pct": [
+    0.25,
+    0.25,
+    0.25,
+    0.25,
+    0.25
+   ],
+   "dso_days": [
+    44,
+    44,
+    44,
+    44,
+    44
+   ],
+   "dih_days": [
+    112,
+    112,
+    112,
+    112,
+    112
+   ],
+   "dpo_days": [
+    94,
+    94,
+    94,
+    94,
+    94
+   ]
+  },
+  "Upside": {
+   "revenue_growth": [
+    0.05,
+    0.05,
+    0.045,
+    0.04,
+    0.04
+   ],
+   "cogs_pct": [
+    0.63,
+    0.628,
+    0.626,
+    0.624,
+    0.623
+   ],
+   "sga_pct": [
+    0.246,
+    0.246,
+    0.246,
+    0.246,
+    0.246
+   ],
+   "dso_days": [
+    42,
+    42,
+    42,
+    42,
+    42
+   ],
+   "dih_days": [
+    106,
+    104,
+    102,
+    102,
+    102
+   ],
+   "dpo_days": [
+    96,
+    96,
+    96,
+    96,
+    96
+   ]
+  },
+  "Management": {
+   "revenue_growth": [
+    0.035,
+    0.035,
+    0.03,
+    0.03,
+    0.025
+   ],
+   "cogs_pct": [
+    0.63,
+    0.631,
+    0.632,
+    0.634,
+    0.635
+   ],
+   "sga_pct": [
+    0.25,
+    0.25,
+    0.25,
+    0.25,
+    0.25
+   ],
+   "dso_days": [
+    44,
+    44,
+    44,
+    44,
+    44
+   ],
+   "dih_days": [
+    112,
+    112,
+    112,
+    112,
+    112
+   ],
+   "dpo_days": [
+    94,
+    94,
+    94,
+    94,
+    94
+   ]
+  },
+  "Downside 1": {
+   "revenue_growth": [
+    0.01,
+    0.005,
+    0.005,
+    0.005,
+    0.005
+   ],
+   "cogs_pct": [
+    0.634,
+    0.641,
+    0.647,
+    0.652,
+    0.652
+   ],
+   "sga_pct": [
+    0.256,
+    0.256,
+    0.256,
+    0.256,
+    0.256
+   ],
+   "dso_days": [
+    47,
+    47,
+    47,
+    47,
+    47
+   ],
+   "dih_days": [
+    118,
+    120,
+    122,
+    122,
+    122
+   ],
+   "dpo_days": [
+    90,
+    90,
+    90,
+    90,
+    90
+   ]
+  },
+  "Downside 2": {
+   "revenue_growth": [
+    -0.03,
+    0.0,
+    0.005,
+    0.01,
+    0.015
+   ],
+   "cogs_pct": [
+    0.66,
+    0.665,
+    0.665,
+    0.662,
+    0.66
+   ],
+   "sga_pct": [
+    0.265,
+    0.265,
+    0.265,
+    0.265,
+    0.265
+   ],
+   "dso_days": [
+    49,
+    49,
+    49,
+    49,
+    49
+   ],
+   "dih_days": [
+    128,
+    130,
+    130,
+    128,
+    126
+   ],
+   "dpo_days": [
+    86,
+    86,
+    86,
+    86,
+    86
+   ]
+  }
+ },
+ "investment_thesis": [
+  "The amino-acid science franchise now spans electronic materials as well as food, and that mix shift is what carried the operating margin to its four-year high; the shares are valued at {per} earnings and {pb} book against a {wacc} cost of capital.",
+  "Leverage is modest, so the equity story turns on margin durability rather than on the balance sheet; the discount rate blends a low-beta cost of equity with an actual, filing-derived cost of debt.",
+  "At {price} the market already capitalises the recent margin step-up as permanent; our base case allows only mild mean reversion and still supports {target_price}, or {upside_pct} from here."
+ ],
+ "key_risks": [
+  "The electronic-materials business is semiconductor-cycle exposed, and a downturn there would strip out the margin premium embedded in today's {price}.",
+  "Raw-material and energy costs in the food business have repeatedly compressed margins to the trough level used in our second downside case, which sits far below the {per} the market is paying.",
+  "The historical operating-margin range is wide relative to peers, so the {wacc} discount rate may understate the earnings volatility a food and materials hybrid actually carries."
+ ],
+ "_data_note": "hist_sga = 売上 - COGS - 営業利益 で逆算(yfinance の SG&A 単独値はその他営業収益費用を含まないため、Financial Statements 上で 営業利益 = 売上 - COGS - SGA が成立しなくなる)。FY2026 の capex は EDINET・yfinance のいずれからも取得できず null のまま(§7-2 空欄+警告を受け入れる)。FY2026 の D&A 89,462 は推定値: FY2025実績 86,461 × (1+売上成長率3.47%)。fundamentals_fy2026.ebitda 280,763 = 営業利益191,301 + 同D&A と整合させている。",
+ "hist_years": [
+  "FY2023",
+  "FY2024",
+  "FY2025",
+  "FY2026"
+ ],
+ "hist_revenue": [
+  1359115,
+  1439231,
+  1530556,
+  1583719
+ ],
+ "hist_operating_income": [
+  144602,
+  141953,
+  107656,
+  191301
+ ],
+ "hist_net_income": [
+  94065,
+  87121,
+  70272,
+  134675
+ ],
+ "hist_cogs": [
+  888727,
+  927783,
+  979792,
+  986570
+ ],
+ "hist_sga": [
+  325786,
+  369495,
+  443108,
+  405848
+ ],
+ "hist_capex": [
+  73046,
+  72022,
+  95090,
+  null
+ ],
+ "hist_depreciation": [
+  71820,
+  78298,
+  86461,
+  89462
+ ],
+ "_beta_note": "実測（raw）β = 1.0994。出所: TOPIX 2y 1wk OLS (n=104, corr=0.553)。フェーズ2 #6 以降 overrides の beta は raw を入れる契約で、テンプレが Blume 調整 0.67×raw + 0.33×1.00 を掛け [0.3, 2.0] にクランプする（採用 1.0666、クランプ非発動）。■旧 overrides の値 0.6 は旧ルール [0.6, 1.75] のクランプ後の値であり raw ではない。■yfinance の beta フィールドは 0.372。日本株では市場を説明しないベンチマークで算出されており（NTT −0.165 / 大阪ガス −0.201 等）、採用しない。詳細は docs/phase2_pipeline_fixes_20260906.md の §2-4。"
+}

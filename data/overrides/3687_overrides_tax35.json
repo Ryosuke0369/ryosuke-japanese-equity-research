@@ -1,0 +1,357 @@
+{
+  "ticker": "3687",
+  "company_name": "株式会社フィックスターズ",
+  "_company_name_en": "Fixstars Corporation",
+  "sector": "Information & Communication (software / AI optimization)",
+  "fiscal_year_end_month": 9,
+  "projection_start_fy": "FY2026",
+  "projection_years": 5,
+  "current_price": 2079,
+  "shares_outstanding": 32252858,
+  "_shares_note": "CONFIRMED via EDINET FY2025/9 有報 (docID S100XAQJ): issued 33,635,000 (exact match), treasury 1,382,100 vs prompt's 1,382,142 (42-share difference, immaterial, likely a different snapshot date). Net 32,252,900 vs prompt's 32,252,858 -- kept the prompt's tanshin-sourced figure as given since the two are within 0.0001% of each other.",
+  "hist_years": [
+    "FY2022/9",
+    "FY2023/9",
+    "FY2024/9",
+    "FY2025/9"
+  ],
+  "_hist_period_months": [
+    12,
+    12,
+    12,
+    12
+  ],
+  "_hist_note": "UNIT CONVERSION CRITICAL: source tanshin figures are in JPY thousand; all hist_* below are already converted to JPY million (/1000) per prompt instruction. Verified: FY2025/9 9618-4611-2428=2579 vs actual 2578 (JPY1mn rounding, tanshin itself truncates to million). MUST verify post-generation that Financial Statements sheet shows revenue=9,618 (not 9,617,686) -- see final report item 1.",
+  "hist_revenue": [
+    6311,
+    7038,
+    7995,
+    9618
+  ],
+  "hist_cogs": [
+    3285,
+    3463,
+    3817,
+    4611
+  ],
+  "hist_sga": [
+    1402,
+    1489,
+    1874,
+    2428
+  ],
+  "hist_operating_income": [
+    1624,
+    2086,
+    2304,
+    2578
+  ],
+  "hist_net_income": [
+    1083,
+    1448,
+    1494,
+    1945
+  ],
+  "hist_depreciation": [
+    148,
+    136,
+    146,
+    167
+  ],
+  "hist_capex": [
+    41,
+    38,
+    165,
+    110
+  ],
+  "_hist_capex_note": "= 有形固定資産の取得による支出 only (no intangible-asset purchases in the CF statement, since intangible assets balance is only JPY2,481 thousand). 敷金及び保証金の差入 (FY2025/9: 506,250 thousand, office relocation deposit) is explicitly NOT capex -- excluded per prompt instruction.",
+  "base_year_revenue": 9618,
+  "base_year_cogs": 4611,
+  "core_ebitda": 2745,
+  "core_net_income": 1945,
+  "_core_ebitda_note": "Explicitly set = hist_operating_income[-1] 2,578 + hist_depreciation[-1] 167 = 2,745, and core_net_income = hist_net_income[-1] 1,945 (parent-attributable). Set explicitly per the now-established pattern (285A/7203/8410/8267) to avoid generate_dcf.py's known bug where these auto-derive from EDINET's raw pre-override data and can silently diverge.",
+  "nwc_method": "days",
+  "base_year_ar": 2815,
+  "base_year_inv": 4,
+  "base_year_ap": 142,
+  "_nwc_note": "AR = 売掛金 only (2,815mn); ContractAssets (契約資産 220mn) EXCLUDED per pipeline convention (would raise DSO from 106.8 to 115.2 days if included -- flagged in final report). CF statement shows these combined ('売上債権及び契約資産の増減額', FY2025/9: -515mn), so the true working-capital driver is the combined AR+ContractAssets figure even though the DCF's own AR-only day-count convention is narrower; this is a structural feature (large WC absorption during high growth), not an error -- flagged per prompt instruction.",
+  "net_debt": -4856,
+  "_net_debt_note": "= net cash (lease liabilities 47 - long-term borrowings 0 [fully repaid FY2025/9] - cash 5,178 = -5,131) PLUS non-controlling interests 275 (book value) = -4,856. NCI is small (0.4% of price = ~8.5 JPY/share) but folded in at zero marginal cost per the established MI-in-net_debt convention (8410/8267). de_ratio auto-computes to 0.0 since net_debt<0, so WACC=cost of equity by design. Security deposits (敷金及び保証金 513mn, office lease, ~16 JPY/share) NOT deducted as a non-operating asset -- see final report sensitivity.",
+  "risk_free": 0.023,
+  "beta": 1.04,
+  "_beta_note": "REPLACED with confirmed actual. stockanalysis.com reports 3687.T's 5Y beta as 1.04, WITHIN the prompt's [1.00,1.70] acceptance range (unlike every other ticker processed this session -- 285A/7203/8410/8267 all had raw betas far below their acceptance ranges). Per instruction, the actual measured value replaces the 1.35 fallback. 1.04 is also comfortably within the template's [0.6,1.5] normalization band, so no clamping occurs.",
+  "erp": 0.06,
+  "size_premium": 0.025,
+  "cost_of_debt_at": 0.008,
+  "tax_rate": 0.35,
+  "terminal_growth": 0.015,
+  "exit_multiple": 12.0,
+  "primary_multiple": "EV/EBITDA",
+  "capex_method": "direct",
+  "capex_direct": {
+    "historical": [
+      41,
+      38,
+      165,
+      110
+    ],
+    "projections": [
+      400,
+      250,
+      220,
+      230,
+      240
+    ]
+  },
+  "capex_pct": 0.0114,
+  "da_method": "direct",
+  "da_direct": {
+    "historical": [
+      148,
+      136,
+      146,
+      167
+    ],
+    "projections": [
+      200,
+      230,
+      250,
+      265,
+      280
+    ]
+  },
+  "da_pct": 0.0174,
+  "scenarios": {
+    "Base": {
+      "revenue_growth": [
+        0.12,
+        0.13,
+        0.12,
+        0.1,
+        0.09
+      ],
+      "cogs_pct": [
+        0.465,
+        0.46,
+        0.455,
+        0.453,
+        0.45
+      ],
+      "sga_pct": [
+        0.255,
+        0.25,
+        0.245,
+        0.242,
+        0.24
+      ],
+      "dso_days": [
+        107,
+        107,
+        107,
+        107,
+        107
+      ],
+      "dih_days": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "dpo_days": [
+        11,
+        11,
+        11,
+        11,
+        11
+      ]
+    },
+    "Upside": {
+      "revenue_growth": [
+        0.16,
+        0.2,
+        0.18,
+        0.16,
+        0.14
+      ],
+      "cogs_pct": [
+        0.46,
+        0.45,
+        0.44,
+        0.435,
+        0.43
+      ],
+      "sga_pct": [
+        0.25,
+        0.235,
+        0.23,
+        0.225,
+        0.225
+      ],
+      "dso_days": [
+        105,
+        103,
+        101,
+        100,
+        100
+      ],
+      "dih_days": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "dpo_days": [
+        12,
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "Management": {
+      "_note": "Y1 REVISED per confirmed H1 tanshin (2026-05-14): full-year FY2026/9 guidance was raised from the original (revenue 10,300/+7.1%, OP 2,600/+0.8%) to revenue 10,800 (+12.3% YoY) and operating income 3,100 (+20.2% YoY, margin 28.70%), driven by strong automotive/semiconductor acceleration demand plus SaaS growth (H1 actuals: revenue 5,442 +13.8%, OP 1,635 +8.8%, running ahead of the original full-year pace). cogs_pct/sga_pct rescaled from the original fallback's 0.490/0.258 split (sum 0.748) to a new sum of 1-0.2870=0.7130 holding the same relative proportion (scale factor 0.95321): cogs_pct=0.4671, sga_pct=0.2459. Dividend guidance was also raised 1 yen to 19 (from 18 prior year).",
+      "revenue_growth": [
+        0.123,
+        0.1,
+        0.09,
+        0.08,
+        0.07
+      ],
+      "cogs_pct": [
+        0.4671,
+        0.475,
+        0.47,
+        0.468,
+        0.465
+      ],
+      "sga_pct": [
+        0.2459,
+        0.255,
+        0.25,
+        0.247,
+        0.245
+      ],
+      "dso_days": [
+        107,
+        107,
+        107,
+        107,
+        107
+      ],
+      "dih_days": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "dpo_days": [
+        11,
+        11,
+        11,
+        11,
+        11
+      ]
+    },
+    "Downside 1": {
+      "revenue_growth": [
+        0.03,
+        -0.02,
+        0.02,
+        0.04,
+        0.04
+      ],
+      "cogs_pct": [
+        0.51,
+        0.54,
+        0.53,
+        0.52,
+        0.515
+      ],
+      "sga_pct": [
+        0.27,
+        0.28,
+        0.28,
+        0.28,
+        0.28
+      ],
+      "dso_days": [
+        110,
+        115,
+        113,
+        112,
+        112
+      ],
+      "dih_days": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "dpo_days": [
+        11,
+        11,
+        11,
+        11,
+        11
+      ]
+    },
+    "Downside 2": {
+      "revenue_growth": [
+        -0.05,
+        -0.1,
+        -0.05,
+        0.0,
+        0.02
+      ],
+      "cogs_pct": [
+        0.54,
+        0.58,
+        0.57,
+        0.555,
+        0.55
+      ],
+      "sga_pct": [
+        0.29,
+        0.32,
+        0.32,
+        0.315,
+        0.31
+      ],
+      "dso_days": [
+        115,
+        125,
+        122,
+        120,
+        120
+      ],
+      "dih_days": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "dpo_days": [
+        10,
+        10,
+        10,
+        10,
+        10
+      ]
+    }
+  },
+  "investment_thesis": [
+    "1. The consolidated 26.8% operating margin understates the core franchise. The Solution segment earned 3,236 on 9,171 of revenue, a 35.3% margin, up from 32.0% a year earlier. The gap to the consolidated figure is deliberate investment: SaaS lost 424 and the CVC book took a 232 securities writedown that runs through cost of sales. Strip both and the normalised margin is about 29%.",
+    "2. Asset-light compounding with no leverage. Revenue grew from 6,311 to 9,618 over three years, a 15.1% CAGR, on capex averaging under 1.5% of revenue and D&A of 1.7%. Long-term borrowings were fully repaid in FY2025/9, leaving net cash of 5,131 and an interest coverage ratio of 3,597x. ROE is 26.0% with an 83.6% equity ratio.",
+    "3. AI demand is the stated growth vector and it is already showing in the mix. Revenue recognised over time rose from 1,465 to 2,466 (+68%), indicating a shift toward longer, stickier engagements, while the \"Speed up your AI\" repositioning targets AI development acceleration where the company's optimisation expertise transfers directly."
+  ],
+  "key_risks": [
+    "1. Customer concentration is severe and cyclically exposed. Kioxia alone was 1,647 of revenue, or 17.1%, and Nexty Electronics 1,119, or 11.6% - 28.8% from two names. Renesas was a further 16.0% in the prior year. These are semiconductor customers whose R&D budgets move with the NAND and MCU cycles, so a memory downcycle transmits directly into Solution revenue.",
+    "2. FY2026/9 guidance is for a 17.8% fall in parent net income. Management cites headquarters relocation costs, higher rent, large wage increases, and the reversal of a one-off tax benefit from the Sider liquidation. Operating profit is guided merely flat at 2,600 (+0.8%), so the growth narrative pauses for a year even on the company's own numbers.",
+    "3. Valuation leaves no margin for error. At 2,079 the shares trade at 34.5x trailing and 41.9x guided earnings, 8.13x book and 22.6x EV/EBITDA, against an exit multiple assumption of 12.0x. The SaaS segment has consumed 575 of cumulative operating losses over two years with no revenue inflection yet - 446 of revenue against a 424 loss."
+  ]
+}
