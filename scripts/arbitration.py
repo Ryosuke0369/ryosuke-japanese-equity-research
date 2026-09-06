@@ -440,6 +440,53 @@ def demotion_note(leg, rule, div, pgm_implied, assumed, band=""):
         % (div, pgm_implied, assumed))
 
 
+def _log_to_adjustments(wb, leg, tag_rule, r_tgt, r_keep, sentence):
+    """Write the demotion into the Adjustments Log table.
+
+    Until 追補12 §A-3 the demotion was recorded ONLY in the Executive Summary's
+    B20 note. That is where a reader of the summary needs it, but the Adjustments
+    Log is where this repo records "what the pipeline decided and why", and a
+    demotion is the single largest such decision a workbook carries: it changes
+    which method the Target is. So it goes in both places.
+
+    The row is placed in the gap the template leaves between the auto-recorded
+    entries and the Pipeline Metadata block; if that gap is full, a row is
+    inserted, which is safe because validate_output.read_metadata() locates the
+    metadata block by its title rather than by a fixed row number.
+    """
+    import datetime as _dt
+    if "Adjustments Log" not in wb.sheetnames:
+        return
+    ws = wb["Adjustments Log"]
+    meta_row = None
+    for r in range(1, ws.max_row + 2):
+        v = ws.cell(r, 2).value
+        if isinstance(v, str) and v.startswith("Pipeline Metadata"):
+            meta_row = r
+            break
+    if meta_row is None:
+        meta_row = ws.max_row + 2
+    last = 5                                   # row 5 is the "initial generation" row
+    for r in range(5, meta_row):
+        if ws.cell(r, 2).value not in (None, ""):
+            last = r
+    target = last + 1
+    if target >= meta_row:
+        ws.insert_rows(meta_row)
+        target = meta_row
+    kept = "Exit" if leg == "pgm" else "PGM"
+    row = [_dt.datetime.now().strftime("%Y-%m-%d"),
+           f"Executive Summary!C{r_tgt}",
+           f"{'PGM' if leg == 'pgm' else 'Exit'}法を[参考]に降格 → Target = {kept} 単独"
+           f"（C{r_tgt} は C{r_keep} を参照）",
+           sentence,
+           "PGM/Exit の中点平均",
+           f"裁定適用（{tag_rule}）"]
+    for i, v in enumerate(row):
+        ws.cell(target, 2 + i).value = v
+    ws.row_dimensions[target].height = 30
+
+
 def apply_demotion(xlsx, leg, div, pgm_implied, assumed, band="", rule="auto",
                    reason="", quiet=False):
     """Demote ONE leg to a reference row so Target = the other leg alone.
@@ -483,6 +530,7 @@ def apply_demotion(xlsx, leg, div, pgm_implied, assumed, band="", rule="auto",
     cur = ws.cell(r_note, 2).value
     if tag_rule not in cur:
         ws.cell(r_note, 2).value = cur + " ■" + sentence
+    _log_to_adjustments(wb, leg, tag_rule, r_tgt, r_keep, sentence)
     wb.save(xlsx)
     if not quiet:
         print("demoted %s leg in %s" % (leg.upper(), xlsx))

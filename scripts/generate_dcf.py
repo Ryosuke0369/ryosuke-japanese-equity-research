@@ -34,6 +34,9 @@ from scripts.comps_fetcher import get_comps_data
 from scripts.yfinance_quarterly import enrich_merged_data_with_yfinance
 from scripts.overrides_validator import validate_overrides, OverridesValidationError
 from scripts.guidance_fetcher import get_guidance
+from scripts.arbitration import (
+    arbitrate, apply_demotion, resolve_company_type, arbitration_applies,
+)
 from templates.dcf_comps_template import generate_dcf_workbook, get_live_market_data, calc_wacc
 
 # Exit codes. A caller that pipes stdout (batch/regen.sh) sees only text, so
@@ -893,6 +896,10 @@ def main():
                              "validation (formula-value checks are then skipped)")
     parser.add_argument("--no-validate", action="store_true",
                         help="Skip the post-generation validate_output.py run")
+    parser.add_argument("--no-arbitration", action="store_true",
+                        help="Skip the 追補6 §X leg arbitration (debugging only). "
+                             "validate_output.py then reports the model as "
+                             "arbitration-pending and FAILs it, which is the point.")
     args = parser.parse_args()
 
     ticker_code = args.ticker.strip()
@@ -1343,6 +1350,81 @@ def main():
                       f"'needs recalc'.")
         except Exception as e:
             print(f"  WARNING: recalc skipped ({type(e).__name__}: {e}).")
+
+    # ── Step 8.5: 追補6 §X — arbitrate the two DCF legs ──────────────────
+    # This used to be a separate manual step (batch/apply_arbitration.py) run
+    # after the batch finished, which meant every regeneration silently threw it
+    # away: 6857 アドバンテスト's Target read 4,288 (PGM alone) before the
+    # フェーズ2 regeneration and 8,021 (the midpoint) after it - not a valuation
+    # change, just the arbitration being absent. It now runs inside the pipeline
+    # (追補12 §A-3).
+    #
+    # Placed after the recalc and before validate because it needs both: the
+    # ladder reads cached values (the terminal value, Year-5 EBITDA, the two leg
+    # prices, WACC), and a demotion rewrites the Target cell as a formula, whose
+    # value only exists after a second recalc. Every skip says why.
+    _arb = None
+    if args.no_arbitration:
+        print(f"\n[Step 8.5] 裁定(追補6 §X): スキップ — --no-arbitration が指定された。"
+              f"validate は裁定未適用として FAIL する")
+    elif args.no_recalc:
+        print(f"\n[Step 8.5] 裁定(追補6 §X): スキップ — --no-recalc のためキャッシュ値が無く、"
+              f"乖離倍率(ターミナル価値÷Year5 EBITDA)を算出できない")
+    else:
+        print(f"\n[Step 8.5] 裁定(追補6 §X): PGM/Exit の乖離を判定...")
+        _ctype = resolve_company_type(_overrides)
+        _ok, _why = arbitration_applies(_ctype)
+        print(f"  銘柄型: {_ctype or '未宣言'} — {_why}")
+        if _ok:
+            _arb = arbitrate(
+                saved_path,
+                overrides_path=args.overrides,
+                comps_csv=(comps_csv_path if not args.no_comps else None),
+                cache_path=os.path.join(project_root, "batch", "cache",
+                                        f"{ticker_code}.json"),
+                code=ticker_code,
+            )
+            if _arb is None:
+                _msg = ("WARNING: 裁定を判定できなかった（ターミナル価値 / Year5 EBITDA / "
+                        "Exit倍率 のキャッシュ値が揃っていない）。中点平均のまま出力する")
+                print(f"  {_msg}")
+                final_warnings.append(_msg)
+            else:
+                print(f"  乖離 {_arb['div']:.2f}x（PGM逆算 {_arb['pgm_implied']:.2f}x / "
+                      f"仮定Exit {_arb['assumed']:.2f}x） | レジーム {_arb['regime']}")
+                print(f"  裁定: {_arb['verdict']}")
+                if _arb["treated"]:
+                    print(f"  適用済（{_arb['treated'][1]}）— 再適用しない")
+                elif _arb["demote"]:
+                    _band = ""
+                    if _arb.get("band"):
+                        _band = f"{_arb['band'][0]:.2f}-{_arb['band'][1]:.2f}"
+                    apply_demotion(saved_path, _arb["demote"],
+                                   f"{_arb['div']:.2f}",
+                                   f"{_arb['pgm_implied']:.2f}",
+                                   f"{_arb['assumed']:.2f}",
+                                   band=_band, rule="x")
+                    final_warnings.append(
+                        f"WARNING: 追補6 §X により {_arb['demote'].upper()} 脚を[参考]に降格した"
+                        f"（乖離 {_arb['div']:.2f}x）。Target は単脚である")
+                    # The demotion wrote a formula with openpyxl, which does not
+                    # compute. Without this second recalc the Target cell has no
+                    # cached value and every value-level check reports SKIP -
+                    # which フェーズ2 #8 turns into a FAIL.
+                    print(f"  降格を反映するため再計算...")
+                    _rc2 = subprocess.run(
+                        [sys.executable, os.path.join(project_root, "scripts",
+                                                      "recalc_excel_com.py"),
+                         saved_path],
+                        capture_output=True, text=True, timeout=600,
+                    )
+                    if _rc2.returncode != 0:
+                        print(f"  ERROR: 降格後の再計算に失敗した "
+                              f"(exit {_rc2.returncode}) {(_rc2.stderr or '').strip()[:200]}")
+                        print(f"  ワークブックには数式が入っているがキャッシュ値が無い。"
+                              f"scripts/recalc_excel_com.py を手動実行すること")
+                        sys.exit(1)
+                    print((_rc2.stdout or "").strip() or "  (no output)")
 
     validation_failed = False
     if not args.no_validate:

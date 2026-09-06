@@ -26,6 +26,7 @@ the values Excel cached at the last recalc. Checks that need values report
 "needs recalc" (WARN) instead of failing when the workbook was never recalced.
 """
 
+import json
 import os
 import re
 import sys
@@ -544,6 +545,67 @@ def check_exit_negative_equity(res, wbf, wbv, has_values):
                 f"the Target Price")
 
 
+
+
+
+def check_arbitration_applied(res, path, wbf, meta):
+    """#22 A model the machine rules say to arbitrate has actually been arbitrated.
+
+    追補5 forbids averaging two irreconcilable DCF legs, and 追補6 §X decides
+    which one to drop. That decision used to be applied by a separate script
+    after the batch, so a regeneration silently reverted it and the workbook went
+    back to the forbidden midpoint - 6857 アドバンテスト's Target moved 4,288 ->
+    8,021 that way, and nothing failed. The generator now arbitrates before
+    validating (追補12 §A-3); this check is the lock that says so.
+
+    型D (banks) are exempt by construction: a DCF does not hold for them, their
+    Target is DDM + Residual Income, and arbitrating two DCF legs there would
+    arbitrate between two numbers nobody uses.
+    """
+    try:
+        from scripts.arbitration import (arbitrate, resolve_company_type,
+                                         arbitration_applies)
+    except ImportError:
+        res.add(22, SKIP, "追補6 §X arbitration applied", "scripts.arbitration unavailable")
+        return
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    code = os.path.basename(path)[:4]
+    ov = os.path.join(root, "data", "overrides", f"{code}_overrides.json")
+    overrides = None
+    if os.path.isfile(ov):
+        try:
+            overrides = json.load(open(ov, encoding="utf-8"))
+        except (OSError, ValueError):
+            overrides = None
+    ctype = resolve_company_type(overrides)
+    ok, why = arbitration_applies(ctype)
+    if not ok:
+        res.add(22, PASS, "追補6 §X arbitration applied", f"対象外: {why}")
+        return
+
+    r = arbitrate(path,
+                  overrides_path=ov if os.path.isfile(ov) else None,
+                  comps_csv=os.path.join(root, "data", "comps", f"{code}_comps.csv"),
+                  cache_path=os.path.join(root, "batch", "cache", f"{code}.json"),
+                  code=code)
+    if r is None:
+        res.add(22, SKIP, "追補6 §X arbitration applied",
+                "乖離を算出できない（ターミナル価値 / Year5 EBITDA / Exit倍率のキャッシュ値なし）")
+        return
+    if r["treated"]:
+        res.add(22, PASS, "追補6 §X arbitration applied",
+                f"適用済 {r['treated'][1]}: {r['treated'][0].upper()} 脚を降格 "
+                f"(乖離 {r['div']:.2f}x, {r['regime']})")
+        return
+    if r["demote"]:
+        res.add(22, FAIL, "追補6 §X arbitration applied",
+                f"機械化ルールは「{r['verdict']}」と判定しているが未適用。"
+                f"乖離 {r['div']:.2f}x > 3.0x で中点平均は追補5 が禁じている。"
+                f"`python batch/apply_arbitration.py --write {code}` を実行し "
+                f"recalc してから再検証すること")
+        return
+    res.add(22, PASS, "追補6 §X arbitration applied",
+            f"降格不要: {r['regime']} / {r['verdict'][:60]} (乖離 {r['div']:.2f}x)")
 
 
 def check_market_data(res, wbf, meta):
@@ -1117,6 +1179,7 @@ def validate_workbook(path, write_report=True, allow_skip=False):
         check_core_ebitda(res, wbf, meta)
         check_comps_reference_band(res, wbf, wbv, has_values)
         check_market_data(res, wbf, meta)
+        check_arbitration_applied(res, path, wbf, meta)
     elif kind == 'market_analysis':
         check_formula_errors(res, wbv, has_values)
         check_interp_iferror(res, wbf)

@@ -71,6 +71,10 @@ _STR_OR_NUM = (str, int, float)  # values that may carry a __CONFIRM__ string
 # Top-level whitelist: key -> allowed python types.
 # Every key here is verifiably consumed by generate_dcf.py,
 # templates/dcf_comps_template.py, or scripts/generate_sotp.py.
+# 手順書 §2 の銘柄型。宣言は任意だが、型D は DCF が成立しないため
+# scripts/arbitration.py がこのキーを見て DCF 脚の裁定をスキップする(追補12 §A-3)。
+COMPANY_TYPES = {"A", "B", "C", "D", "E"}
+
 ALLOWED_KEYS = {
     # Company / meta
     "ticker": (str, int),
@@ -78,6 +82,7 @@ ALLOWED_KEYS = {
     "exchange": (str,),
     "sector": (str,),
     "fiscal_year_end_month": (int,),
+    "company_type": (str,),                # A/B/C/D/E - 手順書 §2 の銘柄型
     # Market data
     "current_price": _STR_OR_NUM,
     "shares_outstanding": _STR_OR_NUM,
@@ -476,6 +481,14 @@ def validate_overrides(overrides, source_path="<overrides>", allow_unconfirmed=F
                 f"{key}: expected {_type_name(allowed_types)}, got "
                 f"{type(value).__name__} ({value!r})"
             )
+
+    ct = overrides.get("company_type")
+    if ct is not None and str(ct).strip().upper() not in COMPANY_TYPES:
+        errors.append(
+            f"company_type: {ct!r} is not one of {sorted(COMPANY_TYPES)}. "
+            f"手順書 §2 の銘柄型 (A: 通常の事業会社 / B: シクリカル / "
+            f"C: captive finance 持ち製造業 / D: 銀行 / E: 銀行を連結に持つ持株会社)"
+        )
 
     if overrides.get("nwc_method") is not None and overrides["nwc_method"] not in NWC_METHODS:
         errors.append(

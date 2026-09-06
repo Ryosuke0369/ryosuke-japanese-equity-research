@@ -22,6 +22,7 @@ validate_output.py — 6976_DCF_Model_20260906.xlsx
 [PASS] 19. Subject EBITDA vs operating income     core_ebitda 69,144 >= operating income 19,996 mn (implied D&A 49,148)
 [PASS] 20. Comps reference prices in a sane band  EV/EBITDA=5,884 ok; PER=3,337 ok
 [PASS] 21. Market data is not a placeholder       price 9,426 x 125,146,903 shares = 1,179,635 JPY mn [source: yfinance; from overrides: beta, current_price, shares_outstanding]
+[PASS] 22. 追補6 §X arbitration applied             適用済 追補6 §X: PGM 脚を降格 (乖離 12.57x, 通常)
 ==============================================================================
-FAIL 0 / WARN 2 / SKIP 0 / PASS 20
+FAIL 0 / WARN 2 / SKIP 0 / PASS 21
 VERDICT: PASS
