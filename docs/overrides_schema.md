@@ -368,3 +368,65 @@ Executive Summary の**列Bラベル**（`Perpetuity` / `Exit` / `EV/EBITDA` / `
 - 生成完了時に「Effective WACC inputs」と Comps 5社名がコンソールに出る。**必ず目視照合する**こと
 - `market_analysis_template` は **recalc 済み**の DCF xlsx を要求する。未 recalc（WACC セルが空）はエラー停止 → 先に `python scripts/recalc_excel_com.py <xlsx>`
 - バリデーション違反は全件まとめて報告される（1件ずつ直す必要はない）
+
+---
+
+## 型E の節（2026-09-07 追加）
+
+型E は**銀行・消費者金融を連結に持つ事業会社**である（手順書 §2）。型D（銀行そのもの）
+と違い、事業の主体は非金融の側にあるが、連結 BS には預金・貸出金が独立科目で載るため、
+**連結のまま DCF を組むと預金を有利子負債として割り引く**ことになる。
+
+型判定は `python batch/fin_business_screen.py <docID>` が推奨を出す。境界は
+**金融「資産」の総資産比 50%**（資産側だけで測る。預金は負債であり、貸出金と足すと
+同じ事業を二度数える）。50% 以上なら型D、未満なら型E。25〜50% は
+セグメント利益構成で人が確定する帯である。
+
+### `company_type: "E"` を宣言すると実行前に必須化される4項目
+
+| キー | なぜ必須か |
+|---|---|
+| `net_debt` | 連結 BS からの自動抽出は銀行の預金を有利子負債に、貸出金を資産に含める。**非金融ベース**（銀行預金・貸出金・コールローン/コールマネーを除外し、**非支配株主持分を加算**）で一次資料から作る |
+| `de_ratio` | **自動計算は禁止**。自動計算は `net_debt ÷ 時価総額` なので、金融込みの連結 net_debt を使うと WACC の資本構成が金融の資金調達で膨らむ |
+| 非金融 P/L | `segments`（セグメント分解が開示されている場合）**または** `hist_revenue` + `hist_operating_income` + `base_year_revenue` を非金融ベースで供給。金融が独立の報告セグメントでない銘柄が多い（9433 の金融はパーソナルセグメントの内側、4689 はストラテジーの内側） |
+| `sotp` | 金融部分は DCF ではなく PBR×純資産で評価し、非金融の事業価値と SOTP で合算する。`valuation_method: "pbr"` のセグメントが最低1つ必要 |
+
+### `sotp.segments[].valuation_method: "pbr"`
+
+金融セグメント専用。基数が EBITDA ではなく**純資産**、倍率が EV/EBITDA ではなく
+**PBR**、結果が EV ではなく**株主価値**になる。
+
+- `net_assets_mn`（必須）: 金融セグメントの純資産（JPY mn）。推測値は不可
+- `peers[].pbr` / `peers[].roe` を読む（`ev_ebitda` / `opm` ではない）。Peer Comps の
+  見出しも自動で PBR / ROE に切り替わる
+- `da_allocation_pct` は 0 にする（D&A は EV セグメント側に全額配賦）
+
+### 型E の Equity Bridge
+
+```
+非金融 EV（EV セグメントの合計 + 持分法）
+  − 非金融 net debt              ← sotp.consolidated.net_debt（MI を含めない）
+= 非金融の株主価値
+  + 金融セグメント株主価値（PBR × 純資産）
+= SOTP 株主価値（割引前）
+  × (1 − コングロマリット・ディスカウント)
+  − 非支配株主持分                ← sotp.consolidated.minority_interest
+= Equity Value（親会社株主帰属）
+```
+
+金融子会社の株主価値は**自身の預金を既にネットしている**ので、EV に足してから親の
+net debt を引くと資金調達を二重に控除する。だから net debt 控除の**後**に加算する。
+
+**注意（実際に踏んだ落とし穴）**: top-level の `net_debt`（MI を**含む**定義）と
+`sotp.consolidated.net_debt`（MI を**含まない**定義）は型E では意図的に別物である。
+`generate_sotp.py` は型A〜D では top-level を SOTP に注入するが、型E では注入しない
+（注入すると MI を二重に引き、9433 の初回生成は 1株 2,532 円 ―― 正しくは 2,657 円 ――
+になっていた）。
+
+### 実例
+
+`data/overrides/9433_overrides.json`（KDDI、auフィナンシャルホールディングス 100%）。
+KDDI は「auフィナンシャルホールディングスを除く連結ベース」の P/L・BS を自ら開示して
+おり（2026年3月期 決算詳細資料 p.3）、連結消去後の非金融系列が推計なしで得られる
+数少ない例である。他社では金融子会社の純資産を子会社側の開示（銀行法ディスクロージャー
+誌、単独上場子会社の決算短信）から取りに行く必要がある。
