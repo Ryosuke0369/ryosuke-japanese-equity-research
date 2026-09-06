@@ -646,3 +646,65 @@ C5 は overrides の `capex_pct: 0.078`（＝契約上のフォールバック�
 （5726 は5年とも `capex_direct.projections` が埋まっており C5 が計算に効かないため）。
 
 ---
+
+## #11 非3月期の docID 検出
+
+### 症状（先行報告 §F-6-11）
+
+**3086 J.フロント リテイリング（2月期）**が既定の探索窓（3/12/6/9月期）に掛からず
+`EdinetDocumentNotFound`。`fiscal_year_end_month=2` を**手で明示指定**して解決していた。
+
+### 原因
+
+有報の提出期は「期末月 + 3」であり、`get_document_ids()` はその式で動的探索窓を作る
+仕組みを既に持っていた。しかし **`fiscal_year_end_month` は呼び出し側の overrides から
+しか来なかった**。非3月期の銘柄でそのキーを書き忘れると、ハードコードされた4シーズンを
+素通りして「見つからない」になる。**作業者が事前に決算期を知っている前提**の設計だった。
+
+### 期待する動作
+
+非3月期の探索窓（期末月+3）が、明示指定なしでも正しく適用される。
+
+### 変更内容
+
+**`scripts/edinet_fetcher.py`**
+
+- `infer_fiscal_year_end_month(ticker_code)` を新設。yfinance の
+  `lastFiscalYearEnd` / `nextFiscalYearEnd`（UNIX 時刻）から期末月を取る。
+  yfinance が無い / 404 / 値なし はすべて `None` を返して従来動作に落ちる。
+- `get_document_ids()` は `fiscal_year_end_month` が未指定のときだけ推定を呼ぶ。
+  **明示指定は常に優先**する。推定したことはログに残す。
+
+`batch/prescreen.py` は既に `tickers.csv` の `fiscal_year_end_month` を渡しているので
+変更不要。渡されなかった銘柄も推定で救われるようになった。
+
+### 検証
+
+**(a) 推定単体**
+
+| ticker | 推定 | 実際 |
+|---|---:|---|
+| 3086 J.フロント | **2** | 2月期 |
+| 6506 安川電機 | **2** | 2月期 |
+| 9983 ファストリ | **8** | 8月期 |
+| 5726 大阪チタ | 3 | 3月期 |
+| 2502 アサヒGHD | 12 | 12月期 |
+| 存在しないコード | None | （従来動作にフォールバック） |
+
+**(b) 3086 を `fiscal_year_end_month` **なし**で実行（end-to-end）**
+
+```
+[Step 1/9] Fetching 5 years of financial data from EDINET...
+Found 5 annual report(s):
+  [1] docID=S100Y6K0  period=2026-02-28  filer=Ｊ．フロント　リテイリング株式会社
+  [2] docID=S100VUV0  period=2025-02-28
+  [3] docID=S100TIM5  period=2024-02-29
+  [4] docID=S100QU70  period=2023-02-28
+  [5] docID=S100O4WX  period=2022-02-28
+```
+part4 で `EdinetDocumentNotFound` になった条件で、5期すべてを取得できた。
+
+**(c) 5726 回帰（基準 = #6 適用後）**: **differences: 0**
+（5726 は `fiscal_year_end_month: 3` を明示しており推定経路を通らない）
+
+---

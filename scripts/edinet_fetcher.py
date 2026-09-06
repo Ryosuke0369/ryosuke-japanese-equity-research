@@ -23,7 +23,7 @@ import zipfile
 import logging
 import requests
 from collections import OrderedDict
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from dotenv import load_dotenv
 
 # Load environment variables from .env file automatically
@@ -147,6 +147,44 @@ def _search_single_date(api_key, target_date, sec_code, doc_type_code=DOC_TYPE_A
                 "doc_type_code_raw": doc.get("docTypeCode", ""),
             })
     return matches
+
+
+def infer_fiscal_year_end_month(ticker_code):
+    """Best-effort FY-end month (1-12) for a TSE code, or None.
+
+    The 有報 filing season is (FY-end month + 3), so the search window depends on
+    knowing the FY end. It used to come only from the caller's overrides, which
+    meant a non-March filer without that key fell through the four hardcoded
+    seasons and raised EdinetDocumentNotFound - 3086 J.フロント (February FY) hit
+    exactly this in part4 of the 2026-09-05 batch, and was "fixed" by adding
+    fiscal_year_end_month=2 by hand. Nobody should have to know that in advance:
+    yfinance publishes lastFiscalYearEnd for these tickers, so the fetcher asks.
+
+    An explicit fiscal_year_end_month always wins; this only fills the gap.
+    """
+    try:
+        import yfinance as yf
+    except ImportError:
+        return None
+    code = str(ticker_code).strip()
+    sym = code if "." in code else f"{code}.T"
+    try:
+        info = yf.Ticker(sym).info
+    except Exception as e:
+        logger.info("FY-end inference: yfinance lookup failed for %s (%s)", sym, e)
+        return None
+    for key in ("lastFiscalYearEnd", "nextFiscalYearEnd"):
+        ts = info.get(key)
+        if isinstance(ts, (int, float)) and ts > 0:
+            try:
+                m = datetime.fromtimestamp(ts, tz=timezone.utc).month
+            except (OverflowError, OSError, ValueError):
+                continue
+            logger.info("FY-end inference: %s -> month %d (yfinance %s)", sym, m, key)
+            return m
+    logger.info("FY-end inference: yfinance has no fiscal-year-end for %s", sym)
+    return None
+
 
 
 def get_document_ids(ticker_code, num_years=5, fiscal_year_end_month=None):
@@ -287,6 +325,11 @@ def get_document_ids(ticker_code, num_years=5, fiscal_year_end_month=None):
     # November FY (e.g. ELEMENTS 5246) this resolves to February, which none of
     # the hardcoded windows cover. For March/Dec/June/Sep FY ends this formula
     # reproduces the existing seasons, so prepending it is harmless there.
+    if not fiscal_year_end_month:
+        fiscal_year_end_month = infer_fiscal_year_end_month(ticker_code)
+        if fiscal_year_end_month:
+            logger.info("FY-end month not supplied; inferred %d for ticker=%s",
+                        fiscal_year_end_month, ticker_code)
     if fiscal_year_end_month:
         filing_month = ((int(fiscal_year_end_month) + 3 - 1) % 12) + 1
         end_month = (filing_month % 12) + 1  # one month after the peak
