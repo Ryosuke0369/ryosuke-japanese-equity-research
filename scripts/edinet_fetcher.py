@@ -882,6 +882,13 @@ def fetch_and_parse_multi_year(ticker_code, num_years=5, output_dir=None,
     # Step 4: Merge annual data
     merged = merge_multi_year_data(all_year_data)
 
+    # Record which XBRL files belong to THIS ticker. generate_dcf.py used to
+    # look for 業績予想 by globbing the whole tmp/edinet_data cache - every
+    # company ever downloaded - and taking the first file that yielded a
+    # forecast. Scoping the scan needs the paths, so they are published here.
+    _meta = merged.setdefault("_meta", {})
+    _meta["xbrl_paths"] = [p for _, p in xbrl_paths_by_period]
+
     # Step 5: Search for latest quarterly report and compute LTM
     print("\nSearching for latest interim report (quarterly/semi-annual)...")
     fiscal_year_end = doc_infos[0]["period_end"] if doc_infos else None
@@ -898,6 +905,7 @@ def fetch_and_parse_multi_year(ticker_code, num_years=5, output_dir=None,
 
             if q_xbrl_files:
                 q_soup = parse_xbrl_file(q_xbrl_files[0])
+                merged.setdefault("_meta", {}).setdefault("xbrl_paths", []).insert(0, q_xbrl_files[0])
                 q_contexts = identify_quarterly_contexts(q_soup)
 
                 if q_contexts:

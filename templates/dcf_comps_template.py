@@ -4113,8 +4113,10 @@ def generate_dcf_workbook(config, output_path=None):
     _meta["generated_at"] = _dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     _meta["company_name"] = C.get("company_name")
     _meta["ticker"] = C.get("ticker")
-    # Year-key alignment audit recorded by generate_dcf.py (bug B1)
-    for _k in ("_fs_year_coverage", "_fs_year_map", "_fs_year_sources"):
+    # Audit trail recorded by generate_dcf.py: year-key alignment (bug B1)
+    # and the 会社予想 source ladder (フェーズ2 #9).
+    for _k in ("_fs_year_coverage", "_fs_year_map", "_fs_year_sources",
+               "_guidance_source", "_guidance_note"):
         if C.get(_k) is not None:
             _meta[_k.lstrip("_")] = C[_k]
 

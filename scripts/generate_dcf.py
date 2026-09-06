@@ -33,6 +33,7 @@ from scripts.edinet_fetcher import fetch_and_parse_multi_year, fetch_tanshin
 from scripts.comps_fetcher import get_comps_data
 from scripts.yfinance_quarterly import enrich_merged_data_with_yfinance
 from scripts.overrides_validator import validate_overrides, OverridesValidationError
+from scripts.guidance_fetcher import get_guidance
 from templates.dcf_comps_template import generate_dcf_workbook, get_live_market_data, calc_wacc
 
 # Exit codes. A caller that pipes stdout (batch/regen.sh) sees only text, so
@@ -801,6 +802,10 @@ def main():
     parser.add_argument("--no-peer-check", action="store_true",
                         help="Skip the yfinance peer price-freshness check "
                              "(offline runs)")
+    parser.add_argument("--tanshin-fallback", action="store_true",
+                        help="Also try the legacy EDINET 決算短信 search when no "
+                             "guidance is found. Off by default: EDINET does not "
+                             "host 決算短信 and the search costs ~50s to fail.")
     parser.add_argument("--no-recalc", action="store_true",
                         help="Do not recalculate the workbook via Excel COM before "
                              "validation (formula-value checks are then skipped)")
@@ -914,52 +919,33 @@ def main():
         merged_data, config_ticker_str, fiscal_year_end
     )
 
-    # Step 3: Extract company guidance/forecast data (業績予想)
-    print(f"\n[Step 3/9] Extracting company guidance (業績予想)...")
-    forecast_data = None
-    try:
-        from scripts.edinet_parser import parse_xbrl_file, extract_forecast_data
-    except ImportError:
-        from edinet_parser import parse_xbrl_file, extract_forecast_data
-
-    # Try extracting forecasts from already-downloaded XBRL files first
-    import glob
-    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-    edinet_cache = os.path.join(project_root, "tmp", "edinet_data")
-    xbrl_candidates = glob.glob(os.path.join(edinet_cache, "**", "*.xbrl"), recursive=True)
-    for xbrl_path in xbrl_candidates:
-        try:
-            soup = parse_xbrl_file(xbrl_path)
-            fd = extract_forecast_data(soup)
-            if fd and fd.get("forecast_revenue"):
-                forecast_data = fd
-                print(f"  Found guidance in: {os.path.basename(xbrl_path)}")
-                print(f"    Revenue forecast: {fd['forecast_revenue']:,.0f} mn")
-                if fd.get("forecast_operating_income"):
-                    print(f"    OI forecast:     {fd['forecast_operating_income']:,.0f} mn")
-                break
-        except Exception as e:
-            continue
-
-    # Fallback: fetch_tanshin if no forecast found in existing files
-    if not forecast_data:
-        print("  No guidance in existing XBRL. Trying fetch_tanshin...")
-        try:
-            tanshin_result = fetch_tanshin(ticker_code)
-            if tanshin_result:
-                forecast_data = tanshin_result["forecast_data"]
-                print(f"  Found guidance in tanshin docID={tanshin_result['doc_id']}")
-                if forecast_data.get("forecast_revenue"):
-                    print(f"    Revenue forecast: {forecast_data['forecast_revenue']:,.0f} mn")
-            else:
-                print("  No guidance data found. Management scenario will use CAGR-based estimate.")
-        except Exception as e:
-            print(f"  Tanshin fetch failed: {e}")
-            print("  Management scenario will use CAGR-based estimate.")
+    print()
+    # Step 3: Company guidance (業績予想) - see scripts/guidance_fetcher.py for
+    # why the old EDINET-only path could not work and what replaced it.
+    print(f"[Step 3/9] Resolving company guidance (業績予想)...")
+    _fy_years = [int(m.group(1)) for m in
+                 (re.search(r"FY(\d{4})", str(k)) for k in merged_data)
+                 if m]
+    _latest_actual_fy = max(_fy_years) if _fy_years else None
+    _xbrl_paths = (merged_data.get("_meta") or {}).get("xbrl_paths") or []
+    forecast_data, _guidance_note, _guidance_source = get_guidance(
+        ticker_code,
+        min_fy_year=_latest_actual_fy,
+        xbrl_paths=_xbrl_paths,
+        allow_edinet_tanshin=args.tanshin_fallback,
+    )
+    if forecast_data:
+        print(f"  guidance source: {_guidance_note}")
+    else:
+        print(f"  NO GUIDANCE - Management scenario falls back to the CAGR estimate.")
+        for _line in _guidance_note.split(" | "):
+            print(f"    - {_line}")
 
     # Step 4: Convert to config
     print(f"\n[Step 4/9] Building DCF configuration...")
     config = merged_data_to_config(company_info, merged_data, forecast_data=forecast_data)
+    config["_guidance_source"] = _guidance_source
+    config["_guidance_note"] = _guidance_note
 
     # Step 4.5: Apply manual overrides if provided
     if _overrides:
@@ -1011,6 +997,10 @@ def main():
     _override_keys = set(_overrides.keys()) if _overrides else set()
     _fs_coverage, _fs_covered, _fs_n_years = align_hist_series_to_years(config, _override_keys)
     final_warnings = []
+    if not forecast_data:
+        final_warnings.append(
+            "WARNING: no 会社予想 obtained - the Management scenario is the CAGR "
+            f"estimate, not company guidance ({_guidance_note})")
     if _fs_covered < _fs_n_years:
         final_warnings.append(
             f"WARNING: OCF/Cash/Debt coverage {_fs_coverage} — verify against 短信"
