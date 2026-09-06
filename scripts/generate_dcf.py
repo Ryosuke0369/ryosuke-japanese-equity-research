@@ -1210,7 +1210,11 @@ def main():
             from scripts.validate_output import validate_workbook
         except ImportError:
             from validate_output import validate_workbook
-        result = validate_workbook(saved_path, write_report=True)
+        # --no-recalc leaves the value-level checks unable to run; that is a
+        # deliberate partial validation, so SKIP is not turned into a FAIL
+        # there. Every normal run recalcs, and there SKIP > 0 does fail.
+        result = validate_workbook(saved_path, write_report=True,
+                                   allow_skip=args.no_recalc)
         validation_failed = result.failed
 
     if final_warnings:

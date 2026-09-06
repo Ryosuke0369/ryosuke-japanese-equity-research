@@ -236,3 +236,47 @@ Step 3 は `tmp/edinet_data/**/*.xbrl` を再帰 glob していた。これは
 **別課題として `docs/calibration_backlog.md` に登録する**（本フェーズの範囲外）。
 
 ---
+
+## #8 validate の `SKIP > 0` が `VERDICT: PASS` を通す
+
+### 症状（先行報告 §F-6-8）
+
+9503 で再計算がタイムアウトで中断したまま validate が走り、
+`FAIL 0 / SKIP 5 / VERDICT: PASS` を出した。Target Price 等は空欄だった。
+
+SKIP は「そのチェックが**実行できなかった**」という意味であって、
+「実行して通った」ではない。中立扱いにすると「未検証」と「検証済みクリーン」が
+同じ結論に潰れる。
+
+### 期待する動作
+
+`SKIP > 0` は PASS にしない。ただし `--no-recalc` のように**意図的な部分検証**の
+経路は残す。
+
+### 変更内容
+
+**`scripts/validate_output.py`**
+
+- 全チェック実行後に SKIP を数え、`allow_skip` でなければ
+  **チェック99「All checks executed」を FAIL として追加**する。
+  合成行にしたのは、既存の `Result` の集計・レンダリング・終了コードが
+  そのまま働き、レポートにも理由が1行で残るため（VERDICT の分岐を増やさない）。
+- `validate_workbook(path, write_report=True, allow_skip=False)` に引数追加。
+- CLI に `--allow-skip` を追加（引数解析をフラグ対応に）。
+- モジュール docstring に契約を明記。
+
+**`scripts/generate_dcf.py`**
+
+- Step 9 で `allow_skip=args.no_recalc` を渡す。`--no-recalc` では値レベルの
+  チェックが原理的に走れないため、そこだけは部分検証を許す。通常ランは必ず recalc する。
+
+### 検証
+
+| 入力 | 結果 |
+|---|---|
+| recalc 済み 5726 | `FAIL 0 / WARN 0 / SKIP 0 / PASS 19` / **PASS** / exit 0 |
+| 同じブックの**キャッシュ値なし**コピー | `FAIL 1 / SKIP 6 / PASS 13` / **FAIL** / **exit 1** |
+| 同上 + `--allow-skip` | **PASS** / exit 0 |
+| 5726 回帰（46セル） | **differences: 0** |
+
+---

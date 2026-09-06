@@ -7,6 +7,13 @@ Usage:
 Exit code 1 when any check FAILs, 0 otherwise. Results also go to
 <xlsx>_validation.txt next to the workbook.
 
+A SKIPped check is a check that could NOT run, so SKIP > 0 is a FAIL: the
+workbook is unverified, not verified-and-clean. 9503 shipped with
+"FAIL 0 / SKIP 5 / VERDICT: PASS" and an empty Target Price because a recalc
+had been interrupted. Pass --allow-skip (or validate_workbook(allow_skip=True))
+when partial validation is deliberate - generate_dcf.py does exactly that for
+--no-recalc runs, where the value-level checks legitimately cannot run.
+
 Why: every bug this checks for shipped at least once in a workbook that looked
 correct on screen — a scenario dropdown wired to the constant 1, a median that
 included the subject company, operating cash flow sitting under the wrong year.
@@ -920,7 +927,7 @@ def check_adjustments_log(res, wbf):
 # =====================================================================
 # driver
 # =====================================================================
-def validate_workbook(path, write_report=True):
+def validate_workbook(path, write_report=True, allow_skip=False):
     wbf = openpyxl.load_workbook(path, data_only=False)
     wbv = openpyxl.load_workbook(path, data_only=True)
 
@@ -983,6 +990,18 @@ def validate_workbook(path, write_report=True):
         res.add(0, WARN, "Workbook type recognised",
                 f"sheets {wbf.sheetnames} match no known template")
 
+    # SKIP means "this check could not run", which is not the same claim as
+    # "this check passed". Counting it as neutral is how 9503 got VERDICT: PASS
+    # with an empty Target Price: its recalc had been interrupted, five
+    # value-level checks reported SKIP, and nothing turned that into a failure.
+    n_skip = sum(1 for r in res.rows if r[1] == SKIP)
+    if n_skip and not allow_skip:
+        res.add(99, FAIL, "All checks executed",
+                f"{n_skip} check(s) SKIPped - the workbook is NOT verified. "
+                f"Recalculate it (python scripts/recalc_excel_com.py <xlsx>) and "
+                f"re-validate, or pass --allow-skip if partial validation is "
+                f"deliberate.")
+
     res.rows.sort(key=lambda r: r[0])
     text = res.render()
     print(text)
@@ -999,14 +1018,16 @@ def validate_workbook(path, write_report=True):
 
 
 def main():
-    if len(sys.argv) < 2:
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    allow_skip = "--allow-skip" in sys.argv[1:]
+    if not args:
         print(__doc__)
         sys.exit(2)
-    target = sys.argv[1]
+    target = args[0]
     if not os.path.isfile(target):
         print(f"ERROR: not a file: {target}")
         sys.exit(2)
-    res = validate_workbook(target)
+    res = validate_workbook(target, allow_skip=allow_skip)
     sys.exit(1 if res.failed else 0)
 
 
