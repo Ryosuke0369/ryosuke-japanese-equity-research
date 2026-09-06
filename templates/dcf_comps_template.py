@@ -2466,29 +2466,40 @@ def generate_dcf_workbook(config, output_path=None):
 
     _capex_hist3 = _hist_ratio_3yr("hist_capex")
     _da_hist3 = _hist_ratio_3yr("hist_depreciation")
-    _capex_label = "Capex / Revenue"
-    _da_label = "D&A / Revenue"
-    _capex_basis = "assumption"
-    _da_basis = "assumption"
 
-    if _capex_method == "direct":
-        if _capex_hist3 is not None:
-            _capex_pct_display = round(_capex_hist3, 4)
-            _capex_label = "Capex / Revenue (hist 3yr avg, fallback)"
-            _capex_basis = "hist_3yr_avg"
-        else:
-            _capex_label = "Capex / Revenue (fallback)"
-            print("  WARNING: capex_method=direct but no historical capex/revenue "
-                  "pairs - C5 falls back to the capex_pct assumption.")
-    if _da_method == "direct":
-        if _da_hist3 is not None:
-            _da_pct_display = round(_da_hist3, 4)
-            _da_label = "D&A / Revenue (hist 3yr avg, fallback)"
-            _da_basis = "hist_3yr_avg"
-        else:
-            _da_label = "D&A / Revenue (fallback)"
-            print("  WARNING: da_method=direct but no historical D&A/revenue "
-                  "pairs - C18 falls back to the da_pct assumption.")
+    # フェーズ2 #10 — one basis ladder, identical under both methods.
+    #
+    # C5/C18 used to be REPLACED by the 3-year historical ratio whenever the
+    # method was "direct". That made the displayed basis depend on whether
+    # hist_capex / hist_depreciation happened to be present in the overrides: the
+    # same ticker read "明示前提 5.25%" or "実績3期平均 8.82%" depending on a key
+    # that has nothing to do with the assumption (batch report 2026-09-05 §15-7).
+    # Worse, under "direct" the number the sheet actually uses as the fallback —
+    # the =Revenue*C5 formula for years the projection arrays do not cover, and
+    # the ratio the analyst is contractually required to keep (CLAUDE.md
+    # "direct方式でも capex_pct / da_pct はフォールバック用に必ず残す") — is
+    # capex_pct, not the historical mean. Display and computation disagreed.
+    #
+    # The ladder is now: explicit override > auto-derived from the filings, and it
+    # does not consult capex_method at all. The historical 3-year mean is still
+    # computed and recorded in the metadata as a cross-check, but it no longer
+    # silently becomes the assumption.
+    _cx_explicit = "capex_pct" in C.get("_override_keys", set())
+    _da_explicit = "da_pct" in C.get("_override_keys", set())
+    _capex_basis = "explicit_override" if _cx_explicit else "auto_hist_avg"
+    _da_basis = "explicit_override" if _da_explicit else "auto_hist_avg"
+    _capex_label = ("Capex / Revenue (fallback)" if _capex_method == "direct"
+                    else "Capex / Revenue")
+    _da_label = ("D&A / Revenue (fallback)" if _da_method == "direct"
+                 else "D&A / Revenue")
+    if _capex_method == "direct" and not _cx_explicit:
+        print("  WARNING: capex_method=direct without an explicit capex_pct. C5 is "
+              "the fallback ratio for years capex_direct.projections does not "
+              "cover; set capex_pct in overrides (CLAUDE.md requires it).")
+    if _da_method == "direct" and not _da_explicit:
+        print("  WARNING: da_method=direct without an explicit da_pct. C18 is the "
+              "fallback ratio for years da_direct.projections does not cover; "
+              "set da_pct in overrides (CLAUDE.md requires it).")
 
     # Keep the python-side sensitivity helpers on the same fallback ratio as the sheet
     C["capex_pct"] = _capex_pct_display

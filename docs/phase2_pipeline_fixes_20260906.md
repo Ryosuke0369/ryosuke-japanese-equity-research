@@ -583,3 +583,66 @@ size premium・Kd・D/E・Comps 統計はすべて 0 差分。**副作用が無�
 **全85件について β を再導出して overrides を更新する**（§4 の前段で実施）。
 
 ---
+
+## #10 `hist_capex` を渡すと C5 の根拠が変わる
+
+### 症状（先行報告 §15-7 / §F-6-10）
+
+`align_hist_series_to_years()` の対象5系列のうち `hist_capex` / `hist_depreciation` を
+overrides に入れると、**validate チェック7 の C5 の根拠が「明示前提 5.25%」から
+「実績3期平均 8.82%」に切り替わり**、`capex_direct` の投影と不整合になっていた。
+
+### 原因
+
+`capex_method == "direct"` のときだけ、C5/C18 を**実績3期平均で置換**していた。
+そのため表示される根拠が、前提とは無関係な `hist_capex` というキーが overrides に
+あるかどうかで変わっていた。さらに `direct` 方式で**シートが実際に使う**フォールバック
+（`=Revenue*C5`。投影配列が届かない年度に効く）と、CLAUDE.md が
+「direct 方式でも `capex_pct` / `da_pct` はフォールバック用に必ず残す」と定めた値は
+`capex_pct` であって実績平均ではない。**表示と実算出が食い違っていた**。
+
+### 期待する動作
+
+根拠の優先順位を統一し、表示と実算出を一致させる。
+
+### 変更内容
+
+**`templates/dcf_comps_template.py`**
+
+- 根拠のラダーを **`capex_method` を一切参照しない**1本に統一した。
+  1. overrides に `capex_pct` / `da_pct` の明示指定がある → `explicit_override`
+  2. 無ければ生成器が有報から自動導出した値 → `auto_hist_avg`
+- 実績3期平均は**引き続き算出して metadata に残す**（`capex_pct_hist3yr` /
+  `da_pct_hist3yr`）が、**黙って前提に化けることはなくなった**。
+- `direct` 方式なのに `capex_pct` / `da_pct` の明示指定が無い場合は WARN を出す
+  （CLAUDE.md の契約違反であり、フォールバック値が自動導出値になる旨を告げる）。
+- ラベルは方式で変わる（`direct` → `(fallback)`）が、**値の根拠は方式で変わらない**。
+
+**`scripts/validate_output.py`** — チェック7 を新語彙に対応させ、
+**実績3期平均を併記**するようにした（前提と実績の乖離が一目で分かる）。
+
+### 検証
+
+**(a) 症状の消滅**（合成銘柄・`revenue_pct`）
+
+| ケース | C5 |
+|---|---:|
+| override なし | 0.06（自動導出値） |
+| **`hist_capex` を渡す** | **0.06（不変）** ← 修正前はここが実績3期平均に化けた |
+| `capex_pct: 0.09` を明示 | 0.09 |
+
+**(b) 5726（`capex_method: "direct"` かつ `hist_capex` あり）**
+
+```
+[PASS] 7. C5  Capex/Revenue basis   7.80% - explicit assumption from overrides; hist 3yr mean 9.24%
+[PASS] 7. C18 D&A/Revenue basis     7.90% - explicit assumption from overrides; hist 3yr mean 5.75%
+```
+C5 は overrides の `capex_pct: 0.078`（＝契約上のフォールバック値）を表示するようになり、
+実績3期平均 9.24% は参考として validate に併記される。
+
+**(c) 回帰**: 基準は **#6 適用後の 5726**（`scratchpad/5726_ref_after_beta.xlsx`）。
+主要46セル **differences: 0**。`--all-sheets` の DCF Model 差分は
+**C5 / B5 / C18 / B18 の4セルのみ**（＝意図した表示の変更）で、EV・Target は不変
+（5726 は5年とも `capex_direct.projections` が埋まっており C5 が計算に効かないため）。
+
+---

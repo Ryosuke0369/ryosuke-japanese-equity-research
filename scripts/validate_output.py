@@ -332,11 +332,28 @@ def check_ltm_revenue(res, wbf, wbv, meta, has_values):
                 f"sheet {actual:,.1f} vs generator {expected:,.1f} mn")
 
 
+BASIS_WORDS = {
+    "explicit_override": "explicit assumption from overrides",
+    "auto_hist_avg": "auto-derived from the filings (mean of the FY ratios)",
+    "hist_3yr_avg": "mean of the last 3 historical years",   # pre-フェーズ2 models
+    "assumption": "explicit assumption",                     # pre-フェーズ2 models
+}
+
+
 def check_capex_da_ratios(res, wbf, meta):
+    """#7 C5 / C18 are what the generator meant, and the basis is named.
+
+    フェーズ2 #10: the basis no longer depends on capex_method. It used to be
+    replaced by the 3-year historical mean whenever the method was "direct",
+    which made the displayed basis flip between "explicit assumption" and
+    "historical mean" according to whether hist_capex happened to be in the
+    overrides. The historical mean is still reported here as a cross-check
+    against the assumption, but it is no longer the assumption.
+    """
     ws = wbf["DCF Model"]
-    for n, cell, key, basis_key, label in (
-        (7, "C5", "capex_pct_c5", "capex_pct_basis", "Capex/Revenue"),
-        (7, "C18", "da_pct_c18", "da_pct_basis", "D&A/Revenue"),
+    for n, cell, key, basis_key, hist_key, label in (
+        (7, "C5", "capex_pct_c5", "capex_pct_basis", "capex_pct_hist3yr", "Capex/Revenue"),
+        (7, "C18", "da_pct_c18", "da_pct_basis", "da_pct_hist3yr", "D&A/Revenue"),
     ):
         try:
             expected = float(meta.get(key))
@@ -345,18 +362,16 @@ def check_capex_da_ratios(res, wbf, meta):
             continue
         actual = _num(ws[cell].value)
         basis = str(meta.get(basis_key, "?"))
+        hist3 = _meta_num(meta, hist_key)
+        cross = f"; hist 3yr mean {hist3:.2%}" if hist3 is not None else ""
         if actual is None:
             res.add(n, FAIL, f"{cell} {label} basis", f"{cell} is empty or text")
         elif not _close(actual, expected):
             res.add(n, FAIL, f"{cell} {label} basis",
                     f"sheet {actual:.4%} vs generator {expected:.4%}")
-        elif basis == "hist_3yr_avg":
-            res.add(n, PASS, f"{cell} {label} basis",
-                    f"{actual:.2%} = mean of last 3 historical years")
         else:
             res.add(n, PASS, f"{cell} {label} basis",
-                    f"{actual:.2%} (explicit assumption, not a back-solve; "
-                    f"basis={basis})")
+                    f"{actual:.2%} - {BASIS_WORDS.get(basis, basis)}{cross}")
 
 
 def check_fs_year_alignment(res, wbf, meta):
