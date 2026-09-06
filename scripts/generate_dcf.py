@@ -470,8 +470,10 @@ def merged_data_to_config(company_info, merged_data, forecast_data=None):
         "ticker": ticker_str,
         "exchange": "TSE",
         "sector": "N/A",
-        "current_price": 1000,  # placeholder, overridden by yfinance
-        "shares_outstanding": 10_000_000,  # placeholder, overridden by yfinance
+        # None, never a placeholder: main() stops the run if neither yfinance
+        # nor the overrides supply these (フェーズ2 #2).
+        "current_price": None,
+        "shares_outstanding": None,
         "net_debt": net_debt,
         "_net_debt_source": net_debt_source,
 
@@ -1147,42 +1149,80 @@ def main():
     # Step 5: Fetch live market data via yfinance (price, shares, beta)
     print(f"\n[Step 5/9] Fetching market data...")
     ticker_str = config["ticker"]
-    config["current_price"], config["shares_outstanding"], live_beta = get_live_market_data(
-        ticker_str, config["current_price"], config["shares_outstanding"]
-    )
-    config["beta"] = live_beta  # raw value; template normalizes to [0.6, 1.5]
+    _price, _shares, live_beta, _mkt_note = get_live_market_data(ticker_str)
+    config["current_price"], config["shares_outstanding"] = _price, _shares
+    config["beta"] = live_beta  # RAW; the Blume adjustment + clamp live in the template
+    config["_market_data_source"] = _mkt_note
 
+    _from_overrides = []
     # Override shares from overrides["shares"] (single source of truth)
     if _overrides and "shares" in _overrides:
         _fd = _overrides["shares"].get("fully_diluted_shares")
         if _fd:
             config["shares_outstanding"] = _fd
+            _from_overrides.append("shares")
             print(f"  Shares override: {_fd:,} (from overrides.shares.fully_diluted_shares)")
 
-    # Auto-calculate D/E ratio from net_debt and market cap
-    try:
-        market_cap = config["current_price"] * config["shares_outstanding"] / 1_000_000  # JPY mn
-        if config["net_debt"] > 0 and market_cap > 0:
-            config["de_ratio"] = round(config["net_debt"] / market_cap, 4)
-        else:
-            config["de_ratio"] = 0.0
-        config["de_ratio"] = min(config["de_ratio"], 2.0)
-    except Exception:
-        market_cap = 0
-        config["de_ratio"] = 0.10
-
-    # Re-apply overrides for market data fields (if user has specific values)
+    # Re-apply overrides for market data fields (if the analyst has fixed values).
+    # This now runs BEFORE the D/E auto-calculation. It used to run after, so a
+    # ticker with a current_price override but no de_ratio override had its D/E
+    # computed from the LIVE price while the workbook showed the override price
+    # — two different market caps inside one model.
     if _overrides:
-        for field in ["current_price", "shares_outstanding", "beta", "de_ratio"]:
+        for field in ["current_price", "shares_outstanding", "beta"]:
             if field in _overrides:
                 if _is_placeholder(_overrides[field]):
                     print(f"  Skipped unfilled override '{field}' (__CONFIRM__ placeholder)")
                     continue
                 config[field] = _overrides[field]
+                _from_overrides.append(field)
                 print(f"  Override applied: {field} = {_overrides[field]}")
+    if _from_overrides:
+        config["_market_data_source"] = (
+            f"{_mkt_note}; from overrides: {', '.join(sorted(set(_from_overrides)))}")
+
+    # ── Market data is not optional and is never guessed ──────────────────
+    # The config used to start at price=1,000 / shares=10,000,000 as
+    # "placeholders overridden by yfinance", and get_live_market_data() returned
+    # them unchanged on any failure. 4568 第一三共 shipped Target JPY 294,427 /
+    # BUY +293% on a market cap of JPY 10,000 mn (true: 5,084,100 mn) and passed
+    # validation with FAIL 0. Both fields now start as None; if neither yfinance
+    # nor the overrides produced a usable number, the run stops.
+    LEGACY_PLACEHOLDERS = (1000.0, 10_000_000)
+    _p, _s = config.get("current_price"), config.get("shares_outstanding")
+    _bad = []
+    if not isinstance(_p, (int, float)) or isinstance(_p, bool) or _p <= 0:
+        _bad.append(f'current_price is {_p!r} ({_mkt_note})')
+    if not isinstance(_s, (int, float)) or isinstance(_s, bool) or _s <= 0:
+        _bad.append(f'shares_outstanding is {_s!r} ({_mkt_note})')
+    if not _bad and (float(_p), int(_s)) == LEGACY_PLACEHOLDERS:
+        _bad.append("current_price 1,000 with shares 10,000,000 - the legacy "
+                    "placeholder pair. If these are the real numbers, set them "
+                    "explicitly in overrides so the intent is on the record")
+    if _bad:
+        print()
+        print("ERROR: market data could not be established:")
+        for _b in _bad:
+            print(f"  - {_b}")
+        print(f"  Set \"current_price\" and \"shares\": {{\"fully_diluted_shares\": N}} in "
+              f"data/overrides/{ticker_code}_overrides.json from the 決算短信.")
+        sys.exit(2)
+
+    # Auto-calculate D/E ratio from net_debt and the FINAL market cap
+    market_cap = config["current_price"] * config["shares_outstanding"] / 1_000_000  # JPY mn
+    if config["net_debt"] > 0 and market_cap > 0:
+        config["de_ratio"] = min(round(config["net_debt"] / market_cap, 4), 2.0)
+    else:
+        config["de_ratio"] = 0.0
+    if _overrides and "de_ratio" in _overrides and not _is_placeholder(_overrides["de_ratio"]):
+        config["de_ratio"] = _overrides["de_ratio"]
+        print(f"  Override applied: de_ratio = {_overrides['de_ratio']}")
 
     # Beta & Size Premium are normalized inside generate_dcf_workbook (template-level)
-    print(f"  Raw Beta: {config['beta']:.2f}, D/E Ratio: {config['de_ratio']:.4f}, Mkt Cap: {market_cap:,.0f} mn")
+    _rb = config.get("beta")
+    print(f"  Market data: {config['_market_data_source']}")
+    print(f"  Raw Beta: {'n/a' if _rb is None else f'{_rb:.2f}'}, "
+          f"D/E Ratio: {config['de_ratio']:.4f}, Mkt Cap: {market_cap:,.0f} mn")
 
     # Step 5: Load comparable companies data
     print(f"\n[Step 6/9] Loading comparable companies...")

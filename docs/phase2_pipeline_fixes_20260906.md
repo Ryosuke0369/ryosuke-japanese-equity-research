@@ -425,3 +425,83 @@ latest_operating_income
 （**全件再生成でメタデータごと更新される**）。
 
 ---
+
+## #2 市場データのサイレント・プレースホルダ
+
+### 症状（先行報告 §F-6-2）
+
+`generate_dcf.py` の config は `current_price = 1000` / `shares_outstanding = 10,000,000`
+を「yfinance が上書きする placeholder」として持ち、`get_live_market_data()` は
+**例外を握り潰してその placeholder をそのまま返して**いた。
+
+**4568 第一三共**は時価総額 10,000百万円（実際は 5,084,100百万円）で評価され、
+**Target 294,427円 / BUY +293%** を `FAIL 0` のまま出力した。
+
+### 期待する動作
+
+取得失敗はハードエラー。validate はプレースホルダ値を検出して FAIL。
+
+### 変更内容
+
+**`templates/dcf_comps_template.py` — `get_live_market_data()`**
+
+- 戻り値を `(price, shares, beta, note)` の4つに変更。
+  **取れなかった項目は None を返す**（呼出側が overrides で埋まるかを判断する）。
+- 例外時も None + 失敗理由の `note` を返す。もっともらしい定数を返さない。
+- 返す β は**生値**。Blume 調整とクランプはテンプレ側に集約する（#6 で使う）。
+- 旧2値展開だったテンプレ内デモブロックを4値に追随。
+  `scripts/run_215A_dcf.py` は添字アクセスのため無変更で動作する。
+
+**`scripts/generate_dcf.py`**
+
+- config の初期値を `None` に変更（placeholder を廃止）。
+- **市場データ override の適用を D/E 自動計算より前に移動**。
+  これまでは後だったため、`current_price` を override しつつ `de_ratio` を
+  override しない銘柄では、**D/E だけがライブ株価の時価総額で計算され**、
+  ワークブックが表示する株価と食い違っていた（1モデル内に2つの時価総額があった）。
+  → **意図した挙動変更**。5726 は `de_ratio` を明示指定しているため回帰に差分は出ない。
+- ハードガード: 価格・株数が数値かつ正でなければ **exit 2**。
+  加えて `(1000, 10,000,000)` の**完全一致ペア**も拒否する
+  （本当にその値なら overrides に明示させ、意図を記録に残す）。
+- 取得元を `config["_market_data_source"]` に記録し、Pipeline Metadata に出す。
+  `_net_debt_source`（#1）も同時に出すようにした。
+
+**`scripts/validate_output.py`** — チェック21「Market data is not a placeholder」。
+生成器が止めるのは第一の鍵、これは**第二の鍵**であり、生成器を通っていない
+手編集ワークブックもカバーする。
+
+### 検証
+
+**(a) 生成器の停止（end-to-end）**: yfinance を必ず失敗させるスタブを `PYTHONPATH` に置き、
+`current_price` / `shares` を外した overrides で 5726 を実行。
+
+```
+  yfinance lookup FAILED for 5726.T: simulated yfinance outage
+ERROR: market data could not be established:
+  - current_price is None (yfinance failed: simulated yfinance outage)
+  - shares_outstanding is None (yfinance failed: simulated yfinance outage)
+  Set "current_price" and "shares": {"fully_diluted_shares": N} in data/overrides/...
+EXIT=2
+```
+修正前ならここで price 1,000 / shares 10,000,000 のワークブックが出来ていた。
+
+**(b) チェック21の単体検証**
+
+| 入力 | 判定 |
+|---|---|
+| price 1,000 × shares 10,000,000 | **FAIL**（プレースホルダ完全一致） |
+| price 0 | **FAIL** |
+| shares None | **FAIL** |
+| price 2,727 × 36,800,000 | PASS |
+
+**(c) 5726 実ラン**: `[PASS] 21 price 2,727 x 36,800,000 shares = 100,354 JPY mn
+[source: yfinance; from overrides: beta, current_price, shares, shares_outstanding]`。
+`FAIL 0 / WARN 0 / SKIP 0 / PASS 22`。
+
+**(d) 5726 回帰（46セル）**: **differences: 0**
+
+**副次的な観測**: 5726 の yfinance 生βは **0.484**。旧クランプ域 [0.6, 1.75] の外なので
+**無言で 1.0 に置換される**値だった（overrides が実測回帰値 1.55 を明示していたため
+本銘柄では発現していない）。#6 の前提を実測で確認した形になる。
+
+---

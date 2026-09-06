@@ -530,6 +530,41 @@ def check_exit_negative_equity(res, wbf, wbv, has_values):
 
 
 
+
+def check_market_data(res, wbf, meta):
+    """#21 Price and share count are real numbers, not the template placeholders.
+
+    generate_dcf.py used to seed the config with price=1,000 and
+    shares=10,000,000 "to be overridden by yfinance", and the yfinance helper
+    returned those unchanged whenever the lookup threw. 4568 第一三共 shipped
+    Target JPY 294,427 / BUY +293% on a market cap of JPY 10,000 mn (true:
+    5,084,100 mn) and validated FAIL 0. The generator now refuses to run in that
+    state; this check is the second lock, and it also covers hand-edited
+    workbooks the generator never saw.
+    """
+    if "Executive Summary" not in wbf.sheetnames or "DCF Model" not in wbf.sheetnames:
+        res.add(21, SKIP, "Market data is not a placeholder", "missing sheet")
+        return
+    price = _num(wbf["Executive Summary"]["C9"].value)
+    shares = _num(wbf["DCF Model"]["C15"].value)
+    src = str(meta.get("market_data_source", "not recorded"))
+    problems = []
+    if price is None or price <= 0:
+        problems.append(f"current price is {price!r}")
+    if shares is None or shares <= 0:
+        problems.append(f"fully diluted shares is {shares!r}")
+    if not problems and float(price) == 1000.0 and int(shares) == 10_000_000:
+        problems.append("price 1,000 x shares 10,000,000 - the exact template "
+                        "placeholder pair (market cap JPY 10,000 mn)")
+    if problems:
+        res.add(21, FAIL, "Market data is not a placeholder",
+                "; ".join(problems) + f" [source: {src}]")
+    else:
+        res.add(21, PASS, "Market data is not a placeholder",
+                f"price {price:,.0f} x {shares:,} shares = "
+                f"{price * shares / 1_000_000:,.0f} JPY mn [source: {src}]")
+
+
 def check_core_ebitda(res, wbf, meta):
     """#19 The subject EBITDA behind the Comps legs is coherent with the P/L.
 
@@ -1066,6 +1101,7 @@ def validate_workbook(path, write_report=True, allow_skip=False):
         check_reverse_dcf_sheet(res, wbf, meta)
         check_core_ebitda(res, wbf, meta)
         check_comps_reference_band(res, wbf, wbv, has_values)
+        check_market_data(res, wbf, meta)
     elif kind == 'market_analysis':
         check_formula_errors(res, wbv, has_values)
         check_interp_iferror(res, wbf)

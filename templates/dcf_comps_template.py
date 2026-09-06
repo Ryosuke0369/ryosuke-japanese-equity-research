@@ -384,28 +384,46 @@ def calc_wacc(cfg):
 
 # V2: DYNAMIC STOCK DATA FETCHING
 # =====================================================================
-def get_live_market_data(ticker_str, fallback_price, fallback_shares):
+def get_live_market_data(ticker_str, fallback_price=None, fallback_shares=None):
+    """Live price / shares / raw beta for `ticker_str`.
+
+    Returns (price, shares, beta, note). Any field yfinance could not supply
+    comes back as None, and the caller decides whether an override covers it.
+
+    This function used to swallow every failure and return the caller's
+    fallbacks, which in the batch were the template placeholders price=1,000 and
+    shares=10,000,000. 4568 第一三共 shipped a Target of JPY 294,427 and a BUY
+    +293% that way, with FAIL 0: its market cap had been valued at JPY 10,000 mn
+    instead of JPY 5,084,100 mn, and nothing in the workbook said so. A number
+    nobody fetched is now None, not a plausible-looking constant.
+
+    The beta returned is the RAW yfinance beta; the Blume adjustment and the
+    clamp live in generate_dcf_workbook so that a beta supplied by overrides
+    goes through exactly the same treatment (フェーズ2 #6).
+    """
     if not YFINANCE_AVAILABLE:
-        print("yfinance not installed. Using fallback market data.")
-        return fallback_price, fallback_shares, 1.0
+        return fallback_price, fallback_shares, None, "yfinance not installed"
 
     try:
         print(f"Fetching live data for {ticker_str} via yfinance...")
-        tkr = yf.Ticker(ticker_str)
-        info = tkr.info
-        live_price = info.get("currentPrice") or info.get("regularMarketPrice") or fallback_price
-        live_shares = info.get("sharesOutstanding") or fallback_shares
+        info = yf.Ticker(ticker_str).info
+        live_price = info.get("currentPrice") or info.get("regularMarketPrice")
+        live_shares = info.get("sharesOutstanding")
         raw_beta = info.get("beta")
-        if raw_beta and 0.6 <= raw_beta <= 1.5:
-            live_beta = raw_beta
-        else:
-            live_beta = 1.0  # sector-standard fallback
-            print(f"  Beta {raw_beta} outside [0.6, 1.5] range - using fallback 1.0")
-        print(f"Successfully fetched: Price={live_price}, Shares={live_shares}, Beta={live_beta}")
-        return float(live_price), int(live_shares), float(live_beta)
+        missing = [n for n, v in (("price", live_price), ("shares", live_shares),
+                                  ("beta", raw_beta)) if not v]
+        note = ("yfinance" if not missing
+                else f"yfinance (no {', '.join(missing)})")
+        print(f"  yfinance: price={live_price}, shares={live_shares}, "
+              f"raw beta={raw_beta}")
+        return (float(live_price) if live_price else fallback_price,
+                int(live_shares) if live_shares else fallback_shares,
+                float(raw_beta) if raw_beta else None,
+                note)
     except Exception as e:
-        print(f"Warning: Failed to fetch live data ({str(e).encode('ascii', 'replace').decode()}). Using fallback market data.")
-        return fallback_price, fallback_shares, 1.0
+        msg = str(e).encode("ascii", "replace").decode()
+        print(f"  yfinance lookup FAILED for {ticker_str}: {msg}")
+        return fallback_price, fallback_shares, None, f"yfinance failed: {msg[:120]}"
 
 
 # =====================================================================
@@ -4150,7 +4168,8 @@ def generate_dcf_workbook(config, output_path=None):
     # Audit trail recorded by generate_dcf.py: year-key alignment (bug B1)
     # and the 会社予想 source ladder (フェーズ2 #9).
     for _k in ("_fs_year_coverage", "_fs_year_map", "_fs_year_sources",
-               "_guidance_source", "_guidance_note"):
+               "_guidance_source", "_guidance_note", "_market_data_source",
+               "_net_debt_source"):
         if C.get(_k) is not None:
             _meta[_k.lstrip("_")] = C[_k]
 
@@ -4308,10 +4327,12 @@ if __name__ == "__main__":
     
     # =====================================================================
 
-    config["current_price"], config["shares_outstanding"] = get_live_market_data(
+    _p, _s, _b, _note = get_live_market_data(
         config.get("ticker", ""),
         config.get("current_price", 0),
-        config.get("shares_outstanding", 0)
+        config.get("shares_outstanding", 0),
     )
+    config["current_price"], config["shares_outstanding"] = _p, _s
+    print(f"  market data: {_note}")
 
     generate_dcf_workbook(config)
