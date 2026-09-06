@@ -12,6 +12,30 @@ CACHE, DRAFT = os.path.join(HERE, "cache"), os.path.join(HERE, "draft")
 os.makedirs(DRAFT, exist_ok=True)
 
 RF, ERP, TAX, TG = 0.0297, 0.065, 0.25, 0.010
+MARKET, LOOKBACK, INTERVAL, MIN_OBS = "1306.T", "2y", "1wk", 60
+
+
+def topix_beta(code):
+    """Raw beta from a 2y weekly OLS regression on TOPIX (1306.T), or None.
+
+    The same measurement batch/rederive_beta.py applied to the 85, so a ticker
+    added later sits on the same basis as the rest of the batch.
+    """
+    try:
+        import warnings
+        warnings.filterwarnings("ignore")
+        import numpy as np, pandas as pd, yfinance as yf
+        px = yf.download([f"{code}.T", MARKET], period=LOOKBACK, interval=INTERVAL,
+                         auto_adjust=True, progress=False)["Close"]
+        r = px.pct_change()
+        d = pd.concat([r[f"{code}.T"], r[MARKET]], axis=1).dropna()
+        if len(d) < MIN_OBS:
+            return None
+        y, x = d.iloc[:, 0].values, d.iloc[:, 1].values
+        v = float(np.var(x, ddof=1))
+        return round(float(np.cov(y, x, ddof=1)[0, 1] / v), 4) if v > 0 else None
+    except Exception:
+        return None
 
 def band(mcap_mn):
     oku = mcap_mn / 100.0
@@ -48,8 +72,19 @@ def build(code, n=5):
     ie   = s("income", ["Interest Expense", "Interest Expense Non Operating"])
 
     mcap = (d.get("market_cap") or 0) / 1e6
-    raw_beta = d.get("beta")
-    beta = 1.0 if raw_beta is None else round(min(1.75, max(0.6, raw_beta)), 2)
+    # フェーズ2 #6 / §2-4: `beta` in overrides is the RAW (regression) beta - the
+    # template applies the Blume shrink and the [0.3, 2.0] clamp itself. This
+    # used to emit max(0.6, min(1.75, raw)), i.e. the OLD clamped value, which
+    # would have quietly put a new ticker back on the floor that 57 of the 85
+    # were stuck at. The raw beta is measured against TOPIX rather than taken
+    # from yfinance's `beta` field, which returns -0.165 for NTT and -0.201 for
+    # 大阪ガス and is not a measurement of Japanese equity risk.
+    raw_beta = topix_beta(code)
+    beta_src = f"TOPIX {LOOKBACK} {INTERVAL} OLS"
+    if raw_beta is None:
+        raw_beta = d.get("beta")
+        beta_src = "yfinance beta field (TOPIX regression unavailable)"
+    beta = raw_beta
     # NWC day averages over the years where the inputs exist
     def avg(vals):
         vals = [v for v in vals if v]
@@ -80,7 +115,7 @@ def build(code, n=5):
     }
     p = os.path.join(DRAFT, f"{code}_data.json")
     json.dump(out, open(p, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
-    print(f"{code}: beta raw={raw_beta} -> {beta}  size_prem={out['size_premium']:.1%}  "
+    print(f"{code}: beta raw={raw_beta} ({beta_src})  size_prem={out['size_premium']:.1%}  "
           f"DSO/DIH/DPO={dso}/{dih}/{dpo}  net_debt={out['_net_debt_calc']}  -> {p}")
 
 if __name__ == "__main__":

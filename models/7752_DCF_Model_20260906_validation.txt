@@ -1,0 +1,28 @@
+validate_output.py — 7752_DCF_Model_20260906.xlsx
+==============================================================================
+[PASS]  1. No formula errors                      0 error cells in all sheets
+[PASS]  2. Scenario index is MATCH                D27 = =MATCH(C27,B69:B73,0)
+[PASS]  3. Comps stats exclude subject row        subject row 5 excluded from all MEDIAN/PERCENTILE ranges
+[PASS]  4. Subject Mkt Cap / EV are formulas      D5=='Executive Summary'!C9*C23/1000000 / E5==D5+C24
+[PASS]  5. Scenario names are the fixed 5         B69:B73 = ['Base', 'Upside', 'Management', 'Downside 1', 'Downside 2']
+[PASS]  6. C20 LTM Revenue matches generator      2,608,314.0 mn (source: latest FY (no LTM))
+[PASS]  7. C5 Capex/Revenue basis                 5.18% - explicit assumption from overrides
+[PASS]  7. C18 D&A/Revenue basis                  4.93% - auto-derived from the filings (mean of the FY ratios); hist 3yr mean 4.55%
+[PASS]  8. FS OCF/Cash/Debt year alignment        4 year column(s) match the source year keys cell-for-cell
+[PASS]  9. Terminal-year capex / D&A ratio        1.05x within [0.90, 1.15] at g=1.00%
+[PASS] 10. PGM implied price sanity               EV 780,599 >= net debt 227,271 mn
+[WARN] 11. PGM-implied vs assumed exit multiple   PGM implies 3.33x vs assumed 7.70x (2.31x apart) — the two DCF legs disagree on terminal value
+[PASS] 12. Peer EBITDA != EBIT                    no peer row where EBITDA equals operating income
+[PASS] 13. Adjustments Log sheet present          
+[PASS] 14. Target Price averages DCF legs only    C10 averages C16:C17 (PGM + Exit); comps rows excluded
+[PASS] 15. Exit implied price sanity              EV 1,502,808 >= net debt 227,271 mn
+[PASS] 16. Reverse DCF sheet present              121 live formulas, sheet position 4
+[PASS] 17. Cost of debt basis                     1.0000% after-tax (assumption; supply interest_expense + debt balances to derive the actual rate)
+[PASS] 18. FX sensitivity Table 3                 not enabled (domestic name) — no table expected
+[PASS] 19. Subject EBITDA vs operating income     core_ebitda 215,128 >= operating income 97,724 mn (implied D&A 117,404)
+[PASS] 20. Comps reference prices in a sane band  EV/EBITDA=2,550 ok; PER=1,420 ok
+[PASS] 21. Market data is not a placeholder       price 1,690 x 562,049,730 shares = 949,864 JPY mn [source: yfinance; from overrides: beta, current_price, shares, shares_outstanding]
+[PASS] 22. 追補6 §X arbitration applied             降格不要: 収斂 / 裁定不要（倍率乖離・株価乖離とも ≤ 3.0倍） (乖離 2.31x)
+==============================================================================
+FAIL 0 / WARN 1 / SKIP 0 / PASS 22
+VERDICT: PASS

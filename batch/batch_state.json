@@ -2110,15 +2110,40 @@
   "queued_at": "2026-09-06 第10セッション"
  },
  "7752": {
-  "status": "queued",
+  "status": "done",
   "name": "リコー",
   "fy_end_month": 3,
   "part": "part4",
   "basis_date": "20260906",
-  "type": "A(D&A取得不能)",
+  "type": "A",
   "queued_reason": "yfinanceのD&Aが直近2期欠損、EDINET最新もFY2025/3でその XBRLにもD&A要素なし。core_ebitdaが作れず追補2 §Gゲート不通過",
   "queue_release_requires": "FY2026/3の有報・短信から減価償却費と設備投資額を人手取得→core_ebitda/hist_depreciationに投入",
-  "queued_at": "2026-09-06 第10セッション"
+  "queued_at": "2026-09-06 第10セッション",
+  "file": "models/7752_DCF_Model_20260906.xlsx",
+  "target": 1627,
+  "price": 1690,
+  "upside": -0.0373,
+  "verdict": "SELL",
+  "wacc": 0.088,
+  "beta_raw": 1.0442,
+  "beta_adopted": 1.0296,
+  "exit_multiple": 7.7,
+  "peers": [
+   "7751",
+   "4901",
+   "4902",
+   "6724",
+   "6448"
+  ],
+  "validation": "FAIL 0 / WARN 1 / SKIP 0 / PASS 22",
+  "flags": [
+   "チェック11 乖離2.31x(裁定閾値3.0x未満)",
+   "net_debt が EDINET と yfinance で88,201百万円相違(要確認)",
+   "Kd はテンプレ既定(推定)"
+  ],
+  "generated": "2026-09-06 追補12 §A-3(86件目)",
+  "rule": "型A規則((直近+p75)/2)でBase到達OPM 3.73%。Management は会社予想(OPM 3.52%)。",
+  "reason": "フェーズ2 #7(EDINETアーカイブからのdocID直引き)でブロッカー(D&A取得不能)が解消"
  },
  "9021": {
   "status": "done",
