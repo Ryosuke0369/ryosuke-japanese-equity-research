@@ -83,6 +83,7 @@ ALLOWED_KEYS = {
     "sector": (str,),
     "fiscal_year_end_month": (int,),
     "company_type": (str,),                # A/B/C/D/E - 手順書 §2 の銘柄型
+    "bank_valuation": (dict,),             # 型D 専用。scripts/ddm_ri.py が消費する
     # Market data
     "current_price": _STR_OR_NUM,
     "shares_outstanding": _STR_OR_NUM,
@@ -481,6 +482,33 @@ def validate_overrides(overrides, source_path="<overrides>", allow_unconfirmed=F
                 f"{key}: expected {_type_name(allowed_types)}, got "
                 f"{type(value).__name__} ({value!r})"
             )
+
+    bv = overrides.get("bank_valuation")
+    if bv is not None:
+        if str(overrides.get("company_type", "")).strip().upper() != "D":
+            errors.append(
+                "bank_valuation: 型D 専用のブロックです。company_type: \"D\" を宣言するか、"
+                "このブロックを削除してください")
+        allowed_bv = {"book_value_mn", "net_income_actual_mn", "dps", "roe",
+                      "terminal_growth", "year_labels", "dps_note", "roe_note"}
+        for k in bv:
+            if k not in allowed_bv and not k.startswith("_"):
+                errors.append(f"bank_valuation.{k}: unknown key. "
+                              f"許可: {', '.join(sorted(allowed_bv))}")
+        for k in ("dps", "roe"):
+            v = bv.get(k)
+            if v is None:
+                errors.append(f"bank_valuation.{k}: required (5要素の配列)")
+            elif not isinstance(v, list) or len(v) != 5:
+                errors.append(f"bank_valuation.{k}: 5要素の配列が必要 "
+                              f"(got {type(v).__name__} len={len(v) if isinstance(v, list) else 'n/a'})")
+            elif any(not isinstance(x, (int, float)) or isinstance(x, bool) for x in v):
+                errors.append(f"bank_valuation.{k}: 全要素が数値でなければならない")
+        if not isinstance(bv.get("book_value_mn"), (int, float)) or isinstance(bv.get("book_value_mn"), bool):
+            errors.append("bank_valuation.book_value_mn: required (JPY mn の数値)")
+        _p = bv.get("roe")
+        if isinstance(_p, list) and any(isinstance(x, (int, float)) and x > 1 for x in _p):
+            errors.append("bank_valuation.roe: 小数で指定すること (6.1% は 0.061)")
 
     ct = overrides.get("company_type")
     if ct is not None and str(ct).strip().upper() not in COMPANY_TYPES:
