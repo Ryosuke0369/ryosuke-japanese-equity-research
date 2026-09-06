@@ -444,6 +444,155 @@ def patch_comps_exclude_self(wb):
     return True
 
 
+def suppress_ev_multiples(wb, quiet=False):
+    """型D: blank the EV/EBITDA and EV/Revenue columns on the Comps sheet.
+
+    手順書 §2 型D: "EV/EBITDA・EV/Revenue は使わず PER/PBR のみ". For a bank the
+    comps CSV carries Net_Debt = 0 for every row by contract, so enterprise value
+    collapses to market cap and the multiple is not an enterprise multiple at
+    all. Left in place the percentile formulas also produce #NUM! (8410's
+    D15:D17), which is a broken cell on display rather than a disclosed
+    exclusion. The columns are replaced by the reason.
+    """
+    if "Comps Analysis" not in wb.sheetnames:
+        return
+    ws = wb["Comps Analysis"]
+    hdr_row = None
+    for r in range(1, 20):
+        for c in range(3, 20):
+            v = ws.cell(r, c).value
+            if isinstance(v, str) and v.strip().upper().startswith("EV/EBITDA"):
+                hdr_row = r
+                break
+        if hdr_row:
+            break
+    if not hdr_row:
+        return
+    targets = []
+    for c in range(3, 20):
+        v = ws.cell(hdr_row, c).value
+        if isinstance(v, str) and v.strip().upper().startswith(("EV/EBITDA", "EV/REVENUE", "EV/SALES")):
+            targets.append(c)
+    n = 0
+    for c in targets:
+        for r in range(hdr_row + 1, min(ws.max_row, hdr_row + 30) + 1):
+            if ws.cell(r, c).value is not None:
+                ws.cell(r, c).value = None
+                n += 1
+        ws.cell(hdr_row + 1, c).value = "N/A"
+    # The Statistics block computes its percentiles from the per-peer multiple
+    # columns just blanked, so PERCENTILE() over an empty range would leave
+    # #NUM! on display. Those cells are replaced by the same "N/A" the template
+    # uses for an excluded method. The EV columns of that block are D and E by
+    # the template's fixed layout (the same positions scripts/diff_models.py
+    # names as "Comps 25th pct EV/EBITDA" and "Comps median EV/Revenue").
+    for r in range(hdr_row, min(ws.max_row, hdr_row + 30) + 1):
+        lab = ws.cell(r, 2).value
+        if isinstance(lab, str) and (lab.startswith(("25th", "75th"))
+                                     or lab.startswith("Median")):
+            for c in (4, 5):
+                ws.cell(r, c).value = "N/A"
+                n += 1
+
+    # Say why, next to the header rather than in a cell somebody has to hunt for.
+    note_col = (max(targets) + 1) if targets else 4
+    ws.cell(hdr_row, note_col).value = (
+        "← 型D(銀行): EV 倍率は使用しない（comps は全社 Net_Debt=0 の契約であり "
+        "EV は時価総額に等しくなる）。PER / PBR のみを参照すること")
+    if not quiet:
+        print(f"  [型D] Comps Analysis: EV 倍率列を N/A 化（{n} セル、理由を注記）")
+
+
+def wire_exec_summary(wb, ddm_refs, ri_refs, quiet=False):
+    """Point the Target at the DDM/RI average and demote the DCF legs to reference.
+
+    手順書 §2 型D: 「DCF不成立。主手法は DDM+RI」。The DCF sheet is kept as an
+    auxiliary cross-check - it is where the fee-franchise economics can still be
+    read - but its two legs must not enter the Target, and the workbook has to
+    say so where a reader looks first.
+
+    Following 手順書§5-5, no label is ever written starting with "=".
+    """
+    if "Executive Summary" not in wb.sheetnames:
+        return None
+    ws = wb["Executive Summary"]
+
+    def find(prefix, limit=44):
+        for r in range(1, limit):
+            v = ws.cell(r, 2).value
+            if isinstance(v, str) and v.startswith(prefix):
+                return r
+        return None
+
+    r_tgt = find("Target Price")
+    r_pgm = find("DCF - Perpetuity Growth")
+    r_exit = find("DCF - Exit Multiple")
+    r_note = find("Note: Target Mid")
+    if not r_tgt:
+        return None
+
+    tag = "[参考・Target不算入 — 型D: 銀行に DCF は成立しない]"
+    for r in (r_pgm, r_exit):
+        if r:
+            lab = ws.cell(r, 2).value
+            if tag not in str(lab):
+                ws.cell(r, 2).value = str(lab) + " " + tag
+
+    # Insert the two primary methods directly under the Exit row so the summary
+    # reads in the order the methods are actually used.
+    anchor_row = max([x for x in (r_pgm, r_exit) if x] or [r_tgt])
+    ws.insert_rows(anchor_row + 1, 2)
+    r_ddm, r_ri = anchor_row + 1, anchor_row + 2
+    if r_note and r_note > anchor_row:
+        r_note += 2
+    ws.cell(r_ddm, 2).value = "DDM - 2-Stage Dividend Discount (主手法)"
+    ws.cell(r_ddm, 3).value = f"=DDM!C{ddm_refs['implied_row']}"
+    ws.cell(r_ri, 2).value = "Residual Income (主手法)"
+    ws.cell(r_ri, 3).value = f"='Residual Income'!C{ri_refs['implied_row']}"
+
+    ws.cell(r_tgt, 3).value = (
+        f'=IF(AND(ISNUMBER(C{r_ddm}),ISNUMBER(C{r_ri})),'
+        f'ROUND(AVERAGE(C{r_ddm}:C{r_ri}),0),"N/A")')
+    lab = str(ws.cell(r_tgt, 2).value or "Target Price (Mid)")
+    if "DDM" not in lab:
+        ws.cell(r_tgt, 2).value = lab.split(" - ")[0] + " - DDM / Residual Income の平均"
+
+    sentence = (
+        "【型D: 銀行】手順書 §2 により **DCF は成立しない**（負債が資金調達ではなく原材料であり、"
+        "運転資本が定義できず、自己資本規制が配当を制約するため）。"
+        "**Target は DDM と Residual Income の2手法の平均のみ**で構成し、"
+        "DCF の2脚（PGM / Exit）と Comps の EV 倍率は Target に算入しない。"
+        "DCF Model シートは ATM 手数料フランチャイズの採算を読むための補助として残してある。")
+    if r_note:
+        cur = str(ws.cell(r_note, 2).value or "")
+        if "型D" not in cur:
+            ws.cell(r_note, 2).value = (cur + " ■" + sentence) if cur else sentence
+    if not quiet:
+        print(f"  [型D] Executive Summary: Target = AVERAGE(C{r_ddm}:C{r_ri}) "
+              f"(DDM / Residual Income)、DCF 2脚は [参考・Target不算入] に降格")
+    return {"target_row": r_tgt, "ddm_row": r_ddm, "ri_row": r_ri}
+
+
+def warn_on_dcf_sheet(wb, quiet=False):
+    """Put the 'a bank is not a DCF' warning where the DCF sheet is read."""
+    if "DCF Model" not in wb.sheetnames:
+        return
+    ws = wb["DCF Model"]
+    msg = ("⚠ 型D（銀行）: このシートは参考表示である。銀行に UFCF ベースの DCF は成立しない"
+           "（負債は資金調達ではなく原材料、運転資本が定義できない、自己資本規制が配当を制約する）。"
+           "**主手法は DDM シートと Residual Income シート**であり、Target はその2手法の平均である。")
+    # Row 1 of the DCF Model sheet is empty by construction (the template starts
+    # its title at row 2), so the warning goes there directly. It must NOT be
+    # inserted: inserting shifts every row down and breaks 'DCF Model'!C23, the
+    # Cost of Equity the DDM sheet reads - which is exactly what happened on the
+    # first 8410 run and what the 型D check caught (Ke read as 0.00%).
+    if isinstance(ws.cell(1, 2).value, str) and "型D" in ws.cell(1, 2).value:
+        return
+    ws.cell(1, 2).value = msg
+    if not quiet:
+        print("  [型D] DCF Model シートの先頭行(B1)に警告を記入（行は挿入しない）")
+
+
 REQUIRED = ("book_value_mn", "dps", "roe", "terminal_growth", "year_labels")
 
 
@@ -499,12 +648,15 @@ def add_sheets(xlsx, cfg, quiet=False):
     ddm_refs = build_ddm_sheet(wb, cfg)
     ri_refs = build_ri_sheet(wb, ddm_refs, cfg)
     patch_comps_exclude_self(wb)
+    suppress_ev_multiples(wb, quiet=quiet)
+    es_refs = wire_exec_summary(wb, ddm_refs, ri_refs, quiet=quiet)
+    warn_on_dcf_sheet(wb, quiet=quiet)
     wb.save(xlsx)
     if not quiet:
         print(f"  [型D] DDM / Residual Income シートを生成: {os.path.basename(xlsx)}")
         print(f"        Ke {cfg['ke']:.2%} / g {cfg['terminal_growth']:.2%} / "
               f"BV0 {cfg['book_value_mn']:,.0f} mn / DPS {cfg['dps']} / ROE {cfg['roe']}")
-    return {"ddm": ddm_refs, "ri": ri_refs}
+    return {"ddm": ddm_refs, "ri": ri_refs, "exec": es_refs}
 
 
 def main():

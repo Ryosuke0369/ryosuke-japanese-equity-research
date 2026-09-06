@@ -483,35 +483,76 @@ def check_pgm_negative_equity(res, wbf, wbv, has_values):
 
 
 def check_target_excludes_comps(res, wbf):
-    """#14 Target Price (Mid) must average the two DCF legs ONLY.
+    """#14 The Target must be built from the valuation methods, not from comps.
 
     The standard (docs/DCFフォーマット標準メモ §2) is that comps are a reference
     mark, not a target input. The old formula averaged C16:C19, so every model
-    silently shipped a half-comps target — a violation nobody could see on the
+    silently shipped a half-comps target - a violation nobody could see on the
     sheet because the cell just shows a number.
+
+    Two things were wrong with the original implementation and are fixed here:
+
+    1. It resolved the Target at C10 and the comps at C18/C19 by row NUMBER.
+       That holds for 型A-C but not for 型D, where the DDM and Residual Income
+       rows are inserted at 18/19 and the comps move down - a row-number rule
+       calls the bank's own primary methods "comps" and fails a correct model.
+       Rows are now resolved by label.
+
+    2. Its single-reference pattern was `r"\bC1[6-9]\b"`, but the file carried
+       literal backspace characters where the \b escapes should have been (this
+       predates フェーズ2 - it is in c9b5dd9), so that pattern never matched
+       anything. Only the range pattern `C1[6-9]:C1[6-9]` was live, which means
+       a formula listing comps individually - `=AVERAGE(C16,C17,C18)` - passed
+       the check that exists to catch exactly that. Cell references are now
+       parsed properly and ranges are expanded.
     """
     if "Executive Summary" not in wbf.sheetnames:
         res.add(14, SKIP, "Target Price averages DCF legs only", "no Executive Summary")
         return
-    f = wbf["Executive Summary"]["C10"].value
+    ws = wbf["Executive Summary"]
+    r_tgt, comps_rows = None, []
+    for r in range(1, 44):
+        v = ws.cell(r, 2).value
+        if not isinstance(v, str):
+            continue
+        if r_tgt is None and v.startswith("Target Price"):
+            r_tgt = r
+        if v.startswith("Comps -"):
+            comps_rows.append(r)
+    if r_tgt is None:
+        res.add(14, SKIP, "Target Price averages DCF legs only",
+                "no 'Target Price' row on the Executive Summary")
+        return
+    f = ws.cell(r_tgt, 3).value
     if not isinstance(f, str) or not f.startswith("="):
         res.add(14, FAIL, "Target Price averages DCF legs only",
-                f"C10 is not a formula ({f!r}) — a hardcoded target cannot track "
-                f"a price or scenario change")
+                f"C{r_tgt} is not a formula ({f!r}) - a hardcoded target cannot "
+                f"track a price or scenario change")
         return
-    refs = set(re.findall(r"C1[6-9]", f)) | set(
-        m for m in re.findall(r"C1[6-9]:C1[6-9]", f))
-    comps_refs = [r for r in refs if "18" in r or "19" in r]
-    if comps_refs:
+
+    cited = set()
+    for m in re.finditer(r"C(\d+)(?::C(\d+))?", f):
+        a = int(m.group(1))
+        b = int(m.group(2)) if m.group(2) else a
+        cited.update(range(min(a, b), max(a, b) + 1))
+    hit = sorted(cited & set(comps_rows))
+    if hit:
+        names = ", ".join(f"C{r} ({ws.cell(r, 2).value})" for r in hit)
         res.add(14, FAIL, "Target Price averages DCF legs only",
-                f"C10 = {f} references the comps rows ({', '.join(sorted(comps_refs))}) "
-                f"— comps must stay [参考] and out of the Target average")
-    elif "C16:C17" not in f:
-        res.add(14, WARN, "Target Price averages DCF legs only",
-                f"C10 = {f} does not average C16:C17 — verify the Target composition")
-    else:
+                f"C{r_tgt} = {f} references the comps rows [{names}] - comps must "
+                f"stay [参考] and out of the Target average")
+        return
+    if "C16:C17" in f:
         res.add(14, PASS, "Target Price averages DCF legs only",
-                "C10 averages C16:C17 (PGM + Exit); comps rows excluded")
+                f"C{r_tgt} averages C16:C17 (PGM + Exit); "
+                f"comps rows {comps_rows or 'none'} excluded")
+    else:
+        # A demoted leg (追補6 §X) or a 型D DDM/RI target legitimately looks
+        # different; the check has already proved no comps row is cited.
+        res.add(14, WARN, "Target Price averages DCF legs only",
+                f"C{r_tgt} = {f} does not average C16:C17 - expected when a leg "
+                f"was demoted (追補6 §X) or the Target is a 型D DDM/RI average. "
+                f"No comps row is referenced.")
 
 
 def check_exit_negative_equity(res, wbf, wbv, has_values):
@@ -547,6 +588,119 @@ def check_exit_negative_equity(res, wbf, wbv, has_values):
 
 
 
+
+
+
+def _company_type(path):
+    """'A'..'E' from the ticker's overrides, or None."""
+    try:
+        from scripts.arbitration import resolve_company_type
+    except ImportError:
+        return None
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    ov = os.path.join(root, "data", "overrides",
+                      f"{os.path.basename(path)[:4]}_overrides.json")
+    if not os.path.isfile(ov):
+        return None
+    try:
+        return resolve_company_type(json.load(open(ov, encoding="utf-8")))
+    except (OSError, ValueError):
+        return None
+
+
+def check_bank_model(res, path, wbf, wbv, has_values):
+    """#24 型D (bank): the DDM/RI model is present, coherent, and drives the Target.
+
+    手順書 §2 says a bank's DCF does not hold and its Target is the average of a
+    dividend discount model and a residual income model. That is a structural
+    claim about the workbook, so it is checked structurally: the sheets exist,
+    Ke exceeds g (without which the Gordon terminal is undefined), the dividend
+    path is not a payout above earnings, and the Target cell really does average
+    the two - not the DCF legs.
+
+    Non-型D models pass immediately: this says nothing about them.
+    """
+    ctype = _company_type(path)
+    if ctype != "D":
+        res.add(24, PASS, "型D DDM/RI model",
+                f"対象外（company_type={ctype or '未宣言'}）")
+        return
+    missing = [s for s in ("DDM", "Residual Income") if s not in wbf.sheetnames]
+    if missing:
+        res.add(24, FAIL, "型D DDM/RI model",
+                f"型D なのに {', '.join(missing)} シートが無い。"
+                f"scripts/ddm_ri.py で生成すること")
+        return
+    if not has_values:
+        res.add(24, SKIP, "型D DDM/RI model", "needs recalc")
+        return
+    ddm, ri = wbv["DDM"], wbv["Residual Income"]
+
+    def labelled(ws, prefix, limit=60):
+        for r in range(1, limit):
+            v = ws.cell(r, 2).value
+            if isinstance(v, str) and v.startswith(prefix):
+                return _num(ws.cell(r, 3).value), r
+        return None, None
+
+    ke, _ = labelled(ddm, "Cost of Equity")
+    g, _ = labelled(ddm, "Terminal Growth")
+    ddm_v, _ = labelled(ddm, "Implied Value per Share")
+    ri_v, _ = labelled(ri, "Implied Value per Share")
+    bps0, _ = labelled(ri, "BPS_0")
+    problems, notes = [], []
+    if ke is None or g is None:
+        problems.append("DDM の Ke / g を読めない")
+    elif ke <= g:
+        problems.append(f"Ke {ke:.2%} <= g {g:.2%} — ゴードン成長式が成立しない")
+    else:
+        notes.append(f"Ke {ke:.2%} > g {g:.2%}")
+    for nm, v in (("DDM", ddm_v), ("Residual Income", ri_v)):
+        if v is None or v <= 0:
+            problems.append(f"{nm} の1株価値が {v!r}")
+    # Payout sanity: dividends must not exceed the earnings that fund them.
+    dps_row = ni_row = div_row = None
+    for r in range(1, 60):
+        v = ri.cell(r, 2).value
+        if isinstance(v, str):
+            if v.startswith("Net Income_t"):
+                ni_row = r
+            elif v.startswith("Dividends_t"):
+                div_row = r
+    if ni_row and div_row:
+        bad = []
+        for c in range(3, 8):
+            ni, dv = _num(ri.cell(ni_row, c).value), _num(ri.cell(div_row, c).value)
+            if ni and dv is not None:
+                p = dv / ni
+                if p < 0 or p > 1.0:
+                    bad.append(f"Y{c - 2} payout {p:.0%}")
+        if bad:
+            problems.append("配当性向が 0〜100% の外: " + ", ".join(bad))
+        else:
+            notes.append("配当性向は全予測年で 0〜100% の内側")
+    # Target must be the DDM/RI average, not a DCF leg.
+    if "Executive Summary" in wbf.sheetnames:
+        wsf = wbf["Executive Summary"]
+        tgt_f = None
+        for r in range(1, 44):
+            v = wsf.cell(r, 2).value
+            if isinstance(v, str) and v.startswith("Target Price"):
+                tgt_f = str(wsf.cell(r, 3).value or "")
+                break
+        if tgt_f and "AVERAGE" not in tgt_f.upper():
+            problems.append(f"Target が DDM/RI の平均を参照していない: {tgt_f[:60]}")
+        elif tgt_f:
+            notes.append("Target = AVERAGE(DDM, Residual Income)")
+    if problems:
+        res.add(24, FAIL, "型D DDM/RI model", "; ".join(problems))
+        return
+    extra = ""
+    if ri_v and bps0:
+        extra = f"; RI {ri_v:,.0f} vs BPS0 {bps0:,.0f} ({ri_v / bps0:.2f}x book)"
+    res.add(24, PASS, "型D DDM/RI model",
+            f"DDM {ddm_v:,.0f} / RI {ri_v:,.0f} → Target {(ddm_v + ri_v) / 2:,.0f}"
+            f"; " + "; ".join(notes) + extra)
 
 
 def check_disclosure_vintage(res, path, meta):
@@ -1226,6 +1380,7 @@ def validate_workbook(path, write_report=True, allow_skip=False):
         check_market_data(res, wbf, meta)
         check_arbitration_applied(res, path, wbf, meta)
         check_disclosure_vintage(res, path, meta)
+        check_bank_model(res, path, wbf, wbv, has_values)
     elif kind == 'market_analysis':
         check_formula_errors(res, wbv, has_values)
         check_interp_iferror(res, wbf)

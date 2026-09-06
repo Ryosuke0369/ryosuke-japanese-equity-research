@@ -14,7 +14,7 @@ validate_output.py — 5726_DCF_Model_20260906.xlsx
 [PASS] 11. PGM-implied vs assumed exit multiple   PGM implies 6.83x vs assumed 8.00x (1.17x)
 [PASS] 12. Peer EBITDA != EBIT                    no peer row where EBITDA equals operating income
 [PASS] 13. Adjustments Log sheet present          
-[PASS] 14. Target Price averages DCF legs only    C10 averages C16:C17 (PGM + Exit); comps rows excluded
+[PASS] 14. Target Price averages DCF legs only    C10 averages C16:C17 (PGM + Exit); comps rows [18, 19] excluded
 [PASS] 15. Exit implied price sanity              EV 68,397 >= net debt 45,837 mn
 [PASS] 16. Reverse DCF sheet present              125 live formulas, sheet position 4
 [PASS] 17. Cost of debt basis                     actual: 399 / 46,750 = 0.8535% pre-tax -> 0.5900% after-tax
@@ -24,6 +24,7 @@ validate_output.py — 5726_DCF_Model_20260906.xlsx
 [PASS] 21. Market data is not a placeholder       price 2,727 x 36,800,000 shares = 100,354 JPY mn [source: yfinance; from overrides: beta, current_price, shares, shares_outstanding]
 [PASS] 22. 追補6 §X arbitration applied             降格不要: 収斂 / 裁定不要（倍率乖離・株価乖離とも ≤ 3.0倍） (乖離 1.17x)
 [PASS] 23. Disclosure vintage recorded            最新の確定年次開示 2026-03-31（分析基準日から 6 か月前） / 年次 docID: 2026-03-31=S100YHFZ, 2025-03-31=S100W7ZO, 2024-03-31=S100TSNG, 2023-03-31=S100R2LJ, 2022-03-31=S100OD4X
+[PASS] 24. 型D DDM/RI model                        対象外（company_type=未宣言）
 ==============================================================================
-FAIL 0 / WARN 0 / SKIP 0 / PASS 24
+FAIL 0 / WARN 0 / SKIP 0 / PASS 25
 VERDICT: PASS

@@ -340,7 +340,7 @@
   "fail": 0,
   "warn": 0,
   "skip": 0,
-  "passed": 23,
+  "passed": 25,
   "core_ebitda": true,
   "market_data": true,
   "fresh": true,
@@ -492,6 +492,22 @@
   "notes": {
    "core_ebitda": "OK  4507: workbook EBITDA=        193693  csv=      193693.0  implied EV/EBITDA price=2387",
    "market_data": "OK  4507: price=2909 (cache 2909.0)  shares=851176737 (cache 851176737)"
+  },
+  "clean": true
+ },
+ "4519": {
+  "file": "4519_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 0,
+  "skip": 0,
+  "passed": 24,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  4519: workbook EBITDA=        631368  csv=      631368.0  implied EV/EBITDA price=5201",
+   "market_data": "OK  4519: price=6795 (cache 6795.0)  shares=1645577167 (cache 1645577167)"
   },
   "clean": true
  },
@@ -799,6 +815,22 @@
   },
   "clean": true
  },
+ "6594": {
+  "file": "6594_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 3,
+  "skip": 0,
+  "passed": 21,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  6594: workbook EBITDA=        376184  csv=      376184.0  implied EV/EBITDA price=4783",
+   "market_data": "OK  6594: price=2611 (cache 2611.0)  shares=1146309835 (cache 1146309835)"
+  },
+  "clean": true
+ },
  "6645": {
   "file": "6645_DCF_Model_20260906.xlsx",
   "fail": 0,
@@ -884,7 +916,7 @@
   "fail": 0,
   "warn": 2,
   "skip": 0,
-  "passed": 21,
+  "passed": 23,
   "core_ebitda": true,
   "market_data": true,
   "fresh": true,
@@ -1087,12 +1119,28 @@
   },
   "clean": true
  },
+ "7752": {
+  "file": "7752_DCF_Model_20260906.xlsx",
+  "fail": 0,
+  "warn": 1,
+  "skip": 0,
+  "passed": 22,
+  "core_ebitda": true,
+  "market_data": true,
+  "fresh": true,
+  "recalculated": true,
+  "notes": {
+   "core_ebitda": "OK  7752: workbook EBITDA=        215128  csv=      215128.0  implied EV/EBITDA price=2550",
+   "market_data": "OK  7752: price=1690 (cache 1690.0)  shares=562049730 (cache 562049730)"
+  },
+  "clean": true
+ },
  "7974": {
   "file": "7974_DCF_Model_20260906.xlsx",
   "fail": 0,
   "warn": 0,
   "skip": 0,
-  "passed": 23,
+  "passed": 25,
   "core_ebitda": true,
   "market_data": true,
   "fresh": true,
@@ -1188,7 +1236,7 @@
   "fail": 0,
   "warn": 0,
   "skip": 0,
-  "passed": 23,
+  "passed": 25,
   "core_ebitda": true,
   "market_data": true,
   "fresh": true,

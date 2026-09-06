@@ -1,112 +1,306 @@
 {
-  "ticker": "8410",
-  "company_name": "株式会社セブン銀行",
-  "_company_name_en": "Seven Bank, Ltd.",
-  "sector": "Banking (ATM network / fee-based financial infrastructure)",
-  "fiscal_year_end_month": 3,
-  "projection_start_fy": "FY2027",
-  "projection_years": 5,
-  "current_price": 269,
-  "shares_outstanding": 1110000000,
-  "_shares_note": "FALLBACK USED (attempted EDINET extraction, result inconsistent). FY2026/3 有報 (S100YC1N) cover page: issued shares 1,179,308,000; TotalNumberOfSharesHeldTreasurySharesEtc (aggregate) = only 6,122,700, implying outstanding ~1,173,185,300 -- but this is HIGHER than the prompt's NI/EPS-derived weighted-average (13,476/12.14=1,109.89mn), which is inconsistent with Seven Bank's known history of large buyback programs (6.1mn treasury shares would be an implausibly small ~JPY1.7bn at current price for a ~90% payout-ratio company with an active buyback history). The XBRL tag likely captures only a partial treasury category (e.g. one holder-type row), not the full 自己株式 total; no other treasury-count tag was found in the XBRL. Given the reconciliation failure, deferring to the prompt's own fallback of 1,110,000,000 rather than use an unverified/likely-partial EDINET figure.",
-
-  "hist_years": ["FY2024/3", "FY2025/3", "FY2026/3"],
-  "_hist_period_months": [12, 12, 12],
-  "_hist_note": "Bank P&L mapped to non-financial-company DCF template format per prompt's own reconciliation: hist_revenue=経常収益, hist_cogs=資金調達費用+役務取引等費用+その他業務費用, hist_sga=営業経費+その他経常費用, hist_operating_income=経常利益. Verified: FY2024/3 197,877-54,594-112,757=30,526 matches actual exactly; FY2026/3 197,877(sic, should read 220,025)-58,729-131,129=30,167 vs actual 30,165 (JPY2mn rounding). hist_revenue and hist_net_income cross-checked against EDINET (edinet_fetcher.py DID successfully parse these for this bank, unlike cogs/sga/operating_income which returned N/A as anticipated) -- exact match all 3 years (Revenue 197,877/214,408/220,025; Net Income 31,970/18,221/13,476).",
-  "hist_revenue":          [197877, 214408, 220025],
-  "hist_cogs":             [54594,  57759,  58729],
-  "hist_sga":              [112757, 126357, 131129],
-  "hist_operating_income": [30526,  30289,  30165],
-  "hist_net_income":       [31970,  18221,  13476],
-  "_hist_net_income_note": "FY2024/3 net income of 31,970 includes a 21,540 negative-goodwill gain (負ののれん発生益, extraordinary item) and is NOT comparable to FY2025/3-FY2026/3. See final report item 11.",
-  "hist_depreciation":     [23392,  28936,  30586],
-  "hist_capex":            [17739,  23206,  9947],
-  "_hist_capex_note": "EXTRACTED from EDINET (edinet_fetcher.py's own 'Capital Expenditure' field, which sums PP&E + intangible-asset purchases from the consolidated CF statement, matching the prompt's required definition). Successfully parsed despite the prompt's expectation that bank XBRL tags might fail here -- this field worked even though cogs/sga/operating_income did not. Values: FY2024/3=17,739, FY2025/3=23,206, FY2026/3=9,947. NOT the same-as-D&A fallback the prompt allowed for if extraction failed.",
-
-  "base_year_revenue": 220025,
-  "base_year_cogs": 58729,
-  "core_ebitda": 60751,
-  "core_net_income": 13476,
-  "_core_ebitda_note": "Explicitly set = hist_operating_income[-1] 30,165 + hist_depreciation[-1] 30,586 = 60,751 (prompt's own reference EBITDA, explicitly flagged as meaningless for a bank -- see final report). Set explicitly (rather than relying on auto-derivation) because two prior tickers (285A, 7203) both hit a generate_dcf.py bug where core_ebitda/core_net_income silently default to wrong EDINET-raw values when not set explicitly before overrides apply; setting both directly sidesteps this regardless of what EDINET's bank-specific parsing does.",
-
-  "nwc_method": "revenue_pct",
-  "base_year_ar": 0,
-  "base_year_inv": 0,
-  "base_year_ap": 0,
-  "_nwc_note": "FORCED TO ZERO. Bank working-capital-like BS items (member receivables 126,146, ATM suspense 99,664/68,319 etc.) are funded by deposit growth; asymmetrically capturing only the asset-side change as a cash outflow would structurally understate FCF. SCHEMA DEVIATION: the prompt's own JSON draft included a top-level 'nwc_pct': 0.0 key, but overrides_validator.py's ALLOWED_KEYS has no top-level 'nwc_pct' entry (only base_year_nwc, hist_nwc_pct, and the per-scenario SCENARIO_ARRAY_KEYS 'nwc_pct') -- a top-level nwc_pct key is rejected outright as unknown. Removed it; the per-scenario nwc_pct:[0,0,0,0,0] arrays already present in every one of the 5 scenario blocks are the only mechanism that actually works (templates/dcf_comps_template.py's _has_nwc_pct check requires nwc_pct present in EVERY scenario dict). MUST verify NWC Schedule row 19 = 0 for all periods after generation (see final report item 6).",
-
-  "net_debt": 0,
-  "_net_debt_note": "FORCED TO ZERO. Bank deposits/bonds/borrowings (875,261+100,000+13,598+300) are not economically comparable corporate debt; netting them against cash (896,249) produces a number (92,910) with no economic meaning. net_debt=0 makes EV=Equity Value (this DCF is interpreted as the ATM-fee-business equity value) and de_ratio auto-computes to 0.0, so WACC=cost of equity by design. Narrow corporate-debt-only sensitivity (bonds 100,000 + borrowings 13,598 - securities 167,855 = -54,257 net cash) reported separately in the final report (~+49 JPY/share).",
-
-  "risk_free": 0.023,
-  "beta": 0.65,
-  "_beta_note": "FALLBACK USED. stockanalysis.com reports 8410.T's 5Y beta as 0.10 (single-sourced, Yahoo Finance Japan did not expose beta directly). 0.10 is far outside the prompt's [0.50,0.90] acceptance range, so per instruction the raw value is discarded and the 0.65 fallback is used as-is (not the sub-0.50 template-normalization-clamp-to-0.6 case the prompt specifically warned about, since we never feed 0.10 into the template at all). An extremely low raw beta is directionally consistent with the prompt's own framing of Seven Bank as a low-volatility, fee-income-driven defensive name with low correlation to broad market moves -- but 0.10 implies near-zero systematic risk, which is not plausible as a discount-rate input, hence the fallback.",
-  "erp": 0.060,
-  "size_premium": 0.0,
-  "cost_of_debt_at": 0.010,
-  "tax_rate": 0.35,
-
-  "terminal_growth": 0.005,
-  "exit_multiple": 7.0,
-  "primary_multiple": "EV/EBITDA",
-  "_primary_multiple_note": "Prompt requested primary_multiple:'PER'. Checked templates/dcf_comps_template.py L1736: USE_EV_SALES = (primary_multiple == 'EV/Sales') -- the template ONLY branches on the literal string 'EV/Sales'; any other value (including 'PER') silently falls through to the EV/EBITDA default path with no PER-specific Exit-method behavior. This is a genuine schema/prompt mismatch, not a guess -- per the prompt's own contingency instruction, kept primary_multiple as 'EV/EBITDA' (an accurate label for what the template actually computes) and the final report explicitly states 'Exit Multiple (EV/EBITDA)' and 'Comps EV/EBITDA Median' are inapplicable to a bank. Note this setting does NOT affect the Comps Analysis sheet's PER/PBR columns, which are always computed for every comp regardless of primary_multiple -- those remain valid and are the actual comps method used per the prompt's design.",
-
-  "capex_method": "direct",
-  "capex_direct": {
-    "historical":  [17739, 23206, 9947],
-    "projections": [38000, 36000, 34000, 34000, 34000]
-  },
-  "capex_pct": 0.155,
-
-  "da_method": "direct",
-  "da_direct": {
-    "historical":  [23392, 28936, 30586],
-    "projections": [32000, 33000, 33500, 34000, 34500]
-  },
-  "da_pct": 0.139,
-
-  "scenarios": {
-    "Base": {
-      "revenue_growth": [0.050, 0.035, 0.030, 0.025, 0.020],
-      "cogs_pct":       [0.265, 0.265, 0.265, 0.265, 0.265],
-      "sga_pct":        [0.610, 0.600, 0.590, 0.585, 0.585],
-      "nwc_pct":        [0.0, 0.0, 0.0, 0.0, 0.0]
-    },
-    "Upside": {
-      "revenue_growth": [0.090, 0.070, 0.060, 0.050, 0.045],
-      "cogs_pct":       [0.260, 0.260, 0.260, 0.260, 0.260],
-      "sga_pct":        [0.605, 0.590, 0.575, 0.570, 0.565],
-      "nwc_pct":        [0.0, 0.0, 0.0, 0.0, 0.0]
-    },
-    "Management": {
-      "_note": "Y1 reflects FY2027/3 company guidance (revenue +7.0%, ordinary profit margin 12.53% = 29,500/235,500) per prompt instruction; to be re-verified against the tanshin summary in the research step below.",
-      "revenue_growth": [0.070, 0.040, 0.030, 0.025, 0.020],
-      "cogs_pct":       [0.265, 0.265, 0.265, 0.265, 0.265],
-      "sga_pct":        [0.610, 0.605, 0.600, 0.595, 0.595],
-      "nwc_pct":        [0.0, 0.0, 0.0, 0.0, 0.0]
-    },
-    "Downside 1": {
-      "revenue_growth": [0.020, 0.000, -0.010, -0.010, -0.010],
-      "cogs_pct":       [0.275, 0.275, 0.275, 0.275, 0.275],
-      "sga_pct":        [0.615, 0.625, 0.625, 0.620, 0.620],
-      "nwc_pct":        [0.0, 0.0, 0.0, 0.0, 0.0]
-    },
-    "Downside 2": {
-      "revenue_growth": [-0.020, -0.040, -0.040, -0.030, -0.030],
-      "cogs_pct":       [0.285, 0.285, 0.285, 0.285, 0.285],
-      "sga_pct":        [0.625, 0.650, 0.655, 0.650, 0.650],
-      "nwc_pct":        [0.0, 0.0, 0.0, 0.0, 0.0]
-    }
-  },
-
-  "investment_thesis": [
-    "1. The reported 26% net income decline is misleading -- ordinary profit was essentially flat at 30,165 (-0.4%). The drop came from an 8,456 impairment on the credit card business and new-ATM replacement costs, both below the ordinary line. The franchise did not deteriorate; the accounting did.",
-    "2. Cashless payment adoption is currently a TAILWIND, not a headwind. ATM transaction volume rose because consumers load cash onto cashless wallets at Seven Bank ATMs. ATM units reached 28,536 (+1.9%) with 109.2 daily transactions per unit. The bear case requires this to reverse, which it has not yet.",
-    "3. Fee-based infrastructure economics inside a banking licence. 91.3% of ordinary income is fee income (ATM fees alone 169,240, or 76.9%); interest income is only 7.2%. This is an ATM network operator, and should be valued on franchise durability and ROE, not on net interest margin."
+ "ticker": "8410",
+ "company_name": "株式会社セブン銀行",
+ "_company_name_en": "Seven Bank, Ltd.",
+ "sector": "Banking (ATM network / fee-based financial infrastructure)",
+ "fiscal_year_end_month": 3,
+ "projection_start_fy": "FY2027(E)",
+ "projection_years": 5,
+ "current_price": 340,
+ "shares_outstanding": 1167997856,
+ "_shares_note": "FALLBACK USED (attempted EDINET extraction, result inconsistent). FY2026/3 有報 (S100YC1N) cover page: issued shares 1,179,308,000; TotalNumberOfSharesHeldTreasurySharesEtc (aggregate) = only 6,122,700, implying outstanding ~1,173,185,300 -- but this is HIGHER than the prompt's NI/EPS-derived weighted-average (13,476/12.14=1,109.89mn), which is inconsistent with Seven Bank's known history of large buyback programs (6.1mn treasury shares would be an implausibly small ~JPY1.7bn at current price for a ~90% payout-ratio company with an active buyback history). The XBRL tag likely captures only a partial treasury category (e.g. one holder-type row), not the full 自己株式 total; no other treasury-count tag was found in the XBRL. Given the reconciliation failure, deferring to the prompt's own fallback of 1,110,000,000 rather than use an unverified/likely-partial EDINET figure.",
+ "hist_years": [
+  "FY2024/3",
+  "FY2025/3",
+  "FY2026/3"
+ ],
+ "_hist_period_months": [
+  12,
+  12,
+  12
+ ],
+ "_hist_note": "Bank P&L mapped to non-financial-company DCF template format per prompt's own reconciliation: hist_revenue=経常収益, hist_cogs=資金調達費用+役務取引等費用+その他業務費用, hist_sga=営業経費+その他経常費用, hist_operating_income=経常利益. Verified: FY2024/3 197,877-54,594-112,757=30,526 matches actual exactly; FY2026/3 197,877(sic, should read 220,025)-58,729-131,129=30,167 vs actual 30,165 (JPY2mn rounding). hist_revenue and hist_net_income cross-checked against EDINET (edinet_fetcher.py DID successfully parse these for this bank, unlike cogs/sga/operating_income which returned N/A as anticipated) -- exact match all 3 years (Revenue 197,877/214,408/220,025; Net Income 31,970/18,221/13,476).",
+ "hist_revenue": [
+  197877,
+  214408,
+  220025
+ ],
+ "hist_cogs": [
+  54594,
+  57759,
+  58729
+ ],
+ "hist_sga": [
+  112757,
+  126357,
+  131129
+ ],
+ "hist_operating_income": [
+  30526,
+  30289,
+  30165
+ ],
+ "hist_net_income": [
+  31970,
+  18221,
+  13476
+ ],
+ "_hist_net_income_note": "FY2024/3 net income of 31,970 includes a 21,540 negative-goodwill gain (負ののれん発生益, extraordinary item) and is NOT comparable to FY2025/3-FY2026/3. See final report item 11.",
+ "hist_depreciation": [
+  23392,
+  28936,
+  30586
+ ],
+ "hist_capex": [
+  17739,
+  23206,
+  9947
+ ],
+ "_hist_capex_note": "EXTRACTED from EDINET (edinet_fetcher.py's own 'Capital Expenditure' field, which sums PP&E + intangible-asset purchases from the consolidated CF statement, matching the prompt's required definition). Successfully parsed despite the prompt's expectation that bank XBRL tags might fail here -- this field worked even though cogs/sga/operating_income did not. Values: FY2024/3=17,739, FY2025/3=23,206, FY2026/3=9,947. NOT the same-as-D&A fallback the prompt allowed for if extraction failed.",
+ "base_year_revenue": 220025,
+ "base_year_cogs": 58729,
+ "core_ebitda": 60751,
+ "core_net_income": 13476,
+ "_core_ebitda_note": "Explicitly set = hist_operating_income[-1] 30,165 + hist_depreciation[-1] 30,586 = 60,751 (prompt's own reference EBITDA, explicitly flagged as meaningless for a bank -- see final report). Set explicitly (rather than relying on auto-derivation) because two prior tickers (285A, 7203) both hit a generate_dcf.py bug where core_ebitda/core_net_income silently default to wrong EDINET-raw values when not set explicitly before overrides apply; setting both directly sidesteps this regardless of what EDINET's bank-specific parsing does.",
+ "nwc_method": "revenue_pct",
+ "base_year_ar": 0,
+ "base_year_inv": 0,
+ "base_year_ap": 0,
+ "_nwc_note": "FORCED TO ZERO. Bank working-capital-like BS items (member receivables 126,146, ATM suspense 99,664/68,319 etc.) are funded by deposit growth; asymmetrically capturing only the asset-side change as a cash outflow would structurally understate FCF. SCHEMA DEVIATION: the prompt's own JSON draft included a top-level 'nwc_pct': 0.0 key, but overrides_validator.py's ALLOWED_KEYS has no top-level 'nwc_pct' entry (only base_year_nwc, hist_nwc_pct, and the per-scenario SCENARIO_ARRAY_KEYS 'nwc_pct') -- a top-level nwc_pct key is rejected outright as unknown. Removed it; the per-scenario nwc_pct:[0,0,0,0,0] arrays already present in every one of the 5 scenario blocks are the only mechanism that actually works (templates/dcf_comps_template.py's _has_nwc_pct check requires nwc_pct present in EVERY scenario dict). MUST verify NWC Schedule row 19 = 0 for all periods after generation (see final report item 6).",
+ "net_debt": 0,
+ "_net_debt_note": "FORCED TO ZERO. Bank deposits/bonds/borrowings (875,261+100,000+13,598+300) are not economically comparable corporate debt; netting them against cash (896,249) produces a number (92,910) with no economic meaning. net_debt=0 makes EV=Equity Value (this DCF is interpreted as the ATM-fee-business equity value) and de_ratio auto-computes to 0.0, so WACC=cost of equity by design. Narrow corporate-debt-only sensitivity (bonds 100,000 + borrowings 13,598 - securities 167,855 = -54,257 net cash) reported separately in the final report (~+49 JPY/share).",
+ "risk_free": 0.0297,
+ "beta": 0.4424,
+ "_beta_note": "実測(raw)β = 0.4424(TOPIX 1306.T に対する2年週次OLS、n=104、相関 0.373)。テンプレが Blume 調整 0.67×0.4424+0.33 = 0.6264 を適用。■2026年7月版は β 0.65 を直接採用しており、フェーズ2の新ルールでは 0.6264 になる。",
+ "erp": 0.065,
+ "size_premium": 0.01,
+ "cost_of_debt_at": 0.01,
+ "tax_rate": 0.25,
+ "terminal_growth": 0.01,
+ "exit_multiple": 7.0,
+ "primary_multiple": "EV/EBITDA",
+ "_primary_multiple_note": "Prompt requested primary_multiple:'PER'. Checked templates/dcf_comps_template.py L1736: USE_EV_SALES = (primary_multiple == 'EV/Sales') -- the template ONLY branches on the literal string 'EV/Sales'; any other value (including 'PER') silently falls through to the EV/EBITDA default path with no PER-specific Exit-method behavior. This is a genuine schema/prompt mismatch, not a guess -- per the prompt's own contingency instruction, kept primary_multiple as 'EV/EBITDA' (an accurate label for what the template actually computes) and the final report explicitly states 'Exit Multiple (EV/EBITDA)' and 'Comps EV/EBITDA Median' are inapplicable to a bank. Note this setting does NOT affect the Comps Analysis sheet's PER/PBR columns, which are always computed for every comp regardless of primary_multiple -- those remain valid and are the actual comps method used per the prompt's design.",
+ "capex_method": "direct",
+ "capex_direct": {
+  "historical": [
+   17739,
+   23206,
+   9947
   ],
-  "key_risks": [
-    "1. ROE sits almost exactly at the cost of equity. FY2026/3 ROE was 4.8% (6.1% on FY2027/3 guidance) against an estimated 6.2% cost of equity. When ROE equals Ke, intrinsic value collapses to book value, and the shares already trade at 1.065x book. There is little valuation cushion.",
-    "2. Capex exceeds depreciation during the ATM replacement cycle. Depreciation is roughly 30,586 while the fourth-generation ATM rollout keeps capex elevated. 28,536 units must be refreshed on a recurring cycle regardless of demand.",
-    "3. Payout ratio near 90% leaves almost no retained growth. Sustainable growth = ROE x (1 - payout) is well under 1%, so the dividend is the return. Any ROE shortfall hits both the dividend and the terminal value simultaneously."
+  "projections": [
+   38000,
+   36000,
+   34000,
+   34000,
+   34000
   ]
+ },
+ "capex_pct": 0.155,
+ "da_method": "direct",
+ "da_direct": {
+  "historical": [
+   23392,
+   28936,
+   30586
+  ],
+  "projections": [
+   32000,
+   33000,
+   33500,
+   34000,
+   34500
+  ]
+ },
+ "da_pct": 0.139,
+ "scenarios": {
+  "Base": {
+   "revenue_growth": [
+    0.05,
+    0.035,
+    0.03,
+    0.025,
+    0.02
+   ],
+   "cogs_pct": [
+    0.265,
+    0.265,
+    0.265,
+    0.265,
+    0.265
+   ],
+   "sga_pct": [
+    0.61,
+    0.6,
+    0.59,
+    0.585,
+    0.585
+   ],
+   "nwc_pct": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "Upside": {
+   "revenue_growth": [
+    0.09,
+    0.07,
+    0.06,
+    0.05,
+    0.045
+   ],
+   "cogs_pct": [
+    0.26,
+    0.26,
+    0.26,
+    0.26,
+    0.26
+   ],
+   "sga_pct": [
+    0.605,
+    0.59,
+    0.575,
+    0.57,
+    0.565
+   ],
+   "nwc_pct": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "Management": {
+   "_note": "Y1 reflects FY2027/3 company guidance (revenue +7.0%, ordinary profit margin 12.53% = 29,500/235,500) per prompt instruction; to be re-verified against the tanshin summary in the research step below.",
+   "revenue_growth": [
+    0.07,
+    0.04,
+    0.03,
+    0.025,
+    0.02
+   ],
+   "cogs_pct": [
+    0.265,
+    0.265,
+    0.265,
+    0.265,
+    0.265
+   ],
+   "sga_pct": [
+    0.61,
+    0.605,
+    0.6,
+    0.595,
+    0.595
+   ],
+   "nwc_pct": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "Downside 1": {
+   "revenue_growth": [
+    0.02,
+    0.0,
+    -0.01,
+    -0.01,
+    -0.01
+   ],
+   "cogs_pct": [
+    0.275,
+    0.275,
+    0.275,
+    0.275,
+    0.275
+   ],
+   "sga_pct": [
+    0.615,
+    0.625,
+    0.625,
+    0.62,
+    0.62
+   ],
+   "nwc_pct": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "Downside 2": {
+   "revenue_growth": [
+    -0.02,
+    -0.04,
+    -0.04,
+    -0.03,
+    -0.03
+   ],
+   "cogs_pct": [
+    0.285,
+    0.285,
+    0.285,
+    0.285,
+    0.285
+   ],
+   "sga_pct": [
+    0.625,
+    0.65,
+    0.655,
+    0.65,
+    0.65
+   ],
+   "nwc_pct": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "investment_thesis": [
+  "1. The reported 26% net income decline is misleading -- ordinary profit was essentially flat at 30,165 (-0.4%). The drop came from an 8,456 impairment on the credit card business and new-ATM replacement costs, both below the ordinary line. The franchise did not deteriorate; the accounting did.",
+  "2. Cashless payment adoption is currently a TAILWIND, not a headwind. ATM transaction volume rose because consumers load cash onto cashless wallets at Seven Bank ATMs. ATM units reached 28,536 (+1.9%) with 109.2 daily transactions per unit. The bear case requires this to reverse, which it has not yet.",
+  "3. Fee-based infrastructure economics inside a banking licence. 91.3% of ordinary income is fee income (ATM fees alone 169,240, or 76.9%); interest income is only 7.2%. This is an ATM network operator, and should be valued on franchise durability and ROE, not on net interest margin."
+ ],
+ "key_risks": [
+  "1. ROE sits almost exactly at the cost of equity. FY2026/3 ROE was 4.8% (6.1% on FY2027/3 guidance) against an estimated 6.2% cost of equity. When ROE equals Ke, intrinsic value collapses to book value, and the shares already trade at 1.065x book. There is little valuation cushion.",
+  "2. Capex exceeds depreciation during the ATM replacement cycle. Depreciation is roughly 30,586 while the fourth-generation ATM rollout keeps capex elevated. 28,536 units must be refreshed on a recurring cycle regardless of demand.",
+  "3. Payout ratio near 90% leaves almost no retained growth. Sustainable growth = ROE x (1 - payout) is well under 1%, so the dividend is the return. Any ROE shortfall hits both the dividend and the terminal value simultaneously."
+ ],
+ "company_type": "D",
+ "_company_type_note": "**型D(銀行)**。手順書 §2 により DCF は成立しない(負債が資金調達ではなく原材料、運転資本が定義できない、自己資本規制が配当を制約する)。Target は DDM と Residual Income の平均。generate_dcf.py の Step 8.4 が DDM/RI シートを生成し Exec Summary の Target をその平均に張り替える。Step 8.5 の追補6 §X 裁定は型D では対象外としてスキップされる。",
+ "shares": {
+  "fully_diluted_shares": 1167997856
+ },
+ "_market_note": "株価 340円 / 発行済 1,167,997,856株(yfinance 終値 2026-09-04)。時価総額 397,470百万円。",
+ "bank_valuation": {
+  "book_value_mn": 280498,
+  "net_income_actual_mn": 13476,
+  "dps": [
+   11.0,
+   11.5,
+   12.0,
+   12.5,
+   13.0
+  ],
+  "roe": [
+   0.061,
+   0.065,
+   0.068,
+   0.07,
+   0.07
+  ],
+  "terminal_growth": 0.01,
+  "dps_note": "FY2027(E)=11.00 は会社の配当予想(FY2026/3 実績横ばい)。2026年7月版と同一の配当経路を維持している。",
+  "roe_note": "FY2027(E)=6.1% = 会社の純利益予想 17,000 ÷ 期首自己資本 280,498。2026年7月版と同一の ROE 経路。"
+ },
+ "_bank_valuation_note": "**再現テスト(b) の設計**: DPS と ROE の経路は2026年7月版と**同一に保った**。変えたのは割引・ターミナルの前提(rf 2.3%→2.97% / ERP 6.0%→6.5% / β 0.65→raw 0.4424+Blume / g 1.5%→1.0%)だけである。こうすることで Target の変化を**規則変更に一意に帰属**できる。■自己資本 280,498 は FY2026/3 期末(yfinance Stockholders Equity)。2026年7月版の 280,491 とは7百万円の差で、実質同一。"
 }

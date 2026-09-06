@@ -37,6 +37,7 @@ from scripts.guidance_fetcher import get_guidance
 from scripts.arbitration import (
     arbitrate, apply_demotion, resolve_company_type, arbitration_applies,
 )
+from scripts.ddm_ri import resolve_config as resolve_bank_config, add_sheets as add_bank_sheets
 from templates.dcf_comps_template import generate_dcf_workbook, get_live_market_data, calc_wacc
 
 # Exit codes. A caller that pipes stdout (batch/regen.sh) sees only text, so
@@ -1359,6 +1360,46 @@ def main():
                       f"'needs recalc'.")
         except Exception as e:
             print(f"  WARNING: recalc skipped ({type(e).__name__}: {e}).")
+
+    # ── Step 8.4: 型D (bank) — DDM + Residual Income ─────────────────────
+    # 手順書 §2: a bank's DCF does not hold, so the Target comes from a dividend
+    # discount model and a residual income model instead. The two sheets are
+    # built from the overrides' bank_valuation block (scripts/ddm_ri.py), the
+    # Executive Summary is repointed at their average, and the DCF sheet keeps a
+    # warning row saying it is auxiliary. Runs before the arbitration, which
+    # then skips 型D because there are no DCF legs left to arbitrate.
+    if resolve_company_type(_overrides) == "D" and not args.no_recalc:
+        print()
+        print(f"[Step 8.4] 型D(銀行): DDM + Residual Income を生成...")
+        # Ke = rf + beta x ERP + size premium. No debt leg: a bank's Target is an
+        # equity-side model, so the WACC blend does not apply.
+        try:
+            _cfg = resolve_bank_config(
+                _overrides,
+                ke=(config["risk_free"] + config["beta"] * config["erp"]
+                    + config["size_premium"]),
+                projection_start_fy=config.get("projection_start_fy"))
+        except ValueError as e:
+            print(f"ERROR: {e}")
+            sys.exit(2)
+        add_bank_sheets(saved_path, _cfg)
+        final_warnings.append(
+            "WARNING: 型D(銀行) — Target は DDM / Residual Income の平均であり "
+            "DCF 2脚は [参考・Target不算入]。DCF Model シートは補助である")
+        # openpyxl wrote formulas without values; recalculate before validating.
+        print(f"  DDM/RI を反映するため再計算...")
+        _rcb = subprocess.run(
+            [sys.executable, os.path.join(project_root, "scripts",
+                                          "recalc_excel_com.py"), saved_path],
+            capture_output=True, text=True, timeout=600)
+        if _rcb.returncode != 0:
+            print(f"  ERROR: 型D シート追加後の再計算に失敗した "
+                  f"(exit {_rcb.returncode}) {(_rcb.stderr or '').strip()[:200]}")
+            sys.exit(1)
+        print((_rcb.stdout or "").strip() or "  (no output)")
+    elif resolve_company_type(_overrides) == "D":
+        print()
+        print(f"[Step 8.4] 型D(銀行): スキップ — --no-recalc のため DDM/RI を計算できない")
 
     # ── Step 8.5: 追補6 §X — arbitrate the two DCF legs ──────────────────
     # This used to be a separate manual step (batch/apply_arbitration.py) run
