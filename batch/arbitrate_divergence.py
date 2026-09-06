@@ -124,7 +124,7 @@ def opm_series(code):
         if rev and oi and len(rev) == len(oi):
             s = [o / r for r, o in zip(rev, oi) if r]
             if len(s) >= 3:
-                return s[-1], pct(sorted(s), 0.25)
+                return s[-1], pct(sorted(s), 0.25), s
     c = os.path.join(ROOT, "batch", "cache", f"{code}.json")
     if os.path.exists(c):
         d = json.load(open(c, encoding="utf-8"))
@@ -137,8 +137,39 @@ def opm_series(code):
             if r and o is not None:
                 s.append(o / r)
         if len(s) >= 3:
-            return s[-1], pct(sorted(s), 0.25)
+            return s[-1], pct(sorted(s), 0.25), s
     return None
+
+
+
+def _strictly_monotonic(series):
+    """'increasing' / 'decreasing' / None - the same test batch/pregen_check.py uses."""
+    if not series or len(series) < 3:
+        return None
+    if all(b > a for a, b in zip(series, series[1:])):
+        return "increasing"
+    if all(b < a for a, b in zip(series, series[1:])):
+        return "decreasing"
+    return None
+
+
+def midcycle_recorded(code):
+    """True when the overrides record that a mid-cycle normalisation was applied.
+
+    追補5 §U says "re-generate with mid-cycle normalisation FIRST, then re-judge".
+    `already_treated()` cannot answer that: it looks for a demoted leg, which is
+    the OUTCOME of the re-judgement, not the input to it. The analyst records the
+    normalisation in the overrides' `_scenario_note`, so that is what is read.
+    """
+    ov = os.path.join(ROOT, "data", "overrides", f"{code}_overrides.json")
+    if not os.path.exists(ov):
+        return False
+    try:
+        d = json.load(open(ov, encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    txt = " ".join(str(v) for k, v in d.items() if k.startswith("_"))
+    return ("ミッドサイクル正常化" in txt) or ("§U" in txt)
 
 
 def legs_and_wacc(code):
@@ -254,11 +285,26 @@ def arbitrate(code):
     o = opm_series(code)
     out["opm"] = o
     if o and o[0] <= o[1]:
-        out["regime"] = "トラフ(§U)"
-        # falls through to the band test only once mid-cycle regeneration is done
-        if not out["treated"]:
-            out["verdict"] = "ミッドサイクル正常化で再生成 → 再判定"
-            return out
+        # §U asks "is the denominator sitting in a cyclical trough". Its signature
+        # (latest <= p25) is ALSO true of every strictly monotonic decline, where
+        # the latest value is the minimum by construction - and 追補6 §Y says in so
+        # many words that a trend must not be treated with mean reversion. Left
+        # unqualified, §U therefore captured 6273 / 6367 / 6506 (OPM 31.31 -> 25.26
+        # -> 24.02 -> 22.62, 9.47 -> 8.92 -> 8.45 -> 8.27, 12.29 -> 11.50 -> 9.33
+        # -> 8.73) and parked them at "re-generate with mid-cycle normalisation",
+        # which is the one treatment §Y forbids for them. A trend is not a trough:
+        # those names go to the band test like any other normal-regime name.
+        mono = _strictly_monotonic(o[2] if len(o) > 2 else None)
+        if mono:
+            out["regime"] = "単調(%s)・§U非該当" % ("増加" if mono == "increasing" else "減少")
+        else:
+            out["regime"] = "トラフ(§U)"
+            # falls through to the band test only once mid-cycle regeneration is done
+            if not (out["treated"] or midcycle_recorded(code)):
+                out["verdict"] = "ミッドサイクル正常化で再生成 → 再判定"
+                return out
+            if not out["treated"]:
+                out["regime"] = "トラフ(§U)・正常化済"
 
     # 3. normal regime — observed-multiple band test
     b = peer_band(code)

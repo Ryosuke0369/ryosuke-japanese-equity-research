@@ -1120,8 +1120,8 @@
   "price_old": 67140,
   "price_new": 67140,
   "target_old": 48663,
-  "target_new": 41615,
-  "target_pct": -14.5,
+  "target_new": 55711,
+  "target_pct": 14.5,
   "beta_old": 0.84,
   "beta_new": 1.3231,
   "wacc_old": 0.0943,
@@ -1137,34 +1137,38 @@
   "errors_new": 0,
   "c5_basis_changed": true,
   "leg_basis_old": "average",
-  "leg_basis_new": "average",
-  "other_changes": [],
-  "beta_only": true
+  "leg_basis_new": "Exit only",
+  "other_changes": [
+   "Target basis average->Exit only (追補6 §X)"
+  ],
+  "beta_only": false
  },
  {
   "code": "6367",
   "price_old": 20500,
   "price_new": 20500,
   "target_old": 24262,
-  "target_new": 21290,
-  "target_pct": -12.2,
+  "target_new": 30987,
+  "target_pct": 27.7,
   "beta_old": 0.6,
   "beta_new": 0.8848,
   "wacc_old": 0.07731221552227192,
   "wacc_new": 0.09531649484536082,
   "wacc_bps": 180,
   "verdict_old": "BUY",
-  "verdict_new": "SELL",
-  "flip": true,
-  "flip_dir": "BUY->SELL",
+  "verdict_new": "BUY",
+  "flip": false,
+  "flip_dir": null,
   "beta_raw": "0.828",
   "beta_clamped": "no",
   "guidance": "tdnet_screener_db",
   "errors_new": 0,
   "leg_basis_old": "average",
-  "leg_basis_new": "average",
-  "other_changes": [],
-  "beta_only": true
+  "leg_basis_new": "Exit only",
+  "other_changes": [
+   "Target basis average->Exit only (追補6 §X)"
+  ],
+  "beta_only": false
  },
  {
   "code": "6479",
@@ -1250,8 +1254,8 @@
   "price_old": 4570,
   "price_new": 4570,
   "target_old": 2867,
-  "target_new": 1557,
-  "target_pct": -45.7,
+  "target_new": 2508,
+  "target_pct": -12.5,
   "beta_old": 1.237,
   "beta_new": 1.7073,
   "wacc_old": 0.11498293631963556,
@@ -1266,11 +1270,9 @@
   "guidance": "none",
   "errors_new": 0,
   "leg_basis_old": "Exit only",
-  "leg_basis_new": "average",
-  "other_changes": [
-   "Target basis Exit only->average (追補6 §X)"
-  ],
-  "beta_only": false
+  "leg_basis_new": "Exit only",
+  "other_changes": [],
+  "beta_only": true
  },
  {
   "code": "6645",
@@ -1352,8 +1354,8 @@
   "price_old": 4163,
   "price_new": 4163,
   "target_old": 2840,
-  "target_new": 1357,
-  "target_pct": -52.2,
+  "target_new": 2501,
+  "target_pct": -11.9,
   "beta_old": 0.85,
   "beta_new": 1.2636,
   "wacc_old": 0.08902590955144145,
@@ -1368,11 +1370,9 @@
   "guidance": "tdnet_screener_db",
   "errors_new": 0,
   "leg_basis_old": "Exit only",
-  "leg_basis_new": "average",
-  "other_changes": [
-   "Target basis Exit only->average (追補6 §X)"
-  ],
-  "beta_only": false
+  "leg_basis_new": "Exit only",
+  "other_changes": [],
+  "beta_only": true
  },
  {
   "code": "6762",

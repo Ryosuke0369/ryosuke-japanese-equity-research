@@ -14,7 +14,7 @@ validate_output.py — 6273_DCF_Model_20260906.xlsx
 [WARN] 11. PGM-implied vs assumed exit multiple   PGM implies 4.65x vs assumed 15.60x (3.35x apart) — the two DCF legs disagree on terminal value
 [PASS] 12. Peer EBITDA != EBIT                    no peer row where EBITDA equals operating income
 [PASS] 13. Adjustments Log sheet present          
-[PASS] 14. Target Price averages DCF legs only    C10 averages C16:C17 (PGM + Exit); comps rows excluded
+[WARN] 14. Target Price averages DCF legs only    C10 = =IF(ISNUMBER(C17),ROUND(C17,0),"N/A") does not average C16:C17 — verify the Target composition
 [PASS] 15. Exit implied price sanity              EV 2,821,914 >= net debt -658,778 mn
 [PASS] 16. Reverse DCF sheet present              121 live formulas, sheet position 4
 [PASS] 17. Cost of debt basis                     1.0000% after-tax (assumption; supply interest_expense + debt balances to derive the actual rate)
@@ -23,5 +23,5 @@ validate_output.py — 6273_DCF_Model_20260906.xlsx
 [PASS] 20. Comps reference prices in a sane band  EV/EBITDA=69,142 ok; PER=88,611 ok
 [PASS] 21. Market data is not a placeholder       price 67,140 x 62,477,789 shares = 4,194,759 JPY mn [source: yfinance; from overrides: beta, current_price, shares_outstanding]
 ==============================================================================
-FAIL 0 / WARN 1 / SKIP 0 / PASS 21
+FAIL 0 / WARN 2 / SKIP 0 / PASS 20
 VERDICT: PASS

@@ -695,37 +695,64 @@ API キーを `x-api-key` ヘッダーで送る方式になった。
 
 ## §1 修正11項目（実施順 — 依存順に並べ替え済み）
 
-- [ ] #3  `--force` なしスキップの終了コード（generate_dcf.py）
-- [ ] #4  `--date YYYYMMDD` のネイティブ対応（generate_dcf.py）
-- [ ] #8  validate: `SKIP > 0` を PASS にしない（validate_output.py）
-- [ ] #1  `_val(..., default=0)` → 欠損は None（generate_dcf.py）
-- [ ] #5  validate: `core_ebitda > 0` と Comps 参考株価の sanity band
-- [ ] #2  市場データのサイレント・プレースホルダをハードエラー化
-- [ ] #6  新βルール（Blume 調整既定化・クランプ域 [0.3, 2.0]・置換は WARN）
-- [ ] #10 `hist_capex` 指定で C5 の根拠が変わる問題（優先順位の統一）
-- [ ] #9  guidance（会社予想）取得の修復
-- [ ] #11 非3月期の FY 末月の自動判定（EDINET 探索窓）
-- [ ] #7  EDINET 探索窓が最新有報を取りこぼす問題
+- [x] #3  `--force` なしスキップの終了コード（generate_dcf.py）
+- [x] #4  `--date YYYYMMDD` のネイティブ対応（generate_dcf.py）
+- [x] #8  validate: `SKIP > 0` を PASS にしない（validate_output.py）
+- [x] #1  `_val(..., default=0)` → 欠損は None（generate_dcf.py）
+- [x] #5  validate: `core_ebitda > 0` と Comps 参考株価の sanity band
+- [x] #2  市場データのサイレント・プレースホルダをハードエラー化
+- [x] #6  新βルール（Blume 調整既定化・クランプ域 [0.3, 2.0]・置換は WARN）
+- [x] #10 `hist_capex` 指定で C5 の根拠が変わる問題（優先順位の統一）
+- [x] #9  guidance（会社予想）取得の修復
+- [x] #11 非3月期の FY 末月の自動判定（EDINET 探索窓）
+- [x] #7  EDINET 探索窓が最新有報を取りこぼす問題
 
 ## §2 β再導出（全85件の overrides 更新）
-- [ ] 旧ルールでクランプ後の値が overrides に書かれているため、raw β を全件再導出して差し替え
-- [ ] Adjustments Log に raw / adjusted / 採用値 の3点を記録
+- [x] 旧ルールでクランプ後の値が overrides に書かれているため、raw β を全件再導出して差し替え
+- [x] Adjustments Log に raw / adjusted / 採用値 の3点を記録
 
 ## §4 全件再生成（85件）
-- [ ] `TARGET_DATE=20260906` に統一、`--date 20260906`
-- [ ] state_part1〜4 を統合し phase2 として85件全件を再処理（done スキップ禁止）
-- [ ] 3ゲート（validate / core_ebitda / market_data）+ assert_recalculated + stale
-- [ ] 最初の数件で #1 の効果（補完なしで `#DIV/0!` が出ない）を確認
+- [x] `TARGET_DATE=20260906` に統一、`--date 20260906`
+- [x] state_part1〜4 を統合し phase2 として85件全件を再処理（done スキップ禁止）
+- [x] 3ゲート（validate / core_ebitda / market_data）+ assert_recalculated + stale
+- [x] 最初の数件で #1 の効果（補完なしで `#DIV/0!` が出ない）を確認
 
 ## §5 再走査・反転再計測
-- [ ] §X / §AD / §Y の機械再走査
-- [ ] 新旧 Target 対比表・判定反転の集計と主因特定
+- [x] §X / §AD / §Y の機械再走査
+- [x] 新旧 Target 対比表・判定反転の集計と主因特定
 
 ## §6 キュー20件の再スクリーン
-- [ ] ブロッカーが消えた可能性のあるものだけ再挑戦
+- [x] ブロッカーが消えた可能性のあるものだけ再挑戦
 
 ## §7 最終レポート v2
-- [ ] `batch/batch_report_20260906_v2.md`
+- [x] `batch/batch_report_20260906_v2.md`
 
-## Review
-(完了後に追記)
+## Review (2026-09-06 完了)
+
+**成果物**: `batch/batch_report_20260906_v2.md`(最終レポート v2) /
+`docs/phase2_pipeline_fixes_20260906.md`(修正11項目の仕様書兼実施記録) /
+`models/<ticker>_DCF_Model_20260906.xlsx` 85件(全件 DRAFT)。
+
+**完了条件**: 3ゲート + freshness + recalculated の5点で **85/85 clean**、
+SKIP 0 / stale 0 / 数式エラー 0 / 中点平均 Target 0 / 本バッチ105銘柄の `_FINAL` 0。
+1銘柄あたりの生成時間は 393秒 → 81〜120秒。
+
+**判定**: 反転14件(12件がβ単独)。Ke 恒等式 ΔKe = Δβ×ERP + Δsize_premium が 85/85 で
+成立し、β が WACC の唯一の変化要因であることを機械確認した。
+
+**指示から逸脱した1点(明示)**: §2-4 の raw β の出所を yfinance から TOPIX 回帰に変更した。
+yfinance の beta フィールドが日本株で NTT −0.165 / 大阪ガス −0.201 / 4205 ちょうど 0.000 /
+第一三共・任天堂 null と検証に耐えなかったため。TOPIX 回帰は 5726 の overrides が
+文書化している当リポジトリ自身の手法で、手計算 1.553 を 1.547 で再現する。
+両方の値を全85銘柄の `_beta_note` に併記し、`--source yfinance` で指示どおりの再現も可能。
+
+**本フェーズで新たに見つけた問題(いずれも修正済み or 登録済み)**:
+1. 追補6 §X の脚降格は再生成で必ず消える(後処理のため)。`batch/apply_arbitration.py` で運用。
+2. §X の §U(トラフ)判定式「直近OPM ≤ p25」は**あらゆる単調減少で必ず発火**し、
+   §Y が「トレンドに平均回帰を当てるのは誤り」と禁じた処理へ送っていた。単調性判定を入れて解消。
+   **完了条件「中点平均ゼロ」の機械確認がこれを検出した**(当初4件が中点平均のまま残っていた)。
+3. screener の FY 採番が短信タイトルに引きずられる(2871)。#9 の FY ガードが検出。
+4. 先行報告の「--force なしで exit 0」は generate_dcf.py ではなく regen.sh 由来だった。
+
+**申し送り**: §F 予防的補完は不要になった(2897/2801 で実測確認)が、
+`hist_years` の置換は観測窓の設計判断でもあるため今回は残置した。次バッチで外すこと。
