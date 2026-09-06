@@ -19,7 +19,11 @@ ROOT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
 PAT = re.compile(r"(ForFinancialBusiness|BankingBusiness|CallLoan|CallMoney|"
                  r"DepositsFromCustomers|LoansAndBillsDiscounted|InsuranceContract|"
                  r"PolicyReserve|InstallmentReceivable|LeaseReceivable|"
-                 r"CreditCard|AccountsReceivableInstallment|OperatingLoans)")
+                 r"CreditCard|AccountsReceivableInstallment|OperatingLoans|"
+                 # captive finance の債権。6326 クボタは FinancialReceivables で
+                 # 総資産の 35.8%(2,221,256mn)を占めるのに、この語が無かったため
+                 # スクリーンが CLEAN を返していた。
+                 r"FinancialReceivables|FinanceReceivables|SalesFinanceReceivables)")
 
 # IFRS タグは側面を名前に持つ: ...AssetsIFRS / ...CAIFRS(流動資産) /
 # ...NCAIFRS(非流動資産) が資産、...LiabilitiesIFRS / ...CLIFRS(流動負債) /
