@@ -35,6 +35,15 @@ from scripts.yfinance_quarterly import enrich_merged_data_with_yfinance
 from scripts.overrides_validator import validate_overrides, OverridesValidationError
 from templates.dcf_comps_template import generate_dcf_workbook, get_live_market_data, calc_wacc
 
+# Exit codes. A caller that pipes stdout (batch/regen.sh) sees only text, so
+# the distinction between "no workbook was written" and "a workbook was
+# written but failed validation" has to live in the exit status.
+#   0 = generated and validated
+#   1 = generated but validate_output.py reported FAIL (file kept for triage)
+#   2 = bad invocation / contract violation (argparse, overrides validator)
+#   3 = nothing generated: the output file exists and --force was not given
+EXIT_SKIPPED = 3
+
 
 # =====================================================================
 # MERGED DATA -> CONFIG CONVERSION
@@ -777,6 +786,29 @@ def main():
     ticker_code = args.ticker.strip()
     num_years = min(args.years, 5)
 
+    # -- Output-file protection, decided BEFORE any network work ----------
+    # This check used to sit in Step 7, after ~6 minutes of EDINET/yfinance
+    # traffic, and it announced the refusal as a "WARNING". Two things went
+    # wrong with that: the operator paid the full fetch cost for a run that
+    # produced nothing, and a wrapper that pipes stdout (batch/regen.sh) saw
+    # only a warning line and went on to validate the STALE workbook - which
+    # duly reported VERDICT: PASS for a model that had not been regenerated
+    # (batch report 2026-09-05 SS15-6). The refusal now happens first, says
+    # ERROR, and exits with a code of its own so a caller can tell "nothing
+    # was generated" (3) from "generated but invalid" (1).
+    os.makedirs(args.output_dir, exist_ok=True)
+    date_str = datetime.now().strftime("%Y%m%d")
+    output_path = os.path.join(args.output_dir,
+                               f"{ticker_code}_DCF_Model_{date_str}.xlsx")
+    if os.path.exists(output_path) and not args.force:
+        print()
+        print(f"ERROR: {output_path} already exists - nothing was generated.")
+        print("   Use --force to overwrite, or rename/move the existing file.")
+        print("   Tip: Move finalized models to reports/ to protect them.")
+        print(f"   (exit {EXIT_SKIPPED} = generation skipped; the existing file "
+              f"is untouched and must NOT be read as a fresh run)")
+        sys.exit(EXIT_SKIPPED)
+
     # Auto-detect overrides file if not specified
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     if args.overrides is None:
@@ -1079,16 +1111,9 @@ def main():
         sys.exit(1)
 
     # Step 6: Generate Excel
+    # output_path and the --force guard were resolved at the top of main(),
+    # before any network work - see the comment there.
     print(f"\n[Step 7/9] Generating DCF workbook...")
-    os.makedirs(args.output_dir, exist_ok=True)
-    date_str = datetime.now().strftime("%Y%m%d")
-    output_path = os.path.join(args.output_dir, f"{ticker_code}_DCF_Model_{date_str}.xlsx")
-
-    if os.path.exists(output_path) and not args.force:
-        print(f"\n  WARNING: {output_path} already exists.")
-        print(f"   Use --force to overwrite, or rename/move the existing file.")
-        print(f"   Tip: Move finalized models to reports/ directory to protect them.")
-        sys.exit(1)
 
     # Stamp the template revision into the workbook's Adjustments Log so a model
     # can be traced back to the code that produced it.
