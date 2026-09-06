@@ -665,11 +665,37 @@
   ]
  },
  "4519": {
-  "status": "queued",
-  "type": "A(D&A取得不能)",
+  "status": "done",
+  "type": "A",
   "name": "中外製薬",
-  "reason": "減価償却費が EDINET有報XBRL(docID S100XTBJ)・yfinance のいずれからも取得できず、追補2 §G の core_ebitda ゲートを通せない",
-  "found_in": "第3セッション"
+  "reason": "hist_depreciation を一次資料(CF注記3行合計)から手投入してブロッカー解除",
+  "found_in": "第3セッション",
+  "file": "models/4519_DCF_Model_20260906.xlsx",
+  "target": 4920,
+  "price": 6795,
+  "upside": -0.2759,
+  "verdict": "SELL",
+  "wacc": 0.0929,
+  "beta_raw": 0.73,
+  "beta_adopted": 0.8191,
+  "exit_multiple": 12.0,
+  "peers": [
+   "4502",
+   "4503",
+   "4507",
+   "4523",
+   "4568",
+   "4578"
+  ],
+  "validation": "FAIL 0 / WARN 0 / SKIP 0 / PASS 23",
+  "flags": [
+   "capex_pct 2.72% は定常前提で FY2025 実績 6.06% の2.2倍(UT3/UTA投資、FCF過大の方向)",
+   "会社の業績予想が非開示 → Management = Base",
+   "LTM の D&A は通期値を代理",
+   "β相関 0.290"
+  ],
+  "generated": "2026-09-06 追補12後(87件目)",
+  "rule": "型A規則((直近+p75)/2)で Base 到達OPM 47.11%。IFRS にアンカーし Core を併記。"
  },
  "4523": {
   "status": "done",

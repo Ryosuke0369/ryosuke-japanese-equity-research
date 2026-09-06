@@ -1,0 +1,333 @@
+{
+ "_README": "4519 中外製薬 overrides — 手順書v2 §2【型A: 通常の事業会社】。IFRS、12月期。キュー解除の87件目。ブロッカーは『減価償却費が EDINET有報XBRL(S100XTBJ)・yfinance のいずれからも取得できず core_ebitda ゲートを通せない』ことだった。原因は IFRS の CF 計算書に『減価償却費』の単一行が存在せず、注記3行（有形固定資産・使用権資産・無形資産の償却）に分かれていること。hist_depreciation を一次資料から手投入して解除した。",
+ "ticker": "4519",
+ "company_name": "Chugai Pharmaceutical Co., Ltd.",
+ "exchange": "TSE Prime",
+ "sector": "Pharmaceuticals (Roche group)",
+ "fiscal_year_end_month": 12,
+ "company_type": "A",
+ "_company_type_note": "型A（通常の事業会社）。銀行・captive finance なし。この宣言により generate_dcf.py の Step 8.5（追補6 §X 裁定）が適用対象と判定する。",
+ "risk_free": 0.0297,
+ "erp": 0.065,
+ "tax_rate": 0.25,
+ "terminal_growth": 0.01,
+ "size_premium": 0.01,
+ "_size_premium_note": "時価総額 11,181,697百万円 = 11.18兆円 → バッチのバンド（>3,000億円 → 1.0%）。",
+ "_risk_free_note": "財務省 国債金利情報 jgbcm.csv 10年物 R8.9.3(2026-09-03) 2.966%。バッチ共通の一次ソース。",
+ "beta": 0.73,
+ "_beta_note": "実測（raw）β = 0.7300。出所: TOPIX(1306.T) に対する2年週次 OLS 回帰（n=104、相関 0.290）。テンプレが Blume 調整 0.67×0.7300 + 0.33 = 0.8191 を適用し [0.3, 2.0] にクランプ（非発動）。■相関 0.290 は高くない。ロシュ傘下で日本市場との連動が相対的に弱いことと整合するが、点推定の標準誤差は大きい（Blume 調整が市場β方向へ寄せる分、影響は緩和される）。",
+ "current_price": 6795,
+ "shares_outstanding": 1645577167,
+ "shares": {
+  "fully_diluted_shares": 1645577167
+ },
+ "_market_note": "株価 6,795円 / 発行済 1,645,577,167株（yfinance 終値 2026-09-04）。時価総額 11,181,697百万円。再現性のため静的に固定。",
+ "net_debt": -979700,
+ "_net_debt_note": "**ネット現金 979,700百万円（= net_debt −979,700）**。2025年12月期末。■計算式: 現金及び現金同等物 **426,602** ＋ 有価証券 **553,094** − 有利子負債（借入金・社債）**0** = 979,696 ≒ **979,700**。■一次資料の裏づけ: 有報 S100XTBJ の MD&A に「有価証券や有利子負債を含むネット現金は前連結会計年度末に比べ166億円減少し、**9,797億円**となりました」と会社自身が記載している（9,797億円 = 979,700百万円）。XBRL の CashAndCashEquivalentsIFRS 426,602 と MarketableSecuritiesCAIFRS 553,094 の合計と一致する。■**借入金・社債はゼロ（実質無借金）**。XBRL に Borrowings / Bonds 系のタグが1つも存在しない。■**リース負債の扱い: 除外**。会社のネット現金の定義に含まれておらず、MD&A では「その他の営業外純資産」（△643億円、前期末比218億円減、主にリース負債の増加による）として別建てされている。リース負債の帳簿価額は 2025年末 25,711百万円（有報「リース負債の契約上の満期日」注記）で、これを net_debt に含めると ネット現金は 953,989 になる。**会社の定義に合わせて除外した**。",
+ "hist_years": [
+  "FY2022",
+  "FY2023",
+  "FY2024",
+  "FY2025"
+ ],
+ "hist_revenue": [
+  1259726.0,
+  1111367.0,
+  1170611.0,
+  1257941.0
+ ],
+ "hist_operating_income": [
+  533309.0,
+  439174.0,
+  542002.0,
+  598833.0
+ ],
+ "hist_depreciation": [
+  31434.0,
+  31740.0,
+  31665.0,
+  32535.0
+ ],
+ "hist_ocf": [
+  243582.0,
+  409925.0,
+  447600.0,
+  386280.0
+ ],
+ "hist_capex": [
+  62625.0,
+  71948.0,
+  50415.0,
+  76273.0
+ ],
+ "hist_cash": [
+  222169.0,
+  458674.0,
+  540202.0,
+  426602.0
+ ],
+ "hist_debt": [
+  14109.0,
+  13455.0,
+  10897.0,
+  25711.0
+ ],
+ "_hist_note": "**すべて一次資料（決算短信原本・有報）から交付された確定値**。再抽出・再計算していない。■`hist_depreciation` は CF 注記3行の合計（有形固定資産＋使用権資産＋無形資産の償却）。**のれん償却なし（IFRS）**。CF 本文に『減価償却費』の単一行が存在しない独自フォーマットのため機械抽出が届かず、これが本銘柄のキュー送りの直接原因だった。■`hist_debt` は**リース負債の帳簿価額**（有報「リース負債の契約上の満期日」注記の各期末値）。借入金・社債はゼロなので、有利子負債はリース負債のみである。FY2022 14,109 / FY2023 13,455 / FY2024 10,897 / FY2025 25,711。FY2025 の急増は宇都宮工場（UT3/UTA）関連の使用権資産増（当期増加額 23,208）による。",
+ "base_year_revenue": 1257941.0,
+ "base_year_cogs": 363690.0,
+ "_base_year_note": "FY2025/12 実績。売上原価は EDINET 有報 XBRL。",
+ "book_value": 2025732.0,
+ "core_ebitda": 631368.0,
+ "core_net_income": 434012.0,
+ "_core_note": "core_ebitda = FY2025 営業利益 **598,833** ＋ D&A **32,535** = **631,368**。この D&A こそが本銘柄のブロッカーだった値である。comps CSV の自社行 EBITDA も同値に是正済み（build_comps は D&A を取得できず空欄で出力していた）。core_net_income 434,012 は EDINET FY2025 の親会社所有者帰属当期利益。",
+ "capex_method": "revenue_pct",
+ "capex_pct": 0.0272,
+ "da_method": "revenue_pct",
+ "da_pct": 0.0259,
+ "_capex_note": "da_pct = **2.59%** = D&A 32,535 / 売上 1,257,941（一次資料）。capex_pct = **2.72% = da_pct × 1.05**（validate チェック9 のターミナル整合、バッチ共通の機械規則）。■【重要・保守性の方向を明記】FY2025 実績の capex は **76,273（売上比 6.06%）**で、採用値 2.72% の 2.2倍である。差は宇都宮工場のバイオ原薬製造棟(UT3)・注射剤棟(UTA)への能力増強投資（有報 MD&A に明記）であり、定常状態の維持投資ではない。本モデルは**その投資プログラムが完了し capex が維持水準へ回帰する**前提を置いている。**プログラムが継続する場合、本モデルは FCF を過大に見積もる**（保守的でない方向の誤差）。capex の年次計画が一次情報で得られ次第 capex_method: direct へ切り替えること。",
+ "primary_multiple": "EV/EBITDA",
+ "exit_multiple": 12.0,
+ "_exit_note": "Peer 6社の実測 EV/EBITDA 中央値 **12.00倍**。内訳: 4503 アステラス 7.84 / 4578 大塚HD 10.22 / 4502 武田 11.36 / 4507 塩野義 12.64 / 4523 エーザイ 15.12 / 4568 第一三共 16.10。自社の現在倍率は算式に入れていない。",
+ "_cost_of_debt_note": "**interest_expense は渡していない**。有利子負債が実質ゼロ（リース負債のみ）で、リース負債に係る利息費用は FY2025 で **425百万円**（有報注記）。有利子負債がほぼゼロのため D/E ≈ 0 となり、WACC は事実上 Cost of Equity に等しい。C11 はテンプレ既定の推定値だが、加重がほぼゼロなので WACC への影響は無視できる。",
+ "_scenario_note": "■**IFRS ベースにアンカーした**（hist_operating_income が IFRS 実績であり、DCF も IFRS で通す）。Core 水準は下記に併記する。■実績OPM（IFRS、FY2022-FY2025）: 42.34 → 39.52 → 46.30 → **47.60%**。min 39.52 / p25 41.635 / med 44.32 / p75 46.625 / max 47.60。追補7 §Y の単調性判定: **非単調**。直近 47.60% > 中央値 44.32% のため **型A規則（(直近 + p75)/2）** により Base 到達OPM = (47.60 + 46.625)/2 = **47.11%**。■Upside = max(p75 46.625, 直近+1.0pt 48.60) = **48.60%**。■Downside 1 = min(p25 41.635, 直近 47.60) = **41.64%**。■Downside 2 = 売上減（初年 −5%）+ OPM 半減 = **23.56%**。■**COGS% は直近実績 28.91% に全シナリオ固定し SGA% = 1 − COGS% − 目標OPM で逆算**。**注意: 本モデルの『SGA』は開示上の販売費及び一般管理費（116,461）ではなく、売上総利益と営業利益の間のすべての費用（研究開発費を含む）である**。FY2025 実績で 1,257,941 − 363,690 − 598,833 = 295,418（売上比 23.48%）であり、その大半（約179,000）が研究開発費である。IFRS で R&D が独立表示されるため『COGS + 開示SGA』では営業利益に架橋しない。■**単発項目（Core との差異）**: FY2022 売上 1,259,726 には**アレクシオン和解一時金 90,700 が含まれる**（Core 売上 1,167,800）。この一過性収入を除いた Core ベースの3期CAGR は約 +2.5%。FY2025 は **Core 営業利益 623,213 に対し IFRS 598,833**（差 24,380）。Core OPM は 49.54% で IFRS の 47.60% より 1.9pt 高い。**シナリオは IFRS にアンカーしているため、Core で見れば本モデルの OPM 前提は約2pt 保守側にある**。■**売上成長**: 会社は業績予想を開示していない（2026年12月期 第2四半期短信の Forecast コンテキストには配当予想 132円のみで、売上・営業利益の予想が無い）。したがって Year1 は **LTM 実績の年率 +6.7%**（LTM 売上 1,342,809 ÷ FY2025 1,257,941 − 1）を採り、以降は Core ベース3期CAGR +2.5% 近傍へ 5.0 → 3.5 → 2.5 → 2.0% と逓減させる。中間期は前年同期比 +14.7%（663,331 vs 578,463）と加速しているが、外挿しない。",
+ "_ltm_note": "**LTM は自動構築で一次資料と一致することを生成前に検算した**。FY2025 通期 − 2025年中間期累計 + 2026年中間期累計 = 売上 1,257,941 − 578,463 + 663,331 = **1,342,809**（交付値と完全一致）、営業利益 598,833 − 273,342 + 319,623 = **645,114**（同）。中間期累計は TDnet 決算短信『2026年12月期 第2四半期（中間期）決算短信〔IFRS〕』（2026-07-24 開示、docID 140120260723598715）の Summary inline-XBRL SalesIFRS / OperatingIncomeIFRS の CurrentAccumulatedQ2Duration / PriorAccumulatedQ2Duration から取得。",
+ "_ltm_da_note": "**LTM の D&A は裁定により FY2025 通期値 32,535 を代理値として用いる**。四半期・中間期の短信に D&A の注記が無く、通期 − 前年同期 + 当期 の差引構築ができないため。D&A は年次変動が小さい（31,434 → 31,740 → 31,665 → 32,535、4期のレンジ 3.5%）ので代理として許容できるが、**LTM ベースの EBITDA を使う場合は分子が通期 D&A である**ことを明示的に意識すること。core_ebitda は通期ベースで統一してある。",
+ "_dividend_note": "FY2025 の配当は **150円**だが、これは**創業100周年記念配を含む特殊水準**で、**普通配は 122円**である。2026年12月期の会社予想 DPS は **132円**（中間期短信の Forecast コンテキスト、年間 132 / 期末 66）。payout を参照する場合は **Core 配当性向 40% 前後を平常水準**とすること。本モデルは DCF であり配当は評価に直接使わないが、型D/E で DDM を当てる際や配当利回りを語る際に 150円 を平常値と誤読しないための記録である。",
+ "investment_thesis": [
+  "1. Chugai earns a {per} multiple on {pb} book because its operating margin is 47.6% on an IFRS basis - a level almost no listed Japanese manufacturer reaches - and that margin has expanded, not decayed, over the observation window (42.3% -> 39.5% -> 46.3% -> 47.6%).",
+  "2. The balance sheet holds JPY 979.7bn of net cash with zero borrowings or bonds; the only interest-bearing liability is JPY 25.7bn of lease obligations. At {price} per share that cash is roughly a quarter of the market capitalisation and it is not working.",
+  "3. The half-year just reported grew revenue 14.7% year on year, well ahead of the 6.7% run-rate this model takes as its first projection year - the Base case does not extrapolate the acceleration."
+ ],
+ "key_risks": [
+  "1. The Roche relationship is the whole thesis and the whole risk: royalty and product economics are set by an agreement this model cannot see, and a change in terms would move the 47.6% margin more than any operational factor.",
+  "2. Capital expenditure ran at 6.06% of revenue in FY2025 (UT3/UTA capacity build) against the 2.72% steady-state ratio this model assumes from the terminal year onward. If the build continues, free cash flow is overstated here.",
+  "3. The FY2022 comparison is distorted by a JPY 90.7bn Alexion settlement; on a Core basis the three-year revenue CAGR is about 2.5%, not the flat line the reported figures suggest."
+ ],
+ "scenarios": {
+  "Base": {
+   "_desc": "LTM実績の年率 +6.7% から Core CAGR 近傍へ逓減。到達OPM 47.11%（型A規則）",
+   "revenue_growth": [
+    0.067,
+    0.05,
+    0.035,
+    0.025,
+    0.02
+   ],
+   "cogs_pct": [
+    0.2891,
+    0.2891,
+    0.2891,
+    0.2891,
+    0.2891
+   ],
+   "sga_pct": [
+    0.2398,
+    0.2398,
+    0.2398,
+    0.2398,
+    0.2398
+   ],
+   "dso_days": [
+    129,
+    129,
+    129,
+    129,
+    129
+   ],
+   "dih_days": [
+    278,
+    278,
+    278,
+    278,
+    278
+   ],
+   "dpo_days": [
+    128,
+    128,
+    128,
+    128,
+    128
+   ]
+  },
+  "Upside": {
+   "_desc": "中間期の +14.7% の勢いが持続。OPM 48.60%",
+   "revenue_growth": [
+    0.1,
+    0.07,
+    0.05,
+    0.035,
+    0.03
+   ],
+   "cogs_pct": [
+    0.2891,
+    0.2891,
+    0.2891,
+    0.2891,
+    0.2891
+   ],
+   "sga_pct": [
+    0.2249,
+    0.2249,
+    0.2249,
+    0.2249,
+    0.2249
+   ],
+   "dso_days": [
+    119,
+    119,
+    119,
+    119,
+    119
+   ],
+   "dih_days": [
+    258,
+    258,
+    258,
+    258,
+    258
+   ],
+   "dpo_days": [
+    136,
+    136,
+    136,
+    136,
+    136
+   ]
+  },
+  "Management": {
+   "_desc": "会社の業績予想が非開示のため Base と同一（#9 が理由を記録する）",
+   "revenue_growth": [
+    0.067,
+    0.05,
+    0.035,
+    0.025,
+    0.02
+   ],
+   "cogs_pct": [
+    0.2891,
+    0.2891,
+    0.2891,
+    0.2891,
+    0.2891
+   ],
+   "sga_pct": [
+    0.2398,
+    0.2398,
+    0.2398,
+    0.2398,
+    0.2398
+   ],
+   "dso_days": [
+    129,
+    129,
+    129,
+    129,
+    129
+   ],
+   "dih_days": [
+    278,
+    278,
+    278,
+    278,
+    278
+   ],
+   "dpo_days": [
+    128,
+    128,
+    128,
+    128,
+    128
+   ]
+  },
+  "Downside 1": {
+   "_desc": "成長 2% 前後、OPM は p25 41.64% へ後退",
+   "revenue_growth": [
+    0.02,
+    0.02,
+    0.015,
+    0.015,
+    0.015
+   ],
+   "cogs_pct": [
+    0.2891,
+    0.2891,
+    0.2891,
+    0.2891,
+    0.2891
+   ],
+   "sga_pct": [
+    0.2945,
+    0.2945,
+    0.2945,
+    0.2945,
+    0.2945
+   ],
+   "dso_days": [
+    139,
+    139,
+    139,
+    139,
+    139
+   ],
+   "dih_days": [
+    298,
+    298,
+    298,
+    298,
+    298
+   ],
+   "dpo_days": [
+    120,
+    120,
+    120,
+    120,
+    120
+   ]
+  },
+  "Downside 2": {
+   "_desc": "初年 −5% の売上減 + OPM 半減 23.56%",
+   "revenue_growth": [
+    -0.05,
+    0.0,
+    0.01,
+    0.015,
+    0.015
+   ],
+   "cogs_pct": [
+    0.2891,
+    0.2891,
+    0.2891,
+    0.2891,
+    0.2891
+   ],
+   "sga_pct": [
+    0.4753,
+    0.4753,
+    0.4753,
+    0.4753,
+    0.4753
+   ],
+   "dso_days": [
+    149,
+    149,
+    149,
+    149,
+    149
+   ],
+   "dih_days": [
+    318,
+    318,
+    318,
+    318,
+    318
+   ],
+   "dpo_days": [
+    113,
+    113,
+    113,
+    113,
+    113
+   ]
+  }
+ }
+}
