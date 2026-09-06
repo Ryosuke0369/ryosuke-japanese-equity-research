@@ -23,7 +23,15 @@ import zipfile
 import logging
 import requests
 from collections import OrderedDict
+import calendar
+import re
+import sqlite3
 from datetime import date, datetime, timedelta, timezone
+
+try:
+    from scripts.screener_link import connect_ro
+except ImportError:
+    from screener_link import connect_ro
 from dotenv import load_dotenv
 
 # Load environment variables from .env file automatically
@@ -187,6 +195,104 @@ def infer_fiscal_year_end_month(ticker_code):
 
 
 
+def _period_end_from_title(title):
+    """Fiscal-period end date out of a 有報 title, or None.
+
+    Two formats appear in EDINET titles:
+      '有価証券報告書－第148期(2025/04/01－2026/03/31)'          -> 2026-03-31
+      '有価証券報告書－第144期(令和3年4月1日－令和4年3月31日)'   -> 2022-03-31
+    A bare '有価証券報告書' with no period yields None; the caller then derives
+    the period from the submission date instead.
+    """
+    t = str(title or "")
+    m = re.findall(r"(\d{4})\s*/\s*(\d{1,2})\s*/\s*(\d{1,2})", t)
+    if m:
+        y, mo, d = m[-1]
+        return f"{int(y):04d}-{int(mo):02d}-{int(d):02d}"
+    m = re.findall(r"(令和|平成)\s*(\d{1,2})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日", t)
+    if m:
+        era, yy, mo, d = m[-1]
+        base = 2018 if era == "令和" else 1988
+        return f"{base + int(yy):04d}-{int(mo):02d}-{int(d):02d}"
+    return None
+
+
+def _period_end_from_submission(submit_date, fy_end_month):
+    """The FY end a 有報 submitted on `submit_date` reports on.
+
+    A 有報 is filed within three months of the fiscal year end, so the period it
+    covers is the most recent fiscal-year end strictly before the submission.
+    """
+    if not fy_end_month:
+        return None
+    try:
+        d = date.fromisoformat(str(submit_date)[:10])
+    except ValueError:
+        return None
+    m = int(fy_end_month)
+    year = d.year if (d.month > m or (d.month == m and d.day > 28)) else d.year - 1
+    last_day = calendar.monthrange(year, m)[1]
+    return f"{year:04d}-{m:02d}-{last_day:02d}"
+
+
+def docs_from_screener_archive(ticker_code, num_years=5, fy_end_month=None):
+    """有報 docIDs for `ticker_code` out of the screener's EDINET archive.
+
+    Why this is the first place to look, not the last: `get_document_ids()`
+    discovers documents by querying EDINET's per-date index for every candidate
+    filing date, which means the answer depends on whether the company's actual
+    submission day falls inside a hardcoded window. It does not, often enough to
+    matter — measured against the archive, March-FY 有報 in this universe were
+    submitted anywhere from June 5 (7741 HOYA) to July 15, while the window was
+    June 18 - July 2. 2802 味の素 filed FY2026/3 on June 12 and the pipeline
+    silently modelled FY2025/3 instead (batch report 2026-09-05 §6-4).
+
+    `screener/fetch/edinet_bulk.py` already stores the filing index daily, with
+    the exact docID. Reading it is both correct and free: 0 API calls, no
+    windows, no short-circuit heuristics. The date scan remains as the fallback
+    for tickers the archive does not cover.
+
+    Returns a list shaped like get_document_ids()' output, newest first, or [].
+    """
+    con = connect_ro()
+    if con is None:
+        return []
+    try:
+        rows = con.execute(
+            "SELECT doc_id, date, title, company_name FROM filings "
+            "WHERE code = ? AND type = '有報' AND source = 'edinet' "
+            "AND doc_id IS NOT NULL "
+            "AND (title IS NULL OR title NOT LIKE '訂正%') "
+            "ORDER BY date DESC",
+            (str(ticker_code).strip(),),
+        ).fetchall()
+    except sqlite3.Error as e:
+        logger.info("screener archive query failed: %s", e)
+        return []
+    finally:
+        con.close()
+
+    out, seen = [], set()
+    for doc_id, submit_date, title, company_name in rows:
+        pe = (_period_end_from_submission(submit_date, fy_end_month)
+              or _period_end_from_title(title))
+        if not pe or pe in seen:
+            continue
+        seen.add(pe)
+        out.append({
+            "doc_id": doc_id,
+            "filer_name": company_name or "",
+            "doc_description": title or "",
+            "submit_date": str(submit_date),
+            "period_end": pe,
+            "edinet_code": "",
+            "doc_type_code_raw": DOC_TYPE_ANNUAL_REPORT,
+        })
+        if len(out) >= num_years:
+            break
+    return out
+
+
 def get_document_ids(ticker_code, num_years=5, fiscal_year_end_month=None):
     """Find annual report docIDs for the past `num_years` years.
 
@@ -222,13 +328,35 @@ def get_document_ids(ticker_code, num_years=5, fiscal_year_end_month=None):
           can never grind for minutes when fewer than num_years reports exist
           (e.g. recently-listed companies).
     """
-    api_key = _get_api_key()
     sec_code = str(ticker_code).strip() + SEC_CODE_SUFFIX
     today = date.today()
     current_year = today.year
 
+    if not fiscal_year_end_month:
+        fiscal_year_end_month = infer_fiscal_year_end_month(ticker_code)
+        if fiscal_year_end_month:
+            logger.info("FY-end month not supplied; inferred %d for ticker=%s",
+                        fiscal_year_end_month, ticker_code)
+
     found_docs = []
     seen_period_ends = set()
+
+    # Tier 1: the screener's EDINET filing archive. Exact docIDs, no windows,
+    # zero API calls. The date scan below is the fallback for anything it does
+    # not cover, and it tops up rather than starting over.
+    for _d in docs_from_screener_archive(ticker_code, num_years, fiscal_year_end_month):
+        if _d["period_end"] not in seen_period_ends:
+            seen_period_ends.add(_d["period_end"])
+            found_docs.append(_d)
+    if found_docs:
+        logger.info("screener archive supplied %d/%d annual report(s) for %s "
+                    "(0 API calls): %s", len(found_docs), num_years, ticker_code,
+                    ", ".join(f"{d['period_end']}={d['doc_id']}" for d in found_docs))
+    if len(found_docs) >= num_years:
+        found_docs.sort(key=lambda d: d["period_end"], reverse=True)
+        return found_docs[:num_years]
+
+    api_key = _get_api_key()
     searched_dates = set()
     api_calls = 0
     # Safety budget: hard cap on total EDINET queries so the search cannot hang
@@ -273,19 +401,34 @@ def get_document_ids(ticker_code, num_years=5, fiscal_year_end_month=None):
         return found_new
 
     def search_window(year, month_start, day_start, month_end, day_end):
-        """Search a date range for a given year. Returns True if doc found."""
+        """Search a filing window, deadline first. True if a doc was found.
+
+        The window covers the whole filing month plus a fortnight, and the
+        statutory deadline is the end of the filing month, so submissions pile
+        up at the end of it. Walking the month backwards from its last day
+        reaches the typical filer in a handful of calls instead of twenty, and
+        only then does it look at the late filers in the overflow days. The set
+        of dates searched is the same either way - only the order changes.
+        """
         end_year = year + 1 if month_end < month_start else year
         try:
-            d = date(year, month_start, day_start)
+            start = date(year, month_start, day_start)
             end = date(end_year, month_end, day_end)
         except ValueError:
             return False
+        if end < start:
+            return False
+        in_month, overflow = [], []
+        d = start
         while d <= end:
+            (in_month if (d.year, d.month) == (year, month_start)
+             else overflow).append(d)
+            d += timedelta(days=1)
+        for d in list(reversed(in_month)) + overflow:
             if len(found_docs) >= num_years:
                 return True
             if search_date(d):
                 return True
-            d += timedelta(days=1)
         return False
 
     def adaptive_search(reference_submit_date):
@@ -302,8 +445,12 @@ def get_document_ids(ticker_code, num_years=5, fiscal_year_end_month=None):
                 predicted = date(year, ref_month, ref_day)
             except ValueError:
                 predicted = date(year, ref_month, 28)
-            # Search ±5 days around predicted date, closest first
-            for delta in [0, -1, 1, -2, 2, -3, 3, -4, 4, -5, 5]:
+            # Search around the predicted date, closest first. The span used to
+            # be +-5 days, which is narrower than the year-on-year drift these
+            # companies actually show: 7741 HOYA moved from June 20 to June 5
+            # between two filings (15 days), and 2802 味の素 from June 18 to
+            # June 12. +-5 left the newest report unfound in both cases.
+            for delta in [0] + [s for d in range(1, 16) for s in (-d, d)]:
                 if len(found_docs) >= num_years:
                     break
                 search_date(predicted + timedelta(days=delta))
@@ -313,11 +460,20 @@ def get_document_ids(ticker_code, num_years=5, fiscal_year_end_month=None):
 
     # Filing seasons: (peak_start_month, peak_start_day, peak_end_month, peak_end_day)
     # Ordered by frequency in Japanese market
+    # Filing seasons: (start_month, start_day, end_month, end_day).
+    # These used to be 15-day "peak" windows (18th to the 2nd of the next
+    # month). Measured against the screener's filing archive, that window misses
+    # real submissions on both sides: in this universe March-FY 有報 were filed
+    # anywhere from June 5 (7741 HOYA) to July 15, and 2802 味の素 filed
+    # FY2026/3 on June 12 — twelve days before the window opened, so the
+    # pipeline modelled FY2025/3 and never said so (batch report §6-4). The
+    # window is now the whole filing month plus a fortnight, which covers the
+    # statutory three-month deadline and the late filers after it.
     SEASONS = [
-        (6, 18, 7, 2),    # March FY → June-July (~70% of companies)
-        (3, 18, 4, 2),    # December FY → March-April
-        (9, 18, 10, 2),   # June FY → Sep-Oct
-        (12, 18, 1, 8),   # September FY → Dec-Jan
+        (6, 1, 7, 15),    # March FY → June-July (~70% of companies)
+        (3, 1, 4, 15),    # December FY → March-April
+        (9, 1, 10, 15),   # June FY → Sep-Oct
+        (12, 1, 1, 15),   # September FY → Dec-Jan
     ]
 
     # Dynamic season for non-standard fiscal years: 有報 is filed within ~3
@@ -325,15 +481,10 @@ def get_document_ids(ticker_code, num_years=5, fiscal_year_end_month=None):
     # November FY (e.g. ELEMENTS 5246) this resolves to February, which none of
     # the hardcoded windows cover. For March/Dec/June/Sep FY ends this formula
     # reproduces the existing seasons, so prepending it is harmless there.
-    if not fiscal_year_end_month:
-        fiscal_year_end_month = infer_fiscal_year_end_month(ticker_code)
-        if fiscal_year_end_month:
-            logger.info("FY-end month not supplied; inferred %d for ticker=%s",
-                        fiscal_year_end_month, ticker_code)
     if fiscal_year_end_month:
         filing_month = ((int(fiscal_year_end_month) + 3 - 1) % 12) + 1
-        end_month = (filing_month % 12) + 1  # one month after the peak
-        dynamic_season = (filing_month, 10, end_month, 10)
+        end_month = (filing_month % 12) + 1
+        dynamic_season = (filing_month, 1, end_month, 15)
         if dynamic_season not in SEASONS:
             SEASONS = [dynamic_season] + SEASONS
             logger.info("FY-end month %d → searching dynamic filing season "

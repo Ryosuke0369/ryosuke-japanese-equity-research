@@ -59,52 +59,10 @@ def _fy_year(label):
     return int(m.group(1)) if m else None
 
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-
-
-def _data_root_from_dotenv():
-    """DATA_ROOT out of the repo .env, without importing the screener package."""
-    p = os.path.join(PROJECT_ROOT, ".env")
-    if not os.path.isfile(p):
-        return None
-    for line in open(p, encoding="utf-8", errors="replace"):
-        line = line.strip()
-        if line.startswith("#") or "=" not in line:
-            continue
-        k, v = line.split("=", 1)
-        if k.strip() in ("SCREENER_DATA_ROOT", "DATA_ROOT"):
-            return v.strip().strip('"').strip("'")
-    return None
-
-
-def screener_db_path():
-    """Resolve the screener SQLite path, or None when it is not configured.
-
-    Resolved defensively and in this order: an explicit SCREENER_DB, the
-    screener package's own resolution, then DATA_ROOT from the process
-    environment or the repo .env. The DCF pipeline must keep working on a
-    machine where the screener has never been set up, so every step is
-    optional and failure returns None rather than raising.
-    """
-    explicit = os.environ.get("SCREENER_DB")
-    if explicit and os.path.isfile(explicit):
-        return explicit
-    try:
-        if PROJECT_ROOT not in sys.path:
-            sys.path.insert(0, PROJECT_ROOT)
-        from screener import common as C
-        if os.path.isfile(C.DB_PATH):
-            return C.DB_PATH
-    except Exception:
-        pass
-    root = (os.environ.get("SCREENER_DATA_ROOT")
-            or os.environ.get("DATA_ROOT")
-            or _data_root_from_dotenv())
-    if root:
-        p = os.path.join(root, "screener.db")
-        if os.path.isfile(p):
-            return p
-    return None
+try:
+    from scripts.screener_link import screener_db_path
+except ImportError:
+    from screener_link import screener_db_path
 
 
 def from_screener_db(ticker_code, min_fy_year=None, db_path=None):
