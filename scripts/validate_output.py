@@ -529,6 +529,95 @@ def check_exit_negative_equity(res, wbf, wbv, has_values):
                 f"the Target Price")
 
 
+
+def check_core_ebitda(res, wbf, meta):
+    """#19 The subject EBITDA behind the Comps legs is coherent with the P/L.
+
+    core_ebitda = latest operating income + latest D&A. When EDINET failed to
+    supply one of those legs the sum used to be written anyway, and the Comps
+    reference price built on it went negative or N/A while the run still
+    reported FAIL 0 (4502: JPY -2,761 per share). EBITDA cannot be below
+    operating income - depreciation is not negative - so the two numbers test
+    each other.
+    """
+    eb = _meta_num(meta, "core_ebitda")
+    oi = _meta_num(meta, "latest_operating_income")
+    excluded = str(meta.get("comps_ebitda_excluded", "")).lower() == "yes"
+    if oi is None:
+        res.add(19, SKIP, "Subject EBITDA vs operating income",
+                "no latest_operating_income in metadata")
+        return
+    if eb is None:
+        if oi > 0 and not excluded:
+            res.add(19, FAIL, "Subject EBITDA vs operating income",
+                    f"operating income is {oi:,.0f} mn but core_ebitda is absent "
+                    f"and the EV/EBITDA leg was NOT excluded")
+        else:
+            res.add(19, PASS, "Subject EBITDA vs operating income",
+                    "core_ebitda absent; the EV/EBITDA leg is excluded (N/A)")
+        return
+    if oi > 0 and eb <= 0:
+        res.add(19, FAIL, "Subject EBITDA vs operating income",
+                f"operating income {oi:,.0f} mn > 0 but core_ebitda is {eb:,.0f} "
+                f"- a D&A leg is missing or the sign is wrong")
+    elif oi > 0 and eb < oi * 0.999:
+        res.add(19, WARN, "Subject EBITDA vs operating income",
+                f"core_ebitda {eb:,.0f} < operating income {oi:,.0f} mn. "
+                f"D&A is not negative, so the two are on different bases "
+                f"(different period or scope) - confirm it is intended")
+    else:
+        res.add(19, PASS, "Subject EBITDA vs operating income",
+                f"core_ebitda {eb:,.0f} >= operating income {oi:,.0f} mn "
+                f"(implied D&A {eb - oi:,.0f})")
+
+
+def check_comps_reference_band(res, wbf, wbv, has_values):
+    """#20 The two Comps reference prices are inside a sane band.
+
+    They are [参考] and never enter the Target, but a reference price of
+    JPY -2,761 (4502) or of 100x the market price is not a reference, it is a
+    broken input on display. Excluded methods are written as text (N/A /
+    INVALID) and pass by construction - that is the designed way out.
+    Band: 0 < value < current price x 10.
+    """
+    if not has_values:
+        res.add(20, SKIP, "Comps reference prices in a sane band", "needs recalc")
+        return
+    if "Executive Summary" not in wbf.sheetnames:
+        res.add(20, SKIP, "Comps reference prices in a sane band",
+                "no Executive Summary")
+        return
+    wsv = wbv["Executive Summary"]
+    price = _num(wsv["C9"].value)
+    if not price or price <= 0:
+        res.add(20, SKIP, "Comps reference prices in a sane band",
+                "no current price to scale the band")
+        return
+    ceiling = price * 10
+    problems, notes = [], []
+    for cell, label in (("C18", "EV/EBITDA"), ("C19", "PER")):
+        v = wsv[cell].value
+        n = _num(v)
+        if n is None:
+            notes.append(f"{label}={v!r} (text - method excluded)")
+            continue
+        if n <= 0:
+            problems.append(f"{label} implies {n:,.0f} JPY/share (<= 0)")
+        elif n > ceiling:
+            notes.append(f"{label}={n:,.0f} ABOVE the band ceiling {ceiling:,.0f}")
+        else:
+            notes.append(f"{label}={n:,.0f} ok")
+    if problems:
+        res.add(20, FAIL, "Comps reference prices in a sane band",
+                "; ".join(problems) + f" - band is 0 < v < {ceiling:,.0f} "
+                f"(price {price:,.0f} x10). An unusable method must be written "
+                f"as text (N/A / INVALID), not as a negative number")
+    elif any("ABOVE" in n for n in notes):
+        res.add(20, WARN, "Comps reference prices in a sane band", "; ".join(notes))
+    else:
+        res.add(20, PASS, "Comps reference prices in a sane band", "; ".join(notes))
+
+
 def check_reverse_dcf_sheet(res, wbf, meta):
     """#16 'Reverse DCF' is a standard sheet, placed 4th, and fully live."""
     note = meta.get("reverse_dcf_sheet", "")
@@ -975,6 +1064,8 @@ def validate_workbook(path, write_report=True, allow_skip=False):
         check_fx_sensitivity(res, wbf, wbv, meta, has_values)
         check_exit_negative_equity(res, wbf, wbv, has_values)
         check_reverse_dcf_sheet(res, wbf, meta)
+        check_core_ebitda(res, wbf, meta)
+        check_comps_reference_band(res, wbf, wbv, has_values)
     elif kind == 'market_analysis':
         check_formula_errors(res, wbv, has_values)
         check_interp_iferror(res, wbf)

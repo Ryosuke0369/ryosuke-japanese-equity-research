@@ -361,3 +361,67 @@ Financial Statements も **0 differing cell**（5726 は全系列が overrides �
 None 経路を通らないため挙動不変であることが確認できた）。
 
 ---
+
+## #5 validate に `core_ebitda > 0` チェックが無い
+
+### 症状（先行報告 §F-6-5）
+
+`core_ebitda` は EDINET の「最新期営業利益 + 最新期D&A」から作られる。
+D&A が取れないと壊れた値のまま Comps に流れ、**4502 で参考株価 −2,761円**が出たが
+`FAIL 0 / WARN 0` で通過した。バッチ側の `batch/check_core_ebitda.py` が別ゲートとして
+これを拾っていたが、**validate 単体では検出できない**状態だった。
+
+### 期待する動作
+
+- 営業利益 > 0 なら `core_ebitda > 0` を検査する。
+- Comps 参考株価に sanity band `0 < 値 < 現値 × 10` を課す。
+
+### 変更内容
+
+**`templates/dcf_comps_template.py`** — 判定材料を Pipeline Metadata に出す
+（ラベル文字列の走査ではなく、生成器の意図と突き合わせるという既存方針に合わせた）。
+
+```
+core_ebitda / core_net_income / comps_ebitda_excluded / comps_per_excluded /
+latest_operating_income
+```
+
+**`scripts/validate_output.py`** — チェック2本を追加。
+
+- **19. Subject EBITDA vs operating income**
+  D&A は負にならないので `EBITDA >= 営業利益` が成り立つ。両者が互いの検算になる。
+  - 営業利益 > 0 かつ `core_ebitda <= 0`（または欠損なのに EV/EBITDA を除外していない） → **FAIL**
+  - `core_ebitda < 営業利益` → **WARN**（期間・スコープが違う基準混在の疑い）
+  - `core_ebitda` 欠損だが EV/EBITDA が N/A として除外済み → **PASS**（設計どおりの逃げ道）
+- **20. Comps reference prices in a sane band**
+  Executive Summary C18 / C19 を現値（C9）で規格化する。
+  - テキスト（`N/A` / `INVALID`）→ **PASS**（除外は設計どおり）
+  - 数値 ≤ 0 → **FAIL**（使えない手法は数値でなくテキストで書かれるべき）
+  - 数値 > 現値 × 10 → **WARN**
+
+### 検証
+
+**(a) チェック関数の単体検証**
+
+| 入力 | 判定 |
+|---|---|
+| C18 = −2,761（4502 と同型）| **FAIL** |
+| C18 = `INVALID (n<3)` / C19 = `N/A` | PASS |
+| C18 = 45,000（現値1,500の30倍）| WARN |
+| C18 = 1,582 / C19 = 2,247 | PASS |
+| 営業利益 1,200 / `core_ebitda` −500・除外なし | **FAIL** |
+| 営業利益 1,200 / `core_ebitda` 欠損・EV/EBITDA 除外済 | PASS |
+| 営業利益 1,200 / `core_ebitda` 欠損・除外なし | **FAIL** |
+| `core_ebitda` 900 < 営業利益 1,200 | WARN |
+
+**(b) 5726 実ラン**: `[PASS] 19 core_ebitda 8,575 >= operating income 5,524 (implied D&A 3,051)` /
+`[PASS] 20 EV/EBITDA=1,582 ok; PER=2,247 ok`。`FAIL 0 / WARN 0 / SKIP 0 / PASS 21`。
+
+**(c) 5726 回帰（46セル）**: **differences: 0**
+
+なお、既存の `models/4502_DCF_Model_20260905.xlsx` は現時点で C18 = 5,684（正値）であり、
+報告された −2,761 は既に rework 済みだった。旧テンプレ生成のためチェック19は
+`latest_operating_income` が無く SKIP になり、#8 の規則で当該ファイルは FAIL 判定になる
+（**全件再生成でメタデータごと更新される**）。
+
+---

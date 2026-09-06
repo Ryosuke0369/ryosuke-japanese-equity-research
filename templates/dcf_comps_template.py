@@ -3752,6 +3752,15 @@ def generate_dcf_workbook(config, output_path=None):
         _meta["comps_normalized_ni_row"] = _r_norm
 
     _meta["comps_ev_ebitda_invalid"] = "yes" if EV_EBITDA_INVALID else "no"
+    # Subject-side inputs to the two Comps legs, recorded so validate_output.py
+    # can test them against the income statement instead of scraping labels.
+    _meta["core_ebitda"] = C.get("core_ebitda")
+    _meta["core_net_income"] = C.get("core_net_income")
+    _meta["comps_ebitda_excluded"] = "yes" if EBITDA_EXCLUDED else "no"
+    _meta["comps_per_excluded"] = "yes" if PER_EXCLUDED else "no"
+    _lat_oi = [v for v in (C.get("hist_operating_income") or [])
+               if isinstance(v, (int, float)) and not isinstance(v, bool)]
+    _meta["latest_operating_income"] = _lat_oi[-1] if _lat_oi else "n/a"
     _meta["comps_impl_mult_row"] = R_CMP_IMPL_MULT
     _meta["comps_impl_per_row"] = R_CMP_IMPL_PER
 
