@@ -108,11 +108,21 @@
   "superseded_target": 10103
  },
  "9433": {
-  "status": "queued",
+  "status": "done",
   "type": "E",
   "name": "KDDI",
   "reason": "E:auじぶん銀行/au損保を連結(EDINET S100YKG2 の連結BSに金融事業貸出金6,398,477mn・預金5,666,952mn の独立科目)",
-  "found_in": "Phase2 一次ソース検証"
+  "found_in": "Phase2 一次ソース検証",
+  "file": "models/9433_DCF_Model_20260906.xlsx",
+  "validation": "FAIL 0 / WARN 0 / SKIP 0 / PASS 26",
+  "target": 4220,
+  "price": 2981,
+  "upside": 0.4156,
+  "verdict": "BUY",
+  "wacc": 0.0561,
+  "sotp_per_share": 2657,
+  "rule": "型E — auフィナンシャルHD(議決権100.0%)を分離。DCF は ex-au FH 連結ベース、金融は PBR×純資産で SOTP。手順書§2 では型E の主手法は SOTP。",
+  "regenerated": "2026-09-06 タスク3(型D/E)"
  },
  "7974": {
   "status": "done",
