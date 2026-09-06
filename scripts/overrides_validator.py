@@ -458,13 +458,22 @@ def _check_type_e_contract(overrides):
             "net_debt / 時価総額 で求めるため、金融部門を含む連結 net_debt を"
             "使うと WACC の資本構成が壊れます")
 
-    segs = overrides.get("segments")
-    if not segs:
+    # 非金融 P/L の供給経路は2つある。Segment Analysis(セグメント分解が
+    # 開示されている場合)か、非金融ベースの hist_* 系列を直接与える経路
+    # (金融が独立の報告セグメントになっていない場合 —— 9433 KDDI の金融は
+    # パーソナルセグメントの内側、4689 の金融はストラテジーの内側にある)。
+    # どちらでもよいが、連結の自動値に落ちることだけは許さない。
+    has_segments = bool(overrides.get("segments"))
+    hist_keys = ("hist_revenue", "hist_operating_income", "base_year_revenue")
+    has_hist = all(overrides.get(k) is not None for k in hist_keys)
+    if not has_segments and not has_hist:
+        missing = [k for k in hist_keys if overrides.get(k) is None]
         errors.append(
-            "型E: segments が必須です。連結 P/L には銀行の経常収益・経常利益が"
-            "含まれるため、非金融セグメントのみを Segment Analysis 経由で"
-            "DCF に供給してください(Segment Analysis が DCF Revenue/EBIT の"
-            "single source of truth)")
+            "型E: 非金融ベースの P/L を明示してください。連結 P/L には金融事業の"
+            "収益・利益が含まれるため、次のいずれかが必要です —— "
+            "(a) segments(Segment Analysis が DCF Revenue/EBIT の single source "
+            "of truth になる)、または (b) " + " / ".join(hist_keys) +
+            " を非金融ベースで供給する(不足: " + ", ".join(missing) + ")")
 
     sotp = overrides.get("sotp")
     if not isinstance(sotp, dict):

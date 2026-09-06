@@ -1,0 +1,370 @@
+{
+  "_type": "型E — auフィナンシャルホールディングス(金融、議決権100.0%)を連結に持つ通信会社。DCF は【au FH を除く連結ベース】で組み、金融部門は SOTP 側で PBR×純資産で評価する。",
+  "_source_pl": "2026年3月期 決算詳細資料(2026-05-12) p.3「(参考) 決算概要 (auフィナンシャルホールディングスを除く連結ベース)」。会社自身が連結から au FH を差し引いて算出した系列(連結消去後)。営業利益は 1,099,125 − 43,199 = 1,055,926 で会社開示値と一致する。",
+  "_source_bs": "同 p.3 財務状況(26年3月末): 有利子負債 3,269,350 / 現預金控除後 3,060,157。有利子負債は有報の記述「auフィナンシャルホールディングス株式会社(連結)を除く、有利子負債残高は … 当連結会計年度末が3,269,350百万円」(S100YKG2)と一致。",
+  "_source_mi": "非支配株主持分 515,952(有報 S100YKG2 連結BS NonControllingInterestsIFRS)。au FH は議決権 100.0%(有報 関係会社の状況)のため、非支配株主持分は全額が非金融子会社(沖縄セルラー 80.9% 等)に帰属する。金融側と二重計上しない。",
+  "_net_debt_derivation": "3,060,157(非金融ネット有利子負債) + 515,952(非支配株主持分) = 3,576,109。型E の net_debt 定義(銀行預金・貸出金を除外し MI を加算)。",
+  "_de_ratio_derivation": "3,576,109 ÷ 時価総額 11,017,665 = 0.3246。自動計算は連結 net_debt 4,296,544(金融込み)を使うため 0.39 になり、資本構成が金融の資金調達で膨らむ。型E では自動計算禁止のため明示。",
+  "_disclosure_basis_date": "2026-03-31",
+  "_annual_doc_ids": "2026-03-31=S100YKG2 (有価証券報告書, 2026-06-25 提出)",
+  "_nwc_note": "非金融ベースの運転資本は開示されていない。連結の営業債権には金融事業の与信資産が混入する(連結 DSO 194日)ため使用しない。成熟通信事業で売上成長が年 +2% 前後、運転資本変動は営業利益 1,056,000 に対して二次的であることから、ΔNWC = 0 を【明示の前提】として置く(自動値への沈黙のフォールバックではない)。感応度は Sensitivity Analysis で確認すること。",
+  "_cost_split_note": "cogs_pct 0.5733 は連結の売上原価率(3,481,279/6,071,915)。ex-au FH の原価/販管費の内訳は開示されていないため、原価率を連結と同じと置き、sga_pct を残差として ex-au FH の営業利益率 18.42% に一致させている。EBIT は Revenue×(1−cogs−sga) で決まるので、この内訳は表示上の分解であり評価額には影響しない。",
+  "_growth_note": "Base の初年度 +2.5% は ex-au FH 実績 FY2025.3→FY2026.3 の +2.97% をやや保守側に置いたもの。以降は成熟通信事業として逓減。FY2027.3 の ex-au FH 会社予想は決算詳細資料 p.3 では未開示(-)。",
+  "_hist_note": "hist は2期のみ。ex-au FH 系列は FY2025.3 が2つの決算詳細資料の間で改訂されており(2025年5月版 5,650,267 → 2026年5月版 5,567,839)、旧版の FY2024.3 を混ぜると基準が揃わない。同一基準で連続する2期のみを採用した。",
+  "company_type": "E",
+  "ticker": "9433",
+  "company_name": "KDDI (ex-au Financial Holdings)",
+  "exchange": "TSE Prime",
+  "sector": "情報・通信業",
+  "fiscal_year_end_month": 3,
+  "risk_free": 0.0297,
+  "erp": 0.065,
+  "size_premium": 0.01,
+  "tax_rate": 0.25,
+  "terminal_growth": 0.01,
+  "primary_multiple": "EV/EBITDA",
+  "current_price": 2981.0,
+  "shares_outstanding": 3695962728,
+  "hist_years": [
+    "FY2025",
+    "FY2026"
+  ],
+  "hist_revenue": [
+    5567839,
+    5733007
+  ],
+  "hist_operating_income": [
+    1046821,
+    1055926
+  ],
+  "hist_net_income": [
+    627485,
+    665647
+  ],
+  "base_year_revenue": 5733007,
+  "book_value": 4716657,
+  "core_ebitda": 1735409,
+  "net_debt": 3576109,
+  "de_ratio": 0.3246,
+  "cost_of_debt_at": 0.01,
+  "nwc_method": "revenue_pct",
+  "da_method": "revenue_pct",
+  "da_pct": 0.1185,
+  "capex_method": "revenue_pct",
+  "capex_pct": 0.1161,
+  "exit_multiple": 8.1,
+  "_exit_multiple_note": "9432 NTT の EV/EBITDA 8.10x(自社モデル 20260906 の Comps Analysis 行)。9434 ソフトバンクは PayPay銀行・PayPayカードを連結しており、まさに本モデルが切り離した金融事業が倍率に混入するため採用しない。",
+  "scenarios": {
+    "Base": {
+      "revenue_growth": [
+        0.025,
+        0.02,
+        0.02,
+        0.015,
+        0.015
+      ],
+      "cogs_pct": [
+        0.5733,
+        0.5733,
+        0.5733,
+        0.5733,
+        0.5733
+      ],
+      "sga_pct": [
+        0.2425,
+        0.2425,
+        0.2425,
+        0.2425,
+        0.2425
+      ],
+      "nwc_pct": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "Upside": {
+      "revenue_growth": [
+        0.035,
+        0.03,
+        0.028,
+        0.025,
+        0.02
+      ],
+      "cogs_pct": [
+        0.5733,
+        0.5733,
+        0.5733,
+        0.5733,
+        0.5733
+      ],
+      "sga_pct": [
+        0.2317,
+        0.2317,
+        0.2317,
+        0.2317,
+        0.2317
+      ],
+      "nwc_pct": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "Management": {
+      "revenue_growth": [
+        0.025,
+        0.02,
+        0.02,
+        0.015,
+        0.015
+      ],
+      "cogs_pct": [
+        0.5733,
+        0.5733,
+        0.5733,
+        0.5733,
+        0.5733
+      ],
+      "sga_pct": [
+        0.2425,
+        0.2425,
+        0.2425,
+        0.2425,
+        0.2425
+      ],
+      "nwc_pct": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "Downside 1": {
+      "revenue_growth": [
+        0.015,
+        0.01,
+        0.01,
+        0.01,
+        0.01
+      ],
+      "cogs_pct": [
+        0.5733,
+        0.5733,
+        0.5733,
+        0.5733,
+        0.5733
+      ],
+      "sga_pct": [
+        0.2517,
+        0.2517,
+        0.2517,
+        0.2517,
+        0.2517
+      ],
+      "nwc_pct": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "Downside 2": {
+      "revenue_growth": [
+        0.0,
+        -0.005,
+        0.0,
+        0.005,
+        0.005
+      ],
+      "cogs_pct": [
+        0.5733,
+        0.5733,
+        0.5733,
+        0.5733,
+        0.5733
+      ],
+      "sga_pct": [
+        0.2617,
+        0.2617,
+        0.2617,
+        0.2617,
+        0.2617
+      ],
+      "nwc_pct": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  },
+  "sotp": {
+    "valuation_date": "September 2026",
+    "thesis": "KDDI の連結BS は総資産の 37.5% が金融事業の貸出金・有価証券、負債の 29.7% が金融事業の預金である。連結 DCF は預金を有利子負債として扱ってしまうため成立しない。非金融(通信)を EV/EBITDA、金融(auフィナンシャルホールディングス、議決権100.0%)を PBR×純資産で評価し、SOTP で合算する。",
+    "recommendation": "See Sensitivity",
+    "data_source": "2026年3月期 決算詳細資料(2026-05-12) p.2/p.3/p.10 + 有価証券報告書 S100YKG2。ピア PBR は yfinance(2026-09-06 取得)。",
+    "stock_split_ratio": 1,
+    "consolidated": {
+      "da_total": 679483,
+      "net_debt": 3060157,
+      "minority_interest": 515952,
+      "equity_method_op": 0,
+      "equity_method_multiple": 10.0,
+      "shares_outstanding": 3695963
+    },
+    "segments": [
+      {
+        "key": "telecom",
+        "label": "Telecom & Non-Financial (ex-au FH)",
+        "label_jp": "通信・非金融(auフィナンシャルHDを除く連結)",
+        "fiscal_years": [
+          "FY2025.3",
+          "FY2026.3"
+        ],
+        "revenue": [
+          5567839,
+          5733007
+        ],
+        "op": [
+          1046821,
+          1055926
+        ],
+        "da_allocation_pct": 1.0,
+        "selected_multiple": 8.1,
+        "multiple_source": "9432 NTT の EV/EBITDA 8.10x。9434 ソフトバンクは金融事業を連結しており倍率が汚染されるため除外。9436 沖縄セルラーは KDDI の 80.9% 子会社で連結内のためピアとして独立していない。",
+        "peers": [
+          {
+            "name": "NTT, Inc.",
+            "ticker": "9432.T",
+            "ev_ebitda": 8.1,
+            "opm": 0.124,
+            "market_cap_usd_b": 95,
+            "note": "自社パイプラインの 9432 モデル(20260906)の Comps Analysis 自社行より。"
+          },
+          {
+            "name": "SoftBank Corp.",
+            "ticker": "9434.T",
+            "ev_ebitda": 0.0,
+            "opm": 0.1481,
+            "market_cap_usd_b": 78,
+            "excluded": true,
+            "note": "PayPay銀行・PayPayカードを連結。本モデルが分離した金融事業が EV と EBITDA の双方に入るため統計から除外。加えて yfinance の EBITDA(1,039,656)が営業利益(1,042,576)を下回っており値自体が使えない。"
+          },
+          {
+            "name": "Okinawa Cellular",
+            "ticker": "9436.T",
+            "ev_ebitda": 15.13,
+            "opm": 0.2165,
+            "market_cap_usd_b": 2.6,
+            "excluded": true,
+            "note": "KDDI の 80.9% 子会社であり連結内。ピアとして独立していないため除外。"
+          }
+        ]
+      },
+      {
+        "key": "financial",
+        "label": "au Financial Holdings (100% owned)",
+        "label_jp": "auフィナンシャルホールディングス(議決権100.0%)",
+        "valuation_method": "pbr",
+        "net_assets_mn": 360081,
+        "fiscal_years": [
+          "FY2025.3",
+          "FY2026.3"
+        ],
+        "revenue": [
+          267686,
+          338907
+        ],
+        "op": [
+          40647,
+          43199
+        ],
+        "da_allocation_pct": 0.0,
+        "selected_multiple": 1.359,
+        "multiple_source": "上場デジタル/流通系銀行4社の PBR 中央値(2026-09-06 yfinance): 5838 楽天銀行 2.952 / 8410 セブン銀行 1.416 / 7182 ゆうちょ銀行 1.302 / 8570 イオンフィナンシャル 0.737 → 中央値 1.359。",
+        "peers": [
+          {
+            "name": "Rakuten Bank",
+            "ticker": "5838.T",
+            "pbr": 2.952,
+            "roe": 0.188,
+            "market_cap_usd_b": 7.9,
+            "note": "デジタル銀行。グループ経済圏型で au じぶん銀行に最も近い。"
+          },
+          {
+            "name": "Seven Bank",
+            "ticker": "8410.T",
+            "pbr": 1.416,
+            "roe": 0.048,
+            "market_cap_usd_b": 2.7,
+            "note": "流通系銀行。自社パイプラインの型D モデルあり。"
+          },
+          {
+            "name": "Japan Post Bank",
+            "ticker": "7182.T",
+            "pbr": 1.302,
+            "roe": 0.057,
+            "market_cap_usd_b": 82,
+            "note": "規模は大きく異なるが国内リテール銀行の水準参照。"
+          },
+          {
+            "name": "AEON Financial Service",
+            "ticker": "8570.T",
+            "pbr": 0.737,
+            "roe": 0.045,
+            "market_cap_usd_b": 2.4,
+            "note": "流通系金融持株会社。カード+銀行の複合という点で au FH に近い。"
+          }
+        ]
+      }
+    ],
+    "conglomerate_discount": {
+      "base": 0.1,
+      "sensitivity_range": [
+        0.0,
+        0.05,
+        0.1,
+        0.15,
+        0.2
+      ]
+    },
+    "sensitivity": {
+      "primary_segment_key": "telecom",
+      "primary_multiples": [
+        6.0,
+        7.0,
+        8.1,
+        9.0,
+        10.0
+      ],
+      "table2": {
+        "row_segment_key": "telecom",
+        "row_multiples": [
+          6.0,
+          7.0,
+          8.1,
+          9.0,
+          10.0
+        ],
+        "col_segment_key": "financial",
+        "col_multiples": [
+          0.8,
+          1.0,
+          1.359,
+          1.6,
+          2.0
+        ]
+      }
+    }
+  },
+  "beta": 0.227,
+  "_beta_note": "フェーズ2 §2-4 の規則どおり TOPIX(1306.T)に対する2年週次 OLS 回帰の【生ベータ】。n=104週、raw 0.2270 → Blume 0.67x0.2270+0.33 = 0.4821 でクランプ [0.3, 2.0] の内側。yfinance の info['beta'] は -0.102 を返し、クランプ下限 0.30 に張り付いた上で WACC を 4.71% まで押し下げていた(日本株でこのフィールドが使えないことはフェーズ2 で確認済み)。"
+}

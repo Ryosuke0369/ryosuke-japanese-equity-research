@@ -24,6 +24,7 @@ Writes batch/draft/<code>_preemptive.json
 import sys, os, json
 sys.stdout.reconfigure(encoding="utf-8")
 HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(HERE)
 CACHE, DRAFT = os.path.join(HERE, "cache"), os.path.join(HERE, "draft")
 os.makedirs(DRAFT, exist_ok=True)
 
@@ -31,6 +32,23 @@ IS = {"rev": ["Total Revenue", "Operating Revenue"],
       "oi": ["Operating Income", "Total Operating Income As Reported"],
       "ni": ["Net Income Common Stockholders", "Net Income"],
       "cogs": ["Cost Of Revenue"]}
+
+
+def declared_type(code):
+    """overrides の company_type を読む(無ければ None)。
+
+    ここで型を知りたい理由は一つだけ: 型D/E の net_debt を出さないため。
+    overrides がまだ無い新規銘柄では None が返り、従来どおりの動作になる。
+    """
+    p = os.path.join(ROOT, "data", "overrides", "%s_overrides.json" % code)
+    if not os.path.exists(p):
+        return None
+    try:
+        d = json.load(open(p, encoding="utf-8"))
+    except (ValueError, OSError):
+        return None
+    t = str(d.get("company_type", "")).strip().upper()
+    return t or None
 
 
 def pick(d, blk, names, y):
@@ -81,12 +99,27 @@ def build(code, n=4):
         "_da_latest": da,
         "_net_debt_yf": None,
     }
-    debt = pick(d, "balance", ["Total Debt"], ly)
-    cash = pick(d, "balance", ["Cash And Cash Equivalents",
-                               "Cash Cash Equivalents And Short Term Investments"], ly)
-    if cash is not None:
-        out["_net_debt_yf"] = round((debt or 0) - cash, 1)
-        out["_debt_line_absent"] = debt is None
+    ctype = declared_type(code)
+    if ctype in ("D", "E"):
+        # 型D/E: 連結の Total Debt には銀行の資金調達が、Cash には預け金が入る。
+        # 値を出さず、どこから取るかを書く(サイレントに壊れた数字を渡さない)。
+        out["_net_debt_yf"] = None
+        out["_net_debt_note"] = (
+            "型%s のため yfinance ベースの net_debt は出力しない。連結の Total Debt は"
+            "銀行の資金調達を、Cash は預け金を含み、貸出金は資産側に残るため、"
+            "この差額を net_debt にすると預金を有利子負債として割り引くことになる。"
+            "有報の連結BS から非金融ベース(銀行預金・貸出金・コールローン/コールマネーを"
+            "除外し、非支配株主持分を加算)で作成し、overrides の net_debt に明示すること。"
+            % ctype)
+        print("%s: [型%s] net_debt は出力しない — %s"
+              % (code, ctype, "一次資料から非金融ベースで作成すること"))
+    else:
+        debt = pick(d, "balance", ["Total Debt"], ly)
+        cash = pick(d, "balance", ["Cash And Cash Equivalents",
+                                   "Cash Cash Equivalents And Short Term Investments"], ly)
+        if cash is not None:
+            out["_net_debt_yf"] = round((debt or 0) - cash, 1)
+            out["_debt_line_absent"] = debt is None
     out = {k: v for k, v in out.items() if v is not None or k.startswith("_")}
     p = os.path.join(DRAFT, "%s_preemptive.json" % code)
     json.dump(out, open(p, "w", encoding="utf-8"), ensure_ascii=False, indent=1)

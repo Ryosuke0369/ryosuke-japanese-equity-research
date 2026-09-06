@@ -703,6 +703,39 @@ def check_bank_model(res, path, wbf, wbv, has_values):
             f"; " + "; ".join(notes) + extra)
 
 
+def check_beta_clamped(res, wbf, meta):
+    """#25 A clamped beta is a substituted assumption — say so out loud.
+
+    フェーズ2 #6 の規則は「生ベータ → Blume 収縮 → [0.3, 2.0] でクランプ、
+    クランプしたら WARN」。テンプレートはクランプを実行して Adjustments Log に
+    記録するが、その記録は誰も読んでいなかった。クランプは WACC を直接動かすので、
+    レポートの表に出ないと「測定値」と「下限に張り付いた代替値」の区別がつかない。
+    """
+    log = {}
+    if "Adjustments Log" in wbf.sheetnames:
+        ws = wbf["Adjustments Log"]
+        for r in range(1, ws.max_row + 1):
+            k = ws.cell(r, 2).value
+            if isinstance(k, str):
+                log[k.strip()] = ws.cell(r, 3).value
+    if "beta_clamped" not in log:
+        res.add(25, PASS, "Beta clamp not silently applied",
+                "Adjustments Log にベータ記録なし（旧テンプレートの生成物）")
+        return
+    clamped = str(log.get("beta_clamped", "")).strip().lower() in ("yes", "true", "1")
+    basis = log.get("beta_basis") or ""
+    adopted = log.get("beta_adopted_c8")
+    if clamped:
+        res.add(25, WARN, "Beta clamp not silently applied",
+                f"ベータが [0.3, 2.0] にクランプされて {adopted} が採用された — "
+                f"これは測定値ではなく代替値であり WACC を直接動かす。{basis} / "
+                f"生ベータの出所を確認し、必要なら TOPIX 2年週次回帰の値を "
+                f"overrides の beta に明示すること")
+    else:
+        res.add(25, PASS, "Beta clamp not silently applied",
+                f"クランプなし（採用 {adopted}）。{basis}")
+
+
 def check_disclosure_vintage(res, path, meta):
     """#23 Which disclosures the model is built on, and how old they are.
 
@@ -1381,6 +1414,7 @@ def validate_workbook(path, write_report=True, allow_skip=False):
         check_arbitration_applied(res, path, wbf, meta)
         check_disclosure_vintage(res, path, meta)
         check_bank_model(res, path, wbf, wbv, has_values)
+        check_beta_clamped(res, wbf, meta)
     elif kind == 'market_analysis':
         check_formula_errors(res, wbv, has_values)
         check_interp_iferror(res, wbf)

@@ -113,8 +113,22 @@ def main():
         sotp["consolidated"]["shares_outstanding"] = fd_thousands
         print(f"  Shares: {fd_thousands:,} thousand (from overrides.shares.fully_diluted_shares={fd_shares:,})")
 
-    # Inject net_debt from top-level override if present
-    if "net_debt" in overrides:
+    # Inject net_debt from top-level override if present.
+    #
+    # 型E では入れない。型E の top-level net_debt は「非金融ネット有利子負債 +
+    # 非支配株主持分」と定義されている(WACC の資本構成と DCF の EV→株主価値
+    # ブリッジがそれを要求する)のに対し、SOTP のブリッジは非支配株主持分を
+    # 独立の控除行として持っている。そのまま上書きすると MI を二重に引く。
+    # 9433 の初回生成が実際にそうなり、1株あたり 2,532 円(正しくは 2,658 円)
+    # になっていた。
+    ctype = str(overrides.get("company_type", "")).strip().upper()
+    if ctype == "E":
+        print(f"  Net Debt: sotp.consolidated.net_debt "
+              f"({sotp['consolidated'].get('net_debt'):,}) を使用 — 型E のため "
+              f"top-level net_debt ({overrides.get('net_debt'):,}) は注入しない"
+              f"(top-level は非支配株主持分を含む定義で、SOTP ブリッジは MI を"
+              f"独立行で控除するため二重計上になる)")
+    elif "net_debt" in overrides:
         sotp["consolidated"]["net_debt"] = overrides["net_debt"]
         print(f"  Net Debt: {overrides['net_debt']:,} (from overrides.net_debt)")
 
