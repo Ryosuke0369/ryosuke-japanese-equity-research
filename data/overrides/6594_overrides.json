@@ -1,0 +1,334 @@
+{
+ "_README": "6594 ニデック overrides — 追補13 §B の**暫定 DRAFT**。3月期・IFRS。追補13 §A の鮮度緩和を適用し、**第52期(FY2025/3、docID S100WRH7、2025-09-26 提出)を最新の確定年次開示として採用**した。FY2026/3 の有報提出(9/30予定)は待たない。【暫定モデル・3フラグ】①第52期(FY2025/3)有報は PwC Japan による**監査意見不表明**。②第三者委員会調査による**将来の訂正リスク**がある。③本モデルは**暫定 DRAFT** であり、FY2026/3 有報の提出後に再生成する予定である。",
+ "ticker": "6594",
+ "company_name": "Nidec Corporation",
+ "exchange": "TSE Prime",
+ "sector": "Electric motors / precision components",
+ "fiscal_year_end_month": 3,
+ "company_type": "A",
+ "_company_type_note": "スクリーンの型判定に従い **型A** として処理する。■ただし営業利益の振れは大きい(OPM 8.88 → 4.03 → 6.90 → 9.13%、レンジ 5.1pt)。追補7 §Y の単調性判定は**非単調**で、§U のトラフ兆候(直近 ≤ p25)にも該当しない(直近 9.13% は観測窓の最高)。したがって機械規則上は型B に落ちない。■**型B 候補としての懸念は FY2026/3 の期中に現れている**(下記 _scenario_note の H1 参照)が、その扱いは指示どおり**裁定エンジン(Step 8.5)に委ねる**。",
+ "risk_free": 0.0297,
+ "erp": 0.065,
+ "tax_rate": 0.25,
+ "terminal_growth": 0.01,
+ "size_premium": 0.01,
+ "_size_premium_note": "時価総額 2,993,015百万円 = 2.99兆円 → バッチのバンド(>3,000億円 → 1.0%)。",
+ "beta": 1.0549,
+ "_beta_note": "実測(raw)β = 1.0549。出所: TOPIX(1306.T) に対する2年週次 OLS 回帰(n=104、相関 0.390)。テンプレが Blume 調整 0.67×1.0549 + 0.33 = 1.0368 を適用し [0.3, 2.0] にクランプ(非発動)。",
+ "current_price": 2611,
+ "shares_outstanding": 1146309835,
+ "shares": {
+  "fully_diluted_shares": 1146309835
+ },
+ "_market_note": "株価 2,611円 / 発行済 1,146,309,835株(yfinance 終値 2026-09-04)。時価総額 2,993,015百万円。■**市場データは追補13 §A の緩和対象外**であり、TARGET_DATE 基準の鮮度を維持している。緩和したのは開示書類の鮮度のみである。",
+ "net_debt": 367577,
+ "_net_debt_note": "**367,577百万円**。**最新BS(2025年9月30日、第53期中間期)基準**。■計算式: 有利子負債 **712,032** − 現金及び現金同等物 **344,455** = **367,577**。■現金 344,455 はパイプラインが半期報告書 S100X4KI から構築した LTM 行の現金と一致しており、独立に裏づけが取れている。■**年次(FY2025/3期末)の有利子負債は 636,046 / 現金 246,239(ネット 389,807)**だが、評価は最新のバランスシートで行うべきなので中間期末の値を採用した。■会社概算の 2026/3末 現金8,500億/有利子負債11,100億は**未監査の概算のため使用していない**(追補13 §B の禁止事項)。",
+ "hist_years": [
+  "FY2022",
+  "FY2023",
+  "FY2024",
+  "FY2025"
+ ],
+ "hist_revenue": [
+  1918174.0,
+  2230027.0,
+  2347159.0,
+  2607813.0
+ ],
+ "hist_operating_income": [
+  170374.0,
+  89923.0,
+  161856.0,
+  238116.0
+ ],
+ "hist_net_income": [
+  135759.0,
+  36982.0,
+  124455.0,
+  164365.0
+ ],
+ "hist_cogs": [
+  1514845.0,
+  1826976.0,
+  1849997.0,
+  2071392.0
+ ],
+ "hist_sga": [
+  154940.0,
+  231791.0,
+  254251.0,
+  217706.0
+ ],
+ "hist_depreciation": [
+  104932.0,
+  119522.0,
+  132533.0,
+  138068.0
+ ],
+ "hist_ocf": [
+  94994.0,
+  143485.0,
+  320766.0,
+  284428.0
+ ],
+ "hist_cash": [
+  199655.0,
+  186098.0,
+  217005.0,
+  246239.0
+ ],
+ "_hist_note": "■**第52期(FY2025/3)は交付された訂正後確定値と突合済み**: 売上高 2,607,813 ✓ / 営業利益 238,116 ✓ / 営業CF 284,428 ✓ / 現金 246,239 ✓ が EDINET 自動抽出と**完全一致**した。**矛盾はゼロ**。■減価償却費は**総額 138,068**(有形 113,972 + その他償却 24,096)を採用。EDINET の自動抽出は**有形分 113,972 のみ**で、これは誤りではなく部分取得である(交付された内訳の有形分とぴったり一致する)。hist_depreciation の系列は yfinance の総額D&A(104,932/119,522/132,533/**138,068**)を用い、**最新期が確定値と一致すること**を確認したうえで基準を揃えた。■**hist_debt は渡していない**。有利子負債の確定値は FY2025/3 期末の 636,046 のみで、過年度が同一基準で取れないため、4期の系列を作ると基準が混ざる。評価に使う net_debt は最新BS基準で明示指定してある。■**hist_capex も渡していない**。確定値 FY2025 = **120,711** に対し yfinance の Capital Expenditure は **148,829** で 23% 乖離する(yfinance の capex 行は有形固定資産の取得以外を含むとみられる)。基準の異なる系列を作らず、投影比率 capex_pct のみを確定値から導出した。",
+ "base_year_revenue": 2607813.0,
+ "base_year_cogs": 2071392.0,
+ "book_value": 1719296.0,
+ "core_ebitda": 376184.0,
+ "core_net_income": 164365.0,
+ "_core_note": "core_ebitda = FY2025/3 営業利益 **238,116** + D&A **138,068**(確定値・総額) = **376,184**。comps CSV の自社行 EBITDA も同値。",
+ "capex_method": "revenue_pct",
+ "capex_pct": 0.0556,
+ "da_method": "revenue_pct",
+ "da_pct": 0.0529,
+ "_capex_note": "da_pct = **5.29%** = D&A 138,068 / 売上 2,607,813(確定値)。capex_pct = **5.56% = da_pct × 1.05**(validate チェック9 のターミナル整合、バッチ共通の機械規則)。■**確定値の FY2025 設備投資 120,711 は売上比 4.63%** で、**減価償却費(5.29%)を下回っている**。定常状態で投資が償却を下回り続けることはありえないため、ターミナル年の前提としては採らない。この調整は capex を実績より引き上げる方向、すなわち **FCF を保守側に振る**。",
+ "primary_multiple": "EV/EBITDA",
+ "exit_multiple": 15.6,
+ "_exit_note": "Peer 5社の実測 EV/EBITDA 中央値 **15.55倍**を 15.6 に丸めた。内訳: 6902 デンソー 4.76 / 6501 日立 14.33 / 6503 三菱電機 15.55 / 7011 三菱重工 21.37 / 6981 村田 27.15。**分散が大きい(p75/p25 で 1.5倍超)** ため、裁定でバンドテストが使われた場合は追補7 §AA の「バンド不安定」に該当する可能性がある。",
+ "_scenario_note": "■実績OPM(FY2022-FY2025): 8.88 → 4.03 → 6.90 → **9.13%**。min 4.03 / p25 6.183 / med 7.89 / p75 8.9425 / max 9.13。追補7 §Y の単調性判定 **非単調**、直近 9.13% > 中央値 7.89% のため **型A規則((直近 + p75)/2)** で Base 到達OPM = (9.13 + 8.9425)/2 = **9.04%**。Upside = max(p75 8.9425, 直近+1.0pt 10.13) = **10.13%**。Downside 1 = min(p25 6.183, 直近 9.13) = **6.18%**。Downside 2 = 売上減(初年 −7%) + OPM 半減 = **4.52%**。COGS% は直近実績 **79.43%** に全シナリオ固定し SGA% = 1 − COGS% − 目標OPM で逆算。■■**FY2026/3 期中の単発項目の扱い(重要)**: **第53期 Q1 は営業赤字 △26,407**(契約損失引当・減損・求償和解債務による一時項目、会社開示)。第53期 H1 は 売上 1,302,303 / 営業利益 **21,107**(OPM **1.62%**)で、前年同期(売上 1,293,811 / 営業利益 120,474、OPM 9.31%)から大きく低下している。**Q1 の一時損失を差し引いた Q2 単独の営業利益は 21,107 − (−26,407) = 47,514** で、FY2025 の四半期平均 59,529 の約 80% にあたる。■**シナリオは FY2025/3 の確定実績にアンカーしており、H1 の落ち込みを到達OPM に織り込んでいない**。根拠は、会社が Q1 の赤字要因を一時項目として開示していること、および Q2 単独が通常の水準に近いこと。**この判断が妥当かどうかの検証は、指示どおり裁定エンジン(Step 8.5、追補6 §X)に委ねる** —— PGM と Exit の乖離が 3.0倍を超えれば機械的に降格が入る。■参考: **LTM(2Q 2026-03) の OPM は 5.30%**(営業利益 138,749 / 売上 2,616,305)で、Base の 9.04% との差 3.7pt が本モデルの最大の判断リスクである。■**売上成長**: 会社の業績予想は取得できない(TDnet アーカイブに guidance 行なし)。Year1 は **H1 実績の前年同期比 +0.66%**(1,302,303 vs 1,293,811)を丸めた +0.7% を採り、以降は 1.5 → 2.0% へ緩やかに回復させる。3期CAGR 10.8% は買収を含むため外挿しない。",
+ "_disclosure_note": "【追補13 §A の鮮度緩和を適用】■**最新の確定年次開示 = 第52期(FY2025/3)、docID S100WRH7、2025年9月26日提出**。分析基準日 2026-09-06 に対し **17か月前**の期末である。■一方、**BS と LTM は最新**である: 半期報告書 **S100X4KI(第53期、2025/04/01-2026/03/31)** から LTM(2Q 2026-03) を構築しており、現金・net_debt は **2025年9月30日**基準。■つまり本モデルは「通期の確定 P/L は第52期止まり、BS と LTM は 2025/9 時点」という**混成の基準日**を持つ。validate のチェック23 がこの vintage を毎回記録する。■FY2026/3 の有報が提出され次第、再生成すること。",
+ "investment_thesis": [
+  "1. Nidec trades at {per} earnings on {pb} book while the FY3/25 accounts it is valued on carry a disclaimer of opinion - the discount and the uncertainty are the same fact, and this model prices the audited-through-FY3/25 business rather than the company's own unaudited estimate of FY3/26.",
+  "2. Operating margin recovered to 9.13% in FY3/25 from the 4.03% trough of FY3/23, and that recovery - not the current-year interruption - is what the Base case extrapolates to a 9.04% steady state.",
+  "3. Net debt of JPY 367.6bn against a JPY 2,993bn market capitalisation is modest for a company of this capital intensity, and the balance-sheet figure used here is the September 2025 interim, not the older annual."
+ ],
+ "key_risks": [
+  "1. THREE STANDING FLAGS ON THIS MODEL: ①第52期(FY2025/3)有報は PwC Japan による**監査意見不表明**。②第三者委員会調査による**将来の訂正リスク**がある。③本モデルは**暫定 DRAFT** であり、FY2026/3 有報の提出後に再生成する予定である。",
+  "2. First-half FY3/26 operating margin was 1.62% against 9.31% a year earlier. The Base case treats the Q1 operating loss of JPY 26.4bn as the one-off the company describes (contract loss provisions, impairment, an indemnity settlement) and does NOT rebase the target margin on it. If those charges prove recurring, the 9.04% steady-state assumption is wrong by a wide margin.",
+  "3. The company's own FY3/26 estimate (roughly JPY 2.7tn of revenue) is unaudited and is deliberately excluded from every assumption here. Nothing in this model is anchored to it."
+ ],
+ "scenarios": {
+  "Base": {
+   "_desc": "H1 実績の +0.7% を初年に。到達OPM 9.04%(型A規則)",
+   "revenue_growth": [
+    0.007,
+    0.015,
+    0.02,
+    0.02,
+    0.02
+   ],
+   "cogs_pct": [
+    0.7943,
+    0.7943,
+    0.7943,
+    0.7943,
+    0.7943
+   ],
+   "sga_pct": [
+    0.1153,
+    0.1153,
+    0.1153,
+    0.1153,
+    0.1153
+   ],
+   "dso_days": [
+    82,
+    82,
+    82,
+    82,
+    82
+   ],
+   "dih_days": [
+    63,
+    63,
+    63,
+    63,
+    63
+   ],
+   "dpo_days": [
+    76,
+    76,
+    76,
+    76,
+    76
+   ]
+  },
+  "Upside": {
+   "_desc": "EV・データセンター向けの回復。OPM 10.13%",
+   "revenue_growth": [
+    0.02,
+    0.03,
+    0.03,
+    0.025,
+    0.025
+   ],
+   "cogs_pct": [
+    0.7943,
+    0.7943,
+    0.7943,
+    0.7943,
+    0.7943
+   ],
+   "sga_pct": [
+    0.1044,
+    0.1044,
+    0.1044,
+    0.1044,
+    0.1044
+   ],
+   "dso_days": [
+    77,
+    77,
+    77,
+    77,
+    77
+   ],
+   "dih_days": [
+    58,
+    58,
+    58,
+    58,
+    58
+   ],
+   "dpo_days": [
+    81,
+    81,
+    81,
+    81,
+    81
+   ]
+  },
+  "Management": {
+   "_desc": "会社の業績予想が取得できないため Base と同一",
+   "revenue_growth": [
+    0.007,
+    0.015,
+    0.02,
+    0.02,
+    0.02
+   ],
+   "cogs_pct": [
+    0.7943,
+    0.7943,
+    0.7943,
+    0.7943,
+    0.7943
+   ],
+   "sga_pct": [
+    0.1153,
+    0.1153,
+    0.1153,
+    0.1153,
+    0.1153
+   ],
+   "dso_days": [
+    82,
+    82,
+    82,
+    82,
+    82
+   ],
+   "dih_days": [
+    63,
+    63,
+    63,
+    63,
+    63
+   ],
+   "dpo_days": [
+    76,
+    76,
+    76,
+    76,
+    76
+   ]
+  },
+  "Downside 1": {
+   "_desc": "初年 −1%、OPM は p25 6.18% へ後退",
+   "revenue_growth": [
+    -0.01,
+    0.005,
+    0.01,
+    0.01,
+    0.01
+   ],
+   "cogs_pct": [
+    0.7943,
+    0.7943,
+    0.7943,
+    0.7943,
+    0.7943
+   ],
+   "sga_pct": [
+    0.1439,
+    0.1439,
+    0.1439,
+    0.1439,
+    0.1439
+   ],
+   "dso_days": [
+    87,
+    87,
+    87,
+    87,
+    87
+   ],
+   "dih_days": [
+    71,
+    71,
+    71,
+    71,
+    71
+   ],
+   "dpo_days": [
+    71,
+    71,
+    71,
+    71,
+    71
+   ]
+  },
+  "Downside 2": {
+   "_desc": "初年 −7% の売上減 + OPM 半減 4.52%",
+   "revenue_growth": [
+    -0.07,
+    0.0,
+    0.01,
+    0.015,
+    0.015
+   ],
+   "cogs_pct": [
+    0.7943,
+    0.7943,
+    0.7943,
+    0.7943,
+    0.7943
+   ],
+   "sga_pct": [
+    0.1605,
+    0.1605,
+    0.1605,
+    0.1605,
+    0.1605
+   ],
+   "dso_days": [
+    94,
+    94,
+    94,
+    94,
+    94
+   ],
+   "dih_days": [
+    81,
+    81,
+    81,
+    81,
+    81
+   ],
+   "dpo_days": [
+    66,
+    66,
+    66,
+    66,
+    66
+   ]
+  }
+ }
+}

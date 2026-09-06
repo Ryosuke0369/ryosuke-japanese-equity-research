@@ -1035,6 +1035,15 @@ def main():
     config = merged_data_to_config(company_info, merged_data, forecast_data=forecast_data)
     config["_guidance_source"] = _guidance_source
     config["_guidance_note"] = _guidance_note
+    # 追補13 §A: the vintage of the disclosures this model is built on, so a
+    # relaxed-freshness model states its own basis date instead of relying on
+    # the reader knowing which queue rule applied.
+    _md = merged_data.get("_meta") or {}
+    for _k, _v in (("_disclosure_basis_date", _md.get("disclosure_basis_date")),
+                   ("_annual_doc_ids", _md.get("annual_doc_ids")),
+                   ("_interim_doc_id", _md.get("interim_doc_id"))):
+        if _v:
+            config[_k] = _v
 
     # Step 4.5: Apply manual overrides if provided
     if _overrides:

@@ -1083,6 +1083,17 @@ def fetch_and_parse_multi_year(ticker_code, num_years=5, output_dir=None,
     _meta = merged.setdefault("_meta", {})
     _meta["xbrl_paths"] = [p for _, p in xbrl_paths_by_period]
 
+    # 追補13 §A: which disclosures this model is actually built on. The freshness
+    # rule was relaxed for the queue remainder ("use the newest CONFIRMED filing,
+    # even a year old"), and the price of that relaxation is that the vintage of
+    # the data must be unambiguous afterwards. So the annual reports' period-ends
+    # and docIDs are published here and end up in the workbook's Pipeline
+    # Metadata - "which point in time is this?" answerable from the file alone.
+    _meta["annual_doc_ids"] = ", ".join(
+        f"{d['period_end']}={d['doc_id']}" for d in doc_infos)
+    _meta["disclosure_basis_date"] = (
+        max(d["period_end"] for d in doc_infos) if doc_infos else None)
+
     # Step 5: Search for latest quarterly report and compute LTM
     print("\nSearching for latest interim report (quarterly/semi-annual)...")
     fiscal_year_end = doc_infos[0]["period_end"] if doc_infos else None
@@ -1125,6 +1136,8 @@ def fetch_and_parse_multi_year(ticker_code, num_years=5, output_dir=None,
                                     new_merged[k] = v
                             new_merged["_meta"] = merged.get("_meta", {})
                             merged = new_merged
+                            merged.setdefault("_meta", {})["interim_doc_id"] = (
+                                f"{quarterly_doc['period_end']}={quarterly_doc['doc_id']}")
                             print(f"  LTM computed: {ltm_label}")
                 else:
                     logger.warning("No quarterly contexts found in XBRL.")

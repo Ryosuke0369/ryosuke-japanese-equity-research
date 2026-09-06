@@ -548,6 +548,51 @@ def check_exit_negative_equity(res, wbf, wbv, has_values):
 
 
 
+
+def check_disclosure_vintage(res, path, meta):
+    """#23 Which disclosures the model is built on, and how old they are.
+
+    追補13 §A relaxed the freshness rule for the queue remainder: a model may be
+    built on the newest CONFIRMED filing even when that filing is a year old.
+    The price of the relaxation is that the vintage must be unambiguous, so this
+    reports the basis date and the docIDs, and WARNs - never FAILs - when the
+    newest annual report is more than a year behind the analysis date.
+
+    This is NOT the 追補6 §Z freshness gate. That one asks "is the workbook newer
+    than the overrides and comps it was built from", which is about the build
+    being current, and it still fails. This one is about the DATA being old,
+    which is now a disclosed condition rather than a blocker.
+    """
+    basis = meta.get("disclosure_basis_date")
+    docs = meta.get("annual_doc_ids")
+    interim = meta.get("interim_doc_id")
+    if not basis:
+        res.add(23, PASS, "Disclosure vintage recorded",
+                "no disclosure metadata (pre-追補13 model or overrides-only build)")
+        return
+    import datetime as _dt
+    # The analysis-basis date is the filename stamp (--date), not today: a model
+    # re-validated months later must not age just because the clock moved.
+    stamp = re.search(r"_(\d{8})\.xlsx$", os.path.basename(path))
+    try:
+        asof = _dt.date(int(stamp.group(1)[:4]), int(stamp.group(1)[4:6]),
+                        int(stamp.group(1)[6:])) if stamp else _dt.date.today()
+        b = _dt.date.fromisoformat(str(basis)[:10])
+    except (ValueError, AttributeError):
+        res.add(23, PASS, "Disclosure vintage recorded", f"basis {basis}")
+        return
+    months = (asof.year - b.year) * 12 + (asof.month - b.month)
+    detail = (f"最新の確定年次開示 {b.isoformat()}（分析基準日から {months} か月前）"
+              f" / 年次 docID: {docs}"
+              + (f" / 半期 docID: {interim}" if interim else ""))
+    if months > 12:
+        res.add(23, WARN, "Disclosure vintage recorded",
+                detail + " — 追補13 §A の鮮度緩和が適用された状態。"
+                         "最新期の確定開示が出たら再生成すること")
+    else:
+        res.add(23, PASS, "Disclosure vintage recorded", detail)
+
+
 def check_arbitration_applied(res, path, wbf, meta):
     """#22 A model the machine rules say to arbitrate has actually been arbitrated.
 
@@ -1180,6 +1225,7 @@ def validate_workbook(path, write_report=True, allow_skip=False):
         check_comps_reference_band(res, wbf, wbv, has_values)
         check_market_data(res, wbf, meta)
         check_arbitration_applied(res, path, wbf, meta)
+        check_disclosure_vintage(res, path, meta)
     elif kind == 'market_analysis':
         check_formula_errors(res, wbv, has_values)
         check_interp_iferror(res, wbf)

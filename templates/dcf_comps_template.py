@@ -4245,7 +4245,8 @@ def generate_dcf_workbook(config, output_path=None):
     # and the 会社予想 source ladder (フェーズ2 #9).
     for _k in ("_fs_year_coverage", "_fs_year_map", "_fs_year_sources",
                "_guidance_source", "_guidance_note", "_market_data_source",
-               "_net_debt_source"):
+               "_net_debt_source", "_disclosure_basis_date", "_annual_doc_ids",
+               "_interim_doc_id"):
         if C.get(_k) is not None:
             _meta[_k.lstrip("_")] = C[_k]
 
