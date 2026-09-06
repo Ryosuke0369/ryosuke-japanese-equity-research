@@ -1476,6 +1476,40 @@ def main():
                         sys.exit(1)
                     print((_rc2.stdout or "").strip() or "  (no output)")
 
+    # ── Step 8.6: 型F — 持分法投資価値を1株あたりで別途加算 ────────────
+    # 裁定(8.5)の【後】に置く。裁定は Target を単脚に書き換えることがあり、
+    # 型F の加算は既存の Target 式をそのまま括弧で包んで足すので、順序を逆に
+    # すると降格が加算を上書きして消える。
+    if resolve_company_type(_overrides) == "F" and not args.no_recalc:
+        print()
+        print(f"[Step 8.6] 型F(持分法主導): 持分法投資価値を1株あたりで別途加算...")
+        try:
+            from scripts.equity_method_value import (
+                resolve_config as _emv_cfg, add_sheet as _emv_add,
+                log_to_adjustments as _emv_log)
+        except ImportError:
+            from equity_method_value import (
+                resolve_config as _emv_cfg, add_sheet as _emv_add,
+                log_to_adjustments as _emv_log)
+        _fcfg = _emv_cfg(_overrides)
+        _emv_add(saved_path, _fcfg)
+        _emv_log(saved_path, _fcfg)
+        print(f"  加算後の Target を反映するため再計算...")
+        _rc3 = subprocess.run(
+            [sys.executable, os.path.join(project_root, "scripts",
+                                          "recalc_excel_com.py"), saved_path],
+            capture_output=True, text=True, timeout=600,
+        )
+        if _rc3.returncode != 0:
+            print(f"  ERROR: 型F 加算後の再計算に失敗した "
+                  f"(exit {_rc3.returncode}) {(_rc3.stderr or '').strip()[:200]}")
+            sys.exit(1)
+        print((_rc3.stdout or "").strip() or "  (no output)")
+    elif resolve_company_type(_overrides) == "F":
+        print()
+        print(f"[Step 8.6] 型F(持分法主導): スキップ — --no-recalc のため加算後の"
+              f"Target を計算できない")
+
     validation_failed = False
     if not args.no_validate:
         print(f"\n[Step 9/9] Validating output...")

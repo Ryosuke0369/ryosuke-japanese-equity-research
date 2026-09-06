@@ -61,7 +61,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # the mechanism for forcing ΔNWC to zero - a non-bank can legitimately have the
 # same shape. Guessing the type from that would be exactly the silent inference
 # this pipeline forbids, so it comes from an explicit `company_type` override.
-DCF_TYPES = ("A", "B", "C", "E")   # E = the non-bank part is a DCF (SOTP later)
+DCF_TYPES = ("A", "B", "C", "E", "F")   # E = the non-bank part is a DCF (SOTP later)
 NON_DCF_TYPES = ("D",)             # D = DDM / Residual Income is the主手法
 
 

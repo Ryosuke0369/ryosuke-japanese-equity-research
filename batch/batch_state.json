@@ -1735,36 +1735,77 @@
   "doc_id": "S100YE76"
  },
  "8001": {
-  "status": "queued",
-  "type": "F(持分法主導) — 2026-09-07 に型E から訂正",
+  "status": "done",
+  "type": "F",
   "reason": "E:オリコ連結",
   "name": "伊藤忠商事",
-  "queue_reason": "型E ではない。有報 S100YA6H(2026-06-12提出)で確認: (1) オリエントコーポレーションは『関係会社の状況』の子会社にも関連会社にも記載が無く、政策保有株式の一覧に簿価 14,319百万円で載るのみ。連結でも持分法でもない。(2) batch/fin_business_screen.py の結果は CLEAN — 連結BSに金融事業の独立科目が1つも無い(連結していれば割賦売掛金が総資産の相当部分を占めるはず)。(3) 連結している金融子会社はポケットカード(80.0%)・ほけんの窓口(100%)・First Response Finance(100%)・伊藤忠トレジャリー(100%)で、いずれも独立科目を作っていない。実際のブロッカーは持分法損益(東京センチュリー30.0%・カワサキモータース20.0%・アイチコーポレーション27.5% 等、NonOp/OP +70.9%)であり、型F の機構で処理する。",
-  "doc_id": "S100YA6H"
+  "doc_id": "S100YA6H",
+  "file": "models/8001_DCF_Model_20260906.xlsx",
+  "validation": "FAIL 0 / WARN 0 / SKIP 0 / PASS 27",
+  "price": 2204,
+  "target": 921,
+  "upside": -0.5821,
+  "verdict": "SELL",
+  "core_dcf_per_share": 334,
+  "equity_method_per_share": 587,
+  "rule": "型F(持分法主導) — コア営業利益 = 売上総利益 − 販管費(持分法損益・受取配当・金融損益・投資損益を除外)。持分法投資価値は連結BS残高×1.0 を1株あたり別途加算。",
+  "regenerated": "2026-09-07 タスク6(型F)"
  },
  "8002": {
-  "status": "queued",
-  "type": "C/E相当",
+  "status": "done",
+  "type": "F",
   "reason": "C/E相当:持分法主導",
-  "name": "丸紅"
+  "name": "丸紅",
+  "file": "models/8002_DCF_Model_20260906.xlsx",
+  "validation": "FAIL 0 / WARN 0 / SKIP 0 / PASS 27",
+  "price": 5073,
+  "target": 2600,
+  "upside": -0.4875,
+  "verdict": "SELL",
+  "core_dcf_per_share": 446,
+  "equity_method_per_share": 2154,
+  "rule": "型F(持分法主導) — コア営業利益 = 売上総利益 − 販管費(持分法損益・受取配当・金融損益・投資損益を除外)。持分法投資価値は連結BS残高×1.0 を1株あたり別途加算。",
+  "regenerated": "2026-09-07 タスク6(型F)"
  },
  "8031": {
-  "status": "queued",
-  "type": "C/E相当",
+  "status": "done",
+  "type": "F",
   "reason": "C/E相当:持分法主導",
-  "name": "三井物産"
+  "name": "三井物産",
+  "file": "models/8031_DCF_Model_20260906.xlsx",
+  "validation": "FAIL 0 / WARN 0 / SKIP 0 / PASS 27",
+  "price": 5019,
+  "target": 2106,
+  "upside": -0.5804,
+  "verdict": "SELL",
+  "core_dcf_per_share": 144,
+  "equity_method_per_share": 1962,
+  "rule": "型F(持分法主導) — コア営業利益 = 売上総利益 − 販管費(持分法損益・受取配当・金融損益・投資損益を除外)。持分法投資価値は連結BS残高×1.0 を1株あたり別途加算。",
+  "regenerated": "2026-09-07 タスク6(型F)"
  },
  "8053": {
-  "status": "queued",
-  "type": "C/E相当",
+  "status": "done",
+  "type": "F",
   "reason": "C/E相当:持分法主導+金融",
-  "name": "住友商事"
+  "name": "住友商事",
+  "file": "models/8053_DCF_Model_20260906.xlsx",
+  "validation": "FAIL 0 / WARN 0 / SKIP 0 / PASS 27",
+  "price": 1820,
+  "target": 767,
+  "upside": -0.5786,
+  "verdict": "SELL",
+  "core_dcf_per_share": 72,
+  "equity_method_per_share": 695,
+  "rule": "型F(持分法主導) — コア営業利益 = 売上総利益 − 販管費(持分法損益・受取配当・金融損益・投資損益を除外)。持分法投資価値は連結BS残高×1.0 を1株あたり別途加算。",
+  "regenerated": "2026-09-07 タスク6(型F)"
  },
  "8058": {
   "status": "queued",
-  "type": "C/E相当",
+  "type": "F",
   "reason": "C/E相当:持分法主導",
-  "name": "三菱商事"
+  "name": "三菱商事",
+  "queue_reason": "型F の実装は完了し他の4社は生成できたが、8058 はコアDCF の両脚とも EV < net_debt になり、テンプレートが脚を 'INVALID (EV < net debt)' という【テキスト】にするため Target が #VALUE! になる。数値: PGM EV 3,359,473 / Exit EV 4,596,841 に対し net_debt 4,715,486(社債借入 5,746,943 − 現金 1,841,464 + 非支配株主持分 810,007)。コアOPM 2.21% が5社中最低で、運転資本が収益の20.7%あるため ΔNWC の負担が大きい。型F では『コアEV から連結の net_debt を全額引き、持分法投資を簿価で足し戻す』構成上、コアの株主価値が負になること自体は矛盾ではない(負債の一部が持分法投資を賄っている)。しかしテキスト化により加算が成立しないため、負のコア株主価値を Target に流すかどうかは設計判断であり、ユーザーの裁定を待つ。推測で倍率を動かして正の値にすることはしない。",
+  "regenerated": "2026-09-07 タスク6で試行、キュー維持"
  },
  "9983": {
   "status": "done",

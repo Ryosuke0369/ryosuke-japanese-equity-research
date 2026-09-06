@@ -73,7 +73,7 @@ _STR_OR_NUM = (str, int, float)  # values that may carry a __CONFIRM__ string
 # templates/dcf_comps_template.py, or scripts/generate_sotp.py.
 # 手順書 §2 の銘柄型。宣言は任意だが、型D は DCF が成立しないため
 # scripts/arbitration.py がこのキーを見て DCF 脚の裁定をスキップする(追補12 §A-3)。
-COMPANY_TYPES = {"A", "B", "C", "D", "E"}
+COMPANY_TYPES = {"A", "B", "C", "D", "E", "F"}
 
 ALLOWED_KEYS = {
     # Company / meta
@@ -84,6 +84,7 @@ ALLOWED_KEYS = {
     "fiscal_year_end_month": (int,),
     "company_type": (str,),                # A/B/C/D/E - 手順書 §2 の銘柄型
     "bank_valuation": (dict,),             # 型D 専用。scripts/ddm_ri.py が消費する
+    "equity_method": (dict,),              # 型F 専用。scripts/equity_method_value.py が消費する
     # Market data
     "current_price": _STR_OR_NUM,
     "shares_outstanding": _STR_OR_NUM,
@@ -436,6 +437,58 @@ def _warn_terminal_capex(overrides):
 
 
 
+def _check_type_f_contract(overrides):
+    """型F（持分法主導）が明示を要求する項目。
+
+    型F の Target は「コアDCF の1株値 + 持分法投資価値の1株あたり」である。
+    どちらの構成要素も自動値に落ちてはならない:
+
+      コア P/L  連結の P/L には持分法投資損益と受取配当が入っている。これを
+                そのまま DCF に入れると、加算側の持分法投資価値と二重計上に
+                なる。コア営業利益 = 売上総利益 − 販管費 を非連結ベースで
+                明示的に供給する。
+      net_debt  持分法投資は資産側にあるがコアの FCF を生まないので、net_debt
+                で相殺してはならない。明示させて、何を含めたかを記録に残す。
+      equity_method  加算そのもの。既定値に落ちれば Target が静かに壊れる。
+    """
+    errors = []
+    blk = overrides.get("equity_method")
+    if not isinstance(blk, dict):
+        errors.append(
+            "型F: equity_method ブロックが必須です。持分法投資価値は Target の"
+            "構成要素であり、既定値に落とせません")
+    else:
+        allowed = {"balance_mn", "method", "multiple", "listed_stakes",
+                   "listed_book_mn", "label", "note", "as_of"}
+        for k in blk:
+            if k not in allowed and not k.startswith("_"):
+                errors.append(f"equity_method.{k}: unknown key. "
+                              f"許可: {', '.join(sorted(allowed))}")
+        if not isinstance(blk.get("balance_mn"), (int, float)) or isinstance(
+                blk.get("balance_mn"), bool):
+            errors.append("equity_method.balance_mn: 連結BS の持分法投資残高"
+                          "（JPY mn の数値）が必須です")
+        if str(blk.get("method", "")).strip().lower() not in ("book_value", "listed_stakes"):
+            errors.append("equity_method.method: 'book_value' か 'listed_stakes' の"
+                          "いずれかが必須です（どちらを採ったかを Adjustments Log に残すため）")
+
+    hist_keys = ("hist_revenue", "hist_operating_income", "base_year_revenue")
+    missing = [k for k in hist_keys if overrides.get(k) is None]
+    if missing and not overrides.get("segments"):
+        errors.append(
+            "型F: コアベースの P/L を明示してください。連結 P/L には持分法投資損益と"
+            "受取配当が含まれ、加算側の持分法投資価値と二重計上になります。"
+            "コア営業利益 = 売上総利益 − 販管費 で構成した "
+            + " / ".join(hist_keys) + " を供給すること（不足: " + ", ".join(missing) + "）")
+
+    if "net_debt" not in overrides or _is_placeholder_value(overrides.get("net_debt")):
+        errors.append(
+            "型F: net_debt の明示が必須です。持分法投資は資産側にありますが"
+            "コアの FCF を生まないため net_debt で相殺してはいけません"
+            "（相殺すると加算側と二重に効きます）")
+    return errors
+
+
 def _check_type_e_contract(overrides):
     """型E (銀行/金融子会社を連結に持つ事業会社) が明示を要求する4項目。
 
@@ -579,12 +632,20 @@ def validate_overrides(overrides, source_path="<overrides>", allow_unconfirmed=F
     if str(overrides.get("company_type", "")).strip().upper() == "E":
         errors.extend(_check_type_e_contract(overrides))
 
+    if str(overrides.get("company_type", "")).strip().upper() == "F":
+        errors.extend(_check_type_f_contract(overrides))
+    elif overrides.get("equity_method") is not None:
+        errors.append(
+            "equity_method: 型F 専用のブロックです。company_type: \"F\" を宣言するか、"
+            "このブロックを削除してください")
+
     ct = overrides.get("company_type")
     if ct is not None and str(ct).strip().upper() not in COMPANY_TYPES:
         errors.append(
             f"company_type: {ct!r} is not one of {sorted(COMPANY_TYPES)}. "
             f"手順書 §2 の銘柄型 (A: 通常の事業会社 / B: シクリカル / "
-            f"C: captive finance 持ち製造業 / D: 銀行 / E: 銀行を連結に持つ持株会社)"
+            f"C: captive finance 持ち製造業 / D: 銀行 / E: 銀行を連結に持つ事業会社 / "
+            "F: 持分法主導)"
         )
 
     if overrides.get("nwc_method") is not None and overrides["nwc_method"] not in NWC_METHODS:

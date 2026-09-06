@@ -703,6 +703,92 @@ def check_bank_model(res, path, wbf, wbv, has_values):
             f"; " + "; ".join(notes) + extra)
 
 
+def check_type_f_model(res, path, wbf, wbv, has_values):
+    """#26 型F: Target = コアDCF + 持分法投資価値（1株）が実際にそうなっているか。"""
+    meta = {}
+    if "Adjustments Log" in wbf.sheetnames:
+        ws = wbf["Adjustments Log"]
+        for r in range(1, ws.max_row + 1):
+            k = ws.cell(r, 2).value
+            if isinstance(k, str):
+                meta[k.strip()] = ws.cell(r, 3).value
+    declared = str(meta.get("company_type", "")).strip().upper()
+    has_sheet = "Equity Method Value" in wbf.sheetnames
+    if declared != "F" and not has_sheet:
+        res.add(26, PASS, "型F 持分法投資価値の別途加算",
+                f"対象外（company_type={declared or '未宣言'}）")
+        return
+    if not has_sheet:
+        res.add(26, FAIL, "型F 持分法投資価値の別途加算",
+                "company_type=F だが 'Equity Method Value' シートが無い — "
+                "持分法投資価値が Target に入っていない")
+        return
+
+    es = wbf["Executive Summary"]
+    r_tgt = r_add = None
+    for r in range(1, 48):
+        v = es.cell(r, 2).value
+        if not isinstance(v, str):
+            continue
+        if r_tgt is None and v.startswith("Target Price"):
+            r_tgt = r
+        # 行【ラベル】だけを見る。注記文にも同じ語が出てくるため、含有判定だと
+        # 注記行を2つ目の加算行と誤認する（8058 の初回生成で実際に誤検出した）。
+        if v.endswith("[1株・別途加算]"):
+            if r_add is not None:
+                res.add(26, FAIL, "型F 持分法投資価値の別途加算",
+                        f"加算行が2つある（C{r_add} と C{r}）— 再生成で二重配線され、"
+                        f"持分法投資価値を二度足している")
+                return
+            r_add = r
+    if r_tgt is None or r_add is None:
+        res.add(26, FAIL, "型F 持分法投資価値の別途加算",
+                f"Executive Summary に Target 行（{r_tgt}）または加算行（{r_add}）が無い")
+        return
+    f = es.cell(r_tgt, 3).value
+    if not isinstance(f, str) or f"C{r_add}" not in f:
+        res.add(26, FAIL, "型F 持分法投資価値の別途加算",
+                f"Target C{r_tgt} = {f!r} が加算行 C{r_add} を参照していない — "
+                f"シートは作られているが Target に入っていない")
+        return
+
+    method = str(meta.get("equity_method_method", "")).strip()
+    bal = meta.get("equity_method_balance_mn")
+    mult = meta.get("equity_method_multiple")
+    detail = f"Target C{r_tgt} = {f} に加算行 C{r_add} が入っている; 方式 {method or '?'}"
+    if not has_values:
+        res.add(26, SKIP, "型F 持分法投資価値の別途加算", "needs recalc")
+        return
+    emv = wbv["Equity Method Value"]
+    per_share = tgt = add = None
+    for r in range(1, emv.max_row + 1):
+        lab = emv.cell(r, 2).value
+        if isinstance(lab, str) and lab.startswith("1株あたり持分法投資価値"):
+            per_share = emv.cell(r, 3).value
+    esv = wbv["Executive Summary"]
+    tgt, add = esv.cell(r_tgt, 3).value, esv.cell(r_add, 3).value
+    if per_share is None or add is None:
+        res.add(26, FAIL, "型F 持分法投資価値の別途加算",
+                "1株あたり持分法投資価値が計算されていない（recalc 未実施か数式エラー）")
+        return
+    if abs(float(per_share) - float(add)) > 1:
+        res.add(26, FAIL, "型F 持分法投資価値の別途加算",
+                f"加算行 {add:,.0f} が Equity Method Value の 1株値 {per_share:,.0f} と"
+                f"一致しない")
+        return
+    if method == "book_value" and mult is not None and abs(float(mult) - 1.0) > 1e-9:
+        res.add(26, WARN, "型F 持分法投資価値の別途加算",
+                detail + f"; ただし book_value 方式で倍率が {mult} — 設計は 1.0 に統一")
+        return
+    extra = ""
+    if isinstance(tgt, (int, float)) and float(add) != 0:
+        extra = (f"; Target {tgt:,.0f} のうち持分法 {add:,.0f} "
+                 f"({float(add)/float(tgt):.0%})")
+    if isinstance(bal, (int, float)):
+        extra += f"; BS残高 {bal:,.0f} mn"
+    res.add(26, PASS, "型F 持分法投資価値の別途加算", detail + extra)
+
+
 def check_beta_clamped(res, wbf, meta):
     """#25 A clamped beta is a substituted assumption — say so out loud.
 
@@ -1415,6 +1501,7 @@ def validate_workbook(path, write_report=True, allow_skip=False):
         check_disclosure_vintage(res, path, meta)
         check_bank_model(res, path, wbf, wbv, has_values)
         check_beta_clamped(res, wbf, meta)
+        check_type_f_model(res, path, wbf, wbv, has_values)
     elif kind == 'market_analysis':
         check_formula_errors(res, wbv, has_values)
         check_interp_iferror(res, wbf)
