@@ -26,6 +26,7 @@ validate_output.py — 4307_DCF_Model_20260906.xlsx
 [PASS] 23. Disclosure vintage recorded            no disclosure metadata (pre-追補13 model or overrides-only build)
 [PASS] 24. 型D DDM/RI model                        対象外（company_type=未宣言）
 [PASS] 25. Beta clamp not silently applied        クランプなし（採用 0.7233）。Blume: 0.67 x 0.587 + 0.33 x 1.00 = 0.723
+[PASS] 26. 型F 持分法投資価値の別途加算                        対象外（company_type=未宣言）
 ==============================================================================
-FAIL 0 / WARN 0 / SKIP 0 / PASS 26
+FAIL 0 / WARN 0 / SKIP 0 / PASS 27
 VERDICT: PASS

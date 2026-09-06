@@ -26,6 +26,7 @@ validate_output.py — 6594_DCF_Model_20260906.xlsx
 [WARN] 23. Disclosure vintage recorded            最新の確定年次開示 2025-03-31（分析基準日から 18 か月前） / 年次 docID: 2025-03-31=S100WRH7, 2024-03-31=S100TNGX, 2023-03-31=S100R0SZ, 2022-03-31=S100OA6Q, 2021-03-31=S100LMP5 / 半期 docID: 2026-03-31=S100X4KI — 追補13 §A の鮮度緩和が適用された状態。最新期の確定開示が出たら再生成すること
 [PASS] 24. 型D DDM/RI model                        対象外（company_type=A）
 [PASS] 25. Beta clamp not silently applied        クランプなし（採用 1.0368）。Blume: 0.67 x 1.055 + 0.33 x 1.00 = 1.037
+[PASS] 26. 型F 持分法投資価値の別途加算                        対象外（company_type=未宣言）
 ==============================================================================
-FAIL 0 / WARN 3 / SKIP 0 / PASS 23
+FAIL 0 / WARN 3 / SKIP 0 / PASS 24
 VERDICT: PASS
