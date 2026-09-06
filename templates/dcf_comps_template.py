@@ -2228,38 +2228,63 @@ def generate_dcf_workbook(config, output_path=None):
     set_cell(ws2, 15, 2, "Revenue Growth (YoY)")
     set_cell(ws2, 16, 2, "Operating Income Growth (YoY)")
 
+    # A derived P/L row is written only when the cells it divides by are real.
+    # This is the same rule the cash-flow block below already followed (bug B1);
+    # the income statement did not, so a fiscal year EDINET could not extract
+    # produced "=(C11-B11)/B11" against a blank B11 and the sheet carried
+    # #DIV/0! (8 tickers in the 2026-09-05 batch). A year with no data now reads
+    # as missing rather than as a division by an imaginary zero.
+    def _pl(series, i):
+        s = C.get(series)
+        v = s[i] if s and i < len(s) else None
+        return v if isinstance(v, (int, float)) and not isinstance(v, bool) else None
+
     for i in range(n_hist):
         col = 3 + i
         cl = col_letter(col)
 
-        # Revenue
-        set_cell(ws2, 6, col, C["hist_revenue"][i], font=BLUE_FONT, fmt=FMT_YEN)
-        # COGS
-        cogs_val = C["hist_cogs"][i] if C["hist_cogs"] and i < len(C["hist_cogs"]) else None
+        rev_val = _pl("hist_revenue", i)
+        cogs_val = _pl("hist_cogs", i)
+        sga_val = _pl("hist_sga", i)
+        oi_val = _pl("hist_operating_income", i)
+        ni_val = _pl("hist_net_income", i)
+
+        set_cell(ws2, 6, col, rev_val, font=BLUE_FONT, fmt=FMT_YEN)
         set_cell(ws2, 7, col, cogs_val, font=BLUE_FONT, fmt=FMT_YEN)
         # Gross Profit = Revenue - COGS
-        set_cell(ws2, 8, col, f"={cl}6-{cl}7", font=BLACK_FONT, fmt=FMT_YEN)
-        # Gross Margin = GP / Revenue
-        set_cell(ws2, 9, col, f"={cl}8/{cl}6", font=BLACK_FONT, fmt=FMT_PCT)
-        # SGA
-        sga_val = C["hist_sga"][i] if C["hist_sga"] and i < len(C["hist_sga"]) else None
+        if rev_val is not None and cogs_val is not None:
+            set_cell(ws2, 8, col, f"={cl}6-{cl}7", font=BLACK_FONT, fmt=FMT_YEN)
+            if rev_val:
+                set_cell(ws2, 9, col, f"={cl}8/{cl}6", font=BLACK_FONT, fmt=FMT_PCT)
         set_cell(ws2, 10, col, sga_val, font=BLUE_FONT, fmt=FMT_YEN)
-        # Operating Income
-        set_cell(ws2, 11, col, C["hist_operating_income"][i], font=BLUE_FONT, fmt=FMT_YEN)
-        # Net Income
-        set_cell(ws2, 12, col, C["hist_net_income"][i], font=BLUE_FONT, fmt=FMT_YEN)
-        # Operating Margin
-        set_cell(ws2, 13, col, f"={cl}11/{cl}6", font=BLACK_FONT, fmt=FMT_PCT)
-        # Net Margin
-        set_cell(ws2, 14, col, f"={cl}12/{cl}6", font=BLACK_FONT, fmt=FMT_PCT)
+        set_cell(ws2, 11, col, oi_val, font=BLUE_FONT, fmt=FMT_YEN)
+        set_cell(ws2, 12, col, ni_val, font=BLUE_FONT, fmt=FMT_YEN)
+        # Margins need a non-zero revenue denominator AND a numerator
+        if rev_val:
+            if oi_val is not None:
+                set_cell(ws2, 13, col, f"={cl}11/{cl}6", font=BLACK_FONT, fmt=FMT_PCT)
+            if ni_val is not None:
+                set_cell(ws2, 14, col, f"={cl}12/{cl}6", font=BLACK_FONT, fmt=FMT_PCT)
         # YoY Growth
         if i == 0:
             set_cell(ws2, 15, col, "n/a")
             set_cell(ws2, 16, col, "n/a")
         else:
             prev_cl = col_letter(col - 1)
-            set_cell(ws2, 15, col, f"=({cl}6-{prev_cl}6)/{prev_cl}6", font=BLACK_FONT, fmt=FMT_PCT)
-            set_cell(ws2, 16, col, f"=({cl}11-{prev_cl}11)/{prev_cl}11", font=BLACK_FONT, fmt=FMT_PCT)
+            prev_rev = _pl("hist_revenue", i - 1)
+            prev_oi = _pl("hist_operating_income", i - 1)
+            if rev_val is not None and prev_rev:
+                set_cell(ws2, 15, col, f"=({cl}6-{prev_cl}6)/{prev_cl}6",
+                         font=BLACK_FONT, fmt=FMT_PCT)
+            else:
+                set_cell(ws2, 15, col, "n/a")
+            # A prior-year operating income of exactly zero is a legitimate
+            # value but not a legitimate denominator, so it is excluded here too.
+            if oi_val is not None and prev_oi:
+                set_cell(ws2, 16, col, f"=({cl}11-{prev_cl}11)/{prev_cl}11",
+                         font=BLACK_FONT, fmt=FMT_PCT)
+            else:
+                set_cell(ws2, 16, col, "n/a")
 
     # ── Cash Flow Statement ──
     section_title(ws2, 18, 2, "Cash Flow Statement")

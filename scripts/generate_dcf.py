@@ -92,12 +92,27 @@ def merged_data_to_config(company_info, merged_data, forecast_data=None):
     # Sort FY keys oldest-first for historical arrays
     fy_keys_oldest_first = sorted(fy_keys)
 
-    # Helper: safe get with 0 fallback
-    def _val(data_dict, key, default=0):
+    # A value EDINET did not extract is MISSING, not zero. `_val` used to
+    # default to 0, and that single default produced four distinct classes of
+    # wrong number in the 2026-09-05 batch:
+    #   - operating income 0 in an old year -> "OI growth = (0-0)/0" -> #DIV/0!
+    #     on the Financial Statements sheet (8 tickers)
+    #   - net_debt 0 where the company actually held net cash (2801: -50,341 mn,
+    #     ~JPY 54/share) or net debt (2897: 77,200 mn reported as 4,418)
+    #   - core_ebitda = OI + D&A silently computed from a missing leg
+    #   - the Reverse DCF derivations inheriting all of the above
+    # `_val` now returns None for a missing key. `_num` is the explicit opt-in
+    # for the places where a numeric default really is the intended semantics
+    # (ratio denominators, `or`-chained fallbacks), so every zero in this
+    # function is now a zero somebody chose.
+    def _val(data_dict, key):
+        return data_dict.get(key)
+
+    def _num(data_dict, key, default=0):
         v = data_dict.get(key)
         return v if v is not None else default
 
-    # Build historical arrays (oldest-first)
+    # Build historical arrays (oldest-first). None = the filing did not give it.
     hist_revenue = [_val(merged_data[k], "revenue") for k in fy_keys_oldest_first]
     hist_cogs = [_val(merged_data[k], "cogs") for k in fy_keys_oldest_first]
     hist_sga = [_val(merged_data[k], "sga") for k in fy_keys_oldest_first]
@@ -108,6 +123,19 @@ def merged_data_to_config(company_info, merged_data, forecast_data=None):
     hist_cash = [_val(merged_data[k], "cash") for k in fy_keys_oldest_first]
     hist_debt = [_val(merged_data[k], "total_debt") for k in fy_keys_oldest_first]
     hist_depreciation = [_val(merged_data[k], "depreciation") for k in fy_keys_oldest_first]
+
+    _missing_pl = {
+        name: [fy_keys_oldest_first[i] for i, v in enumerate(series) if v is None]
+        for name, series in (("operating_income", hist_operating_income),
+                             ("net_income", hist_net_income),
+                             ("cogs", hist_cogs),
+                             ("sga", hist_sga))
+    }
+    for name, years in _missing_pl.items():
+        if years:
+            print(f"  WARNING: EDINET has no {name} for {', '.join(years)} - "
+                  f"left BLANK (was silently 0 before フェーズ2 #1). Supply "
+                  f"hist_{name} in overrides if the number matters.")
 
     # Keep the EDINET series keyed by fiscal year, not by position. hist_years is
     # frequently replaced wholesale by overrides (different labels, different
@@ -125,13 +153,18 @@ def merged_data_to_config(company_info, merged_data, forecast_data=None):
         for k in fy_keys_oldest_first
     }
 
-    # Handle None COGS: reverse-calculate from revenue - operating_income
+    # Missing COGS: reverse-calculate from revenue - operating income - SGA,
+    # but only when ALL THREE inputs are present. Back-solving from a missing
+    # operating income treated as 0 is how a plausible-looking COGS got written
+    # for a year the filing said nothing about (2802's COGS came out equal to
+    # revenue). A year that cannot be reconstructed stays blank.
     for i in range(len(hist_cogs)):
-        if hist_cogs[i] == 0 and hist_revenue[i] != 0:
-            # cogs = revenue - operating_income - sga
-            hist_cogs[i] = round(hist_revenue[i] - hist_operating_income[i] - hist_sga[i], 1)
-            if hist_cogs[i] < 0:
-                hist_cogs[i] = 0
+        if hist_cogs[i] is not None:
+            continue
+        parts = (hist_revenue[i], hist_operating_income[i], hist_sga[i])
+        if any(p is None for p in parts) or not hist_revenue[i]:
+            continue
+        hist_cogs[i] = max(0.0, round(parts[0] - parts[1] - parts[2], 1))
 
     # Base year values: LTM preferred, then latest FY
     latest_fy_key = fy_keys[0] if fy_keys else None  # newest FY (fy_keys are newest-first from merged_data)
@@ -148,33 +181,47 @@ def merged_data_to_config(company_info, merged_data, forecast_data=None):
     # (e.g., FY2025: 21,579 → FY2026(E): 21,579 × 1.10 = 23,737)
     # LTM revenue is kept separately for reference/stub discounting.
     latest_annual_fy = merged_data[fy_keys_oldest_first[-1]] if fy_keys_oldest_first else base_data
-    base_year_revenue = _val(latest_annual_fy, "revenue", 1)
+    # base_year_revenue used to default to 1 (JPY 1mn) when absent, which turns
+    # every ratio built on it into a four-orders-of-magnitude artefact instead
+    # of an error. It is now None, and main() stops the run unless overrides
+    # supply it.
+    base_year_revenue = _val(latest_annual_fy, "revenue")
     base_year_cogs = _val(latest_annual_fy, "cogs")
-    # If cogs is 0 in base, reverse-calc
-    if base_year_cogs == 0 and base_year_revenue != 0:
-        base_year_cogs = round(
-            _val(latest_annual_fy, "revenue") - _val(latest_annual_fy, "operating_income") - _val(latest_annual_fy, "sga"), 1
-        )
-        if base_year_cogs < 0:
-            base_year_cogs = 0
+    if base_year_cogs is None:
+        _p = (base_year_revenue,
+              _val(latest_annual_fy, "operating_income"),
+              _val(latest_annual_fy, "sga"))
+        if all(x is not None for x in _p) and _p[0]:
+            base_year_cogs = max(0.0, round(_p[0] - _p[1] - _p[2], 1))
 
     # NWC base year: prefer latest FY annual BS over LTM snapshot
     # LTM BS is a point-in-time snapshot that may not be representative
     # (e.g., equipment makers have volatile AR depending on delivery timing)
+    # The NWC base-year items keep numeric coalescing: they feed `or`-chained
+    # fallbacks and day-count denominators that need falsy semantics, and no
+    # wrong number in the batch traced back to them. What changes is that a
+    # missing item is now reported instead of passing as a real zero.
     latest_annual_key = fy_keys_oldest_first[-1] if fy_keys_oldest_first else None
     if latest_annual_key:
         latest_annual = merged_data[latest_annual_key]
-        base_year_ar = _val(latest_annual, "accounts_receivable") or _val(base_data, "accounts_receivable")
-        base_year_inv = _val(latest_annual, "inventories") or _val(base_data, "inventories")
-        base_year_ap = _val(latest_annual, "accounts_payable") or _val(base_data, "accounts_payable")
+        _absent_bs = [k for k in ("accounts_receivable", "inventories", "accounts_payable")
+                      if latest_annual.get(k) is None and base_data.get(k) is None]
+        if _absent_bs:
+            print(f"  WARNING: base-year BS items absent from EDINET: "
+                  f"{', '.join(_absent_bs)} - treated as 0 for the NWC day counts. "
+                  f"Set base_year_ar / base_year_inv / base_year_ap in overrides "
+                  f"if the working-capital bridge matters for this ticker.")
+        base_year_ar = _num(latest_annual, "accounts_receivable") or _num(base_data, "accounts_receivable")
+        base_year_inv = _num(latest_annual, "inventories") or _num(base_data, "inventories")
+        base_year_ap = _num(latest_annual, "accounts_payable") or _num(base_data, "accounts_payable")
     else:
-        base_year_ar = _val(base_data, "accounts_receivable")
-        base_year_inv = _val(base_data, "inventories")
-        base_year_ap = _val(base_data, "accounts_payable")
+        base_year_ar = _num(base_data, "accounts_receivable")
+        base_year_inv = _num(base_data, "inventories")
+        base_year_ap = _num(base_data, "accounts_payable")
     # ── Trade Receivables/Payables Total (for revenue_pct NWC method) ──
     if latest_annual_key:
-        latest_annual_trt = _val(merged_data[latest_annual_key], "trade_receivables_total")
-        latest_annual_tpt = _val(merged_data[latest_annual_key], "trade_payables_total")
+        latest_annual_trt = _num(merged_data[latest_annual_key], "trade_receivables_total")
+        latest_annual_tpt = _num(merged_data[latest_annual_key], "trade_payables_total")
     else:
         latest_annual_trt = 0
         latest_annual_tpt = 0
@@ -186,26 +233,43 @@ def merged_data_to_config(company_info, merged_data, forecast_data=None):
     # Historical NWC % of Revenue (for revenue_pct method)
     hist_nwc_pct = []
     for k in fy_keys_oldest_first:
-        rev_k = _val(merged_data[k], "revenue")
+        rev_k = _num(merged_data[k], "revenue")
         if rev_k > 0:
-            trt_k = _val(merged_data[k], "trade_receivables_total") or _val(merged_data[k], "accounts_receivable")
-            inv_k = _val(merged_data[k], "inventories")
-            tpt_k = _val(merged_data[k], "trade_payables_total") or _val(merged_data[k], "accounts_payable")
+            trt_k = _num(merged_data[k], "trade_receivables_total") or _num(merged_data[k], "accounts_receivable")
+            inv_k = _num(merged_data[k], "inventories")
+            tpt_k = _num(merged_data[k], "trade_payables_total") or _num(merged_data[k], "accounts_payable")
             nwc_k = trt_k + inv_k - tpt_k
             hist_nwc_pct.append(round(nwc_k / rev_k, 4))
         else:
             hist_nwc_pct.append(0)
 
+    # Net debt: never 0-by-default. A DCF's equity value is EV minus this number,
+    # so a fabricated zero moves the per-share answer directly (2801 キッコーマン
+    # held JPY 50,341 mn of NET CASH and was valued as if it held none). When
+    # EDINET gives no net_debt line, derive it from the debt and cash balances;
+    # when even that is impossible, leave it None so main() can stop the run.
     net_debt = _val(base_data, "net_debt")
+    net_debt_source = "EDINET net_debt"
+    if net_debt is None:
+        _d, _c = base_data.get("total_debt"), base_data.get("cash")
+        if _d is not None and _c is not None:
+            net_debt = _d - _c
+            net_debt_source = f"derived: total_debt {_d:,.0f} - cash {_c:,.0f}"
+            print(f"  [net_debt] EDINET gave no net_debt line; {net_debt_source} "
+                  f"= {net_debt:,.0f} mn")
+        else:
+            net_debt_source = "UNAVAILABLE (no net_debt, and total_debt/cash incomplete)"
+            print(f"  WARNING: net_debt could not be determined from EDINET "
+                  f"(total_debt={_d}, cash={_c}). It must be supplied in overrides.")
 
     # Auto-calculate DCF assumptions: average da_pct/capex_pct across all FY years
     da_ratios = []
     capex_ratios = []
     for k in fy_keys_oldest_first:
-        rev_k = _val(merged_data[k], "revenue")
+        rev_k = _num(merged_data[k], "revenue")
         if rev_k > 0:
-            dep_k = _val(merged_data[k], "depreciation")
-            capex_k = _val(merged_data[k], "capex")
+            dep_k = _num(merged_data[k], "depreciation")
+            capex_k = _num(merged_data[k], "capex")
             if dep_k > 0:
                 da_ratios.append(dep_k / rev_k)
             if capex_k > 0:
@@ -218,23 +282,27 @@ def merged_data_to_config(company_info, merged_data, forecast_data=None):
     capex_pct = max(0.005, min(capex_pct, 0.20))
     da_pct = max(0.005, min(da_pct, 0.15))
 
-    latest_rev = _val(latest_fy_data, "revenue", 1)
+    latest_rev = _num(latest_fy_data, "revenue", 0)
 
     # Calculate CAGR from last 3 years of revenue
-    if len(hist_revenue) >= 3 and hist_revenue[-3] and hist_revenue[-3] > 0 and hist_revenue[-1] > 0:
-        cagr_3yr = (hist_revenue[-1] / hist_revenue[-3]) ** (1 / 3) - 1
-    elif len(hist_revenue) >= 2 and hist_revenue[-2] and hist_revenue[-2] > 0 and hist_revenue[-1] > 0:
-        cagr_3yr = hist_revenue[-1] / hist_revenue[-2] - 1
+    _r = hist_revenue
+    if len(_r) >= 3 and _r[-3] and _r[-1] and _r[-3] > 0 and _r[-1] > 0:
+        cagr_3yr = (_r[-1] / _r[-3]) ** (1 / 3) - 1
+    elif len(_r) >= 2 and _r[-2] and _r[-1] and _r[-2] > 0 and _r[-1] > 0:
+        cagr_3yr = _r[-1] / _r[-2] - 1
     else:
         cagr_3yr = 0.05  # default
 
     cagr_3yr = round(max(-0.10, min(cagr_3yr, 0.50)), 4)  # clamp
 
     # Latest FY ratios
-    cogs_pct_latest = round(_val(latest_fy_data, "cogs") / latest_rev, 4) if latest_rev else 0.70
+    _latest_cogs = _num(latest_fy_data, "cogs", 0)
+    _latest_sga = _num(latest_fy_data, "sga", 0)
+    cogs_pct_latest = round(_latest_cogs / latest_rev, 4) if latest_rev else 0.70
     if cogs_pct_latest <= 0 or cogs_pct_latest >= 1:
-        cogs_pct_latest = round(base_year_cogs / base_year_revenue, 4) if base_year_revenue else 0.70
-    sga_pct_latest = round(_val(latest_fy_data, "sga") / latest_rev, 4) if latest_rev else 0.13
+        cogs_pct_latest = (round(base_year_cogs / base_year_revenue, 4)
+                           if (base_year_revenue and base_year_cogs) else 0.70)
+    sga_pct_latest = round(_latest_sga / latest_rev, 4) if latest_rev else 0.13
     if sga_pct_latest <= 0 or sga_pct_latest >= 1:
         sga_pct_latest = 0.13
 
@@ -341,9 +409,20 @@ def merged_data_to_config(company_info, merged_data, forecast_data=None):
     ticker_str = f"{ticker_4digit}.T"
 
     # Latest operating income + depreciation for EBITDA approximation
+    # core_ebitda drives both Comps legs. Summing a present OI with an absent
+    # D&A (or vice versa) produced an "EBITDA" that was really just one of its
+    # two components — 4502's comps-implied price came out at JPY -2,761 that
+    # way. Either both legs are there or the value is None and the Comps legs
+    # are labelled N/A downstream.
     latest_oi = _val(latest_fy_data, "operating_income")
     latest_dep = _val(latest_fy_data, "depreciation")
-    core_ebitda = latest_oi + latest_dep
+    if latest_oi is None or latest_dep is None:
+        core_ebitda = None
+        print(f"  WARNING: core_ebitda unavailable (operating_income="
+              f"{latest_oi}, depreciation={latest_dep} for the latest FY). "
+              f"Set core_ebitda in overrides, or the Comps EV/EBITDA leg is N/A.")
+    else:
+        core_ebitda = latest_oi + latest_dep
     core_net_income = _val(latest_fy_data, "net_income")
 
 
@@ -369,7 +448,7 @@ def merged_data_to_config(company_info, merged_data, forecast_data=None):
                 stub_fraction = 1.0
                 stub_months_elapsed = 0
 
-        ltm_revenue = _val(merged_data[ltm_label], "revenue", base_year_revenue)
+        ltm_revenue = _num(merged_data[ltm_label], "revenue", base_year_revenue)
         ltm_components = merged_data[ltm_label].get("_ltm_revenue_components")
 
     # ── Projection Start FY Label ──
@@ -394,6 +473,7 @@ def merged_data_to_config(company_info, merged_data, forecast_data=None):
         "current_price": 1000,  # placeholder, overridden by yfinance
         "shares_outstanding": 10_000_000,  # placeholder, overridden by yfinance
         "net_debt": net_debt,
+        "_net_debt_source": net_debt_source,
 
         # Historical Financials (JPY mn, oldest-first)
         "hist_years": fy_keys_oldest_first,
@@ -470,7 +550,7 @@ def merged_data_to_config(company_info, merged_data, forecast_data=None):
         ],
 
         # Settings
-        "primary_multiple": "EV/EBITDA" if core_ebitda > 0 else "EV/Sales",
+        "primary_multiple": ("EV/EBITDA" if (core_ebitda or 0) > 0 else "EV/Sales"),
     }
 
     return config
@@ -990,6 +1070,27 @@ def main():
                 config["scenarios"][sn].pop("cogs_pct", None)
             config.pop("cogs_pct", None)
             print("  [Segments] Removed cogs_pct - COGS will be back-calculated from segment EBIT")
+
+    # Step 4.55: the two inputs a DCF cannot be built without. Before フェーズ2 #1
+    # a missing net_debt became 0 and a missing base-year revenue became JPY 1mn,
+    # and the run completed with a workbook that looked finished. Neither can be
+    # guessed, so the run stops here and names the override that fixes it.
+    _blockers = []
+    if config.get("net_debt") is None:
+        _blockers.append(
+            f"net_debt is unavailable ({config.get('_net_debt_source', '?')}). "
+            f"Set \"net_debt\" in data/overrides/{ticker_code}_overrides.json "
+            f"from the 短信/有報 balance sheet (interest-bearing debt - cash).")
+    if not config.get("base_year_revenue"):
+        _blockers.append(
+            f"base_year_revenue is unavailable. Set \"base_year_revenue\" in "
+            f"data/overrides/{ticker_code}_overrides.json from the latest FY actuals.")
+    if _blockers:
+        print()
+        print("ERROR: the model cannot be built from the data available:")
+        for _b in _blockers:
+            print(f"  - {_b}")
+        sys.exit(2)
 
     # Step 4.6: Attach the EDINET CF/BS series to the FINAL hist_years by year
     # key (must run after overrides, which may replace hist_years wholesale).

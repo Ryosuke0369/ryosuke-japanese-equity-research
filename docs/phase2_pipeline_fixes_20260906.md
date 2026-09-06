@@ -280,3 +280,84 @@ SKIP は「そのチェックが**実行できなかった**」という意味�
 | 5726 回帰（46セル） | **differences: 0** |
 
 ---
+
+## #1 `_val(..., default=0)` — 欠損を 0 に落とす
+
+### 症状（先行報告 §F-6-1）
+
+`generate_dcf.py` の `_val()` が「キーが無い」を **0** として返していた。
+この既定値ひとつから、性質の異なる4種類の誤りが出ていた。
+
+| 症状 | 実例 |
+|---|---|
+| 古い年度の営業利益が 0 → 「OI成長率 = (0−0)÷0」で `#DIV/0!` | 生成19件中 **8件**（2802 / 2502 / 2503 / 2801 / 2897 / 4005 / 4183 / 4188） |
+| `net_debt` が 0 | **2801 キッコーマン**（実際はネットキャッシュ −50,341百万円 ≒ 1株54円）/ **2897**（実際 77,200 が 4,418） |
+| `core_ebitda = OI + D&A` を片脚欠損のまま算出 | 6件。**4502 の Comps 参考株価 −2,761円** |
+| Reverse DCF の導出が上記をそのまま継承 | — |
+
+`base_year_revenue` の既定値は **1（百万円）**だった。これは比率をすべて
+4桁ずれさせるが、エラーにはならない。
+
+### 期待する動作
+
+欠損は 0 ではなく **None**。呼出側で空欄 + 警告。
+`hist_*` / `net_debt` / `core_ebitda` / Reverse DCF 導出への 0 混入を断つ。
+
+### 変更内容
+
+**`scripts/generate_dcf.py`**
+
+- `_val(d, key)` は**素の値（欠損は None）**を返す。数値既定値が本当に欲しい場所には
+  `_num(d, key, default)` を明示的に使う。これで**この関数に残る 0 はすべて誰かが選んだ 0** になる。
+  - `_num` を使う場所: 比率の分母、`or` 連鎖のフォールバック（NWC 基準年 AR/Inv/AP、
+    trade receivables/payables、`hist_nwc_pct`、capex/da 比率の平均、latest FY 比率）。
+    これらは症状の報告が無く、かつ falsy 判定に依存しているため挙動を変えない。
+    ただし**欠損した場合は警告を出す**ようにした。
+- P/L 5系列（revenue / cogs / sga / operating_income / net_income）は None を保持し、
+  **どの年度のどの項目が欠損したかを1行ずつ警告**する。
+- **COGS の逆算**は「revenue・OI・SGA が3つとも揃っているときだけ」に限定した。
+  欠損 OI を 0 として逆算すると、もっともらしい COGS が書けてしまう
+  （2802 では COGS が売上と同値で出ていた）。再構成できない年度は空欄のまま。
+- **net_debt**: EDINET に net_debt 行が無い場合、`total_debt − cash` から導出し、
+  導出根拠を `config["_net_debt_source"]` に記録する。どちらも無ければ **None**。
+- **core_ebitda**: OI と D&A の**両方**が揃わなければ None。片脚だけの和を EBITDA と
+  呼ばない。`primary_multiple` は `(core_ebitda or 0) > 0` で判定する。
+- **Step 4.55（新設・overrides 適用後）**: `net_debt` と `base_year_revenue` が
+  それでも未確定なら **exit 2 で停止**し、埋めるべき overrides キーを名指しする。
+  この2つは推測できないうえ、DCF の1株価値に直接効く。
+
+**`templates/dcf_comps_template.py`**
+
+- Financial Statements の P/L 行（6〜16）を **None 安全**にした。
+  キャッシュフロー行は bug B1 の修正時に同じ規則を入れてあったが、P/L には無く、
+  空白セルに対して `=(C11-B11)/B11` を書いていた。これが `#DIV/0!` の実体。
+  - 派生行（粗利・粗利率・営業利益率・純利益率）は、分子と**0でない分母**が
+    そろっているときだけ数式を書く。
+  - YoY 成長率は、前年が空欄または 0 なら `n/a`（0 は正当な値だが正当な分母ではない）。
+
+### 検証
+
+**(a) 合成データによる単体検証**（EDINET 相当の入力を直接与えた）
+
+| 入力 | 結果 |
+|---|---|
+| FY2022/FY2023 の OI・NI・COGS・SGA が欠損 | `hist_operating_income = [None, None, 9000, 10000]`、欠損年度を名指しする警告4本 |
+| `net_debt` 行なし・`total_debt` 20,000 / `cash` 5,000 | `net_debt = 15,000`、`_net_debt_source = "derived: total_debt 20,000 - cash 5,000"` |
+| `net_debt` 行なし・`total_debt`/`cash` も欠損 | `net_debt = None` / `UNAVAILABLE` → Step 4.55 で exit 2 |
+| 最新期 OI・D&A が欠損 | `core_ebitda = None` + 警告 |
+
+**(b) 生成ワークブックの検証**（欠損2年を含む合成銘柄）
+
+```
+COGS         [None, None, 84000, 91000]
+GrossProfit  [None, None, '=E6-E7', '=F6-F7']
+OpMargin     [None, None, '=E11/E6', '=F11/F6']
+OpIncYoY     ['n/a', 'n/a', 'n/a', '=(F11-E11)/E11']
+```
+欠損年度に数式が**書かれない**。`recalc.py` の検証は `ERRORS: None found`。
+
+**(c) 5726 回帰**: 主要46セル **differences: 0**、`--all-sheets` の
+Financial Statements も **0 differing cell**（5726 は全系列が overrides で埋まっており、
+None 経路を通らないため挙動不変であることが確認できた）。
+
+---
