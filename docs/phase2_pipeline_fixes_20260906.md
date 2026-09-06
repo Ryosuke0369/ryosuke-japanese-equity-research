@@ -106,3 +106,43 @@ for d in ...; do   # ← 生成の成否と無関係に実行され、validate �
 | 5726 回帰（46セル） | **differences: 0** |
 
 ---
+
+## #4 `--date YYYYMMDD` のネイティブ対応
+
+### 症状（先行報告 §F-6-4）
+
+ファイル名の日付が `datetime.now()` 由来だったため、暦日を跨ぐバッチは
+`<ticker>_DCF_Model_20260906.xlsx` と `..._20260907.xlsx` に分裂し、先に作った方が
+stale な双子として残った。part4 は `TARGET_DATE` 環境変数と `batch/regen.sh` の
+rename ステップで回避していた（回避策であって修正ではない）。
+
+### 期待する動作
+
+ファイル名の日付は**実行日ではなく分析基準日**である。基準日を引数で受け取る。
+
+### 変更内容
+
+**`scripts/generate_dcf.py`**
+
+- `--date YYYYMMDD` を追加（`--output-dir` の直後）。
+- `_resolve_date_stamp(raw)` を新設。`None` なら今日、書式違反なら **exit 2** で停止する
+  （黙って今日にフォールバックしない。基準日の取り違えは全ファイル名に波及する）。
+- `date_str` の算出を `_resolve_date_stamp(args.date)` に差し替え。出力パスは #3 で
+  `main()` 先頭に移してあるので、`--force` ガードも `--date` の指すファイルを見る。
+
+**`batch/regen.sh`**
+
+- `--date "$TARGET"` を渡すようにし、**rename ステップを削除**した。
+  `TARGET_DATE` 環境変数は既定値 `20260906` として残す（呼び出し側の互換）。
+- `generate_dcf.py` が Step 9 で validate を回すので、ラッパー側の重複 validate も削除。
+
+### 検証
+
+| 項目 | 結果 |
+|---|---|
+| `--date 2026-09-06`（ハイフン付き＝書式違反） | `ERROR: --date must be YYYYMMDD` / **exit 2** |
+| `--date 20260906`（既存ファイルあり・`--force` なし） | exit 3（#3 のガードが `--date` の指すパスを見ている） |
+| `--date 20261231`（新規） | `models/5726_DCF_Model_20261231.xlsx` を生成（検証後に削除） |
+| 5726 回帰（`--force --date 20260906`、46セル） | **differences: 0** / validate FAIL 0 WARN 0 SKIP 0 PASS 19 |
+
+---

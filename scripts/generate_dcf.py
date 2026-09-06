@@ -45,6 +45,26 @@ from templates.dcf_comps_template import generate_dcf_workbook, get_live_market_
 EXIT_SKIPPED = 3
 
 
+def _resolve_date_stamp(raw):
+    """Validate --date and fall back to today.
+
+    The date in the filename is the ANALYSIS BASIS date, not the wall-clock
+    run date: a batch that starts before midnight and finishes after it used
+    to split into <ticker>_DCF_Model_20260906.xlsx and ..._20260907.xlsx, and
+    the earlier file stayed behind as a stale twin. part4 of the 2026-09-05
+    batch worked around this with a TARGET_DATE environment variable and a
+    rename step in batch/regen.sh; --date makes it a first-class argument.
+    """
+    if raw is None:
+        return datetime.now().strftime("%Y%m%d")
+    s = str(raw).strip()
+    try:
+        return datetime.strptime(s, "%Y%m%d").strftime("%Y%m%d")
+    except ValueError:
+        print(f"ERROR: --date must be YYYYMMDD (got {raw!r}).")
+        sys.exit(2)
+
+
 # =====================================================================
 # MERGED DATA -> CONFIG CONVERSION
 # =====================================================================
@@ -762,6 +782,11 @@ def main():
     parser.add_argument("ticker", help="Securities code (e.g. 2359)")
     parser.add_argument("--years", type=int, default=5, help="Number of years to fetch (default: 5)")
     parser.add_argument("--output-dir", default="models", help="Output directory (default: models)")
+    parser.add_argument("--date", default=None, metavar="YYYYMMDD",
+                        help="Date stamp for the output filename. Defaults to "
+                             "today. Use it to pin the ANALYSIS BASIS date so a "
+                             "batch that runs past midnight keeps writing to one "
+                             "file per ticker instead of creating a second one.")
     parser.add_argument("--comps-csv", default=None, help="Path to comps CSV (default: data/comps/<ticker>_comps.csv)")
     parser.add_argument("--overrides", default=None,
                         help="Path to JSON override file (e.g. data/overrides/2359_overrides.json)")
@@ -797,7 +822,7 @@ def main():
     # ERROR, and exits with a code of its own so a caller can tell "nothing
     # was generated" (3) from "generated but invalid" (1).
     os.makedirs(args.output_dir, exist_ok=True)
-    date_str = datetime.now().strftime("%Y%m%d")
+    date_str = _resolve_date_stamp(args.date)
     output_path = os.path.join(args.output_dir,
                                f"{ticker_code}_DCF_Model_{date_str}.xlsx")
     if os.path.exists(output_path) and not args.force:
