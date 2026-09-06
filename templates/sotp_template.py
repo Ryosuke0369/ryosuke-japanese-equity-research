@@ -295,6 +295,21 @@ def build_cover_sheet(wb, sotp):
 # =====================================================================
 # SHEET 2: SEGMENT DATA
 # =====================================================================
+def is_equity_method_segment(seg):
+    """True when a segment is valued on PBR × net assets, not a multiple of EBITDA.
+
+    型E only. A consolidated bank contributes deposits and loans that are neither
+    debt nor working capital, so its value cannot pass through the EV bridge — it
+    enters the SOTP as an equity value that has already netted its own funding.
+    Anything without the flag keeps the EV/EBITDA path unchanged.
+    """
+    return str(seg.get("valuation_method", "ev_ebitda")).strip().lower() == "pbr"
+
+
+def has_equity_segments(sotp):
+    return any(is_equity_method_segment(x) for x in sotp.get("segments", []))
+
+
 def build_segment_data_sheet(wb, sotp):
     ws = wb.create_sheet("Segment Data")
     ws.sheet_properties.tabColor = "006600"
@@ -424,8 +439,17 @@ def build_peer_comps_sheet(wb, sotp):
             ws.cell(row=r, column=col).fill = LIGHT_FILL
         r += 1
 
-        # Column headers
-        header_row(ws, r, 2, ["Company", "Ticker", "EV/EBITDA", "OPM %", "Mkt Cap ($B)", "Note"])
+        # Column headers. A PBR segment's peers are banks: the multiple is PBR
+        # and the margin column is ROE, so the header has to say so rather than
+        # print a PBR under a column headed EV/EBITDA.
+        eq_method = is_equity_method_segment(seg)
+        metric_key = "pbr" if eq_method else "ev_ebitda"
+        margin_key = "roe" if eq_method else "opm"
+        header_row(ws, r, 2, [
+            "Company", "Ticker",
+            "PBR (x)" if eq_method else "EV/EBITDA",
+            "ROE %" if eq_method else "OPM %",
+            "Mkt Cap ($B)", "Note"])
         r += 1
 
         # Included peers
@@ -433,8 +457,8 @@ def build_peer_comps_sheet(wb, sotp):
         for p in included_peers:
             set_cell(ws, r, 2, p["name"], font=BLACK_FONT, border=THIN_BORDER)
             set_cell(ws, r, 3, p["ticker"], font=TICKER_FONT, border=THIN_BORDER)
-            set_cell(ws, r, 4, p["ev_ebitda"], font=BLUE_FONT, fmt=FMT_RATIO, border=THIN_BORDER)
-            set_cell(ws, r, 5, p["opm"], font=BLUE_FONT, fmt=FMT_PCT, border=THIN_BORDER)
+            set_cell(ws, r, 4, p[metric_key], font=BLUE_FONT, fmt=FMT_RATIO, border=THIN_BORDER)
+            set_cell(ws, r, 5, p[margin_key], font=BLUE_FONT, fmt=FMT_PCT, border=THIN_BORDER)
             set_cell(ws, r, 6, p.get("market_cap_usd_b", ""), font=BLUE_FONT, fmt=FMT_INT, border=THIN_BORDER)
             set_cell(ws, r, 7, p.get("note", ""), font=NOTE_FONT, border=THIN_BORDER)
             ev_ebitda_cells.append(f"D{r}")
@@ -444,8 +468,8 @@ def build_peer_comps_sheet(wb, sotp):
         for p in excluded_peers:
             set_cell(ws, r, 2, p["name"], font=EXCLUDED_FONT, border=THIN_BORDER)
             set_cell(ws, r, 3, p["ticker"], font=EXCLUDED_FONT, border=THIN_BORDER)
-            set_cell(ws, r, 4, p["ev_ebitda"], font=EXCLUDED_FONT, fmt=FMT_RATIO, border=THIN_BORDER)
-            set_cell(ws, r, 5, p["opm"], font=EXCLUDED_FONT, fmt=FMT_PCT, border=THIN_BORDER)
+            set_cell(ws, r, 4, p[metric_key], font=EXCLUDED_FONT, fmt=FMT_RATIO, border=THIN_BORDER)
+            set_cell(ws, r, 5, p[margin_key], font=EXCLUDED_FONT, fmt=FMT_PCT, border=THIN_BORDER)
             set_cell(ws, r, 6, p.get("market_cap_usd_b", ""), font=EXCLUDED_FONT, fmt=FMT_INT, border=THIN_BORDER)
             set_cell(ws, r, 7, p.get("note", ""), font=EXCLUDED_NOTE_FONT, border=THIN_BORDER)
             r += 1
@@ -503,9 +527,24 @@ def build_sotp_valuation_sheet(wb, sotp, seg_data_rows, peer_mult_cells):
     val_fy_idx = len(fiscal_years) - 1
     val_fy_col_letter = cl(3 + val_fy_idx)  # column in Segment Data sheet
 
+    type_e = has_equity_segments(sotp)
+    eq_segs = [x for x in segments if is_equity_method_segment(x)]
+    ev_segs = [x for x in segments if not is_equity_method_segment(x)]
+    if type_e and not ev_segs:
+        raise ValueError(
+            "型E SOTP: every segment is valued on PBR. The 型E frame is "
+            "非金融の事業価値 + 金融子会社の株主価値 — with no non-financial segment "
+            "the company is a 型D (bank) and belongs on the DDM/RI path."
+        )
+
     # ── EBITDA Buildup ──
     r = 4
     header_row(ws, r, 2, ["Segment", "OP (FY25E)", "D&A Alloc %", "D&A", "EBITDA", "Multiple (x)", "Segment EV"])
+    if type_e:
+        set_cell(ws, r, 9,
+                 "金融セグメントは PBR × 純資産の【株主価値】。EV 列には合算せず、"
+                 "下の Equity Bridge で純有利子負債の控除後に加算する",
+                 font=GREY_FONT)
     r += 1
 
     seg_rows = {}  # key -> row number
@@ -527,6 +566,25 @@ def build_sotp_valuation_sheet(wb, sotp, seg_data_rows, peer_mult_cells):
 
         # Segment name
         set_cell(ws, row, 2, seg["label"], font=BLACK_FONT, border=THIN_BORDER)
+
+        if is_equity_method_segment(seg):
+            # 型E の金融セグメント: 基数は EBITDA ではなく純資産、倍率は PBR。
+            # 列の意味が変わるので、右端に基数の名前を書いて取り違えを防ぐ。
+            na = seg.get("net_assets_mn")
+            if na is None:
+                raise ValueError(
+                    f"sotp segment {key!r}: valuation_method='pbr' requires "
+                    f"net_assets_mn (JPY mn, 金融セグメントの純資産)。推測値は不可。"
+                )
+            set_cell(ws, row, 3, na, font=BLUE_FONT, fmt=FMT_YEN, border=INPUT_BORDER)
+            set_cell(ws, row, 4, "", border=THIN_BORDER)
+            set_cell(ws, row, 5, "", border=THIN_BORDER)
+            set_cell(ws, row, 6, f"=C{row}", font=BLACK_FONT, fmt=FMT_YEN, border=THIN_BORDER)
+            set_cell(ws, row, 7, f"='Peer Comps'!{peer_mult_cells[key]}",
+                     font=GREEN_FONT, fmt=FMT_RATIO, border=THIN_BORDER)
+            set_cell(ws, row, 8, f"=F{row}*G{row}", font=BLACK_FONT, fmt=FMT_YEN, border=THIN_BORDER)
+            set_cell(ws, row, 9, "純資産 × PBR = 株主価値 (EV ではない)", font=GREY_FONT)
+            continue
 
         # OP = link to Segment Data
         op_ref = f"='Segment Data'!{val_fy_col_letter}{seg_data_rows[key]['op_row']}"
@@ -561,8 +619,10 @@ def build_sotp_valuation_sheet(wb, sotp, seg_data_rows, peer_mult_cells):
              font=BLACK_FONT, fmt=FMT_YEN, border=THIN_BORDER)
 
     # Total Segment EV
-    set_cell(ws, r_total_ev, 2, "Total Segment EV", font=BOLD_FONT, fill=SUBTOTAL_FILL, border=TOP_BOTTOM)
-    ev_refs = [f"H{seg_rows[seg['key']]}" for seg in segments] + [f"H{r_eq_method}"]
+    set_cell(ws, r_total_ev, 2,
+             "Total Segment EV (非金融)" if type_e else "Total Segment EV",
+             font=BOLD_FONT, fill=SUBTOTAL_FILL, border=TOP_BOTTOM)
+    ev_refs = [f"H{seg_rows[seg['key']]}" for seg in ev_segs] + [f"H{r_eq_method}"]
     set_cell(ws, r_total_ev, 8, f"={'+'.join(ev_refs)}",
              font=BOLD_FONT, fmt=FMT_YEN, fill=SUBTOTAL_FILL, border=TOP_BOTTOM)
     for col in range(3, 8):
@@ -576,11 +636,15 @@ def build_sotp_valuation_sheet(wb, sotp, seg_data_rows, peer_mult_cells):
     r_comp = r_da + 2
     set_cell(ws, r_comp, 2, "EV Composition %", font=SUB_FONT)
     r_comp += 1
-    for seg in segments:
+    for seg in ev_segs:
         key = seg["key"]
         set_cell(ws, r_comp, 2, f"  {seg['label']}", font=BLACK_FONT)
         set_cell(ws, r_comp, 3, f"=H{seg_rows[key]}/H{r_total_ev}",
                  font=BLACK_FONT, fmt=FMT_PCT)
+        r_comp += 1
+    if type_e:
+        set_cell(ws, r_comp, 2, "  (金融セグメントは EV に含まれないため構成比の対象外)",
+                 font=GREY_FONT)
         r_comp += 1
 
     # ── Equity Bridge ──
@@ -597,38 +661,97 @@ def build_sotp_valuation_sheet(wb, sotp, seg_data_rows, peer_mult_cells):
     set_cell(ws, r_tev, 3, f"=H{r_total_ev}", font=GREEN_FONT, fmt=FMT_YEN, border=THIN_BORDER)
     r_bridge += 1
 
-    # Conglomerate discount
-    r_disc = r_bridge
     discount_base = sotp.get("conglomerate_discount", {}).get("base", 0.0)
-    set_cell(ws, r_disc, 2, "Conglomerate Discount", font=BLACK_FONT, border=THIN_BORDER)
-    set_cell(ws, r_disc, 3, discount_base, font=BLUE_FONT, fmt=FMT_PCT, border=INPUT_BORDER,
-             alignment=CENTER)
-    r_bridge += 1
+    r_fin = None
 
-    # Adjusted EV
-    r_adj_ev = r_bridge
-    set_cell(ws, r_adj_ev, 2, "Adjusted EV", font=BLACK_FONT, border=THIN_BORDER)
-    set_cell(ws, r_adj_ev, 3, f"=C{r_tev}*(1-C{r_disc})", font=BLACK_FONT, fmt=FMT_YEN, border=THIN_BORDER)
-    r_bridge += 1
+    if type_e:
+        # 型E: deduct the non-financial net debt from the non-financial EV
+        # first, then add the financial subsidiaries' equity value. Adding it to
+        # the EV instead would deduct the parent's net debt from a bank's equity
+        # that has already netted its own deposits — double-counting funding.
+        r_nd = r_bridge
+        set_cell(ws, r_nd, 2, "Less: Net Debt (非金融、預金・貸出金 除外)",
+                 font=BLACK_FONT, border=THIN_BORDER)
+        set_cell(ws, r_nd, 3, consol["net_debt"], font=BLUE_FONT, fmt=FMT_YEN, border=INPUT_BORDER)
+        r_bridge += 1
 
-    # Less: Net Debt
-    r_nd = r_bridge
-    set_cell(ws, r_nd, 2, "Less: Net Debt", font=BLACK_FONT, border=THIN_BORDER)
-    set_cell(ws, r_nd, 3, consol["net_debt"], font=BLUE_FONT, fmt=FMT_YEN, border=INPUT_BORDER)
-    r_bridge += 1
+        r_nonfin_eq = r_bridge
+        set_cell(ws, r_nonfin_eq, 2, "非金融の株主価値", font=BLACK_FONT, border=THIN_BORDER)
+        set_cell(ws, r_nonfin_eq, 3, f"=C{r_tev}-C{r_nd}", font=BLACK_FONT, fmt=FMT_YEN,
+                 border=THIN_BORDER)
+        r_bridge += 1
 
-    # Less: Minority Interest
-    r_mi = r_bridge
-    set_cell(ws, r_mi, 2, "Less: Minority Interest", font=BLACK_FONT, border=THIN_BORDER)
-    set_cell(ws, r_mi, 3, consol["minority_interest"], font=BLUE_FONT, fmt=FMT_YEN, border=INPUT_BORDER)
-    r_bridge += 1
+        r_fin = r_bridge
+        set_cell(ws, r_fin, 2, "Add: 金融セグメント株主価値 (PBR × 純資産)",
+                 font=BLACK_FONT, border=THIN_BORDER)
+        fin_refs = "+".join(f"H{seg_rows[x['key']]}" for x in eq_segs)
+        set_cell(ws, r_fin, 3, f"={fin_refs}", font=GREEN_FONT, fmt=FMT_YEN, border=THIN_BORDER)
+        r_bridge += 1
 
-    # Equity Value
-    r_eq = r_bridge
-    set_cell(ws, r_eq, 2, "Equity Value", font=BOLD_FONT, fill=SUBTOTAL_FILL, border=SUBTOTAL_BORDER)
-    set_cell(ws, r_eq, 3, f"=C{r_adj_ev}-C{r_nd}-C{r_mi}",
-             font=BOLD_FONT, fmt=FMT_YEN, fill=SUBTOTAL_FILL, border=SUBTOTAL_BORDER)
-    r_bridge += 1
+        r_gross = r_bridge
+        set_cell(ws, r_gross, 2, "SOTP 株主価値 (割引前)", font=BOLD_FONT, border=THIN_BORDER)
+        set_cell(ws, r_gross, 3, f"=C{r_nonfin_eq}+C{r_fin}", font=BLACK_FONT, fmt=FMT_YEN,
+                 border=THIN_BORDER)
+        r_bridge += 1
+
+        r_disc = r_bridge
+        set_cell(ws, r_disc, 2, "Conglomerate Discount", font=BLACK_FONT, border=THIN_BORDER)
+        set_cell(ws, r_disc, 3, discount_base, font=BLUE_FONT, fmt=FMT_PCT,
+                 border=INPUT_BORDER, alignment=CENTER)
+        r_bridge += 1
+
+        # Kept under the name the other sheets reference; on a 型E model this row
+        # holds the discounted EQUITY value, so it is labelled as such.
+        r_adj_ev = r_bridge
+        set_cell(ws, r_adj_ev, 2, "Adjusted SOTP 株主価値 (割引後)", font=BLACK_FONT, border=THIN_BORDER)
+        set_cell(ws, r_adj_ev, 3, f"=C{r_gross}*(1-C{r_disc})", font=BLACK_FONT, fmt=FMT_YEN,
+                 border=THIN_BORDER)
+        r_bridge += 1
+
+        r_mi = r_bridge
+        set_cell(ws, r_mi, 2, "Less: Minority Interest", font=BLACK_FONT, border=THIN_BORDER)
+        set_cell(ws, r_mi, 3, consol["minority_interest"], font=BLUE_FONT, fmt=FMT_YEN,
+                 border=INPUT_BORDER)
+        r_bridge += 1
+
+        r_eq = r_bridge
+        set_cell(ws, r_eq, 2, "Equity Value (親会社株主帰属)", font=BOLD_FONT,
+                 fill=SUBTOTAL_FILL, border=SUBTOTAL_BORDER)
+        set_cell(ws, r_eq, 3, f"=C{r_adj_ev}-C{r_mi}", font=BOLD_FONT, fmt=FMT_YEN,
+                 fill=SUBTOTAL_FILL, border=SUBTOTAL_BORDER)
+        r_bridge += 1
+    else:
+        # Conglomerate discount
+        r_disc = r_bridge
+        set_cell(ws, r_disc, 2, "Conglomerate Discount", font=BLACK_FONT, border=THIN_BORDER)
+        set_cell(ws, r_disc, 3, discount_base, font=BLUE_FONT, fmt=FMT_PCT, border=INPUT_BORDER,
+                 alignment=CENTER)
+        r_bridge += 1
+
+        # Adjusted EV
+        r_adj_ev = r_bridge
+        set_cell(ws, r_adj_ev, 2, "Adjusted EV", font=BLACK_FONT, border=THIN_BORDER)
+        set_cell(ws, r_adj_ev, 3, f"=C{r_tev}*(1-C{r_disc})", font=BLACK_FONT, fmt=FMT_YEN, border=THIN_BORDER)
+        r_bridge += 1
+
+        # Less: Net Debt
+        r_nd = r_bridge
+        set_cell(ws, r_nd, 2, "Less: Net Debt", font=BLACK_FONT, border=THIN_BORDER)
+        set_cell(ws, r_nd, 3, consol["net_debt"], font=BLUE_FONT, fmt=FMT_YEN, border=INPUT_BORDER)
+        r_bridge += 1
+
+        # Less: Minority Interest
+        r_mi = r_bridge
+        set_cell(ws, r_mi, 2, "Less: Minority Interest", font=BLACK_FONT, border=THIN_BORDER)
+        set_cell(ws, r_mi, 3, consol["minority_interest"], font=BLUE_FONT, fmt=FMT_YEN, border=INPUT_BORDER)
+        r_bridge += 1
+
+        # Equity Value
+        r_eq = r_bridge
+        set_cell(ws, r_eq, 2, "Equity Value", font=BOLD_FONT, fill=SUBTOTAL_FILL, border=SUBTOTAL_BORDER)
+        set_cell(ws, r_eq, 3, f"=C{r_adj_ev}-C{r_nd}-C{r_mi}",
+                 font=BOLD_FONT, fmt=FMT_YEN, fill=SUBTOTAL_FILL, border=SUBTOTAL_BORDER)
+        r_bridge += 1
 
     # Shares outstanding
     r_shares = r_bridge
@@ -680,6 +803,11 @@ def build_sotp_valuation_sheet(wb, sotp, seg_data_rows, peer_mult_cells):
         "r_fv": r_fv,
         "n_seg": n_seg,
         "seg_ev_col": 8,  # column H
+        # 型E only: the Sensitivity sheet has to rebuild the same bridge, and it
+        # cannot infer the shape from row numbers alone.
+        "type_e": type_e,
+        "r_fin": r_fin,
+        "eq_seg_keys": [x["key"] for x in eq_segs],
     }
 
 
@@ -737,10 +865,24 @@ def build_sensitivity_sheet(wb, sotp, val_refs):
     set_cell(ws, r, 2, "Base Assumptions (do not edit)", font=GREY_FONT)
     r += 1
 
-    # Place all segment OPs and D&A allocations as input references
+    # Place all segment OPs and D&A allocations as input references.
+    # A 型E financial segment's C column holds 純資産 and its D column is blank,
+    # so E = C + D still yields the right base (純資産) and E×F still yields the
+    # segment's equity value — the columns keep their arithmetic, only the
+    # meaning of the base changes, which the label records.
+    type_e = val_refs.get("type_e", False)
+    eq_keys = set(val_refs.get("eq_seg_keys", []))
     input_start = r
     for i, seg in enumerate(segments):
         key = seg["key"]
+        if key in eq_keys:
+            set_cell(ws, r, 2, f"{seg['label']} 純資産", font=GREY_FONT)
+            set_cell(ws, r, 3, f"='SOTP Valuation'!C{seg_rows[key]}", font=GREEN_FONT, fmt=FMT_YEN)
+            set_cell(ws, r, 4, 0, font=GREY_FONT, fmt=FMT_YEN)
+            set_cell(ws, r, 5, f"=C{r}+D{r}", font=BLACK_FONT, fmt=FMT_YEN)
+            set_cell(ws, r, 6, f"='SOTP Valuation'!G{seg_rows[key]}", font=GREEN_FONT, fmt=FMT_RATIO)
+            r += 1
+            continue
         set_cell(ws, r, 2, f"{seg['label']} OP", font=GREY_FONT)
         set_cell(ws, r, 3, f"='SOTP Valuation'!C{seg_rows[key]}", font=GREEN_FONT, fmt=FMT_YEN)
         set_cell(ws, r, 4, f"='SOTP Valuation'!E{seg_rows[key]}", font=GREEN_FONT, fmt=FMT_YEN)
@@ -797,16 +939,20 @@ def build_sensitivity_sheet(wb, sotp, val_refs):
 
     primary_ebitda_cell = f"$E${input_start + primary_idx}"
 
-    # Build references for non-primary segment EVs (they stay fixed)
+    # Build references for non-primary segment EVs (they stay fixed). On a 型E
+    # model the financial segments are collected separately: they contribute
+    # equity value, which enters the bridge after the net-debt deduction.
     other_ev_parts = []
+    other_fin_parts = []
     for idx, seg in enumerate(segments):
-        if seg["key"] != primary_key:
-            ebitda_cell = f"E{input_start + idx}"
-            mult_cell = f"F{input_start + idx}"
-            other_ev_parts.append(f"{ebitda_cell}*{mult_cell}")
+        if seg["key"] == primary_key:
+            continue
+        term = f"E{input_start + idx}*F{input_start + idx}"
+        (other_fin_parts if seg["key"] in eq_keys else other_ev_parts).append(term)
     # Add equity method EV
     other_ev_parts.append(f"C{r_eq_method_sens}")
     other_ev_formula = "+".join(other_ev_parts)
+    primary_is_fin = primary_key in eq_keys
 
     for i, disc in enumerate(disc_range):
         row = r + i
@@ -814,13 +960,28 @@ def build_sensitivity_sheet(wb, sotp, val_refs):
                  fill=LIGHT_FILL, alignment=CENTER)
         for j, mult in enumerate(primary_mults):
             col = 3 + j
-            # Fair Value = ((primary_EBITDA * mult + other_EVs) * (1 - disc) - net_debt - minority) * 1000 / shares / split
-            formula = (
-                f"=(({primary_ebitda_cell}*{mult}+{other_ev_formula})"
-                f"*(1-$B{row})"
-                f"-$C${r_nd_sens}-$C${r_mi_sens})"
-                f"*1000/$C${r_shares_sens}/$C${r_split_sens}"
-            )
+            if type_e:
+                # 型E bridge: ((非金融EV - net debt) + 金融株主価値) * (1-disc) - MI
+                ev_term = f"{primary_ebitda_cell}*{mult}+{other_ev_formula}" \
+                    if not primary_is_fin else other_ev_formula
+                fin_terms = list(other_fin_parts)
+                if primary_is_fin:
+                    fin_terms.insert(0, f"{primary_ebitda_cell}*{mult}")
+                fin_term = "+".join(fin_terms) if fin_terms else "0"
+                formula = (
+                    f"=((({ev_term})-$C${r_nd_sens}+({fin_term}))"
+                    f"*(1-$B{row})"
+                    f"-$C${r_mi_sens})"
+                    f"*1000/$C${r_shares_sens}/$C${r_split_sens}"
+                )
+            else:
+                # Fair Value = ((primary_EBITDA * mult + other_EVs) * (1 - disc) - net_debt - minority) * 1000 / shares / split
+                formula = (
+                    f"=(({primary_ebitda_cell}*{mult}+{other_ev_formula})"
+                    f"*(1-$B{row})"
+                    f"-$C${r_nd_sens}-$C${r_mi_sens})"
+                    f"*1000/$C${r_shares_sens}/$C${r_split_sens}"
+                )
             # Float equality would miss the base cell whenever the multiple came
             # from arithmetic (18.0 vs 17.999999999999996).
             is_base = (abs(mult - sotp["segments"][primary_idx]["selected_multiple"]) < 1e-9
@@ -880,13 +1041,16 @@ def build_sensitivity_sheet(wb, sotp, val_refs):
 
         # For table 2, primary segment and all other segments except row_key and col_key stay fixed
         fixed_ev_parts = []
+        fixed_fin_parts = []
         for idx, seg in enumerate(segments):
-            if seg["key"] not in (row_key, col_key):
-                ebitda_cell = f"$E${input_start + idx}"
-                mult_cell = f"$F${input_start + idx}"
-                fixed_ev_parts.append(f"{ebitda_cell}*{mult_cell}")
+            if seg["key"] in (row_key, col_key):
+                continue
+            term = f"$E${input_start + idx}*$F${input_start + idx}"
+            (fixed_fin_parts if seg["key"] in eq_keys else fixed_ev_parts).append(term)
         fixed_ev_parts.append(f"$C${r_eq_method_sens}")
         fixed_ev_formula = "+".join(fixed_ev_parts)
+        row_is_fin = row_key in eq_keys
+        col_is_fin = col_key in eq_keys
 
         row_ebitda_cell = f"$E${input_start + row_idx}"
         col_ebitda_cell = f"$E${input_start + col_idx}"
@@ -902,13 +1066,30 @@ def build_sensitivity_sheet(wb, sotp, val_refs):
             for j, cm in enumerate(col_mults):
                 col_n = 3 + j
                 # Fair Value with these two multiples varied, everything else fixed
-                formula = (
-                    f"=(({row_ebitda_cell}*$B{row_n}+{col_ebitda_cell}*{cl(col_n)}${r-1}"
-                    f"+{fixed_ev_formula})"
-                    f"*(1-{base_disc_ref})"
-                    f"-$C${r_nd_sens}-$C${r_mi_sens})"
-                    f"*1000/$C${r_shares_sens}/$C${r_split_sens}"
-                )
+                row_term = f"{row_ebitda_cell}*$B{row_n}"
+                col_term = f"{col_ebitda_cell}*{cl(col_n)}${r-1}"
+                if type_e:
+                    ev_terms = [t for t, fin in ((row_term, row_is_fin),
+                                                 (col_term, col_is_fin)) if not fin]
+                    fin_terms = [t for t, fin in ((row_term, row_is_fin),
+                                                  (col_term, col_is_fin)) if fin]
+                    ev_terms.append(fixed_ev_formula)
+                    fin_terms.extend(fixed_fin_parts)
+                    fin_formula = "+".join(fin_terms) if fin_terms else "0"
+                    formula = (
+                        f"=((({'+'.join(ev_terms)})-$C${r_nd_sens}+({fin_formula}))"
+                        f"*(1-{base_disc_ref})"
+                        f"-$C${r_mi_sens})"
+                        f"*1000/$C${r_shares_sens}/$C${r_split_sens}"
+                    )
+                else:
+                    formula = (
+                        f"=(({row_term}+{col_term}"
+                        f"+{fixed_ev_formula})"
+                        f"*(1-{base_disc_ref})"
+                        f"-$C${r_nd_sens}-$C${r_mi_sens})"
+                        f"*1000/$C${r_shares_sens}/$C${r_split_sens}"
+                    )
                 # Check if base case
                 is_base = (abs(rm - segments[row_idx]["selected_multiple"]) < 1e-9
                            and abs(cm - segments[col_idx]["selected_multiple"]) < 1e-9)

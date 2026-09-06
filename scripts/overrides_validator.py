@@ -435,6 +435,63 @@ def _warn_terminal_capex(overrides):
               f"intentional (not auto-corrected).")
 
 
+
+def _check_type_e_contract(overrides):
+    """型E (銀行/金融子会社を連結に持つ事業会社) が明示を要求する4項目。
+
+    型E で自動値に落ちてよいものは一つもない。連結BS の預金・貸出金、連結P/L の
+    経常収益が、それぞれ net_debt / de_ratio / DCF の売上に混入するため、
+    「指定が無ければ従来どおり自動」では黙って誤った数字が出る。
+    """
+    errors = []
+
+    if "net_debt" not in overrides or _is_placeholder_value(overrides.get("net_debt")):
+        errors.append(
+            "型E: net_debt の明示が必須です。連結BS からの自動抽出は銀行の預金を"
+            "有利子負債に、貸出金を資産に含めてしまいます。非金融ベース"
+            "(銀行預金・貸出金・コールローンを除外し、非支配株主持分を加算)の値を"
+            "一次資料から入れてください")
+
+    if "de_ratio" not in overrides or _is_placeholder_value(overrides.get("de_ratio")):
+        errors.append(
+            "型E: de_ratio の明示が必須です(自動計算は禁止)。自動計算は "
+            "net_debt / 時価総額 で求めるため、金融部門を含む連結 net_debt を"
+            "使うと WACC の資本構成が壊れます")
+
+    segs = overrides.get("segments")
+    if not segs:
+        errors.append(
+            "型E: segments が必須です。連結 P/L には銀行の経常収益・経常利益が"
+            "含まれるため、非金融セグメントのみを Segment Analysis 経由で"
+            "DCF に供給してください(Segment Analysis が DCF Revenue/EBIT の"
+            "single source of truth)")
+
+    sotp = overrides.get("sotp")
+    if not isinstance(sotp, dict):
+        errors.append(
+            "型E: sotp ブロックが必須です。金融セグメントは DCF ではなく "
+            "PBR×純資産で評価し、非金融の事業価値と SOTP で合算します")
+    else:
+        fin = [x for x in sotp.get("segments", [])
+               if str(x.get("valuation_method", "")).strip().lower() == "pbr"]
+        if not fin:
+            errors.append(
+                "型E: sotp.segments に valuation_method:\"pbr\" のセグメントが"
+                "1つもありません。金融子会社を PBR で評価しないなら、その銘柄は"
+                "型E ではありません")
+        for x in fin:
+            if not isinstance(x.get("net_assets_mn"), (int, float)) or isinstance(
+                    x.get("net_assets_mn"), bool):
+                errors.append(
+                    f"型E: sotp segment {x.get('key')!r} は "
+                    f"net_assets_mn (JPY mn, 金融セグメントの純資産) が必須です")
+    return errors
+
+
+def _is_placeholder_value(v):
+    return isinstance(v, str) and "__CONFIRM__" in v
+
+
 def validate_overrides(overrides, source_path="<overrides>", allow_unconfirmed=False):
     """Validate an overrides dict against the template contract.
 
@@ -509,6 +566,9 @@ def validate_overrides(overrides, source_path="<overrides>", allow_unconfirmed=F
         _p = bv.get("roe")
         if isinstance(_p, list) and any(isinstance(x, (int, float)) and x > 1 for x in _p):
             errors.append("bank_valuation.roe: 小数で指定すること (6.1% は 0.061)")
+
+    if str(overrides.get("company_type", "")).strip().upper() == "E":
+        errors.extend(_check_type_e_contract(overrides))
 
     ct = overrides.get("company_type")
     if ct is not None and str(ct).strip().upper() not in COMPANY_TYPES:

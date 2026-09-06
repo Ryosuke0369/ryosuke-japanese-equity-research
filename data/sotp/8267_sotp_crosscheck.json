@@ -1,0 +1,77 @@
+{
+  "_source": "scripts/add_sotp_crosscheck.py に直書きされていた値を 2026-09-06 にそのまま移設したもの(再取得・再計算はしていない)。取得時点はスクリプトの記載どおり 2026-07-29/30、持分比率は FY2026/2 有報「関係会社の状況」。",
+  "company": "AEON Co., Ltd.",
+  "as_of": "2026-07-29",
+  "reference_price": 1424,
+  "parent_net_debt_mn": 3099169,
+  "parent_net_debt_note": "親会社単体の純有利子負債は取得できていない。プロンプトの指示に従い連結の純有利子負債(銀行預金を除く、非支配株主持分の加算前)を代用している。真の単体値より控除が過大になるため、フロア値は保守側(低め)に出る。",
+  "minority_interest_book_mn": 984094,
+  "listed_stakes": [
+    {
+      "name": "AEON Financial Service",
+      "ticker": "8570.T",
+      "market_cap_mn": 325500,
+      "ownership": 0.4817
+    },
+    {
+      "name": "Tsuruha Holdings",
+      "ticker": "3391.T",
+      "market_cap_mn": 1175800,
+      "ownership": 0.5033
+    },
+    {
+      "name": "AEON Kyushu",
+      "ticker": "2653.T",
+      "market_cap_mn": 99171,
+      "ownership": 0.699
+    },
+    {
+      "name": "AEON Hokkaido",
+      "ticker": "7512.T",
+      "market_cap_mn": 121016,
+      "ownership": 0.6562
+    },
+    {
+      "name": "Maxvalu Tokai",
+      "ticker": "8198.T",
+      "market_cap_mn": 107751,
+      "ownership": 0.6386
+    },
+    {
+      "name": "Ministop",
+      "ticker": "9946.T",
+      "market_cap_mn": 52871,
+      "ownership": 0.4871
+    }
+  ],
+  "delisted_stakes": [
+    {
+      "name": "AEON Mall",
+      "ticker": "8905",
+      "note": "Delisted 2025-06-27 (share exchange -> 100% AEON-owned)"
+    },
+    {
+      "name": "AEON Delight",
+      "ticker": "9787",
+      "note": "Delisted 2025-07-17 (TOB + squeeze-out -> 100% AEON-owned)"
+    },
+    {
+      "name": "Welcia Holdings",
+      "ticker": "3141",
+      "note": "Delisted 2025-11-27 (merged into Tsuruha Holdings as wholly-owned sub)"
+    }
+  ],
+  "discount_range": [
+    0.0,
+    0.1,
+    0.2,
+    0.3,
+    0.4
+  ],
+  "intro_note": "{company} is a holding company for many listed/unlisted subsidiaries; a consolidated DCF ('DCF Model' sheet) is an approximation. SOTP is the theoretically correct lens, but see the critical finding below before using this sheet's totals.",
+  "critical_finding": "CRITICAL FINDING: 3 of 9 originally-in-scope subsidiaries went private in 2025",
+  "floor_note": "Only 6 of the 9 remain listed with a market price. Per the source prompt's own fallback instruction, this sheet presents the sum of the remaining listed stakes as an explicit FLOOR value -- it does NOT attempt to price the now-wholly-owned AEON Mall / AEON Delight, the Welcia business now inside Tsuruha, or the GMS/SM retail core (no reliable, non-guessed EBITDA breakdown by segment is available). The floor will therefore sit far below actual market cap by construction -- that gap IS the (unquantified) value of the wholly-owned businesses.",
+  "stakes_note": "Market cap data as of late Jul 2026; ownership % from FY2026/2 yuho 'related companies' disclosures (Tsuruha stake reflects the Jan-2026 TOB result, 50.11%->50.33% via subsequent market purchases).",
+  "unpriced_label": "Non-listed / wholly-owned businesses (AEON Mall, AEON Delight, GMS/SM core, Welcia-in-Tsuruha)",
+  "mi_note": "NOT a clean apples-to-apples comparison: NCI book value covers ALL consolidated subsidiaries (including the now-wholly-owned AEON Mall/AEON Delight, where NCI has since gone to zero post-buyout, and many unlisted subs), while the listed-stakes sum above covers only the companies still listed today. The rough numerical proximity between the two figures is not strong evidence that book-value MI is fairly stated; it is a coincidence of a mixed, shifting subsidiary base, not a controlled comparison."
+}
