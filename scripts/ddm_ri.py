@@ -503,6 +503,45 @@ def suppress_ev_multiples(wb, quiet=False):
         print(f"  [型D] Comps Analysis: EV 倍率列を N/A 化（{n} セル、理由を注記）")
 
 
+def _preserve_formulas_across_insert(ws, before, limit=64):
+    """openpyxl の insert_rows が落とした数式をラベルで突き合わせて書き戻す。
+
+    openpyxl は Excel の【共有数式(shared formula)】を、グループの先頭セルだけが
+    実体を持ち残りは参照、という形で読む。insert_rows で行をずらすとその参照が壊れ、
+    **保存時にメンバー側のセルが空になる**（メモリ上では見えているので、保存して
+    読み直すまで気づけない）。
+
+    実害: Executive Summary の "Comps - EV/EBITDA"（='Comps Analysis'!C27）と
+    "Comps - PER"（!C28）は隣接する共有数式グループで、加算脚や DDM/RI が行を
+    挿入したモデルでは **EV/EBITDA 側だけが空になっていた**。しかも check 20 は
+    空セルを「テキスト＝除外された手法」と解釈して PASS していたため、
+    8001/9434/8058/6971/4689 のすべてで見逃されていた。
+
+    挿入前に (ラベル -> 数式) を控え、挿入後に空になったセルへ書き戻す。
+    新しく書いた行はラベルが before に無いので触らない。
+    """
+    # メモリ上では数式が見えているので「空になったセルだけ直す」では捕まらない
+    # （落ちるのは保存時）。控えておいた数式を**全部そのまま書き戻す**ことで、
+    # 共有数式グループのメンバーを通常の数式に変換する（de-share）。
+    restored = []
+    for r in range(1, limit):
+        lab = ws.cell(r, 2).value
+        if not isinstance(lab, str) or lab not in before:
+            continue
+        ws.cell(r, 3).value = before[lab]
+        restored.append((r, lab))
+    return restored
+
+
+def _snapshot_formulas(ws, limit=64):
+    out = {}
+    for r in range(1, limit):
+        lab, v = ws.cell(r, 2).value, ws.cell(r, 3).value
+        if isinstance(lab, str) and isinstance(v, str) and v.startswith("="):
+            out[lab] = v
+    return out
+
+
 def wire_exec_summary(wb, ddm_refs, ri_refs, quiet=False):
     """Point the Target at the DDM/RI average and demote the DCF legs to reference.
 
@@ -540,6 +579,7 @@ def wire_exec_summary(wb, ddm_refs, ri_refs, quiet=False):
 
     # Insert the two primary methods directly under the Exit row so the summary
     # reads in the order the methods are actually used.
+    _before = _snapshot_formulas(ws)
     anchor_row = max([x for x in (r_pgm, r_exit) if x] or [r_tgt])
     ws.insert_rows(anchor_row + 1, 2)
     r_ddm, r_ri = anchor_row + 1, anchor_row + 2
@@ -567,6 +607,21 @@ def wire_exec_summary(wb, ddm_refs, ri_refs, quiet=False):
         cur = str(ws.cell(r_note, 2).value or "")
         if "型D" not in cur:
             ws.cell(r_note, 2).value = (cur + " ■" + sentence) if cur else sentence
+    _restored = _preserve_formulas_across_insert(ws, _before)
+    if _restored and not quiet:
+        print(f"  [型D] 行挿入で失われた共有数式 {len(_restored)} 件を復元: "
+              + ", ".join(f"C{r}({l[:22]})" for r, l in _restored))
+    # 型D は EV 倍率を使わない（手順書 §2「銀行に EV 倍率は使わない」）。
+    # 行を挿入すると openpyxl が保存した数式を Excel が修復で落とすことがあり、
+    # 実際 8410 の "Comps - EV/EBITDA" は空セルになっていた。空は「除外」ではなく
+    # 「壊れた」なので、意図どおり **テキストの N/A** を明示的に書く。
+    for r in range(1, 48):
+        v = ws.cell(r, 2).value
+        if isinstance(v, str) and v.startswith("Comps - EV/"):
+            ws.cell(r, 3).value = "N/A"
+            if "型D" not in v:
+                ws.cell(r, 2).value = v + "（型D: 銀行に EV 倍率は使わない）"
+
     if not quiet:
         print(f"  [型D] Executive Summary: Target = AVERAGE(C{r_ddm}:C{r_ri}) "
               f"(DDM / Residual Income)、DCF 2脚は [参考・Target不算入] に降格")

@@ -791,9 +791,12 @@ def check_type_f_model(res, path, wbf, wbv, has_values):
 
     # 追補15 A-1 §3 のフロアが効いた（コア = 0）なら、Target は加算脚のみである。
     # これは「コアDCF が成立していない」という重い事実なので黙って通してはいけない。
-    if r_core is not None:
-        core_v = esv.cell(r_core, 3).value
-        if isinstance(core_v, (int, float)) and float(core_v) == 0:
+    # 行は挿入しない方式にしたので、コアは Target − 加算脚 で導く。
+    core_v = None
+    if isinstance(tgt, (int, float)) and isinstance(add, (int, float)):
+        core_v = float(tgt) - float(add)
+    if core_v is not None:
+        if abs(core_v) < 1.0:
             res.add(26, WARN, "型F 持分法投資価値の別途加算",
                     detail + extra +
                     "; **コアDCF 不成立** — コア脚のエクイティ（EV − net_debt）が負または"
@@ -1081,6 +1084,12 @@ def check_comps_reference_band(res, wbf, wbv, has_values):
     for cellobj, label in targets:
         v = cellobj.value
         n = _num(v)
+        if v is None:
+            # 空セルは「意図的な除外」ではない。除外はテキスト(N/A / INVALID)で書く
+            # 約束なので、空は数式が失われた疑い(openpyxl の共有数式の取りこぼし)。
+            problems.append(f"{label} のセルが空 — 除外なら N/A と書くこと。"
+                            f"空は数式が失われた疑い")
+            continue
         if n is None:
             notes.append(f"{label}={v!r} (text - method excluded)")
             continue

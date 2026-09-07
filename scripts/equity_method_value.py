@@ -329,6 +329,45 @@ def add_sheet(xlsx, cfg, quiet=False):
     return {"refs": refs, "exec": wired}
 
 
+def _preserve_formulas_across_insert(ws, before, limit=64):
+    """openpyxl の insert_rows が落とした数式をラベルで突き合わせて書き戻す。
+
+    openpyxl は Excel の【共有数式(shared formula)】を、グループの先頭セルだけが
+    実体を持ち残りは参照、という形で読む。insert_rows で行をずらすとその参照が壊れ、
+    **保存時にメンバー側のセルが空になる**（メモリ上では見えているので、保存して
+    読み直すまで気づけない）。
+
+    実害: Executive Summary の "Comps - EV/EBITDA"（='Comps Analysis'!C27）と
+    "Comps - PER"（!C28）は隣接する共有数式グループで、加算脚や DDM/RI が行を
+    挿入したモデルでは **EV/EBITDA 側だけが空になっていた**。しかも check 20 は
+    空セルを「テキスト＝除外された手法」と解釈して PASS していたため、
+    8001/9434/8058/6971/4689 のすべてで見逃されていた。
+
+    挿入前に (ラベル -> 数式) を控え、挿入後に空になったセルへ書き戻す。
+    新しく書いた行はラベルが before に無いので触らない。
+    """
+    # メモリ上では数式が見えているので「空になったセルだけ直す」では捕まらない
+    # （落ちるのは保存時）。控えておいた数式を**全部そのまま書き戻す**ことで、
+    # 共有数式グループのメンバーを通常の数式に変換する（de-share）。
+    restored = []
+    for r in range(1, limit):
+        lab = ws.cell(r, 2).value
+        if not isinstance(lab, str) or lab not in before:
+            continue
+        ws.cell(r, 3).value = before[lab]
+        restored.append((r, lab))
+    return restored
+
+
+def _snapshot_formulas(ws, limit=64):
+    out = {}
+    for r in range(1, limit):
+        lab, v = ws.cell(r, 2).value, ws.cell(r, 3).value
+        if isinstance(lab, str) and isinstance(v, str) and v.startswith("="):
+            out[lab] = v
+    return out
+
+
 def wire_exec_summary(wb, refs, cfg, quiet=False):
     """Target に「1株あたり持分法投資価値」を加算する。
 
@@ -364,19 +403,20 @@ def wire_exec_summary(wb, refs, cfg, quiet=False):
     # コア行(フロア適用後)と加算行の2行を Exit 行の直後に入れる。Target が参照する
     # PGM/Exit 行は挿入位置より上なので、openpyxl が数式を書き換えなくても参照は
     # 正しいまま残る。
-    anchor = max([x for x in (r_pgm, r_exit) if x] or [r_tgt])
-    ws.insert_rows(anchor + 1, 2)
-    r_core, r_add = anchor + 1, anchor + 2
-    if r_note and r_note > anchor:
-        r_note += 2
-    if r_tgt > anchor:
-        r_tgt += 2
-
-    # 追補15 A-1 §3 フロア規則。"N/A"*1 は #VALUE! になり IFERROR が 0 にする。
-    # 負のコア株主価値は MAX が 0 にする。どちらもシート上で追える形にしてある。
-    ws.cell(r_core, 2).value = "コアDCF 1株値（フロア規則: 負または不成立なら 0）"
-    ws.cell(r_core, 3).value = f"=MAX(0,IFERROR(({old[1:]})*1,0))"
-    ws.cell(r_core, 3).number_format = YEN
+    # 行は【挿入しない】。openpyxl で insert_rows すると、ずれた行の数式が
+    # 保存後に Excel の修復で落ちることがある（Executive Summary の
+    # "Comps - EV/EBITDA"（='Comps Analysis'!C27）が実際に消え、しかも check 20 は
+    # 空セルを「除外された手法」と読んで PASS していたため、8001/9434/8058/6971/4689 の
+    # 全件で見逃されていた）。既存の空き行に書き、Target 式の中でフロアを張る。
+    r_add = None
+    for r in range(r_tgt + 1, 60):
+        if ws.cell(r, 2).value in (None, "") and ws.cell(r, 3).value in (None, ""):
+            # Valuation Summary ブロックより下（Note / Range の後）の最初の空き行
+            if r > max([x for x in (r_pgm, r_exit, r_note) if x] or [r_tgt]):
+                r_add = r
+                break
+    if r_add is None:
+        raise ValueError("Executive Summary に加算脚を書ける空き行が無い")
 
     ws.cell(r_add, 2).value = f"{cfg['label']} [1株・別途加算]"
     ws.cell(r_add, 3).value = f"='Equity Method Value'!C{refs['per_share_row']}"
@@ -384,10 +424,12 @@ def wire_exec_summary(wb, refs, cfg, quiet=False):
     ws.cell(r_add, 2).font = BOLD
     ws.cell(r_add, 3).font = BOLD
 
-    ws.cell(r_tgt, 3).value = f"=C{r_core}+C{r_add}"
+    # 追補15 A-1 §3 フロア規則。"N/A"*1 は #VALUE! になり IFERROR が 0 にする。
+    # 負のコア株主価値は MAX が 0 にする。式の形で Target セルに残るので追える。
+    ws.cell(r_tgt, 3).value = f"=MAX(0,IFERROR(({old[1:]})*1,0))+C{r_add}"
     lab = str(ws.cell(r_tgt, 2).value or "Target Price (Mid)")
     if cfg["label"] not in lab:
-        ws.cell(r_tgt, 2).value = lab.split(" (")[0] + f" (コアDCF + {cfg['label']})"
+        ws.cell(r_tgt, 2).value = lab.split(" (")[0] + f" (コアDCF[フロア適用] + {cfg['label']})"
 
     sentence = (
         "【型F: 持分法主導】コア営業利益 = 売上総利益 − 販売費及び一般管理費 で定義し、"
@@ -401,9 +443,9 @@ def wire_exec_summary(wb, refs, cfg, quiet=False):
             ws.cell(r_note, 2).value = (cur + " ■" + sentence) if cur else sentence
 
     if not quiet:
-        print(f"  [加算脚] Executive Summary: Target = C{r_core}（コアDCF、フロア適用後）"
-              f" + C{r_add}（1株あたり{cfg['label']}）")
-    return {"target_row": r_tgt, "addon_row": r_add, "core_row": r_core}
+        print(f"  [加算脚] Executive Summary: Target = MAX(0, コアDCF) + C{r_add}"
+              f"（1株あたり{cfg['label']}）— 行の挿入はしない")
+    return {"target_row": r_tgt, "addon_row": r_add, "core_row": None}
 
 
 def suppress_ev_comps(wb, quiet=False):
