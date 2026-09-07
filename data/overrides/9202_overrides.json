@@ -1,0 +1,23 @@
+{
+  "risk_free": 0.0297,
+  "erp": 0.065,
+  "size_premium": 0.01,
+  "tax_rate": 0.25,
+  "terminal_growth": 0.01,
+  "fiscal_year_end_month": 3,
+  "exchange": "TSE Prime",
+  "_type": "型A。キュー理由は Comps 不成立（国内ピア≤1社）。追補15 B-2 の海外ピア規則で解除。",
+  "_comps_note": "国内ピアが 9201 JAL の1社のみのため、追補15 B-2 の規則により米系3社を追加した。有効4社（≥3）なので EV 倍率は成立する。【注意】国内2社（JAL 3.1x / ANA 4.9x）と米系3社（7.7〜11.1x）で水準が大きく異なる。会計基準（リース処理・年金）と市場構造の差によるもので、中央値 8.0x は米系に寄る。§AF の相対評価ラベルを付し、Exit 脚は感応度で幅を確認すること。AF.PA エールフランスKLM は株主資本が 298 百万ユーロとほぼゼロで PBR が意味を持たず、ピアから除外した。 comps の海外行は 2026-09-04 終値の為替で円換算: USDJPY 155.660 / GBPJPY 210.588。TARGET_DATE=20260906 の直前営業日。ロンドン上場は株価が GBp 表示だが yfinance の marketCap は GBP なので /100 しない（検算: BATS.L 4,125 GBp × 2,153,652,725 株 = £88.8bn = marketCap 値）。",
+  "_exit_multiple_basis": "9201 JAL 3.1x / DAL 8.3x / UAL 7.7x / LUV 11.1x → 中央値 8.0x",
+  "_beta_note": "TOPIX(1306.T) 2年週次 OLS 回帰の生ベータ +0.6653(n=103週)。",
+  "_disclosure_basis_date": "2026-03-31",
+  "company_type": "A",
+  "ticker": "9202",
+  "company_name": "ANAホールディングス",
+  "sector": "空運業",
+  "beta": 0.6653,
+  "current_price": 2999.5,
+  "shares_outstanding": 432703817,
+  "exit_multiple": 8.0,
+  "primary_multiple": "EV/EBITDA"
+}

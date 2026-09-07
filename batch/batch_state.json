@@ -220,11 +220,18 @@
   "note": "直近期D&AをEDINET一次ソースから取得し core_ebitda を明示指定して再生成（旧Target 2883）。"
  },
  "2914": {
-  "status": "queued",
-  "type": "A(生成可だがComps不成立)",
+  "status": "done",
+  "type": "A",
   "name": "JT",
   "reason": "有意な比較対象が海外たばこ(PM/BTI/MO/IMB)のみ。§5により海外Peerはバッチ対象外のため exit_multiple の導出根拠が確保できない",
-  "queue_reason": "型A。Comps 不成立。国内に有意な上場たばこピアが存在せず、海外ピア(PM/BTI/MO/IMB)は §5 によりバッチ対象外。exit_multiple の導出根拠が確保できない。**裁定待ち**: 海外ピア除外の下で国内ピアが1社以下の銘柄について、(a) 近接業種(食品・飲料)で代替する、(b) ピア4社以下でも統計を組む、(c) exit_multiple を自社の過去 EV/EBITDA から置く、のいずれを規則とするか。"
+  "file": "models/2914_DCF_Model_20260906.xlsx",
+  "validation": "FAIL 0 / WARN 0 / SKIP 0 / PASS 27",
+  "price": 6803,
+  "target": 6223,
+  "upside": -0.0853,
+  "verdict": "SELL",
+  "rule": "追補15 B-2: 国内に上場たばこピアが無いため全球たばこ4社(PM/BATS.L/MO/IMB.L)を採用。有効4社(≥3)で EV 倍率成立。為替 USDJPY 155.660 / GBPJPY 210.588(2026-09-04終値)。PM・MO は自己株買いで株主資本が負のため PBR は使わない。capex は永久成長前提として D&A と等置(観測年は売上比3.0%で D&A 6.61% を大きく下回る)。",
+  "regenerated": "2026-09-07 追補15 B-2"
  },
  "2267": {
   "status": "done",
@@ -944,10 +951,10 @@
   "queue_release_requires": "FY2026/3の短信/有報から一次ソース取得が必要",
   "queued_at": "2026-09-05 第6セッション",
   "file": "models/6594_DCF_Model_20260906.xlsx",
-  "target": 4053,
+  "target": 2993,
   "price": 2611,
-  "upside": 0.5523,
-  "verdict": "BUY",
+  "upside": 0.1463,
+  "verdict": "HOLD",
   "wacc": 0.0965,
   "beta_raw": 1.0549,
   "beta_adopted": 1.0368,
@@ -959,7 +966,7 @@
    "6981",
    "7011"
   ],
-  "validation": "FAIL 0 / WARN 3 / SKIP 0 / PASS 21",
+  "validation": "FAIL 0 / WARN 3 / SKIP 0 / PASS 24",
   "provisional": true,
   "flags": [
    "【暫定】第52期有報は監査意見不表明(PwC Japan)",
@@ -974,8 +981,9 @@
   "annual_doc_ids": "2025-03-31=S100WRH7 ほか4期",
   "interim_doc_id": "2026-03-31=S100X4KI",
   "generated": "2026-09-06 追補13 §B 暫定生成(88件目)",
-  "rule": "型A規則((直近+p75)/2)で Base 到達OPM 9.04%。H1 の落ち込みは一時項目として織り込まず、裁定エンジンに検証を委ねた。",
-  "reason": "追補13 §A の鮮度緩和により第52期ベースで暫定生成"
+  "rule": "追補13 §B の暫定生成を追補15 B-3 で §C 照合。capex が §C 確定値 120,711 と不一致(従前 144,994)だったため §C の値で再生成。LTM 売上 2,616,305 / net_debt 367,577 / 第52期 売上 2,607,813・OP 238,116・D&A 138,068 はいずれも一致。3フラグ記載あり。",
+  "reason": "追補13 §A の鮮度緩和により第52期ベースで暫定生成",
+  "regenerated": "2026-09-07 追補15 B-3"
  },
  "6645": {
   "status": "done",
@@ -1655,15 +1663,22 @@
   "queue_reason": "型F 相当だが持分法投資の残高が分離できない。日本基準のため連結BS で持分法適用会社株式は『投資有価証券 1,975,423』に合算表示され、その他有価証券と区別できない。全額を持分法として加算すると非持分法の有価証券まで足すことになる。参考: コア営業利益は日本基準のため直接使える(営業利益 138,601。持分法投資損益と受取配当は営業外収益 108,224 に入っており営業利益から自動的に除外されている)。必要: 有報注記の関係会社株式の内訳、または決算説明資料の ONE 持分の帳簿価額。"
  },
  "9202": {
-  "status": "queued",
-  "type": "A(Peerセット不成立によりキュー)",
+  "status": "done",
+  "type": "A",
   "name": "ANAHD",
   "fy_end_month": 3,
   "queued_reason": "国内の上場航空会社はANA/JALの2社のみ。対象を除くとPeerはJAL 1社(3.10x)で中央値も四分位バンドも構成できない。鉄道で埋めるとPeer中央値10.17xとなるが、JAL 3.10x / 自社4.93x と3〜4倍開いており市場は航空と鉄道を別倍率で評価している。v2 §5の事業比較可能性を満たさない。",
   "queue_release_requires": "海外航空会社の一次ソース財務+為替換算でcomps作成、またはJAL 1社比較とする設計判断（後者は追補7 §AAのバンドテストが適用できないため §X-3 の裁定経路も要決定）",
   "queued_at": "2026-09-06 第7セッション",
   "prescreen_note": "LeaseReceivablesAndInvestmentAssetsCA 7,919mn を検出したが総資産の0.2%で captive finance ではない。型D非該当。",
-  "queue_reason": "型A。Comps 不成立。国内ピアが 9201 JAL の1社のみ。海外ピアは会計基準・リース処理が異なり比較不能。2914 と同じ規則の裁定待ち。"
+  "file": "models/9202_DCF_Model_20260906.xlsx",
+  "validation": "FAIL 0 / WARN 0 / SKIP 0 / PASS 27",
+  "price": 2999.5,
+  "target": 9398,
+  "upside": 2.1332,
+  "verdict": "BUY",
+  "rule": "追補15 B-2: 国内ピアが 9201 JAL の1社のみのため米系3社(DAL/UAL/LUV)を追加。有効4社。AF.PA は株主資本がほぼゼロで PBR が意味を持たず除外。【要裁定】国内2社(JAL 3.1x / ANA 4.9x)と米系(7.7〜11.1x)で EV/EBITDA 水準が大きく異なり、中央値 8.0x は米系に寄る。Target が株価の3倍超になっているのはこの倍率差が主因。§AF 相対評価。",
+  "regenerated": "2026-09-07 追補15 B-2"
  },
  "9502": {
   "status": "done",

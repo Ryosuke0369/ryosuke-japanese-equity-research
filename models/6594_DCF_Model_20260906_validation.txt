@@ -6,23 +6,23 @@ validate_output.py — 6594_DCF_Model_20260906.xlsx
 [PASS]  4. Subject Mkt Cap / EV are formulas      D5=='Executive Summary'!C9*C23/1000000 / E5==D5+C24
 [PASS]  5. Scenario names are the fixed 5         B69:B73 = ['Base', 'Upside', 'Management', 'Downside 1', 'Downside 2']
 [PASS]  6. C20 LTM Revenue matches generator      2,616,305.0 mn (source: LTM row)
-[PASS]  7. C5 Capex/Revenue basis                 5.56% - explicit assumption from overrides
+[PASS]  7. C5 Capex/Revenue basis                 4.63% - explicit assumption from overrides
 [PASS]  7. C18 D&A/Revenue basis                  5.29% - explicit assumption from overrides; hist 3yr mean 5.43%
 [PASS]  8. FS OCF/Cash/Debt year alignment        4 year column(s) match the source year keys cell-for-cell
-[PASS]  9. Terminal-year capex / D&A ratio        1.05x within [0.90, 1.15] at g=1.00%
-[PASS] 10. PGM implied price sanity               EV 2,173,109 >= net debt 367,577 mn
-[WARN] 11. PGM-implied vs assumed exit multiple   PGM implies 4.99x vs assumed 15.60x (3.12x apart) — the two DCF legs disagree on terminal value
+[WARN]  9. Terminal-year capex / D&A ratio        0.87x outside [0.90, 1.15] at g=1.00% — perpetuity assumes this capex forever (analyst call, not auto-fixed)
+[PASS] 10. PGM implied price sanity               EV 2,479,006 >= net debt 367,577 mn
+[WARN] 11. PGM-implied vs assumed exit multiple   PGM implies 5.75x vs assumed 15.60x (2.71x apart) — the two DCF legs disagree on terminal value
 [PASS] 12. Peer EBITDA != EBIT                    no peer row where EBITDA equals operating income
 [PASS] 13. Adjustments Log sheet present          
-[WARN] 14. Target Price averages DCF legs only    C10 = =IF(ISNUMBER(C17),ROUND(C17,0),"N/A") does not average C16:C17 - expected when a leg was demoted (追補6 §X) or the Target is a 型D DDM/RI average. No comps row is referenced.
-[PASS] 15. Exit implied price sanity              EV 5,013,972 >= net debt 367,577 mn
+[PASS] 14. Target Price averages DCF legs only    C10 averages C16:C17 (PGM + Exit); comps rows [18, 19] excluded
+[PASS] 15. Exit implied price sanity              EV 5,116,926 >= net debt 367,577 mn
 [PASS] 16. Reverse DCF sheet present              121 live formulas, sheet position 4
 [PASS] 17. Cost of debt basis                     1.0000% after-tax (assumption; supply interest_expense + debt balances to derive the actual rate)
 [PASS] 18. FX sensitivity Table 3                 not enabled (domestic name) — no table expected
 [PASS] 19. Subject EBITDA vs operating income     core_ebitda 376,184 >= operating income 238,116 mn (implied D&A 138,068)
 [PASS] 20. Comps reference prices in a sane band  EV/EBITDA=4,783 ok; PER=4,301 ok
 [PASS] 21. Market data is not a placeholder       price 2,611 x 1,146,309,835 shares = 2,993,015 JPY mn [source: yfinance; from overrides: beta, current_price, shares, shares_outstanding]
-[PASS] 22. 追補6 §X arbitration applied             適用済 追補6 §X: PGM 脚を降格 (乖離 3.12x, 通常)
+[PASS] 22. 追補6 §X arbitration applied             降格不要: 収斂 / 裁定不要（倍率乖離・株価乖離とも ≤ 3.0倍） (乖離 2.71x)
 [WARN] 23. Disclosure vintage recorded            最新の確定年次開示 2025-03-31（分析基準日から 18 か月前） / 年次 docID: 2025-03-31=S100WRH7, 2024-03-31=S100TNGX, 2023-03-31=S100R0SZ, 2022-03-31=S100OA6Q, 2021-03-31=S100LMP5 / 半期 docID: 2026-03-31=S100X4KI — 追補13 §A の鮮度緩和が適用された状態。最新期の確定開示が出たら再生成すること
 [PASS] 24. 型D DDM/RI model                        対象外（company_type=A）
 [PASS] 25. Beta clamp not silently applied        クランプなし（採用 1.0368）。Blume: 0.67 x 1.055 + 0.33 x 1.00 = 1.037
