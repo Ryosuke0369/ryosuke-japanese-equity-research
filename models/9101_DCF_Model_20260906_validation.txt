@@ -1,0 +1,32 @@
+validate_output.py — 9101_DCF_Model_20260906.xlsx
+==============================================================================
+[PASS]  1. No formula errors                      0 error cells in all sheets
+[PASS]  2. Scenario index is MATCH                D27 = =MATCH(C27,B69:B73,0)
+[PASS]  3. Comps stats exclude subject row        subject row 5 excluded from all MEDIAN/PERCENTILE ranges
+[PASS]  4. Subject Mkt Cap / EV are formulas      D5=='Executive Summary'!C9*C23/1000000 / E5==D5+C24
+[PASS]  5. Scenario names are the fixed 5         B69:B73 = ['Base', 'Upside', 'Management', 'Downside 1', 'Downside 2']
+[PASS]  6. C20 LTM Revenue matches generator      2,423,689.0 mn (source: latest FY (no LTM))
+[PASS]  7. C5 Capex/Revenue basis                 7.23% - explicit assumption from overrides; hist 3yr mean 10.31%
+[PASS]  7. C18 D&A/Revenue basis                  7.23% - explicit assumption from overrides; hist 3yr mean 6.60%
+[PASS]  8. FS OCF/Cash/Debt year alignment        2 year column(s) match the source year keys cell-for-cell
+[PASS]  9. Terminal-year capex / D&A ratio        1.00x within [0.90, 1.15] at g=1.00%
+[PASS] 10. PGM implied price sanity               EV 1,850,870 >= net debt 1,062,089 mn
+[PASS] 11. PGM-implied vs assumed exit multiple   PGM implies 7.16x vs assumed 5.00x (1.43x)
+[PASS] 12. Peer EBITDA != EBIT                    no peer row where EBITDA equals operating income
+[PASS] 13. Adjustments Log sheet present          
+[PASS] 14. Target Price averages DCF legs only    C10 averages C16:C17 (PGM + Exit); comps rows [18, 19] excluded
+[PASS] 15. Exit implied price sanity              EV 1,312,248 >= net debt 1,062,089 mn
+[PASS] 16. Reverse DCF sheet present              121 live formulas, sheet position 4
+[PASS] 17. Cost of debt basis                     1.0000% after-tax (assumption; supply interest_expense + debt balances to derive the actual rate)
+[PASS] 18. FX sensitivity Table 3                 not enabled (domestic name) — no table expected
+[PASS] 19. Subject EBITDA vs operating income     core_ebitda 313,783 >= operating income 138,601 mn (implied D&A 175,182)
+[PASS] 20. Comps reference prices in a sane band  EV/EBITDA='N/A' (text - method excluded); PER=6,051 ok
+[PASS] 21. Market data is not a placeholder       price 7,158 x 403,556,142 shares = 2,888,655 JPY mn [source: yfinance; from overrides: beta, current_price, shares_outstanding]
+[PASS] 22. 追補6 §X arbitration applied             降格不要: レバレッジ増幅型(§AD-2) / **Target = N/A（高レバレッジ・判定不能）** + 要目視レビュー（net_debt/EV = 0.67 > (乖離 1.43x)
+[PASS] 23. Disclosure vintage recorded            最新の確定年次開示 2026-03-31（分析基準日から 6 か月前） / 年次 docID: 2026-03-31=S100YBT6 (有価証券報告書, 2026-06-16 提出)
+[PASS] 24. 型D DDM/RI model                        対象外（company_type=F）
+[PASS] 25. Beta clamp not silently applied        クランプなし（採用 0.5071）。Blume: 0.67 x 0.264 + 0.33 x 1.00 = 0.507
+[WARN] 26. 型F 持分法投資価値の別途加算                        Target C10 = =MAX(0,IFERROR((IF(COUNT(C16:C17)=0,"N/A",ROUND(AVERAGE(C16:C17),0)))*1,0))+C22 に加算行 C22 が入っている; 方式 book_value; Target 5,818 のうち加算脚 4,530 (78%); BS残高 1,827,915 mn; 方式が book_value（BS残高×1.0）— 上場持分先の【簿価】が有報の注記から取得できないため時価への置換ができていない。上場持分に含み益がある分だけ**保守的（過小）**に出る。個別簿価が取れたら listed_stakes へ切り替えること
+==============================================================================
+FAIL 0 / WARN 1 / SKIP 0 / PASS 26
+VERDICT: PASS

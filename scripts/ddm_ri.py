@@ -582,6 +582,13 @@ def wire_exec_summary(wb, ddm_refs, ri_refs, quiet=False):
     _before = _snapshot_formulas(ws)
     anchor_row = max([x for x in (r_pgm, r_exit) if x] or [r_tgt])
     ws.insert_rows(anchor_row + 1, 2)
+    # **一連の症状の真因**: 行がずれると、上にあった結合セル（注記行の B:C 結合など）が
+    # 別の行に被さる。被った側は MergedCell になり、openpyxl は書き込みを黙って捨てる
+    # （メモリ上は書けたように見えて、保存すると空になる）。Valuation Summary の
+    # C 列にかかる結合をここで解除しておく。
+    for _rng in list(ws.merged_cells.ranges):
+        if _rng.min_col <= 3 <= _rng.max_col and _rng.min_row >= anchor_row:
+            ws.unmerge_cells(str(_rng))
     r_ddm, r_ri = anchor_row + 1, anchor_row + 2
     if r_note and r_note > anchor_row:
         r_note += 2
@@ -626,6 +633,44 @@ def wire_exec_summary(wb, ddm_refs, ri_refs, quiet=False):
         print(f"  [型D] Executive Summary: Target = AVERAGE(C{r_ddm}:C{r_ri}) "
               f"(DDM / Residual Income)、DCF 2脚は [参考・Target不算入] に降格")
     return {"target_row": r_tgt, "ddm_row": r_ddm, "ri_row": r_ri}
+
+
+def stamp_ev_comps_na(xlsx, quiet=False):
+    """再計算の【後】に Executive Summary の EV 倍率行へ N/A を押す。
+
+    型D は EV 倍率を使わない（手順書 §2）。ところが行を挿入したワークブックを Excel が
+    開くと、ずれた行の一部を修復で落とすことがあり、8410 では
+    "Comps - EV/EBITDA" のセルが（保存前に N/A を書いても）空のまま残った。
+    ラベル側（B列）は残るのに値側（C列）だけが消えるため、保存前の書き込みでは追いつかない。
+
+    そこで再計算が終わったあとに定数の "N/A" を書き込む。定数なので再計算は不要で、
+    以降 Excel が触っても落ちない。
+    """
+    wb = openpyxl.load_workbook(xlsx)
+    if "Executive Summary" not in wb.sheetnames:
+        return 0
+    ws = wb["Executive Summary"]
+    n = 0
+    for r in range(1, 48):
+        v = ws.cell(r, 2).value
+        if not (isinstance(v, str) and v.startswith("Comps - EV/")):
+            continue
+        # **これが一連の症状の真因だった**: insert_rows で行がずれると、上にあった
+        # 結合セル（B:C を結合した注記行など）が この行に被さることがある。
+        # 被った側のセルは MergedCell になり、openpyxl は書き込みを黙って捨てる
+        # （メモリ上は書けたように見えて、保存すると空になる）。書く前に解除する。
+        for rng in list(ws.merged_cells.ranges):
+            if rng.min_row <= r <= rng.max_row and rng.min_col <= 3 <= rng.max_col:
+                ws.unmerge_cells(str(rng))
+        if ws.cell(r, 3).value != "N/A":
+            ws.cell(r, 3).value = "N/A"
+            n += 1
+    if n:
+        wb.save(xlsx)
+        if not quiet:
+            print(f"  [型D] 再計算後に Comps EV 倍率行 {n} 件へ N/A を書き込んだ"
+                  f"（Excel の修復で空になるため）")
+    return n
 
 
 def warn_on_dcf_sheet(wb, quiet=False):

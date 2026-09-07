@@ -14,19 +14,19 @@ validate_output.py — 6971_DCF_Model_20260906.xlsx
 [WARN] 11. PGM-implied vs assumed exit multiple   PGM implies 2.90x vs assumed 8.00x (2.76x apart) — the two DCF legs disagree on terminal value
 [PASS] 12. Peer EBITDA != EBIT                    no peer row where EBITDA equals operating income
 [PASS] 13. Adjustments Log sheet present          
-[WARN] 14. Target Price averages DCF legs only    C10 = =C18+C19 does not average C16:C17 - expected when a leg was demoted (追補6 §X) or the Target is a 型D DDM/RI average. No comps row is referenced.
+[PASS] 14. Target Price averages DCF legs only    C10 averages C16:C17 (PGM + Exit); comps rows [18, 19] excluded
 [PASS] 15. Exit implied price sanity              EV 1,817,074 >= net debt -95,222 mn
 [PASS] 16. Reverse DCF sheet present              121 live formulas, sheet position 4
 [PASS] 17. Cost of debt basis                     1.0000% after-tax (assumption; supply interest_expense + debt balances to derive the actual rate)
 [PASS] 18. FX sensitivity Table 3                 not enabled (domestic name) — no table expected
 [PASS] 19. Subject EBITDA vs operating income     core_ebitda 276,327 >= operating income 118,138 mn (implied D&A 158,189)
-[PASS] 20. Comps reference prices in a sane band  EV/EBITDA=None (text - method excluded); PER=3,211 ok
+[PASS] 20. Comps reference prices in a sane band  EV/EBITDA='N/A' (text - method excluded); PER=3,211 ok
 [PASS] 21. Market data is not a placeholder       price 3,503 x 1,277,527,109 shares = 4,475,177 JPY mn [source: yfinance; from overrides: beta, current_price, shares_outstanding]
 [PASS] 22. 追補6 §X arbitration applied             降格不要: 収斂 / 裁定不要（倍率乖離・株価乖離とも ≤ 3.0倍） (乖離 2.76x)
 [PASS] 23. Disclosure vintage recorded            最新の確定年次開示 2026-03-31（分析基準日から 6 か月前） / 年次 docID: 2026-03-31=S100YF47 (有価証券報告書, 2026-06-19 提出)
 [PASS] 24. 型D DDM/RI model                        対象外（company_type=F）
 [PASS] 25. Beta clamp not silently applied        クランプなし（採用 0.9729）。Blume: 0.67 x 0.960 + 0.33 x 1.00 = 0.973
-[PASS] 26. 型F 持分法投資価値の別途加算                        Target C10 = =C18+C19 に加算行 C19 が入っている; 方式 book_value; Target 2,143 のうち加算脚 1,028 (48%); BS残高 1,312,686 mn; 加算脚の残高は【公正価値】で計上されており（FVTOCI 等）、方式名は book_value だが実質は時価評価
+[PASS] 26. 型F 持分法投資価値の別途加算                        Target C10 = =MAX(0,IFERROR((IF(COUNT(C16:C17)=0,"N/A",ROUND(AVERAGE(C16:C17),0)))*1,0))+C22 に加算行 C22 が入っている; 方式 book_value; Target 2,143 のうち加算脚 1,028 (48%); BS残高 1,312,686 mn; 加算脚の残高は【公正価値】で計上されており（FVTOCI 等）、方式名は book_value だが実質は時価評価
 ==============================================================================
-FAIL 0 / WARN 2 / SKIP 0 / PASS 25
+FAIL 0 / WARN 1 / SKIP 0 / PASS 26
 VERDICT: PASS

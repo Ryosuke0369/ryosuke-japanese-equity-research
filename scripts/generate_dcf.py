@@ -1397,6 +1397,7 @@ def main():
                   f"(exit {_rcb.returncode}) {(_rcb.stderr or '').strip()[:200]}")
             sys.exit(1)
         print((_rcb.stdout or "").strip() or "  (no output)")
+
     elif resolve_company_type(_overrides) == "D":
         print()
         print(f"[Step 8.4] 型D(銀行): スキップ — --no-recalc のため DDM/RI を計算できない")
