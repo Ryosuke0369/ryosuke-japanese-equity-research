@@ -67,7 +67,7 @@ YEN = '#,##0;(#,##0)'
 PCT = '0.0%;(0.0%)'
 RATIO = '0.00"x"'
 
-METHODS = ("book_value", "listed_stakes")
+METHODS = ("book_value", "listed_stakes", "market_stakes")
 
 
 def _cell(ws, r, c, v, font=None, fmt=None, fill=None, border=None):
@@ -95,13 +95,15 @@ def resolve_config(overrides):
             "型F: overrides に equity_method ブロックがありません。"
             "持分法投資価値は Target の構成要素であり、既定値に落とせません。")
 
-    bal = blk.get("balance_mn")
-    if not isinstance(bal, (int, float)) or isinstance(bal, bool) or bal <= 0:
-        raise ValueError(
-            "equity_method.balance_mn: 連結BS の『持分法で会計処理されている投資』の"
-            "残高（JPY mn、正の数値）が必須です")
-
     method = str(blk.get("method", "")).strip().lower()
+    bal = blk.get("balance_mn")
+    # market_stakes は持分法残高を使わない（連結子会社の時価×経済的持分が基礎）。
+    if method != "market_stakes":
+        if not isinstance(bal, (int, float)) or isinstance(bal, bool) or bal <= 0:
+            raise ValueError(
+                "equity_method.balance_mn: 連結BS の『持分法で会計処理されている投資』の"
+                "残高（JPY mn、正の数値）が必須です")
+
     if method not in METHODS:
         raise ValueError(
             f"equity_method.method: {method!r} は {METHODS} のいずれかでなければ"
@@ -127,12 +129,29 @@ def resolve_config(overrides):
             raise ValueError(
                 f"listed_book_mn {listed_book:,.0f} が持分法投資残高 {bal:,.0f} を"
                 f"超えています。非上場分が負になります")
+    elif method == "market_stakes":
+        if not stakes:
+            raise ValueError(
+                "equity_method.method='market_stakes' なのに listed_stakes が空です")
+        for s in stakes:
+            for k in ("name", "ticker", "market_cap_mn", "economic_interest"):
+                if s.get(k) is None:
+                    raise ValueError(
+                        f"listed_stakes[{s.get('name')!r}]: {k} が必要です。"
+                        f"economic_interest は【経済的持分】で、議決権比率とは別物です"
+                        f"（4689 の PayPay は議決権 54.6% / 経済的持分 31.1%）")
+        ub = blk.get("unlisted_book_mn")
+        if ub is not None and (not isinstance(ub, (int, float)) or isinstance(ub, bool)):
+            raise ValueError("equity_method.unlisted_book_mn: 数値（JPY mn）で指定すること")
     elif stakes:
         # 参考として持たせるのは可。ただし評価には使わないことを明示する。
         pass
 
     return {
-        "balance_mn": float(bal),
+        "balance_mn": float(bal) if bal is not None else None,
+        "unlisted_book_mn": (float(blk["unlisted_book_mn"])
+                             if blk.get("unlisted_book_mn") is not None else None),
+        "fx_note": blk.get("fx_note") or "",
         "method": method,
         "multiple": float(blk.get("multiple", 1.0)),
         "listed_stakes": stakes,
@@ -170,8 +189,9 @@ def add_sheet(xlsx, cfg, quiet=False):
         _cell(ws, r, 2, "上場持分先（参考表示）" if cfg["method"] == "book_value"
               else "上場持分先", font=SUB)
         r += 1
+        _own_lbl = "経済的持分" if cfg["method"] == "market_stakes" else "議決権比率"
         for i, lbl in enumerate(["Company", "Ticker", "Market Cap (JPY mn)",
-                                 "議決権比率", "持分時価 (JPY mn)"]):
+                                 _own_lbl, "持分時価 (JPY mn)"]):
             c = ws.cell(row=r, column=2 + i, value=lbl)
             c.font, c.fill = HDR, HDR_FILL
             c.alignment = Alignment(horizontal="center", wrap_text=True)
@@ -181,7 +201,11 @@ def add_sheet(xlsx, cfg, quiet=False):
             _cell(ws, r, 2, s["name"], font=BLACK, border=THIN)
             _cell(ws, r, 3, s["ticker"], font=BLACK, border=THIN)
             _cell(ws, r, 4, s["market_cap_mn"], font=BLUE, fmt=YEN, border=INPUT)
-            _cell(ws, r, 5, s["ownership"], font=BLUE, fmt=PCT, border=INPUT)
+            _cell(ws, r, 5, s.get("economic_interest", s.get("ownership")),
+                  font=BLUE, fmt=PCT, border=INPUT)
+            if s.get("voting_interest") is not None:
+                _cell(ws, r, 7, f"議決権 {s['voting_interest']:.1%}（評価には使わない）",
+                      font=GREY)
             _cell(ws, r, 6, f"=D{r}*E{r}", font=BLACK, fmt=YEN, border=THIN)
             r += 1
         _cell(ws, r, 2, "上場持分の時価合計", font=BOLD, fill=GREEN_FILL, border=TOTAL)
@@ -193,12 +217,42 @@ def add_sheet(xlsx, cfg, quiet=False):
     _cell(ws, r, 2, "持分法投資価値の算定", font=SUB)
     r += 1
 
-    bal_row = r
-    _cell(ws, r, 2, "持分法で会計処理されている投資（連結BS 残高、JPY mn）", font=BLACK, border=THIN)
-    _cell(ws, r, 3, cfg["balance_mn"], font=BLUE, fmt=YEN, border=INPUT)
-    r += 1
+    if cfg["method"] == "market_stakes":
+        mv_row = r
+        _cell(ws, r, 2, "上場持分の時価合計（時価総額 × 経済的持分）", font=BLACK, border=THIN)
+        _cell(ws, r, 3, f"=F{stakes_sum_row}", font=GREEN, fmt=YEN, border=THIN)
+        r += 1
+        ub_row = r
+        _cell(ws, r, 2, "非上場の金融事業（簿価、JPY mn）", font=BLACK, border=THIN)
+        _cell(ws, r, 3, cfg["unlisted_book_mn"] or 0, font=BLUE, fmt=YEN, border=INPUT)
+        r += 1
+        val_row = r
+        _cell(ws, r, 2, "金融事業価値（JPY mn）", font=BOLD, fill=GREEN_FILL, border=TOTAL)
+        _cell(ws, r, 3, f"=C{mv_row}+C{ub_row}", font=BOLD, fmt=YEN,
+              fill=GREEN_FILL, border=TOTAL)
+        r += 1
+        _cell(ws, r, 2,
+              "方式: 上場子会社は【時価 × 経済的持分】、非上場分は簿価。経済的持分は議決権比率"
+              "とは別物であり、評価に使うのは経済的持分のほうである。入れ子連結（親も子も同じ"
+              "上場子会社を連結する構造）では、各モデルが自社の経済的持分のみを評価する。"
+              + (" " + cfg["fx_note"] if cfg["fx_note"] else ""),
+              font=GREY, fill=YELLOW_FILL)
+        ws.row_dimensions[r].height = 34
+        r += 2
+        bal_row = None
+    else:
+        bal_row = r
+        _cell(ws, r, 2, "持分法で会計処理されている投資（連結BS 残高、JPY mn）",
+              font=BLACK, border=THIN)
+        _cell(ws, r, 3, cfg["balance_mn"], font=BLUE, fmt=YEN, border=INPUT)
+        r += 1
 
-    if cfg["method"] == "book_value":
+    if cfg["method"] == "market_stakes":
+        # 上で val_row まで作り終えている。ここから下は持分法残高を分母に置く2方式の
+        # ためのブロックなので、market_stakes は通してはいけない（通すと bal_row=None を
+        # 参照して =CNone-C16 のような壊れた数式が入り、Excel が #NAME? を返す）。
+        pass
+    elif cfg["method"] == "book_value":
         mult_row = r
         _cell(ws, r, 2, "評価倍率（簿価に対する倍率）", font=BLACK, border=THIN)
         _cell(ws, r, 3, cfg["multiple"], font=BLUE, fmt=RATIO, border=INPUT)
@@ -259,11 +313,15 @@ def add_sheet(xlsx, cfg, quiet=False):
     ws.freeze_panes = "C4"
 
     refs = {"value_row": val_row, "per_share_row": ps_row, "balance_row": bal_row}
+
     wired = wire_exec_summary(wb, refs, cfg, quiet=quiet)
     wb.save(xlsx)
     if not quiet:
-        print(f"  [型F] Equity Method Value シートを作成（方式 {cfg['method']}、"
-              f"BS残高 {cfg['balance_mn']:,.0f} mn）")
+        _base = (f"BS残高 {cfg['balance_mn']:,.0f} mn"
+                 if cfg["balance_mn"] is not None
+                 else f"上場 {len(cfg['listed_stakes'])}社の時価×経済的持分 + 非上場簿価 "
+                      f"{(cfg['unlisted_book_mn'] or 0):,.0f} mn")
+        print(f"  [加算脚] Equity Method Value シートを作成（方式 {cfg['method']}、{_base}）")
     return {"refs": refs, "exec": wired}
 
 
@@ -316,8 +374,8 @@ def wire_exec_summary(wb, refs, cfg, quiet=False):
     # 既存の Target 式（コアDCF）をそのまま包んで加算する。
     ws.cell(r_tgt, 3).value = f"=({old[1:]})+C{r_add}"
     lab = str(ws.cell(r_tgt, 2).value or "Target Price (Mid)")
-    if "持分法" not in lab:
-        ws.cell(r_tgt, 2).value = lab.split(" (")[0] + " (コアDCF + 持分法投資価値)"
+    if cfg["label"] not in lab:
+        ws.cell(r_tgt, 2).value = lab.split(" (")[0] + f" (コアDCF + {cfg['label']})"
 
     sentence = (
         "【型F: 持分法主導】コア営業利益 = 売上総利益 − 販売費及び一般管理費 で定義し、"
@@ -331,8 +389,8 @@ def wire_exec_summary(wb, refs, cfg, quiet=False):
             ws.cell(r_note, 2).value = (cur + " ■" + sentence) if cur else sentence
 
     if not quiet:
-        print(f"  [型F] Executive Summary: Target = (コアDCF) + C{r_add}"
-              f"（1株あたり持分法投資価値）")
+        print(f"  [加算脚] Executive Summary: Target = (コアDCF) + C{r_add}"
+              f"（1株あたり{cfg['label']}）")
     return {"target_row": r_tgt, "addon_row": r_add}
 
 
@@ -343,15 +401,22 @@ def log_to_adjustments(xlsx, cfg, quiet=False):
         return False
     ws = wb["Adjustments Log"]
     r = ws.max_row + 1
+    if cfg["method"] == "market_stakes":
+        basis = (f"上場子会社 {len(cfg['listed_stakes'])}社を【時価 × 経済的持分】で評価し、"
+                 f"非上場の金融事業は簿価 "
+                 f"{(cfg['unlisted_book_mn'] or 0):,.0f} を加算。"
+                 f"経済的持分は議決権比率とは別物であり、評価に使うのは経済的持分。"
+                 + (" " + cfg["fx_note"] if cfg["fx_note"] else ""))
+    elif cfg["method"] == "book_value":
+        basis = "簿価（BS残高×1.0）。上場先の簿価が注記から取れないため上場分の時価評価は行わない"
+    else:
+        basis = (f"上場分は時価（{len(cfg['listed_stakes'])}社）、"
+                 f"非上場分は BS残高−上場分簿価 {cfg['listed_book_mn']:,.0f}")
     rows = [
         ("equity_method_method", cfg["method"]),
         ("equity_method_balance_mn", cfg["balance_mn"]),
         ("equity_method_multiple", cfg["multiple"]),
-        ("equity_method_basis",
-         "簿価（BS残高×1.0）。上場先の簿価が注記から取れないため上場分の時価評価は行わない"
-         if cfg["method"] == "book_value" else
-         f"上場分は時価（{len(cfg['listed_stakes'])}社）、非上場分は BS残高−上場分簿価 "
-         f"{cfg['listed_book_mn']:,.0f}"),
+        ("equity_method_basis", basis),
     ]
     for k, v in rows:
         ws.cell(r, 2).value = k
@@ -359,7 +424,7 @@ def log_to_adjustments(xlsx, cfg, quiet=False):
         r += 1
     wb.save(xlsx)
     if not quiet:
-        print(f"  [型F] Adjustments Log に評価方式を記録（{cfg['method']}）")
+        print(f"  [加算脚] Adjustments Log に評価方式を記録（{cfg['method']}）")
     return True
 
 

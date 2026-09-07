@@ -1480,9 +1480,12 @@ def main():
     # 裁定(8.5)の【後】に置く。裁定は Target を単脚に書き換えることがあり、
     # 型F の加算は既存の Target 式をそのまま括弧で包んで足すので、順序を逆に
     # すると降格が加算を上書きして消える。
-    if resolve_company_type(_overrides) == "F" and not args.no_recalc:
+    _addon_type = resolve_company_type(_overrides)
+    _addon_wanted = (_addon_type == "F"
+                     or (_addon_type == "E" and _overrides.get("equity_method")))
+    if _addon_wanted and not args.no_recalc:
         print()
-        print(f"[Step 8.6] 型F(持分法主導): 持分法投資価値を1株あたりで別途加算...")
+        print(f"[Step 8.6] 型{_addon_type}: 非連結/金融事業の価値を1株あたりで別途加算...")
         try:
             from scripts.equity_method_value import (
                 resolve_config as _emv_cfg, add_sheet as _emv_add,
@@ -1505,9 +1508,9 @@ def main():
                   f"(exit {_rc3.returncode}) {(_rc3.stderr or '').strip()[:200]}")
             sys.exit(1)
         print((_rc3.stdout or "").strip() or "  (no output)")
-    elif resolve_company_type(_overrides) == "F":
+    elif _addon_wanted:
         print()
-        print(f"[Step 8.6] 型F(持分法主導): スキップ — --no-recalc のため加算後の"
+        print(f"[Step 8.6] 型{_addon_type}: スキップ — --no-recalc のため加算後の"
               f"Target を計算できない")
 
     validation_failed = False

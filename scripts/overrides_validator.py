@@ -459,18 +459,22 @@ def _check_type_f_contract(overrides):
             "構成要素であり、既定値に落とせません")
     else:
         allowed = {"balance_mn", "method", "multiple", "listed_stakes",
-                   "listed_book_mn", "label", "note", "as_of"}
+                   "listed_book_mn", "unlisted_book_mn", "fx_note",
+                   "label", "note", "as_of"}
         for k in blk:
             if k not in allowed and not k.startswith("_"):
                 errors.append(f"equity_method.{k}: unknown key. "
                               f"許可: {', '.join(sorted(allowed))}")
-        if not isinstance(blk.get("balance_mn"), (int, float)) or isinstance(
-                blk.get("balance_mn"), bool):
+        _m = str(blk.get("method", "")).strip().lower()
+        if _m not in ("book_value", "listed_stakes", "market_stakes"):
+            errors.append("equity_method.method: 'book_value' / 'listed_stakes' / "
+                          "'market_stakes' のいずれかが必須です"
+                          "（どれを採ったかを Adjustments Log に残すため）")
+        if _m != "market_stakes" and (
+                not isinstance(blk.get("balance_mn"), (int, float))
+                or isinstance(blk.get("balance_mn"), bool)):
             errors.append("equity_method.balance_mn: 連結BS の持分法投資残高"
                           "（JPY mn の数値）が必須です")
-        if str(blk.get("method", "")).strip().lower() not in ("book_value", "listed_stakes"):
-            errors.append("equity_method.method: 'book_value' か 'listed_stakes' の"
-                          "いずれかが必須です（どちらを採ったかを Adjustments Log に残すため）")
 
     hist_keys = ("hist_revenue", "hist_operating_income", "base_year_revenue")
     missing = [k for k in hist_keys if overrides.get(k) is None]
@@ -528,11 +532,21 @@ def _check_type_e_contract(overrides):
             "of truth になる)、または (b) " + " / ".join(hist_keys) +
             " を非金融ベースで供給する(不足: " + ", ".join(missing) + ")")
 
+    # 金融部分を DCF から外して別途評価する経路は2つある。どちらが使えるかは
+    # 開示側の事情で決まる:
+    #   sotp + valuation_method:"pbr" …… 金融子会社の【純資産】が開示されている
+    #                                     (9433 KDDI: au FH の資本の部 360,081)
+    #   equity_method(market_stakes) …… 金融子会社が【上場】していて時価が取れる
+    #                                     (9434: PayPay が Nasdaq 上場)
+    # 9434 のようにセグメント資産・負債の注記が無い会社では前者は組めない。
     sotp = overrides.get("sotp")
+    has_addon = isinstance(overrides.get("equity_method"), dict)
     if not isinstance(sotp, dict):
-        errors.append(
-            "型E: sotp ブロックが必須です。金融セグメントは DCF ではなく "
-            "PBR×純資産で評価し、非金融の事業価値と SOTP で合算します")
+        if not has_addon:
+            errors.append(
+                "型E: sotp ブロック（金融セグメントを PBR×純資産で評価）か "
+                "equity_method ブロック（金融子会社の時価×経済的持分などで1株別途加算）の"
+                "いずれかが必須です。金融部分を DCF に残したままにはできません")
     else:
         fin = [x for x in sotp.get("segments", [])
                if str(x.get("valuation_method", "")).strip().lower() == "pbr"]
@@ -635,9 +649,13 @@ def validate_overrides(overrides, source_path="<overrides>", allow_unconfirmed=F
     if str(overrides.get("company_type", "")).strip().upper() == "F":
         errors.extend(_check_type_f_contract(overrides))
     elif overrides.get("equity_method") is not None:
-        errors.append(
-            "equity_method: 型F 専用のブロックです。company_type: \"F\" を宣言するか、"
-            "このブロックを削除してください")
+        # 型E でも使う。型E の金融部分は PBR×純資産のこともあれば(9433 KDDI: au FH の
+        # 純資産が開示されている)、上場子会社の時価のこともある(9434: PayPay が Nasdaq
+        # 上場)。どちらを採るかは開示側の事情で決まる。
+        if str(overrides.get("company_type", "")).strip().upper() != "E":
+            errors.append(
+                "equity_method: 型E / 型F 専用のブロックです。company_type を宣言するか、"
+                "このブロックを削除してください")
 
     ct = overrides.get("company_type")
     if ct is not None and str(ct).strip().upper() not in COMPANY_TYPES:
