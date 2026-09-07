@@ -156,6 +156,7 @@ def resolve_config(overrides):
         "multiple": float(blk.get("multiple", 1.0)),
         "listed_stakes": stakes,
         "listed_book_mn": float(listed_book) if listed_book is not None else None,
+        "company_type": str(overrides.get("company_type", "")).strip().upper(),
         "label": blk.get("label") or "持分法投資価値",
         "note": blk.get("note") or "",
         "as_of": blk.get("as_of") or "",
@@ -315,6 +316,8 @@ def add_sheet(xlsx, cfg, quiet=False):
     refs = {"value_row": val_row, "per_share_row": ps_row, "balance_row": bal_row}
 
     wired = wire_exec_summary(wb, refs, cfg, quiet=quiet)
+    if cfg.get("company_type") == "F":
+        suppress_ev_comps(wb, quiet=quiet)
     wb.save(xlsx)
     if not quiet:
         _base = (f"BS残高 {cfg['balance_mn']:,.0f} mn"
@@ -357,13 +360,22 @@ def wire_exec_summary(wb, refs, cfg, quiet=False):
             f"型F: Executive Summary C{r_tgt} が数式ではありません（{old!r}）。"
             f"コア DCF の Target が数式でないと加算後の値が追跡できません")
 
+    # コア行(フロア適用後)と加算行の2行を Exit 行の直後に入れる。Target が参照する
+    # PGM/Exit 行は挿入位置より上なので、openpyxl が数式を書き換えなくても参照は
+    # 正しいまま残る。
     anchor = max([x for x in (r_pgm, r_exit) if x] or [r_tgt])
-    ws.insert_rows(anchor + 1, 1)
-    r_add = anchor + 1
+    ws.insert_rows(anchor + 1, 2)
+    r_core, r_add = anchor + 1, anchor + 2
     if r_note and r_note > anchor:
-        r_note += 1
+        r_note += 2
     if r_tgt > anchor:
-        r_tgt += 1
+        r_tgt += 2
+
+    # 追補15 A-1 §3 フロア規則。"N/A"*1 は #VALUE! になり IFERROR が 0 にする。
+    # 負のコア株主価値は MAX が 0 にする。どちらもシート上で追える形にしてある。
+    ws.cell(r_core, 2).value = "コアDCF 1株値（フロア規則: 負または不成立なら 0）"
+    ws.cell(r_core, 3).value = f"=MAX(0,IFERROR(({old[1:]})*1,0))"
+    ws.cell(r_core, 3).number_format = YEN
 
     ws.cell(r_add, 2).value = f"{cfg['label']} [1株・別途加算]"
     ws.cell(r_add, 3).value = f"='Equity Method Value'!C{refs['per_share_row']}"
@@ -371,8 +383,7 @@ def wire_exec_summary(wb, refs, cfg, quiet=False):
     ws.cell(r_add, 2).font = BOLD
     ws.cell(r_add, 3).font = BOLD
 
-    # 既存の Target 式（コアDCF）をそのまま包んで加算する。
-    ws.cell(r_tgt, 3).value = f"=({old[1:]})+C{r_add}"
+    ws.cell(r_tgt, 3).value = f"=C{r_core}+C{r_add}"
     lab = str(ws.cell(r_tgt, 2).value or "Target Price (Mid)")
     if cfg["label"] not in lab:
         ws.cell(r_tgt, 2).value = lab.split(" (")[0] + f" (コアDCF + {cfg['label']})"
@@ -389,9 +400,36 @@ def wire_exec_summary(wb, refs, cfg, quiet=False):
             ws.cell(r_note, 2).value = (cur + " ■" + sentence) if cur else sentence
 
     if not quiet:
-        print(f"  [加算脚] Executive Summary: Target = (コアDCF) + C{r_add}"
-              f"（1株あたり{cfg['label']}）")
-    return {"target_row": r_tgt, "addon_row": r_add}
+        print(f"  [加算脚] Executive Summary: Target = C{r_core}（コアDCF、フロア適用後）"
+              f" + C{r_add}（1株あたり{cfg['label']}）")
+    return {"target_row": r_tgt, "addon_row": r_add, "core_row": r_core}
+
+
+def suppress_ev_comps(wb, quiet=False):
+    """型F: Executive Summary の Comps EV/EBITDA 行を N/A にする。
+
+    設計書 §5「Comps は PER・PBR 参照（EV倍率は持分法混在で歪むため参考）」。
+    商社の連結 EBITDA には持分法損益が入らない一方、市場が付ける EV には持分法投資の
+    価値が入っているため、EV/EBITDA は分子と分母で範囲が違う。
+
+    8058 ではこれが FAIL として表面化した —— コア net_debt が大きいため comps 由来の
+    含意株価が負になり、check 20「使えない手法は数値ではなくテキストで書くこと」に
+    掛かった。負だから消すのではなく、**型F では最初から使わない**のが正しい。
+    """
+    if "Executive Summary" not in wb.sheetnames:
+        return 0
+    ws = wb["Executive Summary"]
+    n = 0
+    for r in range(1, 48):
+        v = ws.cell(r, 2).value
+        if isinstance(v, str) and v.startswith("Comps - EV/"):
+            ws.cell(r, 3).value = "N/A"
+            if "型F" not in v:
+                ws.cell(r, 2).value = v + "（型F: EV倍率は持分法混在で歪むため不使用）"
+            n += 1
+    if n and not quiet:
+        print(f"  [型F] Comps の EV 倍率行 {n} 件を N/A 化（PER/PBR を参照とする）")
+    return n
 
 
 def log_to_adjustments(xlsx, cfg, quiet=False):

@@ -725,11 +725,13 @@ def check_type_f_model(res, path, wbf, wbv, has_values):
         return
 
     es = wbf["Executive Summary"]
-    r_tgt = r_add = None
+    r_tgt = r_add = r_core = None
     for r in range(1, 48):
         v = es.cell(r, 2).value
         if not isinstance(v, str):
             continue
+        if r_core is None and v.startswith("コアDCF 1株値"):
+            r_core = r
         if r_tgt is None and v.startswith("Target Price"):
             r_tgt = r
         # 行【ラベル】だけを見る。注記文にも同じ語が出てくるため、含有判定だと
@@ -781,11 +783,36 @@ def check_type_f_model(res, path, wbf, wbv, has_values):
                 detail + f"; ただし book_value 方式で倍率が {mult} — 設計は 1.0 に統一")
         return
     extra = ""
-    if isinstance(tgt, (int, float)) and float(add) != 0:
-        extra = (f"; Target {tgt:,.0f} のうち持分法 {add:,.0f} "
+    if isinstance(tgt, (int, float)) and float(tgt) != 0:
+        extra = (f"; Target {tgt:,.0f} のうち加算脚 {add:,.0f} "
                  f"({float(add)/float(tgt):.0%})")
     if isinstance(bal, (int, float)):
         extra += f"; BS残高 {bal:,.0f} mn"
+
+    # 追補15 A-1 §3 のフロアが効いた（コア = 0）なら、Target は加算脚のみである。
+    # これは「コアDCF が成立していない」という重い事実なので黙って通してはいけない。
+    if r_core is not None:
+        core_v = esv.cell(r_core, 3).value
+        if isinstance(core_v, (int, float)) and float(core_v) == 0:
+            res.add(26, WARN, "型F 持分法投資価値の別途加算",
+                    detail + extra +
+                    "; **コアDCF 不成立** — コア脚のエクイティ（EV − net_debt）が負または"
+                    "算定不能でフロア規則により 0 とした。Target は加算脚のみで構成されており、"
+                    "事業そのものの価値は含まれていない。§AF の相対評価として読むこと"
+                    + ("; さらに加算脚は book_value（BS残高×1.0）で、上場持分の時価置換が"
+                       "できていないため過小側" if method == "book_value" else ""))
+            return
+    # 追補15 A-1 §1: 上場持分先は【時価 × 比率】が原則で、「残高 × 1.0」は
+    # 上場分の簿価が注記から取れないときの最終手段である。採ったときは保守的である
+    # ことを表に出す（黙って簿価のままだと、含み益のある持分がゼロ評価されていることに
+    # 気づけない）。
+    if method == "book_value":
+        res.add(26, WARN, "型F 持分法投資価値の別途加算",
+                detail + extra +
+                "; 方式が book_value（BS残高×1.0）— 上場持分先の【簿価】が有報の注記から"
+                "取得できないため時価への置換ができていない。上場持分に含み益がある分だけ"
+                "**保守的（過小）**に出る。個別簿価が取れたら listed_stakes へ切り替えること")
+        return
     res.add(26, PASS, "型F 持分法投資価値の別途加算", detail + extra)
 
 
@@ -1024,9 +1051,27 @@ def check_comps_reference_band(res, wbf, wbv, has_values):
                 "no current price to scale the band")
         return
     ceiling = price * 10
+    # comps 行は【ラベル】で解決する。行番号決め打ちは、加算脚(型E/F)や DDM/RI(型D)が
+    # Exit 行の下に行を挿入した瞬間に別のセルを読み始める。8058 では挿入された
+    # 「コアDCF 1株値(フロア)」= 0 を EV/EBITDA の含意株価だと誤読して FAIL し、
+    # 8001/8002/8031/8053 では逆に、コア行と加算行が正の数だったため
+    # **comps を一度も見ずに PASS** していた（check 14 が踏んだのと同じ罠）。
+    wsf = wbf["Executive Summary"]
+    targets = []
+    for r in range(1, 48):
+        lab = wsf.cell(r, 2).value
+        if not isinstance(lab, str) or not lab.startswith("Comps - "):
+            continue
+        nm = "EV/EBITDA" if lab.startswith("Comps - EV/") else (
+             "PER" if "PER" in lab else lab[8:28])
+        targets.append((wsv.cell(r, 3), nm))
+    if not targets:
+        res.add(20, SKIP, "Comps reference prices in a sane band",
+                "Executive Summary に 'Comps - ' 行が無い")
+        return
     problems, notes = [], []
-    for cell, label in (("C18", "EV/EBITDA"), ("C19", "PER")):
-        v = wsv[cell].value
+    for cellobj, label in targets:
+        v = cellobj.value
         n = _num(v)
         if n is None:
             notes.append(f"{label}={v!r} (text - method excluded)")
