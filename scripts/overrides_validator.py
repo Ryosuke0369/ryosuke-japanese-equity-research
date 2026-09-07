@@ -460,7 +460,7 @@ def _check_type_f_contract(overrides):
     else:
         allowed = {"balance_mn", "method", "multiple", "listed_stakes",
                    "listed_book_mn", "unlisted_book_mn", "fx_note",
-                   "label", "note", "as_of"}
+                   "fair_value_based", "label", "note", "as_of"}
         for k in blk:
             if k not in allowed and not k.startswith("_"):
                 errors.append(f"equity_method.{k}: unknown key. "

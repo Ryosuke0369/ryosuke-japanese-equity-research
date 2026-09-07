@@ -157,6 +157,7 @@ def resolve_config(overrides):
         "listed_stakes": stakes,
         "listed_book_mn": float(listed_book) if listed_book is not None else None,
         "company_type": str(overrides.get("company_type", "")).strip().upper(),
+        "fair_value_based": bool(blk.get("fair_value_based")),
         "label": blk.get("label") or "持分法投資価値",
         "note": blk.get("note") or "",
         "as_of": blk.get("as_of") or "",
@@ -454,6 +455,7 @@ def log_to_adjustments(xlsx, cfg, quiet=False):
         ("equity_method_method", cfg["method"]),
         ("equity_method_balance_mn", cfg["balance_mn"]),
         ("equity_method_multiple", cfg["multiple"]),
+        ("equity_method_fair_value_based", "yes" if cfg["fair_value_based"] else "no"),
         ("equity_method_basis", basis),
     ]
     for k, v in rows:

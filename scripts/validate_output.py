@@ -807,6 +807,14 @@ def check_type_f_model(res, path, wbf, wbv, has_values):
     # ことを表に出す（黙って簿価のままだと、含み益のある持分がゼロ評価されていることに
     # 気づけない）。
     if method == "book_value":
+        if str(meta.get("equity_method_fair_value_based", "")).strip() == "yes":
+            # 残高そのものが公正価値で計上されている場合（FVTOCI の政策保有株式など）は
+            # 「簿価だから過小」ではない。方式名だけ見て誤った警告を出さない。
+            res.add(26, PASS, "型F 持分法投資価値の別途加算",
+                    detail + extra +
+                    "; 加算脚の残高は【公正価値】で計上されており（FVTOCI 等）、"
+                    "方式名は book_value だが実質は時価評価")
+            return
         res.add(26, WARN, "型F 持分法投資価値の別途加算",
                 detail + extra +
                 "; 方式が book_value（BS残高×1.0）— 上場持分先の【簿価】が有報の注記から"
