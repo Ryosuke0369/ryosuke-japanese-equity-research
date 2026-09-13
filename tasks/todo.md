@@ -816,3 +816,11 @@ yfinance の beta フィールドが日本株で NTT −0.165 / 大阪ガス −
 - [ ] **既定 policy を evidence_strict に切り替えるか（ユーザー判断）**。切替箇所は span_runner.DEFAULT_POLICY と weekly_screen の --policy 既定
 - [ ] 単一シグナル銘柄の ±1.0 張り付き、S12 加算で 1.0 超（§6-1 系・未対処）
 - [ ] 8/05 の TDnet 1件（リンク無し）は取得不能のため partial のまま
+
+## 2026-09-13 追記: 既定 policy 切替・コミット
+- [x] ユーザー承認により既定を evidence_strict に切替（span_runner.DEFAULT_POLICY / weekly_screen --policy）
+- [x] 測定条件を変えない呼び出しは prefer_span を明示: materialize.sanity_check・候補数集計 / stale_audit
+      （paper_weekly は別枠 run_scorers 直呼びで影響なし）
+- [x] コミット: ブランチ screener-false-positive-20260913（1e05c1a ほか）。7203 のステージ済みリネームは含めていない
+- [ ] push 前確認: 未プッシュ60コミットのうち旧 DCF 作業59コミットに旧PCのローカルパス `<HOME>` が
+      756箇所（batch/logs_*.txt・tasks/lessons.md 等）。リモート（公開）には0件 → 公開可否はユーザー判断

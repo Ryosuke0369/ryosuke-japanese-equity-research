@@ -46,9 +46,10 @@ from screener.projection import span_matched as SM
 from screener.signals import span_scorers as SP
 
 POLICIES = ("prefer_span", "span_only", "evidence_strict")
-# 既定の切替は calibration_backlog §31 のシャドウ比較を報告してから行う。
-# それまでは明示指定のときだけ evidence_strict を使う（paper/shadow/sanity を黙って変えない）。
-DEFAULT_POLICY = "prefer_span"
+# 2026-09-13: calibration_backlog §31 のシャドウ比較を報告し、ユーザー承認のうえ既定を切替。
+# 事前登録済みの測定（paper / shadow / stale_audit）と投影層の配管検査（materialize.sanity_check）は
+# 呼び出し側で policy を明示して従来の prefer_span に固定している（黙って測定条件を変えない）。
+DEFAULT_POLICY = "evidence_strict"
 
 # evidence_strict のパラメータ（§31 に記録。変更するなら記録先行）
 RECENCY_WEIGHT = {0: 1.0, 1: 0.5}      # lag>=2 は不採用

@@ -463,7 +463,9 @@ def sanity_check(out_path, as_of=None, sample=SANITY_SAMPLE):
     n_err = 0
     for t in tickers:
         try:
-            res = score_ticker(con, t, SCORERS_ALL)
+            # 配管検査は採点方針に依存させない（evidence_strict では S3 が構造的に 0% になり、
+            # 「写像・配線の故障」と区別できなくなる）。2026-09-13 の既定切替後も prefer_span 固定。
+            res = score_ticker(con, t, SCORERS_ALL, policy="prefer_span")
         except Exception:
             n_err += 1
             continue
@@ -569,7 +571,7 @@ def sanity_check(out_path, as_of=None, sample=SANITY_SAMPLE):
     n_cand = 0
     for t in tickers:
         try:
-            s = score_ticker(con, t, SCORERS_ALL).get("evidence_score")
+            s = score_ticker(con, t, SCORERS_ALL, policy="prefer_span").get("evidence_score")
         except Exception:
             continue
         if s is not None and s >= 0.10:

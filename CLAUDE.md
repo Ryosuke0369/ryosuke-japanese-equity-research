@@ -245,8 +245,10 @@ $py='C:\dev\ryosuke-japanese-equity-research\.venv\Scripts\python.exe'
 - 注意: `weekly_screen` の既定フィルタは projection.db の `earnings_calendar`（システム est_date）。
   est_date は LOW が大半で、7月期本決算を10月に置く等の既知のずれがある。**決算窓は §3 のスクリプトで絞る**
 - 全銘柄を採点するときは `--universe`（発表日に関係なく universe_flag=1 の全社）
-- 採点方針 `--policy`: `prefer_span`（現在の既定）/ `evidence_strict`（根拠期なし・直前四半期から2期以上古い根拠・
-  売上前年比2倍超/半分以下のS1S2・DSO<1日を点にしない。calibration_backlog §31。既定の切替は報告・承認後）
+- 採点方針 `--policy`: **`evidence_strict`（既定・2026-09-13 切替）** = 根拠期なし・直前四半期から2期以上古い根拠・
+  売上前年比2倍超/半分以下のS1S2・DSO<1日を点にしない（calibration_backlog §31）/ `prefer_span`（旧既定）。
+  過去推薦の遡及計測（stale_audit）と materialize の事後条件ゲートは `prefer_span` に固定している。
+  paper_weekly はもともと span_runner を通らず別枠 `module_b.run_scorers` を直接使うので切替の影響を受けない
 - 根拠の健全性監査: `python -m screener.report.evidence_audit --as-of YYYY-MM-DD --policy <policy> --out <csv>`、
   方針の前後比較: `python -m screener.report.policy_shadow_compare --before <csv> --after <csv> --out <csv>`、
   再スコアの要約と差分: `python -m screener.report.rescore_diff --new <csv> --old <csv> ...`

@@ -47,7 +47,8 @@ def measure(pcon, pairs):
     out = []
     for as_of, code in pairs:
         try:
-            res = score_ticker(pcon, code, scorers, as_of=as_of)
+            # 過去の推薦を当時の条件で遡及計測する道具なので、2026-09-13 の既定切替に追随させない。
+            res = score_ticker(pcon, code, scorers, as_of=as_of, policy="prefer_span")
         except Exception as e:
             out.append({"as_of": as_of, "code": code, "error": str(e)})
             continue

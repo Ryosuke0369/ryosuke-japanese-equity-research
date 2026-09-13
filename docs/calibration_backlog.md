@@ -1510,3 +1510,15 @@ degenerate_dso 26、recency_unknown 5（期末月が投影 universe に無い 54
   `fiscal_year_end_month()` は期間11ヶ月以上のタイトルだけを使うよう変更（`tests/test_fiscal_year_end.py`）。
 - 絶対日付180日超の根拠が lag0/1 で4件残る（218A/4396/4495）。218A は7月期で Q3(4月末)の短信が
   TDnet 保持窓外のため最新が半期、4396/4495 は上記の期末月誤導出による。
+
+### 修復後データでの再比較と適用（2026-09-13）
+
+収集修復（TDnet 1,099 ファイルセット追加・EDINET 9月分）と期末月修正の後に投影DBを再生成して再比較:
+スコアあり 1,296 → 1,180 / 根拠期なし発火 450 → 0 / 照合 一致 2,202・不一致 0 /
+閾値0.10 以上→消えた 115・新規 69。3475・2776 無評価、5136 0.575、3441 −0.175（S12 加算後）。
+
+**ユーザー承認を受けて既定を evidence_strict に切替**（`span_runner.DEFAULT_POLICY`、`weekly_screen --policy` 既定）。
+次の呼び出しは測定条件・配管検査を変えないため `policy="prefer_span"` を明示して固定した:
+`materialize.sanity_check` と候補数集計（S3 が構造的に0%になりゲートが配線故障と区別できなくなる）、
+`stale_audit`（過去推薦の遡及計測）。`paper_weekly`（v2 事前登録の前向き測定）は span_runner を通らず
+別枠 `module_b.run_scorers.score_ticker` を直接呼んでいるため、切替の影響を受けない（変更なし）。

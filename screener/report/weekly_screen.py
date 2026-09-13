@@ -439,7 +439,7 @@ def _no_score_reason(scores, s, floor):
 
 
 def collect(pcon, mcon, as_of, days=WINDOW_DAYS, floor=SCORE_FLOOR,
-            policy="prefer_span", include_all=False, sort="score",
+            policy="evidence_strict", include_all=False, sort="score",
             exclude_unreliable=EXCLUDE_UNRELIABLE, universe=False):
     root = V1._external_root()
     if str(root) not in sys.path:
@@ -722,11 +722,11 @@ def main(argv=None):
                         "（本体の financials_cum で独立に照合。通信なし）")
     p.add_argument("--verify-links", action="store_true",
                    help="原文リンクを実際に取得して生存確認する（外部通信）")
-    p.add_argument("--policy", default="prefer_span",
-                   choices=("prefer_span", "evidence_strict", "span_only"),
-                   help="prefer_span（規則B）が現在の既定。evidence_strict は根拠期なし・"
-                        "古い根拠・前年比破壊を点にしない（calibration_backlog §31、シャドウ比較中）。"
-                        "span_only は旧規則A")
+    p.add_argument("--policy", default="evidence_strict",
+                   choices=("evidence_strict", "prefer_span", "span_only"),
+                   help="evidence_strict が既定（2026-09-13 切替、calibration_backlog §31）: 根拠期なし・"
+                        "直前四半期から2期以上古い根拠・前年比破壊を点にしない。"
+                        "prefer_span は旧既定（根拠期なしの別枠結果も通す）、span_only は旧規則A")
     p.add_argument("--universe", action="store_true",
                    help="発表日カレンダーに関係なく universe_flag=1 の全銘柄を採点する")
     a = p.parse_args(argv)
