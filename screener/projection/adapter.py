@@ -83,6 +83,12 @@ def _period_end(period: str, q_no: int) -> str:
 
 
 # ------------------------------------------------------- §3-1 の4関数
+# 単独値のフロー項目。BS(ストック)項目と違い、span_q が「何ヶ月ぶんか」を
+# 直接意味するので、粒度の判定はこれらだけを見る。
+_FLOW_ITEMS = ("revenue", "operating_income", "gross_profit", "operating_cf")
+_ALL_SPANS = (1, 2, 3, 4)
+
+
 def get_pl_series(con, ticker, as_of=None, *, mode: str = "strict",
                   allow_span=None) -> list[dict]:
     """単独値PL時系列。有効行のみ・古い順。
@@ -92,10 +98,18 @@ def get_pl_series(con, ticker, as_of=None, *, mode: str = "strict",
     is_half を必ず含め、受け手が無視できないようにする。
     """
     allow = tuple(allow_span or cfg().get("allowed_span_q") or (1,))
-    rows = pit.visible_q(con, ticker, as_of, mode, allow_span=allow)
+    # 許容 span の行だけでなく全 span を引く。理由: BS項目(span=1)だけが
+    # 残った行が「フローは半期粒度なので落とした」ことを名乗れず、
+    # span_q=1 / is_half=False のまま sales=None を返していた。
+    # 「開示が無い」と「粒度が合わないので渡さない」は別物で、
+    # 受け手がそこを区別できないのが投影層として最も高くつく嘘になる。
+    all_rows = pit.visible_q(con, ticker, as_of, mode, allow_span=_ALL_SPANS)
     by_pq: dict = {}
-    for r in rows:
-        by_pq.setdefault((r["period"], r["q_no"]), {})[r["item"]] = r
+    by_pq_all: dict = {}
+    for r in all_rows:
+        by_pq_all.setdefault((r["period"], r["q_no"]), {})[r["item"]] = r
+        if (r["span_q"] or 1) in allow:
+            by_pq.setdefault((r["period"], r["q_no"]), {})[r["item"]] = r
     div = _div()
 
     out = []
@@ -103,7 +117,17 @@ def get_pl_series(con, ticker, as_of=None, *, mode: str = "strict",
         qt = _qtype(q_no)
         if qt is None:
             continue
-        span = next((it["span_q"] or 1 for it in items.values()), 1)
+        # span はフロー項目の実体から決める。BS項目の span を借りると、
+        # フローを落とした行が「四半期粒度」を名乗ってしまう。
+        flow = [items[k] for k in _FLOW_ITEMS if k in items]
+        span = next((it["span_q"] or 1 for it in flow), None)
+        excluded = None
+        if span is None:
+            dropped = [by_pq_all[(period, q_no)][k]
+                       for k in _FLOW_ITEMS if k in by_pq_all.get((period, q_no), {})]
+            if dropped:
+                excluded = next((it["span_q"] or 1 for it in dropped), None)
+            span = next((it["span_q"] or 1 for it in items.values()), 1)
         def v(name):
             r = items.get(name)
             return None if r is None or r["value"] is None else r["value"] / div
@@ -120,7 +144,10 @@ def get_pl_series(con, ticker, as_of=None, *, mode: str = "strict",
             "cogs_price": None,
             "operating_cf": v("operating_cf"),
             "span_q": span,
-            "is_half": span == 2,
+            "is_half": (excluded or span) == 2,
+            # フローが「開示されていない」のか「粒度が合わず落とした」のかを
+            # 受け手が区別できるようにする。None なら前者。
+            "flow_span_excluded": excluded,
             "period": period,
             "q_no": q_no,
         })
@@ -190,3 +217,66 @@ def unmapped_keys() -> dict:
         if st in out:
             out[st].append(k)
     return out
+
+
+# --------------------------------------------------------------- 価格の投影
+# 別枠は daily_prices ビュー(schema.sql)を素のSQLで読む。ここに置く関数は
+# 同じ意味論を Python から使うためのもので、**唯一の正本はビューのほう**。
+# 二重定義にならないよう、この層は必ずビュー経由で読む。
+
+def get_price_series(con, ticker: str, as_of=None, *, start=None) -> dict:
+    """調整後終値の時系列 {date: close} を返す。
+
+    close は **調整後終値**。未調整終値へ落ちる経路は用意しない
+    （adj_close が NULL の日はビューが行ごと落とすので、ここにも来ない）。
+
+    as_of: その日までに市場が知り得た価格だけを返す。株価は当日の引けで
+    公知になるので境界は `date <= as_of` —— 開示情報の strict/lax とは
+    別の話で、ここに strict は無い。
+    """
+    sql = "SELECT date, close FROM daily_prices WHERE ticker = ?"
+    args = [ticker]
+    if start:
+        sql += " AND date >= ?"
+        args.append(pit._as_of_str(start))
+    if as_of:
+        sql += " AND date <= ?"
+        args.append(pit._as_of_str(as_of))
+    return {r["date"]: r["close"] for r in con.execute(sql + " ORDER BY date", args)}
+
+
+def get_universe_metrics(con, ticker: str, as_of, *, adv_days: int = 20) -> dict:
+    """as_of 時点のユニバース判定に要る指標を返す。
+
+    {"date":…, "mktcap":…, "adv_turnover":…, "n_days":…} または空 dict。
+
+    なぜ要るか: 「2023年時点でユニバースに入っていたか」を今の companies 表で
+    代用すると、当時は条件を満たしていたのに今は外れている銘柄が消え、
+    サンプルが生き残りだけに偏る（サバイバーシップバイアス）。時価総額と
+    売買代金を**その時点の値**で持っておかないと過去再現ができない。
+
+    adv_turnover は as_of 以前の直近 adv_days 営業日の売買代金の平均。
+    日数が足りない場合は n_days に実数を返す（黙って薄い平均を返さない）。
+
+    単位に注意: **mktcap は百万円、adv_turnover は円**（J-Quants の返す
+    ままで、投影層では変換しない）。仕様書のユニバース条件に当てるなら
+      時価総額 50〜1,000億円     -> 5000 <= mktcap <= 100000
+      20日平均売買代金 3,000万円 -> adv_turnover >= 30_000_000
+    桁を取り違えても例外にはならず「該当0件」として静かに出るので、
+    ここを読まずに閾値を書かないこと。
+    """
+    a = pit._as_of_str(as_of)
+    rows = list(con.execute(
+        "SELECT date, mktcap, turnover_value FROM daily_prices "
+        "WHERE ticker = ? AND date <= ? ORDER BY date DESC LIMIT ?",
+        (ticker, a, int(adv_days))))
+    if not rows:
+        _warn(f"prices:{ticker}", f"{a} 以前に調整後終値のある日が無い")
+        return {}
+    vals = [r["turnover_value"] for r in rows if r["turnover_value"] is not None]
+    return {
+        "date": rows[0]["date"],
+        "mktcap": rows[0]["mktcap"],
+        "adv_turnover": (sum(vals) / len(vals)) if vals else None,
+        "n_days": len(vals),
+    }

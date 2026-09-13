@@ -82,16 +82,16 @@ screener/
 └── tests/
 ```
 
-## データ保存先 (DATA_ROOT) — 2026-08-31 に D: へ移設
+## データ保存先 (DATA_ROOT) — 2026-08-31 に D: へ移設、2026-09-09 の PC移行で C: へ
 
 取得データはリポジトリの外に置く。場所は**リポジトリルートの `.env`** で決める:
 
 ```
-DATA_ROOT=D:\screener_data
+DATA_ROOT=C:\screener_data
 ```
 
 ```
-D:\screener_data\
+C:\screener_data\
 ├── raw\tdnet\YYYYMMDD\     TDnet 短信PDF + XBRL zip
 ├── raw\edinet\YYYY-MM-DD\  EDINET 生XBRL zip
 ├── cache\                   J-Quants トークン (認証情報。持ち出し厳禁)

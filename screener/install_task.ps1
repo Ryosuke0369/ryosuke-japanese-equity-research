@@ -45,7 +45,10 @@ if ($Remove) {
 
 if ($RunNow) {
     Start-ScheduledTask -TaskName $TaskName
-    Write-Output "started $TaskName; check screener\data\logs\ for output"
+    $py = (Get-Command python -ErrorAction SilentlyContinue).Source
+    $logDir = if ($py) { (& $py -c "import screener.common as C; print(C.LOG_DIR)") } else { $null }
+    if ([string]::IsNullOrWhiteSpace($logDir)) { $logDir = "<screener DATA_ROOT>\logs" }
+    Write-Output "started $TaskName; check $($logDir.Trim()) for output"
     exit 0
 }
 

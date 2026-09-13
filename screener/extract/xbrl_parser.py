@@ -28,7 +28,9 @@ _ACCUM_Q = __import__("re").compile(r"AccumulatedQ(\d)")
 import argparse
 import os
 import re
+import sqlite3
 import sys
+import time
 import zipfile
 from collections import Counter, defaultdict
 
@@ -233,6 +235,39 @@ def dims_of(context: str, mapping: "Mapping", source: str) -> list[tuple[str, st
     return out
 
 
+_DEI_PERIOD_TAG = "TypeOfCurrentPeriodDEI"
+# EDINET の DEI が名乗る期種別 -> 四半期番号。HY(半期)は「Q2累計」と同義。
+_DEI_Q = {"Q1": 1, "Q2": 2, "Q3": 3, "Q4": 4, "HY": 2, "FY": 4}
+
+
+def dei_quarter_from_zip(zip_path: str) -> int | None:
+    """EDINET書類が DEI で名乗る四半期を返す。読めなければ None。
+
+    なぜ必要か —— filing_quarter() は短信の `CurrentAccumulatedQ<n>Duration`
+    しか見ていない。EDINET の四半期報告書は文脈を `CurrentYTDDuration` としか
+    書かず四半期番号を持たないので、7,950本を取得しても q_no が全部 NULL に
+    なり、単独値(当期累計−前四半期累計)が1本も作れなかった(2026-09-01 実測:
+    subtype 140 の 70.5%、160 の 38.5% が q_no NULL)。
+    EDINET 側の正解は DEI の TypeOfCurrentPeriodDEI で、実測では
+    140/150 が Q1〜Q3、160/170 が Q2、120/130 が FY を名乗る。
+    """
+    try:
+        with zipfile.ZipFile(zip_path) as z:
+            names = [n for n in z.namelist()
+                     if n.endswith((".htm", ".xbrl")) and "PublicDoc" in n]
+            names.sort(key=lambda n: (0 if "header" in n else 1, len(n)))
+            for name in names:
+                data = z.read(name).decode("utf-8", "replace")
+                if _DEI_PERIOD_TAG not in data:
+                    continue
+                m = re.search(_DEI_PERIOD_TAG + r"[^>]*>\s*([A-Za-z0-9]{1,6})\s*<", data)
+                if m:
+                    return _DEI_Q.get(m.group(1).strip().upper())
+    except Exception:
+        return None
+    return None
+
+
 def filing_quarter(facts: list[dict], filing_row) -> int | None:
     """この書類が「第何四半期の累計」を語っているかを1つ決める。
 
@@ -428,6 +463,31 @@ def flush_unknown(con, unknown: Counter, unknown_files: defaultdict,
 
 
 # --------------------------------------------------------------------- run
+def _store_with_retry(con, mapping, r, facts, unknown, unknown_files,
+                      source, fy_end, quarter, tries: int = 5):
+    """書き込みが SQLITE_BUSY で弾かれても、その1件のために全体を捨てない。
+
+    2026-09-01、22,222 件のうち 16,060 件まで進んだ再解析が
+    `database is locked` 1件で落ちて 1時間37分が消えた。busy_timeout=60s は
+    設定済みなので、それを超える一時的な占有（Windows ではウイルス対策が
+    -wal/-shm を掴むのが典型）に対しては、待って×数回の再試行しか効かない。
+    それでも駄目なら例外を上げる —— 黙って書けなかったことにはしない。
+    """
+    for i in range(tries):
+        try:
+            return store_filing(con, mapping, r, facts, unknown, unknown_files,
+                                source, fy_end, quarter)
+        except sqlite3.OperationalError as e:
+            if "locked" not in str(e) and "busy" not in str(e):
+                raise
+            if i == tries - 1:
+                raise
+            wait = 5 * (i + 1)
+            C.log(f"  ! filing {r['id']}: {e} —— {wait}s 待って再試行 "
+                  f"({i + 1}/{tries - 1})")
+            time.sleep(wait)
+
+
 def parse_archive(con, mapping: Mapping, where_sql: str, params: tuple,
                   source: str = "tdnet") -> dict:
     """source='tdnet' は短信、'edinet' は有報/半期。
@@ -465,8 +525,13 @@ def parse_archive(con, mapping: Mapping, where_sql: str, params: tuple,
         # 11月期の会社で1年ずれるので、1書類につき一度だけ読んで渡す。
         # 会計年度は提出日から推定しない。短信・有報とも DEI が実値を持つ。
         fy_end = fy_end_from_zip(path, source)
-        got = store_filing(con, mapping, r, facts, unknown, unknown_files,
-                           source, fy_end, filing_quarter(facts, r))
+        # EDINET は DEI が四半期を名乗る。短信の文脈方式より確実なので優先し、
+        # 読めなかったときだけ従来の文脈走査に落ちる。
+        q = dei_quarter_from_zip(path) if source == "edinet" else None
+        if q is None:
+            q = filing_quarter(facts, r)
+        got = _store_with_retry(con, mapping, r, facts, unknown, unknown_files,
+                                source, fy_end, q)
         for k in ("cum", "guidance", "unknown", "noise", "dimensional",
                   "superseded", "dim_saved", "equity_skipped"):
             tot[k] += got[k]
@@ -588,6 +653,32 @@ def print_unknown(con, top: int) -> None:
 
 
 def main(argv=None) -> int:
+    """書き込みジョブ同士を直列化してから本体を呼ぶ。
+
+    2026-09-01、日次タスク(19:00)と手動の全件再解析が同じ DB に同時に書き、
+    `database is locked` で2.5時間の再解析が2回落ちた。SQLite の
+    busy_timeout は「数十分書き続ける別プロセス」には効かない。
+    """
+    import argparse as _ap
+    wait = 0.0
+    if argv is None:
+        import sys as _sys
+        argv_ = _sys.argv[1:]
+    else:
+        argv_ = list(argv)
+    _p = _ap.ArgumentParser(add_help=False)
+    _p.add_argument("--lock-wait", type=float, default=0.0)
+    wait = _p.parse_known_args(argv_)[0].lock_wait
+    try:
+        with C.writer_lock("parse", wait_seconds=wait):
+            return _main_locked(argv)
+    except C.WriterBusy as e:
+        C.log(f"SKIPPED: {e}")
+        C.log("  同じ書き込みを二重に走らせない。次回の実行で拾う。")
+        return 0
+
+
+def _main_locked(argv=None) -> int:
     sys.stdout.reconfigure(encoding="utf-8")
     p = argparse.ArgumentParser(description="TDnet 短信XBRL parser (仕様書 §3-1)")
     p.add_argument("--all", action="store_true", help="parse every archived filing")
@@ -600,8 +691,15 @@ def main(argv=None) -> int:
     p.add_argument("--source", choices=("tdnet", "edinet", "all"),
                    default="tdnet",
                    help="解析対象。tdnet=短信 / edinet=有報・半期 / all=両方")
+    p.add_argument("--resume", action="store_true",
+                   help="financials_cum に既に行がある filing を飛ばす。"
+                        "2.5時間の再解析が途中で落ちたとき、頭からやり直さずに済む")
     p.add_argument("--reset", action="store_true",
                    help="clear financials_cum / guidance / unknown_tags first")
+    p.add_argument("--lock-wait", type=float, default=0.0,
+                   help="他のジョブが書き込み中のとき待つ秒数。既定0は即座に諦める"
+                        "（日次ジョブ向け。次回の実行で拾えばよい）。"
+                        "手動の長時間ジョブは 3600 などを渡して順番待ちする")
     a = p.parse_args(argv)
 
     con = C.init_db()
@@ -618,6 +716,11 @@ def main(argv=None) -> int:
         C.log("cleared financials_cum / guidance / unknown_tags")
 
     where, params = "", ()
+    if a.resume:
+        # 「行が1本も無い filing」= まだ解析していない。値が0本の書類は毎回
+        # 対象に戻るが、それは害のない再試行で、取りこぼすよりずっと安い。
+        where += (" AND id NOT IN (SELECT filing_id FROM financials_cum "
+                  "WHERE filing_id IS NOT NULL)")
     if a.date:
         where, params = " AND date=?", (C.parse_date_arg(a.date).isoformat(),)
     elif a.code:

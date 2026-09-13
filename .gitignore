@@ -71,3 +71,9 @@ Kimi_Agent_Bモジュール進行/**/data/
 
 # 配布パッケージ（batch/build_package.py が生成。成果物からいつでも再生成できる）
 dist/
+
+# 大きなアーカイブ・作業置き場（2026-09-13 追加。git add -A で巻き込まない）
+#   tdnet_archive_*.zip は TDnet 生データ（1.8GB・再配布不可）、Downloads/ は外部配布物の展開先（1.2GB）
+*.zip
+Downloads/
+scratch_block.py

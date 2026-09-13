@@ -225,6 +225,148 @@ class TestArchiveDayFailurePath(unittest.TestCase):
             [])
 
 
+class _FakeListing:
+    """ページ1だけ HTML を返し、2ページ目以降は空を返す一覧のフェイク。"""
+
+    def __init__(self, html):
+        self.html = html.encode("utf-8")
+
+    def get(self, url, **kw):
+        page1 = "_001_" in url
+        body = self.html if page1 else b"<html><body></body></html>"
+
+        class R:
+            status_code = 200
+            content = body
+        return R()
+
+    def download(self, url, dest):
+        raise RuntimeError("download failed (test)")
+
+
+def _listing(total, titles):
+    trs = "".join(
+        '<tr><td>15:00</td><td>6118%d</td><td>X</td>'
+        '<td><a href="1401202608275%05d.pdf">%s</a></td><td></td><td>東</td><td></td></tr>'
+        % (i, i, t) for i, t in enumerate(titles))
+    return ('<html><body><div id="pager-box-top">1～%d件 / 全%d件</div>'
+            '<table id="main-list-table">%s</table></body></html>' % (len(titles), total, trs))
+
+
+class TestPostconditionGate(unittest.TestCase):
+    """2026-09-13: 部分取得を ok と記録しない後条件ゲート。"""
+
+    OUT = ["代表取締役の異動に関するお知らせ", "自己株式の取得状況に関するお知らせ"]
+
+    def setUp(self):
+        fd, self.db = tempfile.mkstemp(suffix=".db")
+        os.close(fd)
+        self.con = C.init_db(self.db)
+
+    def tearDown(self):
+        self.con.close()
+        for suffix in ("", "-wal", "-shm"):
+            try:
+                os.remove(self.db + suffix)
+            except OSError:
+                pass
+
+    def _missing(self, d):
+        return C.missing_days(self.con, "tdnet", d, d)
+
+    def test_総件数と読めた行数が違えばincomplete(self):
+        from datetime import datetime
+        d = date(2026, 8, 27)
+        res = T.archive_day(self.con, _FakeListing(_listing(3, self.OUT)), d,
+                            now=datetime(2026, 9, 13, 12))
+        self.assertEqual(res["status"], "incomplete")
+        self.assertEqual(self._missing(d), ["2026-08-27"])
+
+    def test_対象日の終了前はprovisionalで欠損扱い(self):
+        from datetime import datetime
+        d = date(2026, 9, 11)
+        res = T.archive_day(self.con, _FakeListing(_listing(2, self.OUT)), d,
+                            now=datetime(2026, 9, 11, 10, 50))   # 9/11 の朝の実例
+        self.assertEqual(res["status"], "provisional")
+        self.assertEqual(self._missing(d), ["2026-09-11"])
+
+    def test_対象日の終了後で件数一致ならok(self):
+        from datetime import datetime
+        d = date(2026, 9, 11)
+        res = T.archive_day(self.con, _FakeListing(_listing(2, self.OUT)), d,
+                            now=datetime(2026, 9, 12, 0, 1))
+        self.assertEqual(res["status"], "ok")
+        self.assertEqual(self._missing(d), [])
+
+    def test_当日朝の0件はemptyではない(self):
+        from datetime import datetime
+        d = date(2026, 9, 3)
+        res = T.archive_day(self.con, _FakeListing("<html><body></body></html>"), d,
+                            now=datetime(2026, 9, 3, 0, 31))
+        self.assertEqual(res["status"], "provisional")
+        self.assertEqual(self._missing(d), ["2026-09-03"])
+
+    def test_対象書類が保存できなければpartialで欠損扱い(self):
+        from datetime import datetime
+        d = date(2026, 8, 27)
+        html = _listing(1, ["2027年３月期第１四半期決算短信〔日本基準〕(連結)"])
+        res = T.archive_day(self.con, _FakeListing(html), d, now=datetime(2026, 9, 13))
+        self.assertEqual(res["status"], "partial")
+        self.assertEqual(self._missing(d), ["2026-08-27"],
+                         "partial は covered ではない（2026-09-13 変更）")
+
+
+class TestTitlesCode(unittest.TestCase):
+    """disclosure_titles.code は一覧の code_raw から取る（2026-09-13 修正）。"""
+
+    def setUp(self):
+        fd, self.db = tempfile.mkstemp(suffix=".db")
+        os.close(fd)
+        self.con = C.init_db(self.db)
+        from screener.fetch import tdnet_titles as TT
+        self.TT = TT
+        self.con.executescript(TT.DDL)
+        self._orig = T.fetch_day_index
+
+    def tearDown(self):
+        T.fetch_day_index = self._orig
+        self.con.close()
+        for suffix in ("", "-wal", "-shm"):
+            try:
+                os.remove(self.db + suffix)
+            except OSError:
+                pass
+
+    def test_codeが保存される(self):
+        T.fetch_day_index = lambda f, d: ([{
+            "time": "15:00", "code_raw": "34410", "name": "山王",
+            "title": "2026年7月期 決算発表日のお知らせ", "pdf": "140120260901000001.pdf",
+            "zip": None, "place": "東"}], 1)
+        self.TT.archive_titles(self.con, None, date(2026, 9, 1))
+        row = self.con.execute("SELECT code, doc_name FROM disclosure_titles").fetchone()
+        self.assertEqual(row["code"], "3441")
+        self.assertEqual(row["doc_name"], "140120260901000001.pdf")
+
+    def test_旧行のcodeを会社名込みで再導出し_曖昧なら埋めない(self):
+        c = self.con
+        c.execute("INSERT INTO disclosure_titles (code, date, time, title, doc_name) "
+                  "VALUES (NULL,'2026-08-20','15:00','業績予想の修正に関するお知らせ','山王')")
+        c.execute("INSERT INTO disclosure_titles (code, date, time, title, doc_name) "
+                  "VALUES (NULL,'2026-08-20','15:00','業績予想の修正に関するお知らせ','同名社')")
+        T.fetch_day_index = lambda f, d: ([
+            {"time": "15:00", "code_raw": "34410", "name": "山王",
+             "title": "業績予想の修正に関するお知らせ", "pdf": "a.pdf"},
+            {"time": "15:00", "code_raw": "11110", "name": "同名社",
+             "title": "業績予想の修正に関するお知らせ", "pdf": "b.pdf"},
+            {"time": "15:00", "code_raw": "22220", "name": "同名社",
+             "title": "業績予想の修正に関するお知らせ", "pdf": "c.pdf"}], 3)
+        st = self.TT.rederive_codes(c, None)
+        self.assertEqual(st["updated"], 1)
+        self.assertEqual(st["ambiguous"], 1)
+        self.assertEqual(c.execute("SELECT code FROM disclosure_titles WHERE doc_name='a.pdf'")
+                         .fetchone()["code"], "3441")
+
+
 class TestBusinessDays(unittest.TestCase):
     def test_from_saturday_walks_back_to_weekdays(self):
         got = C.business_days_back(3, end=date(2026, 8, 29))   # Saturday

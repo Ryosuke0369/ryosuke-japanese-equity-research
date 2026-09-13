@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import sys
 import time
 from datetime import date, timedelta
@@ -53,6 +54,28 @@ def _days(start: date, end: date):
         d += timedelta(days=1)
 
 
+_COVERAGE_RE = re.compile(
+    r"covers the following dates:\s*(\d{4}-\d{2}-\d{2})?\s*~\s*(\d{4}-\d{2}-\d{2})?")
+
+
+def covered_range(msg: str):
+    """400 の message が明示する契約範囲 (from, to) を読む。読めなければ None。
+
+    「推測で埋めない」は守る。埋めないことと、**API が明示している事実まで
+    捨てて止まること**は違う —— 2026-09-01 00:00 の事故がそれだった。
+    Light は5年ローリングなので日付が変わると窓の古い端が1営業日落ちる。
+    2026-08-31 23:48 に取れた 2021-08-31 が 00:00:57 には 400 になり、
+    初日で break する実装だったせいで、起動1秒でジョブが死んだ。
+    範囲が読めたときだけ開始日を繰り上げ、読めなければ従来どおり止まる。
+    """
+    m = _COVERAGE_RE.search(msg or "")
+    if not m or not (m.group(1) or m.group(2)):
+        return None
+    lo = date.fromisoformat(m.group(1)) if m.group(1) else None
+    hi = date.fromisoformat(m.group(2)) if m.group(2) else None
+    return lo, hi
+
+
 def backfill_prices(con, fetcher, start: date, end: date, codes: set | None) -> dict:
     """日次四本値を1日1リクエストで埋める。既に入っている日は飛ばす。"""
     # 既に取得済みでも、調整後株価などの新しい列が NULL の日は取り直す。
@@ -63,16 +86,38 @@ def backfill_prices(con, fetcher, start: date, end: date, codes: set | None) -> 
     todo = [d for d in _days(start, end) if d.isoformat() not in have]
     C.log(f"株価バックフィル {start}..{end}: 対象 {len(todo)} 営業日 "
           f"(取得済み {len(have)} 日はスキップ)")
-    n_rows = n_days = 0
-    for i, d in enumerate(todo, 1):
+    n_rows = n_days = n_done = n_skipped = 0
+    i = trims = 0
+    while i < len(todo):
+        d = todo[i]
         try:
             rows = jq_get(fetcher, EP_BARS, date=d.strftime("%Y%m%d"))
         except RuntimeError as e:
-            if "HTTP 400" in str(e):
-                C.log(f"  {d}: {e}")
-                C.log("  契約範囲外に到達したとみなして中断する（推測で埋めない）")
+            if "HTTP 400" not in str(e):
+                raise
+            C.log(f"  {d}: {e}")
+            # trims の上限は暴走よけ。範囲を言い直され続けても3回で諦める。
+            rng = covered_range(str(e)) if trims < 3 else None
+            if rng is None:
+                C.log("  契約範囲を読み取れないので中断する（推測で埋めない）")
                 break
-            raise
+            lo, hi = rng
+            if hi is not None and d > hi:
+                C.log(f"  契約範囲の後端 {hi} を越えた。ここで打ち切る")
+                break
+            if lo is not None and d < lo:
+                trims += 1
+                out = [x for x in todo[i:] if x < lo]
+                C.log(f"  契約範囲は {lo} 以降。範囲外の {len(out)} 営業日"
+                      f"（{out[0]} .. {out[-1]}）を飛ばして続行する")
+                i += len(out)
+                n_skipped += len(out)
+                continue
+            # 範囲内のはずの日で400 = 前提が崩れている。黙って進めない。
+            C.log("  契約範囲内のはずの日で 400。中断する（推測で埋めない）")
+            break
+        i += 1
+        n_done += 1
         if not rows:
             continue
         buf = []
@@ -95,12 +140,13 @@ def backfill_prices(con, fetcher, start: date, end: date, codes: set | None) -> 
             " adj_volume, mktcap) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", buf)
         n_rows += len(buf)
         n_days += 1
-        if i % 25 == 0 or i == len(todo):
+        if n_done % 25 == 0 or i == len(todo):
             con.commit()
-            C.log(f"  [{i}/{len(todo)}] {d}  累計 {n_days} 日 / {n_rows:,} 行 "
-                  f"(間隔 {fetcher.throttle.min_interval:.1f}s, {fetcher.n_requests} req)")
+            C.log(f"  [{n_done}/{len(todo) - n_skipped}] {d}  累計 {n_days} 日 / "
+                  f"{n_rows:,} 行 (間隔 {fetcher.throttle.min_interval:.1f}s, "
+                  f"{fetcher.n_requests} req)")
     con.commit()
-    return {"days": n_days, "rows": n_rows}
+    return {"days": n_days, "rows": n_rows, "skipped": n_skipped}
 
 
 def backfill_topix(con, fetcher, start: date, end: date) -> dict:
@@ -118,6 +164,12 @@ def backfill_topix(con, fetcher, start: date, end: date) -> dict:
         except RuntimeError as e:
             if "HTTP 400" in str(e):
                 C.log(f"  {cur}..{nxt}: {e}")
+                rng = covered_range(str(e))
+                if rng and rng[0] and cur < rng[0] <= end:
+                    # 厳密に前進する場合だけ繰り上げる（無限ループよけ）。
+                    C.log(f"  契約範囲は {rng[0]} 以降。開始を繰り上げて続行する")
+                    cur = rng[0]
+                    continue
                 C.log("  契約範囲外に到達したとみなして中断する")
                 break
             raise
@@ -175,8 +227,10 @@ def main(argv=None) -> int:
     try:
         if a.prices:
             r = backfill_prices(con, fetcher, start, end, codes)
-            C.finish_run(con, run_id, "ok", n_saved=r["rows"],
-                         note=f"prices {r['days']} days")
+            note = f"prices {r['days']} days"
+            if r.get("skipped"):
+                note += f" / {r['skipped']} 日は契約範囲外"
+            C.finish_run(con, run_id, "ok", n_saved=r["rows"], note=note)
         if a.topix:
             r = backfill_topix(con, fetcher, start, end)
             C.finish_run(con, run_id, "ok", n_saved=r["rows"], note="topix")

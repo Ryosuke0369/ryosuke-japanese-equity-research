@@ -158,6 +158,14 @@ items:
     - jppfs_cor:AdvancesReceivedCL
     - jppfs_cor:AdvancesReceivedOnUncompletedConstructionContracts
 
+  # 前渡金。2026-09-01 の全件再解析後の unknown_tags で実在を確認して追加
+  # （AdvancePaymentsTrade 2,299回/1,040書類, AdvancesPaid 406回/180書類）。
+  # 別枠 adapter の missing 4項目のうち、実データで解決できたのはこれだけ。
+  advances_paid:
+    - jppfs_cor:AdvancePaymentsTrade
+    - jppfs_cor:AdvancesPaid
+    - jppfs_cor:AdvancePayments
+
   trade_payables:
     - jppfs_cor:NotesAndAccountsPayableTrade
     - jppfs_cor:AccountsPayableTrade

@@ -280,12 +280,42 @@ def report(con) -> None:
 
 
 def main(argv=None) -> int:
+    """書き込みジョブ同士を直列化してから本体を呼ぶ。
+
+    2026-09-01、日次タスク(19:00)と手動の全件再解析が同じ DB に同時に書き、
+    `database is locked` で2.5時間の再解析が2回落ちた。SQLite の
+    busy_timeout は「数十分書き続ける別プロセス」には効かない。
+    """
+    import argparse as _ap
+    wait = 0.0
+    if argv is None:
+        import sys as _sys
+        argv_ = _sys.argv[1:]
+    else:
+        argv_ = list(argv)
+    _p = _ap.ArgumentParser(add_help=False)
+    _p.add_argument("--lock-wait", type=float, default=0.0)
+    wait = _p.parse_known_args(argv_)[0].lock_wait
+    try:
+        with C.writer_lock("quarterly build", wait_seconds=wait):
+            return _main_locked(argv)
+    except C.WriterBusy as e:
+        C.log(f"SKIPPED: {e}")
+        C.log("  同じ書き込みを二重に走らせない。次回の実行で拾う。")
+        return 0
+
+
+def _main_locked(argv=None) -> int:
     sys.stdout.reconfigure(encoding="utf-8")
     p = argparse.ArgumentParser(description="四半期単独値ビルダー (仕様書 §3-2)")
     p.add_argument("--all", action="store_true")
     p.add_argument("--code")
     p.add_argument("--report", action="store_true")
     p.add_argument("--verbose", action="store_true")
+    p.add_argument("--lock-wait", type=float, default=0.0,
+                   help="他のジョブが書き込み中のとき待つ秒数。既定0は即座に諦める"
+                        "（日次ジョブ向け。次回の実行で拾えばよい）。"
+                        "手動の長時間ジョブは 3600 などを渡して順番待ちする")
     a = p.parse_args(argv)
 
     con = C.init_db()

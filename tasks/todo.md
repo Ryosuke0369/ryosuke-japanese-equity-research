@@ -756,3 +756,63 @@ yfinance の beta フィールドが日本株で NTT −0.165 / 大阪ガス −
 
 **申し送り**: §F 予防的補完は不要になった(2897/2801 で実測確認)が、
 `hist_years` の置換は観測窓の設計判断でもあるため今回は残置した。次バッチで外すこと。
+
+---
+
+# 決算先回りスクリーナー: 偽陽性の恒久対策（2026-09-13）
+
+発端: 9/13 決算窓スキャン（42社・13銘柄発火）の上位2銘柄 3475 / 2776 が偽陽性。
+状態ファイルは **リポジトリの** tasks/todo.md・docs/calibration_backlog.md（C:\screener_data 配下には無い）。
+
+## フェーズ0 恒久対策
+- [x] CLAUDE.md に「日次収集」「週次スキャン」「決算窓フィルタ」のコマンド・パス・出力・成功条件・落とし穴を明文化
+- [x] `screener/report/earnings_window.py`（根拠優先順 1/1b/2/3・休場日・直前四半期の有無で並べ替え）
+      + `tests/test_earnings_window.py` 7件。9/13 即興版と 42社・推定日・直前四半期判定が完全一致
+- [x] JPX 一覧を `raw/jpx_schedule/`、J-Quants 日次を `cache/jquants_fins_summary/` に固定配置
+
+## フェーズ1 収集の完全性
+- [x] tdnet_archiver 後条件ゲート: 総件数=読めた行数 / 対象書類すべて保存 / 対象日終了後の取得 を満たすときだけ ok。
+      incomplete / partial / provisional を導入、covered は ok/empty のみ（missing_days 変更）
+- [x] `screener/report/tdnet_completeness.py`: 7/23〜9/11 全営業日を一次ソース件数で突合 → 修復
+      一致18 / 不一致10（8/05〜8/19）/ 照合不能9（7/23〜8/04 保持期間外）。追加 1,099 ファイルセット。
+      8/05 は PDF/XBRL リンクの無い行1件で partial のまま（取得不能）
+- [x] EDINET: `edinet_bulk --recent N` 追加、run_daily に組込（既存タスク ScreenerTdnetArchiver が venv で実行）。
+      9/01〜9/13 索引 58件・取得 29件・失敗0、解析済み
+- [x] disclosure_titles: code_raw を読むよう修正、既存 2,148行を再導出（NULL 0）、9/03〜9/13 1,318件取得、run_daily に組込
+- [x] run_daily の EDINET 解析は1回（--all --resume）。xbrl_parser は毎回 約10分の全DB集計がある
+- [x] テスト 176件 OK（ゲート5件・titles 2件を追加）
+
+## フェーズ2 根拠健全性の監査（修正前・prefer_span）
+- [x] `screener/report/evidence_audit.py`。1,327社: available 3,743 / 根拠期なし 1,295（全て external）/
+      根拠期なしで発火 450（342銘柄）/ 照合 一致2,448・不一致0・照合不能1,295 /
+      偽陽性ルール R1 450・R2 80・R5 39・R4 29・R3 18、R4∩R5 = 2776/3479/4222/4434
+
+## フェーズ3 スコアリング修正（記録先行: calibration_backlog §31）
+- [x] span_runner policy `evidence_strict`: 根拠期なし不採用 / lag0 満額・lag1 ×0.5・lag≥2 不採用 /
+      S1S2 売上比≥2.0or≤0.5 不採用 / DSO<1日 不採用。不採用は消さず strict_flags と raw_score を残す
+- [x] フィクスチャ `tests/fixtures/false_positive_20260913.json`（3475/2776/5136）+ `test_false_positive_fixtures.py` 7件
+- [x] シャドウ比較（同一投影DB）: スコアあり 1,296→1,164、根拠期なし発火 450→0、閾値以上→消えた 120 / 新規 65、
+      3475・2776 は無評価、5136 0.575 維持、3441 −0.305（lag1 ×0.5 と S3 除外が相殺し見かけ同値）
+- [x] 副作用を記録: 単一シグナル銘柄の ±1.0 張り付き（採用1本 501銘柄、±1.0 204銘柄）
+- [x] 決算期末月の誤導出を発見・修正（半期報告書タイトルの半期期間を期末月にしていた。ユニバース22社）+ テスト5件
+- [ ] **既定 policy の切替（prefer_span → evidence_strict）はユーザー承認待ち。** フェーズ4/5 は --policy 明示で実行
+
+## フェーズ4 全銘柄の再スコア化（evidence_strict 明示・修復後データ・投影DB 18:55 再生成）
+- [x] 出力 `C:\screener_data\weekly_20260913_full_rescored.csv`（1,326行。4813 は security_flags で除外）
+- [x] 発火率（分母1,326）: S1 280(21.1%) / S2 189(14.3%) / S4 141(10.6%) / S12 541(40.8%、うち正 389=29.3%・負 212)。S5 472(35.6%)
+- [x] スコア付与 1,179 / 閾値0.10以上 501。理由: 証拠不足 678 / 証拠不採用 116 / データ欠損 31
+- [x] 上位30 は S5+S12 が大半（S12 加算後に1.0超）。閾値以上501のうち S12以外の発火が1本 289銘柄
+- [x] サニティ: 3475・2776 無評価（証拠不採用）/ 3441 −0.175（S1 DSO 60→68日 −0.611 を lag1 で ×0.5、S12 +0.13）/ 5136 0.575 維持
+- [x] 旧出力との差分（旧の母集団内）: 9/02 v3 7銘柄→3（消えた 2776/3415/6184/6336）、9/13 決算窓 13→6（消えた 8、新規 3544）
+- [x] 途中で直した不具合2件: 根拠期照合が TDnet リンクの doc_id を読めず 1,089件を誤って不一致（→ 一致2,199/不一致0）/
+      no_score_reason を S12 加算前に決めていた（6銘柄）。テスト 192件 OK
+
+## フェーズ5 決算窓の再抽出
+- [x] 出力 `C:\screener_data\earnings_window_20260913_0930_rescored.csv`（42社、9/18まで31）
+- [x] 並べ替え第一基準 prev_quarter_in_db: あり22 / 無し18 / 判定不能2（5903・3271 は根拠が est_date 単独）
+- [x] 休場日（平日）: 9/21・9/22（国民の休日）・9/23。JPX 一覧は 9/3 版から更新なし
+
+## 残件
+- [ ] **既定 policy を evidence_strict に切り替えるか（ユーザー判断）**。切替箇所は span_runner.DEFAULT_POLICY と weekly_screen の --policy 既定
+- [ ] 単一シグナル銘柄の ±1.0 張り付き、S12 加算で 1.0 超（§6-1 系・未対処）
+- [ ] 8/05 の TDnet 1件（リンク無し）は取得不能のため partial のまま

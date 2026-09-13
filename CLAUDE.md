@@ -186,3 +186,95 @@ Two methods for projecting Net Working Capital, toggled via `nwc_method` in over
 - generate_dcf.py will refuse to overwrite existing files unless --force is used.
 - Always move finalized/integrated models from models/ to reports/ after manual edits.
 - Workflow: generate_dcf.py -> models/ -> manual edits -> copy to reports/
+
+## 決算先回りスクリーナー（screener/）運用コマンド — 新しいチャットはここから復元する
+
+2026-09-13 明文化。**即興スクリプトを書く前に、ここにあるコマンドで足りないかを確認すること。**
+
+### 置き場所（新PC: 2026-09-09 移行済み）
+
+| もの | パス |
+|---|---|
+| リポジトリ | `C:\dev\ryosuke-japanese-equity-research` |
+| データ正本 DATA_ROOT | `C:\screener_data`（`.env` の `DATA_ROOT` が正本。コードに直書きしない） |
+| DB | `C:\screener_data\screener.db`（本体）/ `C:\screener_data\projection.db`（生成物・作り直してよい） |
+| ログ | `C:\screener_data\logs\`（`run_daily_YYYYMM.log` / `screener_YYYYMM.log`） |
+| 作業ログ・既知課題 | **リポジトリの** `tasks/todo.md`（追記専用フック有）と `docs/calibration_backlog.md`。`C:\screener_data` 配下には無い |
+| Python | 必ず `.venv\Scripts\python.exe`。システム python には依存が入っていない |
+
+### 1. 日次収集
+
+- タスク: `ScreenerTdnetArchiver`（平日 19:00 / 23:15）→ `screener\run_daily.ps1 -BackfillDays 14`
+  （登録: `screener\install_task.ps1`。**venv を PATH に通してから登録**。`docs/バックアップ運用手順書.md` §2 の注意と同じ）
+- 手動実行:
+  ```powershell
+  $repo='C:\dev\ryosuke-japanese-equity-research'; $env:PATH="$repo\.venv\Scripts;$env:PATH"
+  powershell -ExecutionPolicy Bypass -File $repo\screener\run_daily.ps1 -BackfillDays 14 -PythonExe "$repo\.venv\Scripts\python.exe"
+  ```
+- 中身（直列）: `tdnet_archiver --backfill 14` → `xbrl_parser --all`（TDnet）→
+  `tdnet_titles --days 5`（非決算の開示タイトル）→ `edinet_bulk --recent 7`（EDINET 再索引+欠損補完+取得）→
+  `xbrl_parser --source edinet --all --resume`（未解析の EDINET 書類だけ）→ `tdnet_archiver --report 14`
+- 所要: xbrl_parser は1回ごとに全DBの coverage/unknown 集計で約10分かかる（解析0件でも）。日付ごとに呼ばないこと
+- 出力: `raw\tdnet\YYYYMMDD\`、`raw\edinet\YYYY-MM-DD\`、`filings` / `financials_cum` / `fetch_runs` /
+  `disclosure_titles`、ログ `logs\run_daily_YYYYMM.log`
+- 成功条件: exit 0（archiver / coverage / titles / edinet がすべて 0）、最後の coverage 表に `MISSING` が無いこと
+- **fetch_runs.status の意味（2026-09-13 後条件ゲート導入）**:
+  `ok` = 一覧の「全N件」= 読めた行数、対象書類がすべて保存済み、対象日の翌日0時以降に取得 /
+  `empty` = 確定後に0件 / `provisional` = 対象日が終わる前に取得（翌日の backfill が取り直す。当日分は欠損に数えない） /
+  `incomplete` = 総件数と読めた行数が不一致 / `partial` = 対象書類の保存漏れ / `failed` = 一覧が読めない。
+  **covered は ok / empty だけ**
+- 部分取得の再取得: `python -m screener.fetch.tdnet_archiver --date YYYYMMDD`（冪等）
+- 件数の全日突合（記録ではなく一次ソースと比べる）:
+  `python -m screener.report.tdnet_completeness --from 2026-07-23 --to YYYY-MM-DD --repair --csv C:\screener_data\tdnet_completeness_YYYYMMDD.csv`
+  （TDnet 一覧が 404 の日は「照合不能(保持期間外)」。2026-09-13 時点で 8/05 まで遡れた）
+- 注意: `tdnet_archiver` は writer_lock を取らない。**パーサ（`xbrl_parser`）実行中に並走させると
+  `database is locked` で落ちる**（2026-09-13 に踏んだ）。パーサ終了を待ってから流す。
+
+### 2. 週次スキャン
+
+```powershell
+$py='C:\dev\ryosuke-japanese-equity-research\.venv\Scripts\python.exe'
+& $py -m screener.extract.quarterly_builder --all --lock-wait 3600
+& $py -m screener.extract.disclosure_flags                    # 出力は C:\screener_data\logs_disclosure.txt に Tee する
+& $py -m screener.projection.materialize                      # 投影DB + 発表日カレンダー + 事後条件ゲート
+& $py -m screener.report.weekly_screen --as-of YYYY-MM-DD --days 30 --verify-doc-periods --csv C:\screener_data\weekly_YYYYMMDD.csv
+```
+- 出力: `C:\screener_data\weekly_YYYYMMDD*.csv`（列: score / fired / doc_period / doc_date / doc_kind / stale_flag / 信頼性フラグ …）
+- 成功条件: materialize が `事後条件: すべて満たす` で exit 0、weekly_screen が exit 0、
+  `根拠期の照合` の **不一致 0**、`スコア計算で例外` の行が出ていないこと
+- 注意: `weekly_screen` の既定フィルタは projection.db の `earnings_calendar`（システム est_date）。
+  est_date は LOW が大半で、7月期本決算を10月に置く等の既知のずれがある。**決算窓は §3 のスクリプトで絞る**
+- 全銘柄を採点するときは `--universe`（発表日に関係なく universe_flag=1 の全社）
+- 採点方針 `--policy`: `prefer_span`（現在の既定）/ `evidence_strict`（根拠期なし・直前四半期から2期以上古い根拠・
+  売上前年比2倍超/半分以下のS1S2・DSO<1日を点にしない。calibration_backlog §31。既定の切替は報告・承認後）
+- 根拠の健全性監査: `python -m screener.report.evidence_audit --as-of YYYY-MM-DD --policy <policy> --out <csv>`、
+  方針の前後比較: `python -m screener.report.policy_shadow_compare --before <csv> --after <csv> --out <csv>`、
+  再スコアの要約と差分: `python -m screener.report.rescore_diff --new <csv> --old <csv> ...`
+
+### 3. 決算窓フィルタ（週次CSVを発表予定日の区間で絞る後処理）
+
+```powershell
+& $py -m screener.report.earnings_window --fetch-jpx                              # JPX 決算発表予定日一覧 → raw\jpx_schedule\
+& $py -m screener.report.earnings_window --fetch-jquants --as-of 2026-09-13 --from 2026-09-13 --to 2026-09-30
+& $py -m screener.report.earnings_window --weekly-csv C:\screener_data\weekly_YYYYMMDD.csv `
+      --as-of 2026-09-13 --from 2026-09-13 --to 2026-09-30 --mid 2026-09-18 `
+      --out C:\screener_data\earnings_window_YYYYMMDD_MMDD.csv
+```
+- 発表日の根拠は行ごとに `basis` 列: 1=TDnet適時開示タイトル / 1b=JPX一覧(会社届出) / 2=前年同期実績+364日 / 3=システムest_date単独
+- 並べ替えの第一基準は `prev_quarter_in_db`（発表される四半期の**直前四半期**が本体DBにあるか）。stale_flag は補助
+- 休場日は別枠 `common/jp_calendar.py` で判定（2026-09 は 21/22/23 が休場）
+- 成功条件: exit 0、ログに「窓内(未発表) N」「根拠」「直前四半期が本体にある」の3行が出ていること
+- テスト: `python -m unittest screener.tests.test_earnings_window`
+
+### 既知の落とし穴（再発防止）
+
+- **期ラベル `FY2026-Q2` を暦日と比べない。** 暦の期末は `earnings_window.fiscal_label_ym(period, q_no, 期末月)` で写す
+- TDnet の一覧は約1ヶ月しか遡れない。2026-07-23 より前の開示（1月期Q1・7月期Q3 等）は永久欠落（calibration_backlog §24）
+- 取得を「ok」と記録していても、朝に走った回は当日分の一部しか無いことがある（2026-09-13 に 5日ぶん発見）
+- `disclosure_titles.code` が NULL だった（2026-09-13 修正。既存行は `tdnet_titles --rederive-codes` で再導出、
+  会社名まで一致しない行は埋めない）
+- 決算期末月は**期間11ヶ月以上のタイトル**からだけ取る。半期報告書のタイトルは半期の期間しか書かない会社がある
+  （4396/4495 で6月期→12月期と誤判定していた。2026-09-13 修正）
+- 別枠の位置ベース比較（根拠期なし）は `prefer_span` では点になる。偽陽性の主因（3475 グッドコムアセット）
+- `--verify-doc-periods` は TDnet リンク（`.../inbs/<doc_id>.pdf`）も解決する（2026-09-13 修正。以前は全件「不一致」に見えた）。
+  全銘柄スキャンで不一致が大量に出たら、まずリンク形式の読み取りを疑う

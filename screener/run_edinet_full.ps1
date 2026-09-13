@@ -18,10 +18,16 @@
 
         powershell -ExecutionPolicy Bypass -File screener\run_edinet_full.ps1
         powershell -ExecutionPolicy Bypass -File screener\run_edinet_full.ps1 -Years 1 -IndexOnly
+        powershell -ExecutionPolicy Bypass -File screener\run_edinet_full.ps1 -From 2024-01-19 -To 2024-12-31 -IndexOnly
+        powershell -ExecutionPolicy Bypass -File screener\run_edinet_full.ps1 -DownloadOnly -Subtypes 140,150
 #>
 [CmdletBinding()]
 param(
     [double]$Years = 3.0,
+    [string]$From = "",
+    [string]$To = "",
+    [string]$Subtypes = "",
+    [double]$MinInterval = 0,
     [string]$PythonExe = "",
     [switch]$IndexOnly,
     [switch]$DownloadOnly,
@@ -80,8 +86,19 @@ function Write-Log([string]$text) {
 
 function Invoke-Step([string]$label, [string[]]$stepArgs) {
     Write-Log "=== $label  $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') ==="
-    & $PythonExe -m screener.fetch.edinet_bulk @stepArgs 2>&1 |
-        ForEach-Object { Write-Log ([string]$_) }
+    # PS 5.1 では $ErrorActionPreference='Stop' のまま native exe の stderr を
+    # 2>&1 で拾うと、最初の1行で NativeCommandError が飛んでパイプが止まる。
+    # 結果、ログには「RUN ABORTED: Traceback (most recent call last):」だけが
+    # 残り、肝心の例外本文が消える —— 2026-09-01 のスイープ中断で実際に
+    # 原因が分からなくなった。この区間だけ Continue に落として全行を拾う。
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        & $PythonExe -m screener.fetch.edinet_bulk @stepArgs 2>&1 |
+            ForEach-Object { Write-Log ([string]$_) }
+    } finally {
+        $ErrorActionPreference = $prev
+    }
     if ($LASTEXITCODE -ne 0) {
         Write-Log "FAILED: $label (exit $LASTEXITCODE)"
         throw "$label failed with exit code $LASTEXITCODE"
@@ -91,10 +108,33 @@ function Invoke-Step([string]$label, [string[]]$stepArgs) {
 $exit = 0
 try {
     if (-not $DownloadOnly) {
-        Invoke-Step "index (universe x $Years years)" @("--full", "--index", "--years", "$Years")
+        # --index 単独で呼ぶ。--full は index と download の両方を起動するので、
+        # -IndexOnly を付けても取得まで走ってしまい、冒頭コメントが言う
+        # 「索引が終わった時点で分母が確定する」が成り立っていなかった。
+        $indexArgs = @("--index")
+        if ($From -or $To) {
+            if ($From) { $indexArgs += @("--from", $From) }
+            if ($To)   { $indexArgs += @("--to",   $To) }
+            $label = "index ($From .. $To)"
+        } else {
+            $indexArgs += @("--years", "$Years")
+            $label = "index (universe x $Years years)"
+        }
+        # 他のジョブと並走させるときは間隔を広げて相手を殺さない。
+        if ($MinInterval -gt 0) { $indexArgs += @("--min-interval", "$MinInterval") }
+        Invoke-Step $label $indexArgs
     }
     if (-not $IndexOnly) {
-        Invoke-Step "download" @("--download")
+        # 種別で絞れると「四半期報告書だけ先に埋める」ができる。数千件・数GBの
+        # 取得なので、何から埋めるかを呼び出し側が決められることに意味がある。
+        $downloadArgs = @("--download")
+        $dlLabel = "download"
+        if ($Subtypes) {
+            $downloadArgs += @("--subtypes", $Subtypes)
+            $dlLabel = "download (subtypes $Subtypes)"
+        }
+        if ($MinInterval -gt 0) { $downloadArgs += @("--min-interval", "$MinInterval") }
+        Invoke-Step $dlLabel $downloadArgs
     }
 } catch {
     Write-Log "RUN ABORTED: $_"

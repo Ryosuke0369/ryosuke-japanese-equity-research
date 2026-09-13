@@ -14,6 +14,9 @@ Design rules inherited from the repo (docs/DCFパイプライン標準運用手�
 from __future__ import annotations
 
 import os
+import subprocess
+import json
+import contextlib
 import sqlite3
 import sys
 import time
@@ -188,6 +191,80 @@ def load_yaml(name: str) -> dict:
 
 
 # ------------------------------------------------------------------------ db
+class WriterBusy(RuntimeError):
+    """他のジョブが書き込みロックを持っている。"""
+
+
+LOCK_PATH = os.path.join(DATA_DIR, "writer.lock")
+
+
+def _pid_alive(pid: int) -> bool:
+    if os.name != "nt":                                  # pragma: no cover
+        try:
+            os.kill(pid, 0); return True
+        except OSError:
+            return False
+    out = subprocess.run(["tasklist", "/FI", f"PID eq {pid}", "/NH"],
+                         capture_output=True, text=True, timeout=20).stdout
+    return str(pid) in out
+
+
+@contextlib.contextmanager
+def writer_lock(purpose: str, wait_seconds: float = 0.0,
+                stale_after: float = 12 * 3600):
+    """DBに長時間書くジョブ同士を直列化する助言ロック。
+
+    なぜ要るか —— 2026-09-01、手動の全件再解析(2.5時間)が2回とも
+    `database is locked` で落ちた。真因はウイルス対策でも WAL でもなく、
+    **タスクスケジューラの日次ジョブ ScreenerTdnetArchiver が 19:00 に
+    起動して同じ DB に書き始めたこと**。SQLite の busy_timeout(60秒)は
+    「数十分書き続ける別プロセス」には効かない。競合を待つのではなく、
+    そもそも同時に走らせないのが正しい。
+
+    ロックは DATA_ROOT の writer.lock。中身は PID と用途と取得時刻。
+    保持者が死んでいれば奪う（クラッシュしたジョブのロックで永久に
+    止まるほうが困る）。stale_after を過ぎたロックも奪う。
+
+    wait_seconds=0 なら即座に WriterBusy を上げる。日次ジョブのように
+    「今回は諦めて次回に拾えばよい」側が使う。
+    """
+    deadline = time.time() + wait_seconds
+    while True:
+        holder = None
+        try:
+            with open(LOCK_PATH, encoding="utf-8") as fh:
+                holder = json.load(fh)
+        except (OSError, ValueError):
+            holder = None
+        if holder:
+            age = time.time() - float(holder.get("at", 0))
+            if age > stale_after or not _pid_alive(int(holder.get("pid", -1))):
+                log(f"writer.lock: 死んだ保持者を掃除 {holder}")
+                holder = None
+        if holder is None:
+            os.makedirs(DATA_DIR, exist_ok=True)
+            with open(LOCK_PATH, "w", encoding="utf-8") as fh:
+                json.dump({"pid": os.getpid(), "purpose": purpose,
+                           "at": time.time()}, fh, ensure_ascii=False)
+            break
+        if time.time() >= deadline:
+            raise WriterBusy(
+                f"別のジョブが書き込み中: {holder.get('purpose')} "
+                f"(pid={holder.get('pid')})。同時に走らせると "
+                f"database is locked で両方が壊れる")
+        time.sleep(5)
+    try:
+        yield
+    finally:
+        try:
+            with open(LOCK_PATH, encoding="utf-8") as fh:
+                cur = json.load(fh)
+            if int(cur.get("pid", -1)) == os.getpid():
+                os.remove(LOCK_PATH)
+        except (OSError, ValueError):                    # pragma: no cover
+            pass
+
+
 def connect(db_path: str | None = None) -> sqlite3.Connection:
     ensure_dirs()
     con = sqlite3.connect(db_path or DB_PATH, timeout=60)
@@ -250,12 +327,19 @@ def missing_days(con, source: str, start: date, end: date,
     This is the read side of the §2-1 requirement: a day is 'covered' only when
     a run finished ok/empty. A day whose only row is failed/running still shows
     up here, which is what makes the retry loop honest.
+
+    2026-09-13: 'partial' を covered から外した。加えて tdnet_archiver は
+    後条件ゲート（一覧の総件数 = 取得行数、対象書類がすべて保存済み、
+    対象日が終わってから取得）を満たさない回を 'incomplete' / 'partial' /
+    'provisional' と記録する。いずれも covered ではないので次の backfill が
+    取り直す。朝に走った回が当日分の一部だけで 'ok' と記録され、backfill が
+    「欠損なし」と言い続けた事故（9/02,03,04,10,11）の再発防止。
     """
     have = {
         r["target_date"]
         for r in con.execute(
             "SELECT DISTINCT target_date FROM fetch_runs "
-            "WHERE source=? AND status IN ('ok','empty','partial')", (source,)
+            "WHERE source=? AND status IN ('ok','empty')", (source,)
         )
     }
     out, d = [], start

@@ -11,12 +11,18 @@
         powershell -ExecutionPolicy Bypass -File screener\install_backup_task.ps1 -Destination E:\screener_backup
         powershell -ExecutionPolicy Bypass -File screener\install_backup_task.ps1 -Remove
         powershell -ExecutionPolicy Bypass -File screener\install_backup_task.ps1 -Destination E:\screener_backup -RunNow
+
+    -DbAndLogsOnly / -AllowSameDisk はそのまま backup_data.ps1 へ渡す。
+    ディスクが1台しかない機体で OneDrive 配下を退避先にする構成では両方要る
+    (同一ディスク判定を承知で通す + raw/ の 8GB 超を同期に流さない)。
 #>
 [CmdletBinding()]
 param(
     [string]$TaskName = "ScreenerDataBackup",
     [string]$Destination,
     [string]$Time = "03:30",
+    [switch]$DbAndLogsOnly,
+    [switch]$AllowSameDisk,
     [switch]$Remove,
     [switch]$RunNow
 )
@@ -40,14 +46,28 @@ if (-not $Destination) {
 # 登録前に一度ドライランして、同一物理ディスク・容量不足で止まる構成を弾く。
 # 「登録はできたが毎晩失敗する」状態を作らない。
 Write-Host "事前確認（ドライラン）..."
-& powershell -NoProfile -ExecutionPolicy Bypass -File $script -Destination $Destination -WhatIf
+# ドライランと本番で同じスイッチを使う。片方だけに付けると「ドライランは
+# 通ったのに毎晩落ちる」構成をそのまま登録してしまう。
+# 登録時点の python を解決して action に焼き込む。タスクは対話シェルとは
+# 別の PATH で走るので、「今この shell で動くから大丈夫」は通用しない。
+$pythonExe = (Get-Command python -ErrorAction SilentlyContinue).Source
+if (-not $pythonExe) { throw "python not found on PATH" }
+
+$passThru = @("-PythonExe", ('"{0}"' -f $pythonExe))
+if ($DbAndLogsOnly) { $passThru += "-DbAndLogsOnly" }
+if ($AllowSameDisk) { $passThru += "-AllowSameDisk" }
+
+& powershell -NoProfile -ExecutionPolicy Bypass -File $script `
+    -Destination $Destination -PythonExe $pythonExe `
+    $(if ($DbAndLogsOnly) { "-DbAndLogsOnly" }) `
+    $(if ($AllowSameDisk) { "-AllowSameDisk" }) -WhatIf
 if ($LASTEXITCODE -ne 0) {
     throw "ドライランが失敗した。構成を直してから登録すること"
 }
 
 $action = New-ScheduledTaskAction -Execute "powershell.exe" `
     -Argument ("-NoProfile -ExecutionPolicy Bypass -File `"$script`" " +
-               "-Destination `"$Destination`"")
+               "-Destination `"$Destination`" " + ($passThru -join " "))
 $trigger = New-ScheduledTaskTrigger -Daily -At $Time
 $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable `
     -DontStopIfGoingOnBatteries -AllowStartIfOnBatteries `
@@ -56,7 +76,8 @@ $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -RunLevel Limited
 
 Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger `
     -Settings $settings -Principal $principal -Force | Out-Null
-Write-Host "登録した: $TaskName（毎日 $Time / 先 $Destination）"
+Write-Host ("登録した: $TaskName（毎日 $Time / 先 $Destination" +
+            $(if ($passThru) { " " + ($passThru -join " ") } else { "" }) + "）")
 
 if ($RunNow) {
     Start-ScheduledTask -TaskName $TaskName

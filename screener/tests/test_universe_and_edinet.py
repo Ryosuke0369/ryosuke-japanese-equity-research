@@ -276,6 +276,32 @@ class TestEdinetSelection(_DbCase):
         self.assertEqual(len(calls), 1, "取得済みを取り直している")
         self.assertIn("S100CCCC", calls[0])
 
+    def test_download_can_be_narrowed_to_document_types(self):
+        """種別で絞れること。四半期報告書(140/150)だけを先に埋めたいのに、
+        同じ銘柄の有報(120)や訂正(130)まで芋づるで落ちると、取得順を
+        こちらで決められない —— 数千件・数GBの話なので順序は実務上重要。
+
+        絞っても既取得判定は変わらないので、あとで広げれば残りが差分で入る。"""
+        for doc_id, subtype in (("S100Q140", "140"), ("S100Q150", "150"),
+                                ("S100Y120", "120"), ("S100Y130", "130")):
+            self.con.execute(
+                "INSERT INTO filings (code, date, type, source, doc_id, "
+                " subtype, xbrl_ok, path) VALUES (?,?,?,?,?,?,0,NULL)",
+                ("2962", "2024-02-14", "四半期", "edinet", doc_id, subtype))
+        self.con.commit()
+        calls = []
+
+        class _F:
+            def download(self, url, dest):
+                calls.append(url)
+                raise RuntimeError("ネットワークは踏まない")
+
+        E.download_pending(self.con, _F(), codes={"2962"},
+                           subtypes={"140", "150"})
+        got = sorted(u.split("/")[-1].split("?")[0] for u in calls)
+        self.assertEqual(got, ["S100Q140", "S100Q150"],
+                         "種別の絞り込みが効かず 120/130 まで落としにいっている")
+
     def test_weekday_sweep_skips_weekends(self):
         from datetime import date
         days = list(E.weekdays(date(2026, 8, 24), date(2026, 8, 30)))

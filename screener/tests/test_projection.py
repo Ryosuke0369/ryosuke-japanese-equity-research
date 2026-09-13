@@ -152,6 +152,102 @@ class TestAdapter(_Base):
         self.assertAlmostEqual(r["sales"], 6327.633, places=3)
 
 
+class TestPriceProjection(_Base):
+    """価格の投影の不変条件。
+
+    守るのは1つ: **リターンは調整後終値からしか計算されない。**
+    未調整の終値は分割日に偽の暴落を作る。実測 (3110 日東紡績, 2026-06-29 の
+    5:1 分割) では未調整 19,630 -> 4,580 = -76.7%。バックテストがこれを
+    「決算後に暴落した」と読めば、シグナルの評価そのものが壊れる。
+    """
+
+    def _px(self, code, date, close, adj_close, factor=1.0,
+            volume=1000, turnover=None, mktcap=None):
+        self.con.execute(
+            "INSERT INTO prices (code, date, close, volume, turnover_value, "
+            " adj_factor, adj_close, adj_volume, mktcap) "
+            "VALUES (?,?,?,?,?,?,?,?,?)",
+            (code, date, close, volume,
+             turnover if turnover is not None else close * volume,
+             factor, adj_close, volume, mktcap))
+        self.con.commit()
+
+    def test_p5_split_does_not_create_a_fake_crash(self):
+        """分割日をまたぐリターンが ±30% を超えない（3110 の実データ形状）。"""
+        self._px("3110", "2026-06-26", 19630.0, 3926.0, 1.0)
+        self._px("3110", "2026-06-29", 4580.0, 4580.0, 0.2)
+        px = adapter.get_price_series(self.con, "3110")
+        ret = px["2026-06-29"] / px["2026-06-26"] - 1
+        self.assertLessEqual(abs(ret), 0.30,
+                             f"分割日のリターンが {ret:+.1%}。未調整終値を見ている")
+        self.assertAlmostEqual(ret, 0.1666, places=3)
+        # テストに歯があることの確認: 未調整ならこの閾値を必ず割る
+        raw = 4580.0 / 19630.0 - 1
+        self.assertGreater(abs(raw), 0.30,
+                           "未調整でも通ってしまうならこのテストは無意味")
+
+    def test_p9_half_year_flows_say_why_they_are_missing(self):
+        """半期粒度で落としたフローは、行がそう名乗ること。
+
+        BS項目だけが残った行が span_q=1 / is_half=False のまま sales=None を
+        返していた（2026-09-01 実測、100銘柄で237行）。受け手からは
+        「開示が無い」と「粒度が合わないので渡さなかった」が同じに見える。
+        投影層が最もやってはいけない嘘なので、行に理由を持たせる。
+        """
+        self.con.execute(
+            "INSERT INTO financials_q (code, period, q_no, item, value, "
+            " valid_flag, span_q) VALUES "
+            " ('1301','FY2025',4,'revenue',6000,1,2),"          # 半期粒度のフロー
+            " ('1301','FY2025',4,'net_assets',900,1,1)")        # 四半期粒度のBS
+        # financials_cum は filings を参照するので、書類のほうを先に入れる
+        self.con.execute(
+            "INSERT INTO filings (id, code, date, type, source, doc_id) "
+            "VALUES (1,'1301','2026-05-01','有報','edinet','S1')")
+        self.con.execute(
+            "INSERT INTO financials_cum (filing_id, code, period, q_no, item, "
+            " value, context_ref) VALUES (1,'1301','FY2025',4,'revenue',6000,'x')")
+        self.con.commit()
+        row = [r for r in adapter.get_pl_series(self.con, "1301")
+               if r["period"] == "FY2025" and r["q_no"] == 4][0]
+        self.assertIsNone(row["sales"], "半期粒度のフローを四半期として渡している")
+        self.assertEqual(row["flow_span_excluded"], 2,
+                         "落とした理由(半期粒度)が行に載っていない")
+        self.assertTrue(row["is_half"], "is_half が実態と逆")
+
+    def test_p6_days_without_adjusted_close_are_not_projected(self):
+        """adj_close が NULL の日は投影に混入しない（未調整へ落ちない）。"""
+        self._px("1301", "2021-08-31", 1000.0, None)     # 契約窓外で調整後が無い
+        self._px("1301", "2021-09-01", 1010.0, 1010.0)
+        px = adapter.get_price_series(self.con, "1301")
+        self.assertNotIn("2021-08-31", px,
+                         "調整後終値の無い日が投影されている")
+        self.assertEqual(list(px), ["2021-09-01"])
+        rows = list(self.con.execute(
+            "SELECT COUNT(*) c FROM daily_prices WHERE close IS NULL"))
+        self.assertEqual(rows[0]["c"], 0, "ビューが NULL の close を通している")
+
+    def test_p7_as_of_never_returns_future_prices(self):
+        for i, d in enumerate(("2026-06-01", "2026-06-02", "2026-06-03")):
+            self._px("1301", d, 100.0 + i, 100.0 + i)
+        px = adapter.get_price_series(self.con, "1301", as_of=date(2026, 6, 2))
+        self.assertEqual(list(px), ["2026-06-01", "2026-06-02"])
+
+    def test_p8_universe_metrics_are_point_in_time(self):
+        """時価総額と売買代金が当時の値で取れる（サバイバーシップバイアス対策）。"""
+        for i, d in enumerate(("2023-05-01", "2023-05-02", "2023-05-03")):
+            self._px("1301", d, 100.0, 100.0,
+                     turnover=30_000_000 + i * 1_000_000,
+                     mktcap=50_000_000_000 + i)
+        m = adapter.get_universe_metrics(self.con, "1301",
+                                         date(2023, 5, 2), adv_days=20)
+        self.assertEqual(m["date"], "2023-05-02")
+        self.assertEqual(m["mktcap"], 50_000_000_001)
+        self.assertEqual(m["adv_turnover"], 30_500_000.0)
+        self.assertEqual(m["n_days"], 2, "日数が足りないことを黙って隠している")
+        # 未来の値を混ぜていないこと
+        self.assertNotEqual(m["mktcap"], 50_000_000_002)
+
+
 class TestAdjustmentLayer(_Base):
     def test_adjustment_without_evidence_is_rejected(self):
         """根拠なき調整額を登録できない構造であること（設計 A-2）。

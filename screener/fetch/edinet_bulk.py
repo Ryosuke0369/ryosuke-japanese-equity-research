@@ -92,10 +92,24 @@ def index_day(con, fetcher, d: date, codes: set[str] | None) -> dict:
             C.finish_run(con, run_id, "failed", error=f"HTTP {r.status_code}")
             return {"status": "failed", "listed": 0, "target": 0}
         payload = r.json()
+        return _index_docs(con, run_id, d, payload, codes)
     except Exception as e:
-        C.finish_run(con, run_id, "failed", error=f"{type(e).__name__}: {e}")
+        # 1日ぶんの失敗でスイープ全体を落とさない。失敗日は fetch_runs に
+        # 残り、index_range が "failed day(s)" として数えるので、後から
+        # その日だけ拾い直せる —— 434日の走査が一過性のエラー1件で
+        # 消えるほうが高くつく（2026-09-01 13:33、2025-05-08 で実際に消えた）。
+        try:
+            con.rollback()
+        except Exception:                                # pragma: no cover
+            pass
+        C.finish_run(con, run_id, "failed",
+                     error=f"{type(e).__name__}: {e}"[:400])
         return {"status": "failed", "listed": 0, "target": 0}
 
+
+def _index_docs(con, run_id: int, d: date, payload: dict,
+                codes: set[str] | None) -> dict:
+    """取得済みの documents.json を filings に落とす。index_day の後半。"""
     docs = payload.get("results") or []
     n_indexed = n_target = 0
     for doc in docs:
@@ -152,25 +166,33 @@ def index_range(con, fetcher, start: date, end: date,
 
 # ------------------------------------------------------------------ pass 2
 def download_pending(con, fetcher, limit: int | None = None,
-                     codes: set[str] | None = None) -> dict:
+                     codes: set[str] | None = None,
+                     subtypes: set[str] | None = None) -> dict:
     """未取得の書類を落とす。取得対象の絞り込みは**ここ**で行う。
 
     索引は全上場銘柄を持っているので、codes を渡さないと対象外の会社まで
     落としにいく。逆に、ユニバースを広げたときは codes が広がるだけで、
     既に xbrl_ok=1 の行は WHERE から外れるため再取得は起きない ——
     「既取得分は無効にせず差分のみ追加取得」がこの1か所で成立する。
+
+    subtypes は書類種別(docTypeCode)の絞り込み。四半期報告書(140/150)だけを
+    先に埋める、のように「何を今欲しいか」で取得順を決めるために要る。
+    絞っても既取得判定は変わらないので、後から広げれば残りが差分で入る。
     """
     rows = con.execute(
-        "SELECT id, code, date, doc_id, type FROM filings "
+        "SELECT id, code, date, doc_id, type, subtype FROM filings "
         "WHERE source='edinet' AND (xbrl_ok=0 OR path IS NULL) "
         "ORDER BY date DESC").fetchall()
     n_all = len(rows)
     if codes is not None:
         rows = [r for r in rows if r["code"] in codes]
+    if subtypes is not None:
+        rows = [r for r in rows if r["subtype"] in subtypes]
     if limit:
         rows = rows[:int(limit)]
+    filt = "" if subtypes is None else f" / 種別 {','.join(sorted(subtypes))} に限定"
     C.log(f"EDINET download: {len(rows)} pending document(s) "
-          f"(索引済みの未取得 {n_all} 件のうち、取得対象は {len(rows)} 件)")
+          f"(索引済みの未取得 {n_all} 件のうち、取得対象は {len(rows)} 件{filt})")
     ok = failed = 0
     for i, r in enumerate(rows, 1):
         dest = os.path.join(C.RAW_DIR, SOURCE, r["date"], f"{r['doc_id']}.zip")
@@ -265,9 +287,15 @@ def main(argv=None) -> int:
     p.add_argument("--years", type=float, default=1.0)
     p.add_argument("--trial-extra", type=int, default=50)
     p.add_argument("--limit", type=int, help="download pass の上限")
+    p.add_argument("--subtypes", help="download pass を書類種別(docTypeCode)で絞る。"
+                                      "カンマ区切り。例: 140,150 = 四半期報告書のみ")
     p.add_argument("--all-codes", action="store_true",
                    help="索引済みの全銘柄を取得対象にする（既定は現ユニバース）。"
                         "索引は全上場銘柄を持つので、指定すると数万件になる")
+    p.add_argument("--recent", type=int, metavar="N",
+                   help="日次用: 直近N日を再索引（当日中に増えた提出も拾う）+ 直近30日の"
+                        "欠損日を補完 → 現ユニバースの未取得を取得。2026-09-13 に"
+                        "8/31 で停止していたのを受けて追加")
     p.add_argument("--min-interval", type=float, default=1.2,
                    help="EDINETへの最短リクエスト間隔(秒)。既定1.2は "
                         "仕様書 §2-2『レート制限に注意して間隔を空ける』の実装")
@@ -296,10 +324,28 @@ def main(argv=None) -> int:
         C.log(f"target: {len(codes)} code(s) = ユニバース候補 ∪ 検証8銘柄")
 
     fetcher = C.Fetcher(min_interval=a.min_interval, headers=_headers())
+    if a.recent:
+        end = date.today()
+        start = end - timedelta(days=int(a.recent))
+        # 再索引窓より前の30日で、成功記録の無い平日を個別に拾う（PC停止明けの自己回復）
+        gaps = C.missing_days(con, SOURCE, end - timedelta(days=30), start - timedelta(days=1))
+        C.log(f"EDINET recent: re-index {start}..{end} + gap days {len(gaps)}")
+        for s in gaps:
+            index_day(con, fetcher, C.parse_date_arg(s), codes)
+        tot = index_range(con, fetcher, start, end, codes)
+        dl = download_pending(con, fetcher, a.limit, codes, None)
+        report(con)
+        C.log(f"HTTP requests this run: {fetcher.n_requests}")
+        # 成功条件: 索引の失敗日 0 かつ取得失敗 0
+        return 1 if (tot["failed"] or dl["failed"]) else 0
     if a.trial or a.full or a.index:
         index_range(con, fetcher, start, end, codes)
     if a.trial or a.full or a.download:
-        download_pending(con, fetcher, a.limit, codes)
+        # PowerShell は引数モードでも `140,150` を配列と解釈し、[string] に
+        # 詰め直すと "140 150" になる。区切りはカンマでも空白でも受ける。
+        subtypes = ({t for t in a.subtypes.replace(",", " ").split() if t}
+                    if a.subtypes else None)
+        download_pending(con, fetcher, a.limit, codes, subtypes)
     report(con)
     C.log(f"HTTP requests this run: {fetcher.n_requests}")
     return 0

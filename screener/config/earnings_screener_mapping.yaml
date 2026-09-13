@@ -57,27 +57,35 @@ items:
       分母違いでずれる。自己株数(treasury_stock)との関係を確認するまで繋がない。
 
   advances_paid:
-    item: null
-    status: missing
-    note: 前渡金。本体 account_mapping.yaml に該当項目が無い。追加が必要
+    item: advances_paid
+    status: verified
+    note: >-
+      2026-09-01 の全件再解析後の unknown_tags で実在を確認し、本体
+      account_mapping.yaml に jppfs_cor:AdvancePaymentsTrade 他を追加
+      (2,299回/1,040書類)。missing 4項目のうち実データで解決できた唯一の項目。
 
   rev_over_time:
     item: null
     status: missing
     note: >-
-      一定期間にわたり移転する収益。S10(収益認識パターン変化)に必須。
-      本体に項目が無い。IFRS/日本基準とも注記での開示が中心で、
-      四半期開示されない会社が多い点も要確認。
+      構築不能と確定 (2026-09-01)。22,041書類の実測で標準タグ
+      %SatisfiedOverTime% / %RevenueFromContractWith% が 0件。
+      会社独自拡張タグが3書類にあるのみ。S10 は「シグナルなし」に退行させる。
 
   rev_point_in_time:
     item: null
     status: missing
-    note: 一時点で移転する収益。rev_over_time と対。S10 に必須
+    note: >-
+      構築不能と確定 (2026-09-01)。rev_over_time と同じ理由。S10 は退行。
 
   diluted_shares:
     item: null
     status: missing
-    note: 潜在株式調整後の株式数。S11(希薄化リスク)に必須。本体に項目が無い
+    note: >-
+      構築不能と確定 (2026-09-01)。潜在株式調整後 *EPS* は 9,360回/2,164書類
+      あるが、*株数* のタグは 0件。EPS からの逆算は分母に当期純利益が要り
+      赤字期に破綻するので採らない。S11 は「シグナルなし」に退行させる。
+      再設計候補は有報の新株予約権注記（着手しない。backlog 1-5 参照）。
 
 # 四半期表現の写像 (本体 q_no → 別枠 quarter_type)。
 # fiscal_year は本体の period(FY2027)から取る。提出日から推定してはいけない
