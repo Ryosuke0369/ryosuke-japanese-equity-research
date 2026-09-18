@@ -21,6 +21,9 @@
       3. S1/S2 で当期/前年の売上比が 2.0 以上・0.5 以下（連結範囲変更・M&A 由来の
          前年比破壊の疑い）は不採用
       4. S1 の DSO がどちらかの期で 1日未満（売掛金が売上に対して極小で比が壊れる）は不採用
+      6. S5 の陳腐化（`guidance_dead`）は加点しない（2026-09-18・§36）。方向が測れていない
+         （6466 は上方修正で解消・3441 は通期未達）ため符号を与えず、数値は S5b として
+         0点・表示のみで残す（`guidance_dead_unscored`）
       5. S1 の売上方向ガード（2026-09-18・§32）。最新の売上タイルが qoq / yoy とも
          非正なら不採用（`sales_shrinking`）。**売上減少に伴う債権減は「改善」ではなく
          「縮小」**。方向が確認できない／累計 span でしか確認できない場合は不採用に
@@ -168,6 +171,14 @@ def apply_strict(con, ticker, sid, r, src, as_of, fym):
             sc = _scope_change_same_fy(con, ticker, period)
             if sc:
                 notes.append("same_fy_scope_invalid(%s)" % sc)
+        if sid == "S5":
+            # 6. 陳腐化は加点しない（2026-09-18・§36）。
+            #    暴黙の残存四半期利益が赤字 = 会社予想が現実と合っていない、という
+            #    検出であって、上振れ方向の予測ではない。6466 TVE（上方修正で解消）と
+            #    3441 山王（通期未達）が同じ進捗113%で逆の結末になっている。
+            #    **方向が測れるまで符号を与えない**。数値は S5b として0点で残す。
+            if raw > 0 and ((r.get("details") or {}).get("guidance_dead")):
+                flags.append("guidance_dead_unscored")
         if sid == "S1":
             det = r.get("details") or {}
             if min(det.get("dso_now", 99), det.get("dso_prev_year", 99)) < DSO_MIN_DAYS:

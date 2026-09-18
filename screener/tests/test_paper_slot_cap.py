@@ -112,6 +112,60 @@ class SlotCapTest(unittest.TestCase):
                              "エクスポージャ上限を超えている: %.2f" % expo)
         self.assertLessEqual(len(entries), PW.MAX_POSITIONS)
 
+    # ------------------------------------------------ シャドウD（§35b / P3-2）
+    def test_shadow_d_縮小は採用本数が多い方を上に持ち上げる(self):
+        """素のスコアが同じなら、採用本数が多い銘柄が上位に来る。
+
+        現行（k=0）は採用1本も5本も同じ 0.7 で並び、順位はコード順の
+        同値処理で決まっていた。縮小はそこを分ける。
+        """
+        week = ["2026-09-15"]
+        scored = self._scored(2, week, score=0.7, n_avail=1)    # 採用1本
+        thick = self._scored(2, week, score=0.7, n_avail=4)     # 採用4本
+        for e in thick:
+            e["code"] = "9" + e["code"][1:]                     # コード順では後ろ
+            self.sectors[e["code"]] = "セクターX"
+        frozen, entries = PW.decide_variant(self._pcon(), self.con,
+                                            scored + thick, "D", dry_run=True)
+        got = [e["code"] for e in entries]
+        self.assertTrue(got[0].startswith("9"),
+                        "採用本数の多い銘柄が先頭に来ていない: %r" % got)
+
+    def test_shadow_d_縮小後に閾値を割ったらスキップする(self):
+        """0.15 の採用1本は縮小で 0.075 になり、閾値 0.10 を割る。"""
+        week = ["2026-09-15"]
+        scored = self._scored(3, week, score=0.15, n_avail=1)
+        frozen, entries = PW.decide_variant(self._pcon(), self.con, scored,
+                                            "D", dry_run=True)
+        self.assertEqual(entries, [], "縮小後に閾値を割った候補が建玉になっている")
+        self.assertTrue(all(r["decision"] == "skip_score" for r in frozen))
+        # 同じ候補を v2 と同じ扱い（C は閾値だけ違う）にすると通ることを対照で示す
+        _f, e_b = PW.decide_variant(self._pcon(), self.con, scored, "B",
+                                    dry_run=True)
+        self.assertTrue(e_b, "対照（B）でも建たないなら、この検証は意味がない")
+
+    def test_shadow_d_素のスコアをsnapshotに残す(self):
+        """**縮小後の値で素のスコアを上書きしない。** 横比較ができなくなる。"""
+        week = ["2026-09-15"]
+        scored = self._scored(1, week, score=0.8, n_avail=2)
+        frozen, _e = PW.decide_variant(self._pcon(), self.con, scored, "D",
+                                       dry_run=True)
+        r = frozen[0]
+        self.assertAlmostEqual(r["evidence_score"], 0.8)
+        self.assertEqual(r["n_available"], 2)
+        self.assertIn("adj=0.533", r["note"])       # 0.8 * 2/3
+
+    def test_vd_adjust_の倍率(self):
+        self.assertAlmostEqual(PW.vd_adjust(1.0, 1), 0.500, places=3)
+        self.assertAlmostEqual(PW.vd_adjust(1.0, 2), 0.667, places=3)
+        self.assertAlmostEqual(PW.vd_adjust(1.0, 3), 0.750, places=3)
+        self.assertAlmostEqual(PW.vd_adjust(1.0, 4), 0.800, places=3)
+        # 負のスコアも中立(0)へ寄る。片側だけ縮めると符号で扱いが変わる
+        self.assertAlmostEqual(PW.vd_adjust(-1.0, 1), -0.500, places=3)
+        # **「評価できていない」を「評価して0点」に化けさせない**
+        self.assertIsNone(PW.vd_adjust(None, 3))
+        self.assertIsNone(PW.vd_adjust(0.5, 0))
+
     def test_v3_respects_sector_cap_across_days(self):
         """同一セクターの同時保有上限も日を跨いで効く。"""
         week = ["2026-09-15", "2026-09-16", "2026-09-17"]

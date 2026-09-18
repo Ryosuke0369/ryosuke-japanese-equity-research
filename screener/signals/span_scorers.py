@@ -497,6 +497,18 @@ def s5_progress(con, ticker, as_of=None):
             ev += "（1Qあたり %.0f）" % imp_rest_per_q
         if dead:
             ev += " ← **死んだガイダンス（残存四半期が暗黙の赤字）**"
+    # **S5b: 陳腐化は分離して 0点・表示のみにする**（§36）。
+    # 方向が測れていないものに符号を与えない —— 6466 TVE（上方修正で解消）と
+    # 3441 山王（通期未達）が同じ進捗113%で逆の結末になっている。
+    # 採否は policy 側（evidence_strict 規剉6）の仕事。ここでは数値を渡すだけ。
+    dead_sig = None
+    if dead:
+        dead_sig = {"signal": "S5b", "score": 0.0,
+                    "evidence": ("ガイダンスの陳腐化：Q1〜Q%d累計OP %.0f が通期会社予想 %.0f を"
+                                 "超え、残存 %d四半期の暗黙の営業利益が %.0f百万円（赤字）"
+                                 % (span, cum_op, fc_op, 4 - span, imp_rest)),
+                    "elapsed_q": span, "implied_rest_op": round(imp_rest, 1),
+                    "progress_op": round(prog_o_pace, 4)}
     return _result(score, True, ev,
                    {"progress_sales": round(prog_s, 4),
                     "expected": round(expected, 4), "ratio": round(ratio, 3),
@@ -512,7 +524,7 @@ def s5_progress(con, ticker, as_of=None):
                     "guidance_dead": bool(dead),
                     "forecast_op": fc_op, "cum_op": (None if cum_op is None
                                                      else round(cum_op, 1))},
-                   guidance_dead=bool(dead),
+                   guidance_dead=bool(dead), dead_signal=dead_sig,
                    mode=SM.granularity_mode(span), span_q=span, period=pe,
                    peer_period=None,
                    period_note=("根拠期間 FY%d-Q1〜%s の累計（リンクは最新期の書類）"

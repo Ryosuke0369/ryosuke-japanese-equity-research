@@ -531,6 +531,7 @@ def collect(pcon, mcon, as_of, days=WINDOW_DAYS, floor=SCORE_FLOOR,
         s1shrink = _s1.get("shrink_signal") or {}
         _s5 = scores.get("S5") if isinstance(scores.get("S5"), dict) else {}
         s5d = (_s5.get("details") or {}) if _s5.get("period") else {}
+        s5dead = _s5.get("dead_signal") or {}
         risks = risk_disclosures(mcon, code, as_of.isoformat())
         # 会計処理変更のあった期を使う YoY 系シグナルには比較可能性の注意を出す。
         comp_caution = 1 if (df.get("accounting_change") and any(
@@ -616,6 +617,8 @@ def collect(pcon, mcon, as_of, days=WINDOW_DAYS, floor=SCORE_FLOOR,
             "s5_pace_excess_pt": (s5d or {}).get("pace_excess_pt", ""),
             "s5_implied_rest_op": (s5d or {}).get("implied_rest_op", ""),
             "s5_guidance_dead": ("" if not s5d else int(bool(s5d.get("guidance_dead")))),
+            # S5b 陳腐化（0点・表示のみ・§36）
+            "s5b_dead": (s5dead or {}).get("evidence", ""),
             "risk_flag": " ｜ ".join(risks),
             "doc_kind": doc_kind,
             "doc_period": (top_doc or {}).get("period", ""),
@@ -726,6 +729,8 @@ def render(rows, as_of, days, n_cal, n_err, excluded=None):
                      int(r["s5_elapsed_q"]) / 4.0 * 100, r["s5_pace_excess_pt"],
                      r["s5_implied_rest_op"],
                      "  ← **死んだガイダンス**" if r["s5_guidance_dead"] == 1 else ""))
+        if r["s5b_dead"]:
+            C.log("     S5b(0点)  : %s" % r["s5b_dead"])
         # --- S13 受注。**取得できた銘柄では必ず出す**（§34）。
         # 0点だから表示しない、では情報の損失になる。
         if r["s13_series"]:

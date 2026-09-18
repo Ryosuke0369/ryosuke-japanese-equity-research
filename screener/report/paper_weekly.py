@@ -59,6 +59,38 @@ VB_TRAIL_DAYS = 3           # TP50_TRAIL の残り50%は T+3
 # ---- シャドウC（高閾値版）-----------------------------------------------
 VC_SCORE_THRESHOLD = 0.20   # v2 の 0.10 に対して倍。他は v2 と完全に同一
 
+# ---- シャドウD（採用本数による信頼度縮小）--------------------------------
+# 事前登録: backtest_acceptance_criteria.md P3-2 / calibration_backlog §35b。
+# **初値であり、前向き検証の途中で動かさない**（v3-5 と同じ）。
+#
+# なぜ必要か: 合成スコアは採用シグナルの単純平均なので、採用1本の銘柄は
+# その1本がそのまま合成スコアになる。実測（as_of 2026-09-18・universe_flag=1）
+# で **スコアちょうど ±1.0 が 223銘柄**、上位12銘柄は全員 1.000 の同値で、
+# 順位はコード順の同値処理で決まっていた。**上位帯が順位になっていない。**
+#
+# なぜ下限ルールではなく縮小か: 本数下限は v3-1（シャドウA）が
+# 「3本未満は採用しない」で事前登録済みだが、4週の稼働で**建玉0件**。
+# ハードカットは現行レジームでポートフォリオを全滅させ、かつ強い1本を
+# 丸ごと捨てる。縮小は下限（k→∞ の極限）の連続版で、証拠を捨てない。
+VD_SHRINK_K = 1.0           # 1本 ×0.50 / 2本 ×0.67 / 3本 ×0.75 / 4本 ×0.80
+
+
+def n_available(scores):
+    """採用（available）シグナルの本数。"""
+    return sum(1 for v in (scores or {}).values()
+               if isinstance(v, dict) and v.get("available"))
+
+
+def vd_adjust(score, n):
+    """信頼度縮小。**中立（0）へ寄せるのであって、順位だけを変える操作ではない。**
+
+    n=0（採用0本）は score も None のはずだが、念のため 0 を返さず None のまま
+    通す —— 「評価できていない」を「評価して0点」に化けさせない。
+    """
+    if score is None or not n:
+        return None
+    return score * n / (n + VD_SHRINK_K)
+
 
 def vb_position_size(score):
     """スコア連動のポジション比率。閾値未満は 0（建てない）。"""
@@ -442,6 +474,16 @@ def decide_variant(pcon, mcon, scored, variant, dry_run=False):
     sectors = {r[0]: r[1] for r in pcon.execute("SELECT ticker, sector FROM universe")}
     thr = VC_SCORE_THRESHOLD if variant == "C" else SCORE_THRESHOLD
 
+    def eff(ev):
+        """その variant が**実際に順位付けと閾値判定に使う**スコア。
+
+        D だけ採用本数で縮小する。**素のスコアは snapshot にそのまま残す**
+        ので、あとから両方を再現できる（§35b）。
+        """
+        if variant != "D":
+            return ev["evidence_score"]
+        return vd_adjust(ev["evidence_score"], n_available(ev.get("scores")))
+
     by_day = {}
     for ev in scored:
         by_day.setdefault(ev["entry_date"], []).append(ev)
@@ -449,7 +491,7 @@ def decide_variant(pcon, mcon, scored, variant, dry_run=False):
     frozen, entries = [], []
     for day in sorted(by_day):
         cands = sorted(by_day[day],
-                       key=lambda e: (-(e["evidence_score"] or -1), e["code"]))
+                       key=lambda e: (-(eff(e) or -1), e["code"]))
         allowed, _ma = V2.topix_ma_ok(idx_d, idx_c, day)
         open_rows = mcon.execute(
             "SELECT code, position_size FROM shadow_trades "
@@ -461,7 +503,8 @@ def decide_variant(pcon, mcon, scored, variant, dry_run=False):
                     + sum(e["size"] for e in entries))
         used = 0
         for ev in cands:
-            s_ = ev["evidence_score"]
+            s_raw = ev["evidence_score"]
+            s_ = eff(ev)                     # 判定に使う値（D は縮小後）
             size = (vb_position_size(s_) if variant == "B" else POS_FRACTION)                 if s_ is not None else 0.0
             if s_ is None or s_ < thr:
                 dec = "skip_score"
@@ -475,10 +518,19 @@ def decide_variant(pcon, mcon, scored, variant, dry_run=False):
                 dec = "entry"
                 used += 1
                 exposure += size
+            nav = n_available(ev.get("scores"))
             rec = {"as_of": day, "code": ev["code"], "event_date": ev["event_date"],
-                   "entry_date": day, "evidence_score": s_,
-                   "n_available": sum(1 for v in ev["scores"].values()
-                                      if isinstance(v, dict) and v.get("available")),
+                   "entry_date": day,
+                   # **素のスコアを入れる。** 他 variant と同じ量にしておかないと
+                   # 横比較ができない。縮小後は note に残す（n_available があるので
+                   # どちらからでも再現できる）。
+                   "evidence_score": s_raw,
+                   "n_available": nav,
+                   "note": (None if variant != "D" else
+                            "k=%.1f raw=%s adj=%s"
+                            % (VD_SHRINK_K,
+                               "-" if s_raw is None else "%.3f" % s_raw,
+                               "-" if s_ is None else "%.3f" % s_)),
                    "sector": sectors.get(ev["code"]), "decision": dec, "size": size}
             frozen.append(rec)
             if dec == "entry":
@@ -490,10 +542,10 @@ def decide_variant(pcon, mcon, scored, variant, dry_run=False):
             mcon.execute(
                 "INSERT OR IGNORE INTO shadow_snapshots (variant, as_of, code, "
                 " event_date, entry_date, evidence_score, n_available, sector, "
-                " decision, frozen_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
+                " decision, decision_note, frozen_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
                 (variant, r["as_of"], r["code"], r["event_date"], r["entry_date"],
                  r["evidence_score"], r["n_available"], r["sector"], r["decision"],
-                 C.utcnow()))
+                 r.get("note"), C.utcnow()))
         for e in entries:
             sid = mcon.execute(
                 "SELECT snapshot_id FROM shadow_snapshots WHERE variant=? "
@@ -630,7 +682,7 @@ def main(argv=None):
                 d3[r["decision"]] = d3.get(r["decision"], 0) + 1
             C.log("  [v3シャドウ] 建玉 %d / %s"
                   % (len(e3), " ".join("%s=%d" % kv for kv in sorted(d3.items()))))
-            for var in ("B", "C"):
+            for var in ("B", "C", "D"):
                 fx, ex = decide_variant(pcon, mcon, scored, var, a.dry_run)
                 dx = {}
                 for r in fx:

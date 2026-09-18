@@ -93,5 +93,47 @@ class TestDeadGuidance(unittest.TestCase):
         self.assertFalse(d["guidance_dead"])
 
 
+class TestS5bUnscored(unittest.TestCase):
+    """§36: 陳腐化は加点しない。数値は S5b として 0点で残す。"""
+
+    def _score(self, con, as_of):
+        import sys as _s
+        from screener.report import backtest_eval as V1
+        root = str(V1._external_root())
+        if root not in _s.path:
+            _s.path.insert(0, root)
+        from module_b.run_scorers import SCORERS_ALL
+        from screener.signals import span_runner as SR
+        return SR.score_ticker(con, "T", SCORERS_ALL, as_of=as_of,
+                               policy="evidence_strict")
+
+    def test_陳腐化したS5は加点されずS5bに残る(self):
+        con = _db(2026, cum_sales=5302.1, cum_op=928.5,
+                  fc_sales=6800.0, fc_op=820.0, fym=10)
+        r = SP.s5_progress(con, "T", as_of=date(2026, 9, 18))
+        self.assertTrue(r["guidance_dead"])
+        self.assertIsNotNone(r["dead_signal"])
+        self.assertEqual(r["dead_signal"]["score"], 0.0)
+        self.assertIn("陳腐化", r["dead_signal"]["evidence"])
+        # policy 側で不採用になる
+        s5 = self._score(con, date(2026, 9, 18))["S5"]
+        self.assertFalse(s5["available"])
+        self.assertEqual(s5["score"], 0.0)
+        self.assertIn("guidance_dead_unscored", s5["strict_flags"])
+        # **減点にはしない。**方向が測れていないものに符号を与えない
+        self.assertGreaterEqual(s5["score"], 0.0)
+
+    def test_陳腐化していないS5は従来どおり点になる(self):
+        # 6466 型: 上方修正後で進捗が正常域に戻っている
+        con = _db(2026, cum_sales=8543.5, cum_op=1076.6,
+                  fc_sales=11200.0, fc_op=1150.0, fym=9)
+        r = SP.s5_progress(con, "T", as_of=date(2026, 9, 18))
+        self.assertFalse(r["guidance_dead"])
+        self.assertIsNone(r["dead_signal"])
+        self.assertAlmostEqual(r["details"]["implied_rest_op"], 73.4, places=1)
+        s5 = self._score(con, date(2026, 9, 18))["S5"]
+        self.assertNotIn("guidance_dead_unscored", s5.get("strict_flags") or [])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
