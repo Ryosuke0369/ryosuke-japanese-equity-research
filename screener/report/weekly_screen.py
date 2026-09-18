@@ -45,6 +45,7 @@ except ImportError:                                     # pragma: no cover
     from screener import common as C
 
 from screener.report import backtest_eval as V1
+from screener.report import s13_series as S13S
 from screener.signals import freshness as FR
 
 WINDOW_DAYS = 30
@@ -524,6 +525,12 @@ def collect(pcon, mcon, as_of, days=WINDOW_DAYS, floor=SCORE_FLOOR,
         # 開示の信頼性・注意フラグ。**すべて表示のみ**（除外は security_flags のみ）。
         df = disclosure_flag(mcon, code, as_of.isoformat())
         s13 = s13_of(mcon, code, as_of.isoformat())
+        s13ser = S13S.quarterly_series(mcon, pcon, code, as_of.isoformat())
+        _s1 = scores.get("S1") if isinstance(scores.get("S1"), dict) else {}
+        s1d = _s1.get("sales_direction") or {}
+        s1shrink = _s1.get("shrink_signal") or {}
+        _s5 = scores.get("S5") if isinstance(scores.get("S5"), dict) else {}
+        s5d = (_s5.get("details") or {}) if _s5.get("period") else {}
         risks = risk_disclosures(mcon, code, as_of.isoformat())
         # 会計処理変更のあった期を使う YoY 系シグナルには比較可能性の注意を出す。
         comp_caution = 1 if (df.get("accounting_change") and any(
@@ -591,6 +598,24 @@ def collect(pcon, mcon, as_of, days=WINDOW_DAYS, floor=SCORE_FLOOR,
             "s13_orders_yoy": s13.get("orders_yoy_pct"),
             "s13_doc_id": s13.get("doc_id") or "",
             "s13_doc_date": s13.get("doc_date") or "",
+            # S13 四半期単独推移（2026-09-18・§34）。**合成スコアには接続しないが
+            # 取得できた銘柄では必ず表示する。**0点と非表示は別の話。
+            "s13_series": s13ser.get("text", ""),
+            "s13_series_note": s13ser.get("note", ""),
+            "s13_bb_latest": (s13ser["rows"][-1]["bb"]
+                              if s13ser.get("rows") and s13ser["rows"][-1]["bb"] is not None
+                              else ""),
+            # S1 売上方向ガード（§32）
+            "s1_sales_direction": (s1d or {}).get("status", ""),
+            "s1_sales_quarter_level": ("" if not s1d else int(bool(s1d.get("quarter_level")))),
+            "s1_sales_trend": (s1d or {}).get("trend_text", ""),
+            "s1b_shrink": (s1shrink or {}).get("evidence", ""),
+            # S5 進捗率（§33）
+            "s5_progress_op": (s5d or {}).get("progress_op", ""),
+            "s5_elapsed_q": (s5d or {}).get("elapsed_q", ""),
+            "s5_pace_excess_pt": (s5d or {}).get("pace_excess_pt", ""),
+            "s5_implied_rest_op": (s5d or {}).get("implied_rest_op", ""),
+            "s5_guidance_dead": ("" if not s5d else int(bool(s5d.get("guidance_dead")))),
             "risk_flag": " ｜ ".join(risks),
             "doc_kind": doc_kind,
             "doc_period": (top_doc or {}).get("period", ""),
@@ -685,6 +710,28 @@ def render(rows, as_of, days, n_cal, n_err, excluded=None):
             C.log("     開示の注意 : %s" % " / ".join(notes))
             if r["ac_matched"]:
                 C.log("       会計根拠 : %s" % r["ac_matched"][:150])
+        # --- S1 売上方向ガード（§32）。**S1 が発火しているときは必ず出す。**
+        if r["s1_sales_trend"]:
+            C.log("     売上の方向 : %s  [Q単独確認 %s]"
+                  % (r["s1_sales_direction"],
+                     "済" if r["s1_sales_quarter_level"] == 1 else "**未**（累計 span での判定）"))
+            C.log("       売上推移 : %s" % r["s1_sales_trend"])
+        if r["s1b_shrink"]:
+            C.log("     S1b(0点)   : %s" % r["s1b_shrink"])
+        # --- S5 進捗率（§33）
+        if r["s5_elapsed_q"] != "" and r["s5_progress_op"] not in ("", None):
+            C.log("     進捗率(S5) : OP進捗 %.0f%% / 経過 %d四半期(期待 %.0f%%) / 超過 %s pt"
+                  " / 暗黙の残存 OP %s%s"
+                  % (float(r["s5_progress_op"]) * 100, int(r["s5_elapsed_q"]),
+                     int(r["s5_elapsed_q"]) / 4.0 * 100, r["s5_pace_excess_pt"],
+                     r["s5_implied_rest_op"],
+                     "  ← **死んだガイダンス**" if r["s5_guidance_dead"] == 1 else ""))
+        # --- S13 受注。**取得できた銘柄では必ず出す**（§34）。
+        # 0点だから表示しない、では情報の損失になる。
+        if r["s13_series"]:
+            C.log("     受注(S13・0点): %s" % r["s13_series"])
+            if r["s13_series_note"]:
+                C.log("       注      : %s" % r["s13_series_note"])
         if r["s13_order_backlog_yoy"] is not None or r["s13_orders_yoy"] is not None:
             C.log("     受注残(参考): 残高YoY %s%% / 受注YoY %s%%  [S13・0点・%s]"
                   % (r["s13_order_backlog_yoy"], r["s13_orders_yoy"],

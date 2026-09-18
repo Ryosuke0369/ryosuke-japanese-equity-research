@@ -39,6 +39,7 @@ except ImportError:                             # pragma: no cover
     from screener import common as C            # noqa: F401
 
 from screener.projection import span_matched as SM
+from screener.signals import sales_direction as SD
 
 DAYS_PER_Q = 91          # 別枠 data_access と同じ
 MIN_BASE = 30            # 契約負債の少額無効ライン（百万円）。別枠と同じ
@@ -215,11 +216,31 @@ def s1_dso(con, ticker, as_of=None):
     if s_now < s_prev:
         score *= 0.5
         confirm = "（売上減少下のため半減）"
+    # 売上方向ガード（2026-09-18、calibration_backlog §32）。
+    # **ここでは score を変えない**—— 採否は policy（evidence_strict）の
+    # 仕事にする。事前登録済みの測定（paper / stale_audit / sanity_check）は
+    # prefer_span を明示しているので、黙って測定条件が変わらない。
+    sd = SD.evaluate(con, ticker, cur["period_end"], vis)
     ev = ("DSO %.0f日→%.0f日（%+.1f%%）／調整後売上 %.0f→%.0f百万円%s"
           % (dso_prev, dso_now, change * 100, s_prev, s_now, confirm))
+    ev += "／売上方向 %s（%s）" % (sd["status"], sd["note"])
+    shrink = None
+    if sd["status"] == "down" and score > 0:
+        # **分離した別シグナル（S1b）として残す。**減点にしない理由は
+        # calibration_backlog §32-2。合成スコアには乗せない（0点・表示のみ）。
+        shrink = {"signal": "S1b", "score": 0.0,
+                  "evidence": ("縮小に伴う債権減：DSO %.0f日→%.0f日（%+.1f%%）だが "
+                               "売上は減少（%s）。S1 の加点は取り消した"
+                               % (dso_prev, dso_now, change * 100, sd["trend_text"])),
+                  "dso_change_pct": round(change, 4),
+                  "sales_trend": sd["trend"]}
     return _result(score, True, ev,
                    {"dso_now": round(dso_now, 1), "dso_prev_year": round(dso_prev, 1),
-                    "change_pct": round(change, 4)},
+                    "change_pct": round(change, 4),
+                    "sales_direction": sd["status"],
+                    "sales_direction_quarter_level": sd["quarter_level"],
+                    "sales_trend_text": sd["trend_text"]},
+                   sales_direction=sd, shrink_signal=shrink,
                    mode=cur["mode"], span_q=cur["span_q"],
                    period=cur["period_end"], peer_period=cur["peer_period"],
                    peer_synthesized=cur.get("peer_synthesized", 0),
@@ -442,14 +463,56 @@ def s5_progress(con, ticker, as_of=None):
     else:
         prog_o, ratio, op_note = None, ratio_s, ""
     score = clamp((ratio - 1.0) / 0.25)
+
+    # ---- 経過四半期数で正規化した OP 進捗と、残存四半期の暗黙利益
+    # （2026-09-18・calibration_backlog §33）。
+    # 季節性シェアは「過去年度の平均的な出方」でしかなく、過去年度が
+    # 取れない銘柄では 0.25/0.50/0.75 に落ちる。**会社予想が死んでいる
+    # かどうかは、残りの四半期でいくら稼ぐことになっているかを引き算
+    # すれば直接分かる**。累計 OP が通期予想を超えていれば、暗黙の残存
+    # 四半期は赤字という不合理になる。
+    pace = span / 4.0
+    prog_o_pace = imp_rest = imp_rest_per_q = None
+    dead = False
+    if fc_op and fc_op > 0 and cum_op is not None:
+        prog_o_pace = cum_op / fc_op
+        imp_rest = fc_op - cum_op
+        if span < 4:
+            imp_rest_per_q = imp_rest / (4 - span)
+        dead = imp_rest < 0
+    pace_excess_pt = (None if prog_o_pace is None
+                      else (prog_o_pace - pace) * 100.0)
+
     rep = ("／報告値ベース売上進捗 %.1f%%" % (cum_sales_rep / fc_sales * 100)
            if fc_sales and cum_sales_rep != cum_sales else "")
     ev = ("Q1〜Q%d累計：調整後売上進捗 %.1f%%%s（季節性期待 %.0f%%）%s "
           "→ 期待比 %.2f倍"
           % (span, prog_s * 100, op_note, expected * 100, rep, ratio))
+    if prog_o_pace is not None:
+        ev += ("／OP進捗 %.0f%%（経過四半期比 %.0f%%、超過 %+.0fpt）"
+               "／暗黙の残存 %d四半期 OP %.0f百万円"
+               % (prog_o_pace * 100, pace * 100, pace_excess_pt,
+                  4 - span, imp_rest))
+        if imp_rest_per_q is not None:
+            ev += "（1Qあたり %.0f）" % imp_rest_per_q
+        if dead:
+            ev += " ← **死んだガイダンス（残存四半期が暗黙の赤字）**"
     return _result(score, True, ev,
                    {"progress_sales": round(prog_s, 4),
-                    "expected": round(expected, 4), "ratio": round(ratio, 3)},
+                    "expected": round(expected, 4), "ratio": round(ratio, 3),
+                    "progress_op": (None if prog_o_pace is None
+                                    else round(prog_o_pace, 4)),
+                    "elapsed_q": span, "pace": round(pace, 4),
+                    "pace_excess_pt": (None if pace_excess_pt is None
+                                       else round(pace_excess_pt, 1)),
+                    "implied_rest_op": (None if imp_rest is None
+                                        else round(imp_rest, 1)),
+                    "implied_rest_op_per_q": (None if imp_rest_per_q is None
+                                              else round(imp_rest_per_q, 1)),
+                    "guidance_dead": bool(dead),
+                    "forecast_op": fc_op, "cum_op": (None if cum_op is None
+                                                     else round(cum_op, 1))},
+                   guidance_dead=bool(dead),
                    mode=SM.granularity_mode(span), span_q=span, period=pe,
                    peer_period=None,
                    period_note=("根拠期間 FY%d-Q1〜%s の累計（リンクは最新期の書類）"

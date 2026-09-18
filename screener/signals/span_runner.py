@@ -21,6 +21,11 @@
       3. S1/S2 で当期/前年の売上比が 2.0 以上・0.5 以下（連結範囲変更・M&A 由来の
          前年比破壊の疑い）は不採用
       4. S1 の DSO がどちらかの期で 1日未満（売掛金が売上に対して極小で比が壊れる）は不採用
+      5. S1 の売上方向ガード（2026-09-18・§32）。最新の売上タイルが qoq / yoy とも
+         非正なら不採用（`sales_shrinking`）。**売上減少に伴う債権減は「改善」ではなく
+         「縮小」**。方向が確認できない／累計 span でしか確認できない場合は不採用に
+         せず `strict_notes` に警告を残す（`sales_direction_unverified` /
+         `sales_direction_cumulative_only`）
     不採用にしたシグナルは available=False・score=0 にし、**消さずに** `strict_flags` と
     `raw_score` を残す（監査のため）。
 
@@ -167,6 +172,22 @@ def apply_strict(con, ticker, sid, r, src, as_of, fym):
             det = r.get("details") or {}
             if min(det.get("dso_now", 99), det.get("dso_prev_year", 99)) < DSO_MIN_DAYS:
                 flags.append("degenerate_dso")
+            # 5. 売上方向ガード（2026-09-18・§32）。**売上が縮んでいるときの
+            #    DSO 改善は「改善」ではなく「縮小」**。加点しない。
+            #    判定は最新の売上タイル（sales_direction.evaluate）で行う ——
+            #    根拠期だけを見ると、より新しい四半期が DB にあっても無視する
+            #    ことになり、累計値で判定して単独値の減速を見落とす穴と同じになる。
+            sd = r.get("sales_direction") or {}
+            st = sd.get("status")
+            if raw > 0 and st == "down":
+                flags.append("sales_shrinking")
+            elif raw > 0 and st == "unverified":
+                notes.append("sales_direction_unverified")
+            elif raw > 0 and st == "up" and not sd.get("quarter_level"):
+                # Q単独では確認できていない（累計 span での判定）。
+                # 不採用にはしないが、人の目に見えるところに必ず出す。
+                notes.append("sales_direction_cumulative_only(%s)"
+                             % (sd.get("latest") or {}).get("period_end"))
     r["raw_score"] = raw
     r["strict_flags"] = flags
     r["strict_notes"] = notes
