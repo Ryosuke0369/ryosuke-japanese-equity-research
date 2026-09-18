@@ -183,6 +183,15 @@ def apply_strict(con, ticker, sid, r, src, as_of, fym):
                 flags.append("sales_shrinking")
             elif raw > 0 and st == "unverified":
                 notes.append("sales_direction_unverified")
+            elif raw > 0 and st == "up" and (sd.get("latest") or {}).get("qoq_pct") is not None                     and (sd.get("latest") or {}).get("qoq_pct") <= 0:
+                # MODE="any"（qoq **または** yoy が正なら up）では、qoq が
+                # マイナスでも yoy が正なら通る。**通すが黙らない。**
+                # 6838 はここに落ちる（Q3単独 qoq -16.7% / yoy +17.4%）。
+                notes.append("sales_qoq_negative(%.1f%%)"
+                             % (sd["latest"]["qoq_pct"]))
+                if not sd.get("quarter_level"):
+                    notes.append("sales_direction_cumulative_only(%s)"
+                                 % (sd.get("latest") or {}).get("period_end"))
             elif raw > 0 and st == "up" and not sd.get("quarter_level"):
                 # Q単独では確認できていない（累計 span での判定）。
                 # 不採用にはしないが、人の目に見えるところに必ず出す。

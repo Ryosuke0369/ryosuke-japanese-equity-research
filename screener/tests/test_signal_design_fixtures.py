@@ -82,22 +82,41 @@ class TestSignalDesign(unittest.TestCase):
                                policy=policy)
 
     # ------------------------------------------------------------ §32
-    def test_6838_売上方向ガードで_S1が加点されない(self):
+    def test_6838_売上方向ガードで_S1が黙って満点にならない(self):
+        """**発火しない、または警告つきになる。** どちらかであることを固定する。
+
+        MODE="any"（指示の文言どおり qoq **または** yoy が正なら up）では
+        6838 は Q3単独 qoq -16.7% / yoy +17.4% で up になり、S1 は残る。
+        その場合でも `sales_qoq_negative` の警告が必ず付く。
+        """
         r = self.score("6838")
         s1 = r["S1"]
         sd = s1.get("sales_direction") or {}
-        # 方向が down なら不採用、確認不能/累計のみなら警告つき。
-        # **どちらにせよ「黙って満点」にはならない。**
         if sd.get("status") == "down":
             self.assertFalse(s1["available"], s1.get("evidence"))
             self.assertIn("sales_shrinking", s1["strict_flags"])
             self.assertEqual(s1["score"], 0.0)
-        else:
-            notes = ",".join(s1.get("strict_notes") or [])
-            self.assertTrue(
-                ("sales_direction_cumulative_only" in notes
-                 or "sales_direction_unverified" in notes),
-                "Q単独で確認できていないのに警告が出ていない: %r" % (s1,))
+            return
+        notes = ",".join(s1.get("strict_notes") or [])
+        self.assertTrue(
+            ("sales_qoq_negative" in notes
+             or "sales_direction_cumulative_only" in notes
+             or "sales_direction_unverified" in notes),
+            "警告なしで S1 が通っている: %r" % (s1.get("strict_notes"),))
+        # 満額では通らない（直前四半期より古い根拠なので ×0.5）
+        self.assertLess(s1["score"], s1["raw_score"])
+
+    def test_6838_ANDの読みなら不採用になる(self):
+        """qoq と yoy の**両方**を要求する読み（MODE="all"）では down になる。
+
+        どちらの読みを採るかは設計判断（§32-3 に実測を記録）。テストは
+        **選択で結論が変わること自体**を固定して、黙って切り替わらないようにする。
+        """
+        d = SD.evaluate(self.con, "6838", mode="all")
+        self.assertEqual(d["status"], "down", d["note"])
+        self.assertTrue(d["quarter_level"])
+        self.assertLess(d["latest"]["qoq_pct"], 0)
+        self.assertGreater(d["latest"]["yoy_pct"], 0)
 
     def test_6838_修正前は満点だったことを記録する(self):
         # prefer_span（旧既定）ではガードが効かない＝症例が再現する側。

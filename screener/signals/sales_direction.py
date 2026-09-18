@@ -122,8 +122,17 @@ def _pct(now, before):
     return (now / before - 1) * 100.0
 
 
-def _direction_at(ts, i):
+# どちらの読みで「売上が伸びている」とみなすか（§32-3 に実測を記録）。
+#   "any" : qoq **または** yoy が正なら up（指示の文言どおり）
+#   "all" : qoq と yoy の**取れたものすべて**が正でなければ up にしない
+# 6838 はこの選択で結論が変わる（Q3単独 qoq -16.7% / yoy +17.4%）ので、
+# **定数1つで切り替えられる形にして、実測を添えて選べるようにする。**
+MODE = "any"
+
+
+def _direction_at(ts, i, mode=None):
     """タイル i の qoq / yoy（run-rate ベース、%）と判定。"""
+    mode = mode or MODE
     cur = ts[i]
     p, y = _prev_tile(ts, i), _yoy_tile(ts, i)
     qoq = _pct(cur["run_rate"], p["run_rate"] if p else None)
@@ -131,7 +140,8 @@ def _direction_at(ts, i):
     have = [x for x in (qoq, yoy) if x is not None]
     if not have:
         status = "unverified"
-    elif any(x > 0 for x in have):
+    elif (any(x > 0 for x in have) if mode == "any"
+          else all(x > 0 for x in have)):
         status = "up"
     else:
         status = "down"
@@ -141,7 +151,7 @@ def _direction_at(ts, i):
             "yoy_pct": None if yoy is None else round(yoy, 1),
             "qoq_peer": p["period_end"] if p else None,
             "yoy_peer": y["period_end"] if y else None,
-            "status": status,
+            "status": status, "mode": mode,
             "quarter_level": cur["span_q"] == 1}
 
 
@@ -166,7 +176,7 @@ def trend_text(ts, n=TREND_N):
     return " → ".join(parts)
 
 
-def evaluate(con, ticker, evidence_period=None, vis=None):
+def evaluate(con, ticker, evidence_period=None, vis=None, mode=None):
     """S1 の売上方向ガード。
 
     戻り値:
@@ -183,12 +193,12 @@ def evaluate(con, ticker, evidence_period=None, vis=None):
         return {"status": "unverified", "quarter_level": False,
                 "latest": None, "evidence": None, "trend": [], "trend_text": "",
                 "note": "売上の四半期系列が無い"}
-    latest = _direction_at(ts, len(ts) - 1)
+    latest = _direction_at(ts, len(ts) - 1, mode)
     ev = None
     if evidence_period:
         for i, t in enumerate(ts):
             if t["period_end"] == evidence_period:
-                ev = _direction_at(ts, i)
+                ev = _direction_at(ts, i, mode)
                 break
     def _fmt(d):
         if not d:
