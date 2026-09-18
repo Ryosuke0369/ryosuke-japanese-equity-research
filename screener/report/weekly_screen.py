@@ -526,6 +526,8 @@ def collect(pcon, mcon, as_of, days=WINDOW_DAYS, floor=SCORE_FLOOR,
         df = disclosure_flag(mcon, code, as_of.isoformat())
         s13 = s13_of(mcon, code, as_of.isoformat())
         s13ser = S13S.quarterly_series(mcon, pcon, code, as_of.isoformat())
+        n_adopted = sum(1 for v in scores.values()
+                        if isinstance(v, dict) and v.get("available"))
         _s1 = scores.get("S1") if isinstance(scores.get("S1"), dict) else {}
         s1d = _s1.get("sales_direction") or {}
         s1shrink = _s1.get("shrink_signal") or {}
@@ -574,6 +576,15 @@ def collect(pcon, mcon, as_of, days=WINDOW_DAYS, floor=SCORE_FLOOR,
                                      (e["matched_text"] or "")[:60])
                 for e in s12_ev),
             "n_available": len(fired),
+            # **採用（available）シグナルの本数。** `n_available` は発火本数
+            # （score>0 かつ S12 を含む）で、合成スコアの分母とは別物。
+            # 縮小（§35b）の分母はこちら。両方を出さないと再現できない。
+            "n_adopted": n_adopted,
+            # 信頼度縮小後のスコア（k=1）。**表示のみ・製品のフィルタは変えない。**
+            # 方式B を保つため S12 は縮小後に足す（分母は変えない）。
+            "score_adj_k1": (None if base is None else
+                             round(base * n_adopted / (n_adopted + 1.0)
+                                   + (s12 or 0.0), 3)) if n_adopted else None,
             "fired": ",".join(fired),
             "divergence": " / ".join(div) or "-",
             "evidence": " ｜ ".join(_evidence_lines(scores)),
