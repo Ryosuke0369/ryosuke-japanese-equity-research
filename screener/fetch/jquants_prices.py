@@ -149,6 +149,57 @@ def backfill_prices(con, fetcher, start: date, end: date, codes: set | None) -> 
     return {"days": n_days, "rows": n_rows, "skipped": n_skipped}
 
 
+def _api_code(code: str) -> str:
+    """内部4桁コード → J-Quants の5桁コード（普通株は末尾0）。5桁はそのまま。"""
+    return code + "0" if len(code) == 4 else code
+
+
+def backfill_prices_by_code(con, fetcher, start: date, end: date, codes) -> dict:
+    """銘柄ごとに from/to で全期間を1リクエスト（+ページ）で取る。
+
+    backfill_prices は日付単位で「その日が埋まっていれば飛ばす」ので、
+    ユニバース拡大で**銘柄が増えた**ときには全日スキップになって何も入らない。
+    増えた銘柄だけを埋めるにはこちらを使う（2026-09-18 上限 3,000億 拡大で追加）。
+    契約範囲の古い端は 400 の message から読んで繰り上げる（推測では埋めない）。
+    """
+    codes = sorted(codes)
+    C.log(f"株価バックフィル(銘柄単位) {start}..{end}: {len(codes)} 銘柄")
+    n_rows = n_empty = 0
+    failed = []
+    for i, code in enumerate(codes, 1):
+        params = {"code": _api_code(code), "from": start.strftime("%Y%m%d"),
+                  "to": end.strftime("%Y%m%d")}
+        try:
+            rows = jq_get(fetcher, EP_BARS, **params)
+        except RuntimeError as e:
+            rng = covered_range(str(e)) if "HTTP 400" in str(e) else None
+            if not (rng and rng[0] and start < rng[0] <= end):
+                failed.append(code)
+                C.log(f"  ! {code}: {e}")
+                continue
+            C.log(f"  契約範囲は {rng[0]} 以降。開始を繰り上げて続行する")
+            start = rng[0]
+            params["from"] = start.strftime("%Y%m%d")
+            rows = jq_get(fetcher, EP_BARS, **params)
+        buf = [(code, r["Date"], r.get("C"), r.get("Vo"), r.get("Va"),
+                r.get("O"), r.get("H"), r.get("L"), r.get("AdjFactor"),
+                r.get("AdjC"), r.get("AdjVo"), r.get("MktCap"))
+               for r in rows if r.get("C") is not None]
+        if not buf:
+            n_empty += 1
+        con.executemany(
+            "INSERT OR REPLACE INTO prices (code, date, close, volume, "
+            " turnover_value, open, high, low, adj_factor, adj_close, "
+            " adj_volume, mktcap) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", buf)
+        n_rows += len(buf)
+        if i % 25 == 0 or i == len(codes):
+            con.commit()
+            C.log(f"  [{i}/{len(codes)}] 累計 {n_rows:,} 行 / 0件 {n_empty} / "
+                  f"失敗 {len(failed)} ({fetcher.n_requests} req)")
+    con.commit()
+    return {"rows": n_rows, "empty": n_empty, "failed": failed, "start": start}
+
+
 def backfill_topix(con, fetcher, start: date, end: date) -> dict:
     """TOPIX は from/to の範囲指定が効くので、月単位でまとめて取る。"""
     C.log(f"TOPIX バックフィル {start}..{end}")
@@ -205,6 +256,9 @@ def main(argv=None) -> int:
                    help="契約プランのレート上限。Free 5 / Light 60 / Standard 120")
     p.add_argument("--all-codes", action="store_true",
                    help="ユニバース外も保存する（既定はユニバース候補∪検証8銘柄）")
+    p.add_argument("--codes-file",
+                   help="--prices を銘柄単位モードにし、このファイル（1行1コード）の"
+                        "銘柄だけを全期間取る。ユニバース拡大で増えた銘柄の追加用")
     a = p.parse_args(argv)
 
     con = C.init_db()
@@ -225,7 +279,16 @@ def main(argv=None) -> int:
 
     run_id = C.start_run(con, SOURCE, end.isoformat())
     try:
-        if a.prices:
+        if a.prices and a.codes_file:
+            with open(a.codes_file, encoding="utf-8-sig") as fh:
+                want = {C.normalise_code(x.strip()) for x in fh if x.strip()}
+            want.discard(None)
+            r = backfill_prices_by_code(con, fetcher, start, end, want)
+            note = (f"prices by code: {len(want)} codes, from {r['start']}, "
+                    f"empty {r['empty']}, failed {len(r['failed'])}")
+            C.finish_run(con, run_id, "failed" if r["failed"] else "ok",
+                         n_saved=r["rows"], note=note)
+        elif a.prices:
             r = backfill_prices(con, fetcher, start, end, codes)
             note = f"prices {r['days']} days"
             if r.get("skipped"):

@@ -289,6 +289,18 @@ def _s(v):
     return None if s in ("", "-", "nan") else s
 
 
+def is_non_common_share(code, name, share_rules) -> bool:
+    """普通株以外の株式種別（優先株式等）か。規則は universe_rules.yaml の
+    exclude_share_classes。
+
+    証券コード5桁目は株式の種類で 0 が普通株。normalise_code は末尾0だけを
+    落とすので、正規化後も5桁のコードは普通株ではない。
+    """
+    if share_rules.get("non_common_code") and len(code or "") == 5:
+        return True
+    return any(p in (name or "") for p in (share_rules.get("by_name_pattern") or []))
+
+
 def apply_universe_rules(con) -> dict:
     """universe_flag と exclude_reason を評価する。
 
@@ -300,10 +312,12 @@ def apply_universe_rules(con) -> dict:
     bad_sectors = set(exc.get("by_name") or [])
     bad_markets = tuple(exc.get("by_market_name") or [])
     patterns = [re.compile(p) for p in (rules.get("exclude_code_patterns") or [])]
+    share = rules.get("exclude_share_classes") or {}
 
     counts = {"universe": 0, "excluded": 0, "pending": 0}
     reasons: dict[str, int] = {}
-    for row in con.execute("SELECT code, market, sector, mktcap, adv20 FROM companies"):
+    for row in con.execute("SELECT code, name, market, sector, mktcap, adv20 "
+                           "FROM companies"):
         code, market = row["code"], row["market"] or ""
         reason = None
         # 大文字化して照合する。同じ市場が 'TOKYO PRO MARKET' と 'PRO Market'
@@ -312,6 +326,10 @@ def apply_universe_rules(con) -> dict:
         market_u = market.upper()
         if any(m.upper() in market_u for m in bad_markets):
             reason = f"市場区分除外({market})"
+        elif is_non_common_share(code, row["name"], share):
+            # 商品種別除外と同じ扱い。優先株式は MktNm が「プライム」のままで
+            # 市場名の除外に掛からない（2026-09-19、25935 伊藤園で判明）。
+            reason = "株式種別除外(優先株式等)"
         elif (row["sector"] or "") in bad_sectors:
             reason = f"業種除外({row['sector']})"
         elif not market and any(p.match(code) for p in patterns):

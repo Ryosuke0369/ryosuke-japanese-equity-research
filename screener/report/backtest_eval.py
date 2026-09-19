@@ -51,6 +51,60 @@ WINDOW = (date(2021, 9, 1), date(2026, 8, 31))
 SHIFTS = (0, -3, 3)
 WIN_RATE_TOLERANCE_PT = 3.0            # シフト間の勝率変動の許容幅
 
+# ---- P3-4 時価総額帯（2026-09-18 事前登録）。境界を結果を見て動かさない ----
+# (帯, 下限, 上限) JPY mn。各帯はちょうど「その拡大で増えた分」:
+#   50-600 = 初版ユニバース / 600-1000 = 08-31 拡大分 / 1000-3000 = 09-18 拡大分。
+# 当時のユニバース条件（min <= mktcap <= max）に揃え、先頭帯だけ下限を含む。
+MKTCAP_BANDS = (("50-600", 5000, 60000),
+                ("600-1000", 60000, 100000),
+                ("1000-3000", 100000, 300000))
+BAND_OUT, BAND_UNKNOWN = "範囲外", "不明"
+
+
+def mktcap_band(mktcap_mn):
+    """時価総額（JPY mn）→ 帯名。記録が無ければ「不明」、どの帯にも無ければ「範囲外」。"""
+    if mktcap_mn is None:
+        return BAND_UNKNOWN
+    for i, (name, lo, hi) in enumerate(MKTCAP_BANDS):
+        if (lo <= mktcap_mn if i == 0 else lo < mktcap_mn) and mktcap_mn <= hi:
+            return name
+    return BAND_OUT
+
+
+def mktcap_at_entry(mcon, ticker, entry_date):
+    """entry_date の**前営業日まで**で最新の時価総額（JPY mn）。無ければ None。
+
+    今日の companies.mktcap で分けると、当時の規模ではなく生き残った後の
+    規模で層別することになる。寄り付きで建てる以上、当日の値も使わない。
+    """
+    r = mcon.execute(
+        "SELECT mktcap FROM prices WHERE code=? AND date<? AND mktcap IS NOT NULL "
+        "ORDER BY date DESC LIMIT 1", (ticker, entry_date)).fetchone()
+    return r[0] if r else None
+
+
+def tag_mktcap_bands(trades, mcon):
+    """各トレードに mktcap_mn_at_entry / mktcap_band を付ける（その場で書き換える）。"""
+    cache = {}
+    for t in trades:
+        key = (t["ticker"], t["entry_date"])
+        if key not in cache:
+            cache[key] = mktcap_at_entry(mcon, *key)
+        t["mktcap_mn_at_entry"] = cache[key]
+        t["mktcap_band"] = mktcap_band(cache[key])
+    return trades
+
+
+def band_names():
+    return [b[0] for b in MKTCAP_BANDS] + [BAND_OUT, BAND_UNKNOWN]
+
+
+def _main_db():
+    """本体DB（prices.mktcap を持つ）を読み取り専用で開く。"""
+    import sqlite3
+    path = os.path.join(C.DATA_DIR, "screener.db").replace("\\", "/")
+    return sqlite3.connect("file:%s?mode=ro" % path, uri=True)
+
 
 def _external_root():
     for base in (Path(__file__).resolve().parents[2],):
@@ -87,6 +141,20 @@ def run_one(shift):
             r["exit_k"] = int(r["exit_k"])
             r["ret"] = float(r["ret"])
             trades.append(r)
+
+    # P3-4: 時価総額帯を付けて記録する。別枠の backtest_trades.csv は触らず、
+    # 帯つきの写しを横に置く（拡大前後の効果を後から分けて読めるように）。
+    mcon = _main_db()
+    try:
+        tag_mktcap_bands(trades, mcon)
+    finally:
+        mcon.close()
+    if trades:
+        with open(out / "backtest_trades_banded.csv", "w", newline="",
+                  encoding="utf-8-sig") as fh:
+            w = csv.DictWriter(fh, fieldnames=list(trades[0].keys()))
+            w.writeheader()
+            w.writerows(trades)
     return res, trades
 
 
@@ -149,6 +217,34 @@ def _exit_date(con, t):
     return dates[want] if len(dates) > want else dates[-1]
 
 
+BAND_MIN_TRADES = 100                  # §4: 1層100件未満は合否材料にしない
+
+
+def band_report(trades, con, entry_n=MAIN_ENTRY, exit_k=MAIN_EXIT):
+    """P3-4 時価総額帯ごとの5項目。**記述統計のみ**（合否は全体の主セル）。
+
+    trades は tag_mktcap_bands 済みであること。MDD は帯内のトレードだけで
+    組んだ 10% 固定の資産曲線（evaluate と同じ定義）。
+    """
+    C.log("  帯          trades   win%   期待値(純)  TOPIX超過   MDD      上位5集中")
+    for band in band_names():
+        sub = [t for t in trades if t.get("mktcap_band") == band]
+        m = evaluate(sub, con, entry_n, exit_k)
+        if not m:
+            C.log("  %-10s %7s" % (band, "0"))
+            continue
+        C.log("  %-10s %7s  %5.1f  %+10.4f  %s  %+.4f  %s%s"
+              % (band, format(m["n_trades"], ","), m["win_rate"] * 100,
+                 m["expectancy_net"],
+                 "%+9.4f" % m["excess_vs_topix"] if m["excess_vs_topix"] is not None
+                 else "      n/a",
+                 m["max_drawdown"],
+                 "%.3f" % m["top5_profit_share"] if m["top5_profit_share"] is not None
+                 else "n/a",
+                 "" if m["n_trades"] >= BAND_MIN_TRADES
+                 else "  (<%d件: 合否材料にしない)" % BAND_MIN_TRADES))
+
+
 def verdict(m):
     """事前登録 §2 の5項目。1つでも欠ければ不合格。"""
     checks = [
@@ -208,6 +304,11 @@ def main(argv=None):
                 C.log("  T-%-3d T+%-2d %7s  %5.1f  %10.4f  %10.4f"
                       % (n, k, format(g["n_trades"], ","), g["win_rate"] * 100,
                          g["expectancy_gross"], g["expectancy_net"]))
+
+    C.log("")
+    C.log("=== 時価総額帯別 T-%d / T+%d（P3-4・記述統計・合否には使わない）==="
+          % (MAIN_ENTRY, MAIN_EXIT))
+    band_report(base["trades"], base["con"])
 
     if not a.quick:
         C.log("")

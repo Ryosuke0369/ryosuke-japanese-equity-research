@@ -167,7 +167,8 @@ def index_range(con, fetcher, start: date, end: date,
 # ------------------------------------------------------------------ pass 2
 def download_pending(con, fetcher, limit: int | None = None,
                      codes: set[str] | None = None,
-                     subtypes: set[str] | None = None) -> dict:
+                     subtypes: set[str] | None = None,
+                     since: str | None = None) -> dict:
     """未取得の書類を落とす。取得対象の絞り込みは**ここ**で行う。
 
     索引は全上場銘柄を持っているので、codes を渡さないと対象外の会社まで
@@ -178,6 +179,9 @@ def download_pending(con, fetcher, limit: int | None = None,
     subtypes は書類種別(docTypeCode)の絞り込み。四半期報告書(140/150)だけを
     先に埋める、のように「何を今欲しいか」で取得順を決めるために要る。
     絞っても既取得判定は変わらないので、後から広げれば残りが差分で入る。
+
+    since は提出日の下限(YYYY-MM-DD)。索引は 2022-06 まで遡って持っているので、
+    ユニバース拡大の差分を「3年分」に限りたいときに要る（2026-09-18 追加）。
     """
     rows = con.execute(
         "SELECT id, code, date, doc_id, type, subtype FROM filings "
@@ -188,9 +192,13 @@ def download_pending(con, fetcher, limit: int | None = None,
         rows = [r for r in rows if r["code"] in codes]
     if subtypes is not None:
         rows = [r for r in rows if r["subtype"] in subtypes]
+    if since:
+        rows = [r for r in rows if r["date"] >= since]
     if limit:
         rows = rows[:int(limit)]
     filt = "" if subtypes is None else f" / 種別 {','.join(sorted(subtypes))} に限定"
+    if since:
+        filt += f" / 提出日 {since} 以降"
     C.log(f"EDINET download: {len(rows)} pending document(s) "
           f"(索引済みの未取得 {n_all} 件のうち、取得対象は {len(rows)} 件{filt})")
     ok = failed = 0
@@ -296,6 +304,11 @@ def main(argv=None) -> int:
                    help="日次用: 直近N日を再索引（当日中に増えた提出も拾う）+ 直近30日の"
                         "欠損日を補完 → 現ユニバースの未取得を取得。2026-09-13 に"
                         "8/31 で停止していたのを受けて追加")
+    p.add_argument("--codes-file",
+                   help="取得対象を、このファイルに1行1コードで書いた銘柄に限る"
+                        "（例: ユニバース拡大で新たに入った銘柄だけの差分取得）")
+    p.add_argument("--download-since", metavar="YYYY-MM-DD",
+                   help="download pass を提出日がこの日以降の書類に限る")
     p.add_argument("--min-interval", type=float, default=1.2,
                    help="EDINETへの最短リクエスト間隔(秒)。既定1.2は "
                         "仕様書 §2-2『レート制限に注意して間隔を空ける』の実装")
@@ -316,6 +329,11 @@ def main(argv=None) -> int:
     elif a.all_codes:
         codes = None
         C.log("all-codes: 索引済みの全銘柄を取得対象にする")
+    elif a.codes_file:
+        with open(a.codes_file, encoding="utf-8-sig") as fh:
+            codes = {C.normalise_code(x.strip()) for x in fh if x.strip()}
+        codes.discard(None)
+        C.log(f"target: {len(codes)} code(s) = {a.codes_file}")
     else:
         # --full でも素の --index/--download でも既定は現ユニバース。
         # 既定を None(全銘柄) にすると、索引が全上場銘柄を持つように
@@ -345,7 +363,8 @@ def main(argv=None) -> int:
         # 詰め直すと "140 150" になる。区切りはカンマでも空白でも受ける。
         subtypes = ({t for t in a.subtypes.replace(",", " ").split() if t}
                     if a.subtypes else None)
-        download_pending(con, fetcher, a.limit, codes, subtypes)
+        download_pending(con, fetcher, a.limit, codes, subtypes,
+                         since=a.download_since)
     report(con)
     C.log(f"HTTP requests this run: {fetcher.n_requests}")
     return 0

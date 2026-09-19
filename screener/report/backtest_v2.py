@@ -217,6 +217,10 @@ def main(argv=None):
     C.log("  勝率 %.1f%% / 最終NAV %.3f" % (m["win_rate"] * 100, m["nav_final"]))
 
     C.log("")
+    C.log("=== 時価総額帯別（P3-4・枠制約下で建てた分・記述統計）===")
+    V1.band_report(base["sim"]["trades"], base["con"], V1.MAIN_ENTRY, V1.MAIN_EXIT)
+
+    C.log("")
     C.log("=== 市場フィルターの作動 ===")
     days = base["sim"]["filter_off_days"]
     C.log("  エントリー停止となった日: %d 日 / 停止でスキップしたイベント %s 件"

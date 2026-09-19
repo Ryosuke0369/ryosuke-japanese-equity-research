@@ -141,6 +141,27 @@ class TestUniverseRules(_DbCase):
             self.assertEqual(row["universe_flag"], 0, code)
             self.assertIn("市場区分除外", row["exclude_reason"], code)
 
+    def test_preferred_shares_are_excluded_like_product_categories(self):
+        """優先株式は MktNm が「プライム」のままで市場名の除外に掛からない
+        （2026-09-19、25935 伊藤園（優先株式）がユニバースに入っていた）。
+        5桁目が0でない5桁コード、または名前で落とす。規模・流動性が
+        条件を満たしていても除外であって、未判定ではないこと。"""
+        self.add("25935", name="伊藤園（優先株式）", market="プライム",
+                 sector="食料品", mktcap=56755, adv20=80)
+        self.add("9999", name="テスト（優先株式）", market="プライム",
+                 mktcap=20000, adv20=80)                  # 4桁でも名前で落ちる
+        self.add("2593", name="伊藤園", market="プライム", sector="食料品",
+                 mktcap=56755, adv20=80)                  # 普通株は残る
+        self.add("2866", name="グローバルＸ 米国優先証券 ＥＴＦ", market="プライム",
+                 sector=None, mktcap=20000, adv20=80)     # 「優先証券」は株式種別ではない
+        U.apply_universe_rules(self.con)
+        got = {r["code"]: (r["universe_flag"], r["exclude_reason"]) for r in
+               self.con.execute("SELECT code, universe_flag, exclude_reason FROM companies")}
+        self.assertEqual(got["25935"], (0, "株式種別除外(優先株式等)"))
+        self.assertEqual(got["9999"], (0, "株式種別除外(優先株式等)"))
+        self.assertEqual(got["2593"], (1, None))
+        self.assertEqual(got["2866"], (1, None))
+
     def test_missing_data_is_pending_not_excluded(self):
         """核心。時価総額も売買代金も無い会社は『判定していない』であって
         『条件を満たさない』ではない。"""
