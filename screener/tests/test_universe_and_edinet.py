@@ -162,6 +162,36 @@ class TestUniverseRules(_DbCase):
         self.assertEqual(got["2593"], (1, None))
         self.assertEqual(got["2866"], (1, None))
 
+    def test_build_does_not_touch_prices(self):
+        """ユニバース build は prices に書かない（2026-09-19 修正）。
+
+        以前は5列だけの INSERT OR REPLACE で、全上場銘柄に1日だけの行を作り、
+        既存の同日行の調整後終値・時価総額を NULL で上書きしていた。"""
+        from datetime import date, timedelta
+        from unittest import mock
+        end = date.today() - timedelta(weeks=12) - timedelta(days=2)
+        self.con.execute(
+            "INSERT INTO prices (code, date, close, adj_close, mktcap, turnover_value) "
+            "VALUES ('1111', ?, 100, 99.5, 20000, 5e7)", (end.isoformat(),))
+        self.con.commit()
+        bars = [{"Code": c, "C": 100.0, "Vo": 1000, "Va": 8e7, "MktCap": 20000}
+                for c in ("11110", "22220")]
+        master = [{"Code": c, "CoName": "X", "MktNm": "プライム", "ProdCat": "011",
+                   "S33Nm": "機械"} for c in ("11110", "22220")]
+
+        def fake_get(_f, path, **kw):
+            return master if path == U.EP_MASTER else bars
+
+        fetcher = mock.Mock(n_requests=0)
+        fetcher.throttle.min_interval = 0.0
+        with mock.patch.object(U, "jq_auth"), mock.patch.object(U, "jq_get", fake_get):
+            U.build_from_jquants(self.con, fetcher, price_days=15)
+        rows = self.con.execute("SELECT code, adj_close, mktcap FROM prices").fetchall()
+        self.assertEqual([tuple(r) for r in rows], [("1111", 99.5, 20000)])
+        # 判定に要る値は companies に入っている
+        r = self.con.execute("SELECT mktcap, adv20 FROM companies WHERE code='2222'").fetchone()
+        self.assertEqual((r["mktcap"], r["adv20"]), (20000, 80.0))
+
     def test_missing_data_is_pending_not_excluded(self):
         """核心。時価総額も売買代金も無い会社は『判定していない』であって
         『条件を満たさない』ではない。"""

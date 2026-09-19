@@ -214,20 +214,19 @@ def build_from_jquants(con, fetcher, price_days: int = 25) -> dict:
             vals = [(q.get("Va") or 0) for q in closes[:window]]  # V1: TurnoverValue
             adv = sum(vals) / len(vals) / 1_000_000     # JPY -> JPY mn
         latest = closes[0] if closes else None
-        close = latest.get("C") if latest else None
         # MktCap は V2 で日次バーに入った項目 (JPY mn)。V1 では取得できず、
         # 全銘柄が exclude_reason='時価総額未取得' で滞留していた。
         mktcap = latest.get("MktCap") if latest else None
+        # **prices には書かない。** 規模・流動性の判定結果は companies に入れば足り、
+        # prices の正本は jquants_prices（12列そろった日次）。以前はここで5列だけの
+        # INSERT OR REPLACE をしていたため、(1) 全上場銘柄に1日だけの行を作り
+        # （2026-09-18 に2,441銘柄）、(2) 既存の同日行の調整後終値・時価総額を
+        # NULL で上書きしていた（同日 約1,300行）。prices.adv20 を読む箇所は無い。
         upsert_company(con, code, row.get("CoName"),
                        _market_label(row), row.get("S33Nm"),
                        sector17=row.get("S17Nm"),
                        scale=row.get("ScaleCat"),
                        mktcap=mktcap, adv20=adv, source="jquants")
-        if close and adv is not None:
-            con.execute(
-                "INSERT OR REPLACE INTO prices (code, date, close, volume, adv20) "
-                "VALUES (?,?,?,?,?)",
-                (code, end.isoformat(), close, latest.get("Vo"), adv))
         n += 1
     con.commit()
     return {"rows": n, "source": "jquants"}
