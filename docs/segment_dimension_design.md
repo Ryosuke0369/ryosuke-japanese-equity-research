@@ -94,7 +94,7 @@ S1〜S8 の計算には英字IDで足りるので初手では解決しない。`
 EDINET の次元付きファクトの62%を占めるが S1〜S8 では使わない。全件保存すると
 `financials_dim` が約40万行になる。`axis='equity_component'` と判定した分は
 **保存せず件数だけ計上**し、ログに出す。必要になったら再解析で足せる
-(生の zip は `D:\screener_data\raw\edinet\` に残っている)。
+(生の zip は `C:\screener_data\raw\edinet\` に残っている)。
 
 ### 2-5. セグメント区分変更のガード
 

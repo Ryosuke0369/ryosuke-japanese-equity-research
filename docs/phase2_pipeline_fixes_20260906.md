@@ -1,7 +1,7 @@
 # フェーズ2 パイプライン修正 — 仕様書兼実施記録 (2026-09-06)
 
 作成: 2026-09-06
-対象リポジトリ: `<HOME>\ryosuke-japanese-equity-research`
+対象リポジトリ: `C:\dev\ryosuke-japanese-equity-research`
 ブランチ: `phase2-pipeline-fixes-20260906`
 上位文書: 「フェーズ2_パイプライン修正と全件再生成プロンプト」§1 修正11項目 / §2 新βルール
 先行文書: `batch/batch_report_20260905.md` §F-6（修正候補の集約表）、`docs/DCFパイプライン標準運用手順書.md` §6-6
