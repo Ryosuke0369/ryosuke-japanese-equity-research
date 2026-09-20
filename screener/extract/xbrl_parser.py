@@ -63,6 +63,7 @@ class Mapping:
         self.ctx_q = cx.get("quarter") or {}
         self.ctx_cons = cx.get("consolidation") or {}
         self.ctx_role = cx.get("role") or {}
+        self.ctx_revision = cx.get("revision") or {}
         self.prefer_cons = cx.get("prefer_consolidation", "consolidated")
         self.ctx_q_by_ctx = cx.get("quarter_by_context") or {}
         self.default_cons = cx.get("default_consolidation_by_source") or {}
@@ -88,7 +89,7 @@ class Mapping:
         """
         parts = (ctx or "").split("_")
         out = {"year_rel": None, "q_no": None, "consolidation": None,
-               "role": None, "rest": []}
+               "role": None, "revision": None, "rest": []}
         for p in parts:
             if p in self.ctx_year:
                 out["year_rel"] = self.ctx_year[p]
@@ -103,6 +104,8 @@ class Mapping:
                 out["consolidation"] = self.ctx_cons[p]
             elif p in self.ctx_role:
                 out["role"] = self.ctx_role[p]
+            elif p in self.ctx_revision:
+                out["revision"] = self.ctx_revision[p]
             else:
                 out["rest"].append(p)
         if out["consolidation"] is None and source in self.default_cons:
@@ -222,6 +225,51 @@ def classify_member(raw: str) -> tuple[str, str]:
         n = re.sub(r"Member$", "", n)
         return "segment", n or name
     return "other", name
+
+
+# 会社予想のロールの優先順。レンジ（Upper/Lower）は通常の予想を上書きしない。
+_ROLE_RANK = {"forecast": 0, "forecast_upper": 1, "forecast_lower": 2}
+# 連結・単体の両方が載る書類では連結を採る（account_mapping の prefer_consolidation）。
+_CONS_RANK = {"consolidated": 0, "nonconsolidated": 1, None: 2}
+
+
+def revision_direction(revised, previous):
+    """今回予想と前回予想から改訂方向を決める。前回が無ければ 'initial'。
+
+    赤字予想（負の値）も素直に大小で比べる。比率にすると符号が反転する。
+    """
+    if previous is None or revised is None:
+        return "initial"
+    if revised > previous:
+        return "up"
+    if revised < previous:
+        return "down"
+    return "flat"
+
+
+def write_guidance(con, filing_row, forecasts: dict) -> int:
+    """会社予想を guidance に書く。修正開示なら方向と前回値も入れる。
+
+    キーは (code, date, fy, item)。レンジ予想（Upper/Lower）しか無い項目は
+    `revised` が埋まらないので書かない —— 推測で1点に潰さない。
+    """
+    n = 0
+    for (fy, item), slot in forecasts.items():
+        revised = slot.get("revised")
+        previous = slot.get("previous")
+        if revised is None:
+            continue
+        con.execute(
+            "INSERT INTO guidance (code, date, fy, item, value, prev_value, "
+            " revision_direction, filing_id) VALUES (?,?,?,?,?,?,?,?) "
+            "ON CONFLICT(code, date, fy, item) DO UPDATE SET "
+            " value=excluded.value, prev_value=excluded.prev_value, "
+            " revision_direction=excluded.revision_direction, "
+            " filing_id=excluded.filing_id",
+            (filing_row["code"], filing_row["date"], fy, item, revised, previous,
+             revision_direction(revised, previous), filing_row["id"]))
+        n += 1
+    return n
 
 
 def dims_of(context: str, mapping: "Mapping", source: str) -> list[tuple[str, str, str]]:
@@ -355,6 +403,7 @@ def store_filing(con, mapping: Mapping, filing_row, facts: list[dict],
     # 実データ突合では重複4,607組の99.65%が一致しており、優先順位が値を
     # 変える場面はごく僅か。それでも「どちらを採ったか」は決定的にしておく。
     stmt_keys = set()
+    forecasts: dict = {}          # (fy, item) -> {revised, previous, role}
     for f in facts:
         if f["value"] is None or f["tag"].endswith(_SUMMARY_SUFFIX):
             continue
@@ -385,6 +434,27 @@ def store_filing(con, mapping: Mapping, filing_row, facts: list[dict],
         dims = mapping.parse_context(f["context"], source)
         if dims["q_no"] is None and filing_q is not None:
             dims["q_no"] = filing_q      # YTD 行に書類全体の四半期を配る
+
+        # 会社予想は financials_dim より**先**に処理する。修正開示は
+        # ForecastMember の文脈に CurrentMember/PreviousMember を足すので、
+        # 内訳として扱うと予想が dim に落ちて guidance が空になる（§41）。
+        if dims["role"] in ("forecast", "forecast_upper", "forecast_lower"):
+            fy_label = period_label(filing_row, dims, fy_end)
+            slot = forecasts.setdefault((fy_label, item), {})
+            # 修正開示以外（短信）は revision=None。これを「今回」として扱う。
+            key = dims["revision"] or "revised"
+            # 優先順位を明示する。guidance のキーは (code, date, fy, item) しか
+            # 無いので、同じ書類の中で複数の文脈が同じキーに来る:
+            #   (1) 連結 と 単体      —— 連結を採る（prefer_consolidation と同じ規約）。
+            #       1382 は連結 −22百万円 / 単体 −40百万円 を両方載せており、
+            #       後勝ちだと単体が残っていた（2026-09-20 に発見）
+            #   (2) 通常の予想 と レンジ（Upper/Lower）—— 通常を採る
+            rank = (_CONS_RANK.get(dims["consolidation"], 9), _ROLE_RANK[dims["role"]])
+            if rank <= slot.get("_rank_" + key, (99, 99)):
+                slot[key] = f["value"]
+                slot["_rank_" + key] = rank
+            n_guid += 1
+            continue
 
         # 未知の ...Member が付いた文脈は「見出し数値」ではなく内訳
         # （セグメント別、株主資本等変動計算書の資本金/利益剰余金、大株主 等）。
@@ -419,27 +489,16 @@ def store_filing(con, mapping: Mapping, filing_row, facts: list[dict],
             n_dim_saved += 1
             continue
         # 単体しか無い会社もあるので、連結が無いときに単体を落とすことはしない。
-        if dims["role"] in ("forecast", "forecast_upper", "forecast_lower"):
-            con.execute(
-                "INSERT INTO guidance (code, date, fy, item, value, "
-                " revision_direction, filing_id) VALUES (?,?,?,?,?,?,?) "
-                "ON CONFLICT(code, date, fy, item) DO UPDATE SET "
-                " value=excluded.value, filing_id=excluded.filing_id",
-                (filing_row["code"], filing_row["date"],
-                 period_label(filing_row, dims, fy_end), item, f["value"],
-                 "initial", filing_row["id"]),
-            )
-            n_guid += 1
-        else:
-            con.execute(
-                "INSERT OR REPLACE INTO financials_cum "
-                "(filing_id, code, period, q_no, item, value, unit, context_ref, "
-                " source_tag) VALUES (?,?,?,?,?,?,?,?,?)",
-                (filing_row["id"], filing_row["code"],
-                 period_label(filing_row, dims, fy_end), dims["q_no"], item, f["value"],
-                 f["unit"], f["context"], f["tag"]),
-            )
-            n_cum += 1
+        con.execute(
+            "INSERT OR REPLACE INTO financials_cum "
+            "(filing_id, code, period, q_no, item, value, unit, context_ref, "
+            " source_tag) VALUES (?,?,?,?,?,?,?,?,?)",
+            (filing_row["id"], filing_row["code"],
+             period_label(filing_row, dims, fy_end), dims["q_no"], item, f["value"],
+             f["unit"], f["context"], f["tag"]),
+        )
+        n_cum += 1
+    write_guidance(con, filing_row, forecasts)
     return {"cum": n_cum, "guidance": n_guid, "unknown": n_unknown,
             "noise": n_noise, "dimensional": n_dim, "superseded": n_super,
             "dim_saved": n_dim_saved, "equity_skipped": n_equity}
@@ -652,6 +711,20 @@ def print_unknown(con, top: int) -> None:
               f"{r['source']:<18} {r['tag']}")
 
 
+# --resume の「解析済み」判定。**存在ではなく完全性で持つ**（calibration_backlog §40）。
+#   短信・有報等: financials_cum の**項目数**が MIN_ITEMS 以上
+#   予想の修正開示: 財務諸表を持たないので guidance に行があれば済み
+# 「1行でもあれば済み」にすると、途中で落ちた解析や部分的にしか読めなかった
+# 書類が永久に未解析のまま残る（日次株価で実際に起きた型・§39）。
+RESUME_MIN_ITEMS = 5
+RESUME_WHERE = (
+    " AND id NOT IN ("
+    "   SELECT filing_id FROM financials_cum WHERE filing_id IS NOT NULL"
+    "   GROUP BY filing_id HAVING COUNT(DISTINCT item) >= %d)"
+    " AND id NOT IN ("
+    "   SELECT filing_id FROM guidance WHERE filing_id IS NOT NULL)" % RESUME_MIN_ITEMS)
+
+
 def main(argv=None) -> int:
     """書き込みジョブ同士を直列化してから本体を呼ぶ。
 
@@ -717,10 +790,7 @@ def _main_locked(argv=None) -> int:
 
     where, params = "", ()
     if a.resume:
-        # 「行が1本も無い filing」= まだ解析していない。値が0本の書類は毎回
-        # 対象に戻るが、それは害のない再試行で、取りこぼすよりずっと安い。
-        where += (" AND id NOT IN (SELECT filing_id FROM financials_cum "
-                  "WHERE filing_id IS NOT NULL)")
+        where += RESUME_WHERE
     if a.date:
         where, params = " AND date=?", (C.parse_date_arg(a.date).isoformat(),)
     elif a.code:

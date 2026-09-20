@@ -1,0 +1,16 @@
+{
+  "_note": "業績予想の修正開示（tse-rvfc）の文脈と値。実データ: 1382 ホーブ 2026-08-06 開示（raw/tdnet/20260806/091220260703587838.zip）。営業利益予想 +24百万円 → −22百万円。",
+  "contexts": {
+    "CurrentYearDuration_ConsolidatedMember_CurrentMember_ForecastMember": {"role": "forecast", "revision": "revised"},
+    "CurrentYearDuration_ConsolidatedMember_PreviousMember_ForecastMember": {"role": "forecast", "revision": "previous"},
+    "CurrentYearDuration_ConsolidatedMember_CurrentMember_UpperMember": {"role": "forecast_upper", "revision": "revised"},
+    "CurrentYearDuration_ConsolidatedMember_PreviousMember_LowerMember": {"role": "forecast_lower", "revision": "previous"},
+    "NextYearDuration_ConsolidatedMember_ForecastMember": {"role": "forecast", "revision": null}
+  },
+  "forecasts": {
+    "FY2026|revenue": {"revised": 2372000000.0, "previous": 2482000000.0},
+    "FY2026|operating_income": {"revised": -22000000.0, "previous": 24000000.0},
+    "FY2026|ordinary_income": {"revised": -18000000.0, "previous": 27000000.0},
+    "FY2026|net_income_parent": {"revised": -27000000.0, "previous": 18000000.0}
+  }
+}

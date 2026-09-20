@@ -209,6 +209,9 @@ def out_path(pdf_rel):
     return os.path.join(C.DATA_DIR, OUT_DIRNAME, base + ".txt")
 
 
+MIN_TEXT_BYTES = 200        # これ未満は抽出失敗とみなして取り直す（§40）
+
+
 def run(con, limit=None, force=False):
     rows = con.execute(
         "SELECT id, code, date, pdf_path, title, doc_id FROM filings "
@@ -224,7 +227,10 @@ def run(con, limit=None, force=False):
     reasons = {}
     for r in rows:
         dst = out_path(r["pdf_path"])
-        if os.path.exists(dst) and not force:
+        # 「ファイルがある」と「中身が取れている」は別物（calibration_backlog §40）。
+        # 0バイト・極端に短いテキストは抽出に失敗した跡なので、取り直す。
+        if (os.path.exists(dst) and not force
+                and os.path.getsize(dst) >= MIN_TEXT_BYTES):
             stats["skipped"] += 1
             continue
         src = C.full_path(r["pdf_path"])

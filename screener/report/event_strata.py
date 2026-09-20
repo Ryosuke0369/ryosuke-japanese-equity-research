@@ -103,20 +103,26 @@ def score_group(e):
     return "発火(≥0.10)" if e["score"] >= SCORE_THRESHOLD else "非発火(<0.10)"
 
 
-def revision_direction(pcon, code, t0, cache={}):
-    """同一 fiscal_year の直前 source_date の forecast_op と比べた方向（E-A2-2）。"""
-    key = (code, t0)
+_DIR_JA = {"up": "上方", "down": "下方", "flat": "横ばい", "initial": "不明"}
+
+
+def revision_direction(mcon, code, disclosed_date, cache={}):
+    """業績予想の修正の方向（E-A2-2）。
+
+    出典は本体 `guidance.revision_direction`（2026-09-20 に出典変更。事前登録 E-A2-2 の追記）。
+    修正開示の XBRL から「今回予想」と「前回予想」を読んで決めた値で、
+    営業利益の予想を見る。旧出典（projection の company_forecasts 前後比較）は
+    同一年度に2点を持たず、275件中0件しか決まらなかった。
+    """
+    key = (code, disclosed_date)
     if key in cache:
         return cache[key]
-    rows = pcon.execute(
-        "SELECT fiscal_year, source_date, forecast_op FROM company_forecasts "
-        "WHERE ticker=? AND source_date<=? ORDER BY source_date DESC", (code, t0)).fetchall()
-    out = "不明"
-    if rows:
-        fy, _sd, op = rows[0]
-        prev = next((r for r in rows[1:] if r[0] == fy), None)
-        if prev:
-            out = "上方" if op > prev[2] else ("下方" if op < prev[2] else "横ばい")
+    # **その開示日ちょうど**の行を引く。近い日の短信（initial）を拾うと、
+    # 修正の方向ではなく「直近に出ていた予想」を報告することになる。
+    row = mcon.execute(
+        "SELECT revision_direction FROM guidance "
+        "WHERE code=? AND item='operating_income' AND date=?", (code, disclosed_date)).fetchone()
+    out = _DIR_JA.get(row[0] if row else None, "不明")
     cache[key] = out
     return out
 
@@ -166,6 +172,7 @@ def main(argv=None):
     p.add_argument("--events", default=os.path.join(C.DATA_DIR, "event_price_response_events.csv"))
     p.add_argument("--long", default=os.path.join(C.DATA_DIR, "event_price_response.csv"))
     p.add_argument("--projection", default=os.path.join(C.DATA_DIR, "projection.db"))
+    p.add_argument("--db", default=C.DB_PATH, help="本体DB（予想の改訂方向を読む）")
     p.add_argument("--out", default=os.path.join(C.DATA_DIR, "event_price_response_strata.md"))
     p.add_argument("--csv-out", default=os.path.join(C.DATA_DIR, "event_price_response_scored.csv"))
     a = p.parse_args(argv)
@@ -177,8 +184,9 @@ def main(argv=None):
     pcon.row_factory = sqlite3.Row
     C.log("イベント %d 件にスコアを付ける（as_of は T−15）" % len(events))
     n_err = attach_scores(events, pcon)
+    mcon = sqlite3.connect("file:%s?mode=ro" % a.db.replace("\\", "/"), uri=True)
     for e in events:
-        e["rev_dir"] = (revision_direction(pcon, e["code"], e["t0"])
+        e["rev_dir"] = (revision_direction(mcon, e["code"], e["date"])
                         if e["type"] == E.TYPE_REV else "")
     with open(a.csv_out, "w", newline="", encoding="utf-8-sig") as fh:
         w = csv.writer(fh)

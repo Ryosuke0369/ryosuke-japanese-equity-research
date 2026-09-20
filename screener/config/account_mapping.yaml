@@ -348,6 +348,16 @@ contexts:
     ForecastMember: forecast
     UpperMember: forecast_upper
     LowerMember: forecast_lower
+  # 業績予想の修正開示（tse-rvfc-*）は、同じ ForecastMember の文脈に
+  # 「今回の予想 / 前回の予想」を CurrentMember / PreviousMember で分けて載せる。
+  #   例: CurrentYearDuration_ConsolidatedMember_PreviousMember_ForecastMember
+  # この2つを rest（=内訳の member）として扱うと、予想が financials_dim に
+  # 落ちて guidance に1行も入らない（2026-09-20 まで実際にそうなっていた。
+  # 修正開示 210件から guidance 0行 / financials_dim 4,709行）。
+  # 軸として明示し、改訂方向（up/down/flat）を実データで決められるようにする。
+  revision:
+    CurrentMember: revised
+    PreviousMember: previous
   # 連結・単体の両方が載っている短信では連結を優先する（DCFパイプラインと同じ規約）。
   prefer_consolidation: consolidated
 
