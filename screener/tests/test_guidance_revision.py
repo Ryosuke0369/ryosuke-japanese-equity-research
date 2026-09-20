@@ -56,7 +56,7 @@ class TestWriteGuidance(unittest.TestCase):
         self.con.execute(
             "CREATE TABLE guidance (code TEXT, date TEXT, fy TEXT, item TEXT, "
             " value REAL, revision_direction TEXT, filing_id INTEGER, prev_value REAL,"
-            " PRIMARY KEY (code, date, fy, item))")
+            " q_no INTEGER, PRIMARY KEY (code, date, fy, item))")
         self.row = {"id": 1, "code": "1382", "date": "2026-08-06"}
 
     def _write(self, forecasts):
@@ -74,6 +74,14 @@ class TestWriteGuidance(unittest.TestCase):
     def test_plain_forecast_stays_initial(self):
         got = self._write({("FY2027", "operating_income"): {"revised": 500.0}})
         self.assertEqual(got[("FY2027", "operating_income")], (500.0, None, "initial"))
+
+    def test_interim_forecast_is_marked_with_q_no(self):
+        # 中間期だけの修正（3161 の形）。通期予想と同じキーに来るので q_no を残す
+        X.write_guidance(self.con, self.row,
+                         {("FY2027", "operating_income"): {"revised": 58e6, "q_no": 2}})
+        got = self.con.execute(
+            "SELECT value, q_no FROM guidance WHERE item='operating_income'").fetchone()
+        self.assertEqual(got, (58e6, 2))
 
     def test_range_only_forecast_is_not_written(self):
         # Upper/Lower しか無い項目を1点に潰さない

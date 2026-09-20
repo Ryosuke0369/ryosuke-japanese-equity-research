@@ -130,7 +130,8 @@ CREATE TABLE IF NOT EXISTS guidance (
     revision_direction  TEXT,                  -- up / down / flat / initial
     -- 【§5拡張】
     filing_id           INTEGER,
-    prev_value          REAL,
+    prev_value          REAL,                  -- 修正開示の「前回予想」
+    q_no                INTEGER,               -- 予想の対象期間（4=通期 / 2=中間期 …）
     PRIMARY KEY (code, date, fy, item),
     FOREIGN KEY (filing_id) REFERENCES filings (id) ON DELETE CASCADE
 );

@@ -108,6 +108,9 @@ CREATE TABLE IF NOT EXISTS company_forecasts (
     id INTEGER PRIMARY KEY AUTOINCREMENT, ticker TEXT NOT NULL,
     fiscal_year INTEGER NOT NULL, forecast_sales REAL NOT NULL,
     forecast_op REAL NOT NULL, source_date TEXT NOT NULL,
+    -- 改訂方向と前回予想（本体 guidance 由来。2026-09-20 追加）。
+    -- 出口の分岐2 の第3条件（通期営業利益予想の引き下げ）はこれを読む。
+    revision_direction TEXT, prev_op REAL,
     UNIQUE(ticker, fiscal_year, source_date));
 CREATE TABLE IF NOT EXISTS balance_sheet_items (
     id INTEGER PRIMARY KEY AUTOINCREMENT, ticker TEXT NOT NULL,
@@ -361,14 +364,24 @@ def build(out_path, shift_days=0, src_con=None):
 
     # ---- company_forecasts（売上と営業利益が揃った版だけ） ---------------
     g = defaultdict(dict)
-    for r in q("SELECT code, date, fy, item, value FROM guidance "
-               "WHERE item IN ('revenue','operating_income') AND value IS NOT NULL"):
-        g[(r["code"], r["fy"], r["date"])][r["item"]] = r["value"]
-    fc = [(k[0], adapter._fy(k[1]), v["revenue"] / div, v["operating_income"] / div, k[2])
+    # 通期予想だけを採る。修正開示には中間期だけの修正があり（3161 は H1 のみ）、
+    # それを通期予想として運ぶと S5 の進捗率の分母が壊れる。q_no が NULL の行は
+    # 列を足す前に書かれたもので、当時の既定（通期）として扱う。
+    for r in q("SELECT code, date, fy, item, value, revision_direction, prev_value, q_no "
+               "FROM guidance WHERE item IN ('revenue','operating_income') "
+               "AND value IS NOT NULL AND (q_no IS NULL OR q_no = 4)"):
+        slot = g[(r["code"], r["fy"], r["date"])]
+        slot[r["item"]] = r["value"]
+        if r["item"] == "operating_income":
+            slot["dir"] = r["revision_direction"]
+            slot["prev_op"] = r["prev_value"]
+    fc = [(k[0], adapter._fy(k[1]), v["revenue"] / div, v["operating_income"] / div, k[2],
+           v.get("dir"), (v["prev_op"] / div) if v.get("prev_op") is not None else None)
           for k, v in g.items()
           if "revenue" in v and "operating_income" in v and adapter._fy(k[1])]
     dst.executemany("INSERT OR REPLACE INTO company_forecasts (ticker, fiscal_year,"
-                    " forecast_sales, forecast_op, source_date) VALUES (?,?,?,?,?)", fc)
+                    " forecast_sales, forecast_op, source_date, revision_direction,"
+                    " prev_op) VALUES (?,?,?,?,?,?,?)", fc)
     stats["company_forecasts"] = len(fc)
 
     # ---- daily_prices / market_index（投影ビュー経由＝調整後終値） --------

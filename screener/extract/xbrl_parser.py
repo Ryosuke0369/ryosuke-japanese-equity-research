@@ -252,6 +252,9 @@ def write_guidance(con, filing_row, forecasts: dict) -> int:
 
     キーは (code, date, fy, item)。レンジ予想（Upper/Lower）しか無い項目は
     `revised` が埋まらないので書かない —— 推測で1点に潰さない。
+    `q_no` は予想の対象期間（4 = 通期 / 2 = 中間期 等）。同じキーに通期と中間期が
+    来たときは通期を採るが、**中間期しか無い書類もある**ので、読み手が
+    「これは通期予想か」を判別できるように列に残す。
     """
     n = 0
     for (fy, item), slot in forecasts.items():
@@ -261,13 +264,14 @@ def write_guidance(con, filing_row, forecasts: dict) -> int:
             continue
         con.execute(
             "INSERT INTO guidance (code, date, fy, item, value, prev_value, "
-            " revision_direction, filing_id) VALUES (?,?,?,?,?,?,?,?) "
+            " revision_direction, filing_id, q_no) VALUES (?,?,?,?,?,?,?,?,?) "
             "ON CONFLICT(code, date, fy, item) DO UPDATE SET "
             " value=excluded.value, prev_value=excluded.prev_value, "
             " revision_direction=excluded.revision_direction, "
-            " filing_id=excluded.filing_id",
+            " filing_id=excluded.filing_id, q_no=excluded.q_no",
             (filing_row["code"], filing_row["date"], fy, item, revised, previous,
-             revision_direction(revised, previous), filing_row["id"]))
+             revision_direction(revised, previous), filing_row["id"],
+             slot.get("q_no")))
         n += 1
     return n
 
@@ -449,10 +453,16 @@ def store_filing(con, mapping: Mapping, filing_row, facts: list[dict],
             #       1382 は連結 −22百万円 / 単体 −40百万円 を両方載せており、
             #       後勝ちだと単体が残っていた（2026-09-20 に発見）
             #   (2) 通常の予想 と レンジ（Upper/Lower）—— 通常を採る
-            rank = (_CONS_RANK.get(dims["consolidation"], 9), _ROLE_RANK[dims["role"]])
-            if rank <= slot.get("_rank_" + key, (99, 99)):
+            #   (3) 通期 と 中間期 —— 通期を採る。guidance の「予想」は通期予想を指し、
+            #       S5 の進捗率の分母になる。中間期の予想が同じキーに来ると分母が壊れる
+            #       （3161 は H1 だけを修正しており、通期の行が無い書類もある）
+            rank = (0 if (dims["q_no"] in (None, 4)) else 1,
+                    _CONS_RANK.get(dims["consolidation"], 9), _ROLE_RANK[dims["role"]])
+            if rank <= slot.get("_rank_" + key, (99, 99, 99)):
                 slot[key] = f["value"]
                 slot["_rank_" + key] = rank
+                if key == "revised":
+                    slot["q_no"] = dims["q_no"]
             n_guid += 1
             continue
 

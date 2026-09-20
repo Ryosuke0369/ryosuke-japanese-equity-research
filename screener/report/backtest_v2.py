@@ -69,8 +69,13 @@ def topix_ma_ok(index_dates, index_close, entry_date):
     return last > ma, ma
 
 
-def simulate(trades, con, entry_n, exit_k, use_filter=True):
-    """枠制約と市場フィルターを課して、実行可能な建玉だけで資産曲線を作る。"""
+def simulate(trades, con, entry_n, exit_k, use_filter=True, admit=None):
+    """枠制約と市場フィルターを課して、実行可能な建玉だけで資産曲線を作る。
+
+    `admit` は入口側の実験（シャドウF）のための任意フック。候補1件を受け取り
+    **建てるなら NAV に対する比率、建てないなら None/0** を返す。既定の None は
+    v2 そのもの（全件 POS_FRACTION）で、**v2 の数値は1つも変わらない**。
+    """
     rows = [t for t in trades if t["entry_n"] == entry_n and t["exit_k"] == exit_k]
     idx = con.execute("SELECT date, close FROM market_index ORDER BY date").fetchall()
     idx_d = [r[0] for r in idx]
@@ -93,7 +98,7 @@ def simulate(trades, con, entry_n, exit_k, use_filter=True):
     nav = 1.0
     peak, mdd = 1.0, 0.0
     open_pos = []                # (exit_date, alloc, net, trade)
-    taken, skipped_full, skipped_filter = [], 0, 0
+    taken, skipped_full, skipped_filter, skipped_admit = [], 0, 0, 0
     filter_off_days = set()
     nav_curve = []
 
@@ -117,13 +122,18 @@ def simulate(trades, con, entry_n, exit_k, use_filter=True):
             continue
 
         free = MAX_POSITIONS - len(open_pos)
-        for i, t in enumerate(by_day[day]):
-            if i >= free:
+        for t in by_day[day]:
+            if free <= 0:
                 skipped_full += 1
                 continue
-            alloc = nav * POS_FRACTION
+            frac = POS_FRACTION if admit is None else admit(t)
+            if not frac:
+                skipped_admit += 1
+                continue
+            alloc = nav * frac
             open_pos.append((t["exit_date"], alloc, t["net"], t))
             taken.append(t)
+            free -= 1
 
     # exit 日だけで並べる。タプル全体で比較すると同着時に dict 同士の
     # 比較に落ちて TypeError になる。
@@ -136,7 +146,7 @@ def simulate(trades, con, entry_n, exit_k, use_filter=True):
     return {
         "trades": taken, "n_candidates": len(cand),
         "n_taken": len(taken), "skipped_full": skipped_full,
-        "skipped_filter": skipped_filter,
+        "skipped_filter": skipped_filter, "skipped_admit": skipped_admit,
         "filter_off_days": sorted(filter_off_days),
         "nav_final": nav, "max_drawdown": mdd, "nav_curve": nav_curve,
     }
