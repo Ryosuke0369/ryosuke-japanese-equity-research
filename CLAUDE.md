@@ -268,6 +268,22 @@ $py='C:\dev\ryosuke-japanese-equity-research\.venv\Scripts\python.exe'
 - 成功条件: exit 0、ログに「窓内(未発表) N」「根拠」「直前四半期が本体にある」の3行が出ていること
 - テスト: `python -m unittest screener.tests.test_earnings_window`
 
+### 4. 外部リストの手動アーカイブ（株探ウォッチ・**記録専用**）
+
+```powershell
+& $py -m screener.extract.kabutan_watch                 # 置き場の作成と状況表示
+& $py -m screener.extract.kabutan_watch --import C:\screener_data\kabutan_watch
+& $py -m screener.extract.kabutan_watch --import <1本のCSV> --date 2026-09-20 --list-type 上方修正有望
+```
+
+- 置き場 `C:\screener_data\kabutan_watch\`（README.txt と `_template.csv` を自動生成。`_` 始まりは取り込まない）
+- 列: `date / list_type / code / name /（あれば 進捗率・乖離率 などの数値）`。
+  コードは4桁・5桁・全角可（正規化して保存。形が違う行は**捨てて理由を出す**）。文字コードは UTF-8 / CP932 の両対応
+- **自動取得はしない（規約上、人手のコピーのみ）。** モジュールはネットワークに出ない（テストで検査）
+- **スコアリング・採否・出口に一切使わない。記録専用**（将来の PIT 検証用）。
+  スコア側がこのテーブルを読まないことは `screener/tests/test_kabutan_watch.py` が検査する
+- 取り込み時点の `universe_flag` を行に凍結して保存する（後から「当時ユニバースだったか」を問えるように）
+
 ### 既知の落とし穴（再発防止）
 
 - **期ラベル `FY2026-Q2` を暦日と比べない。** 暦の期末は `earnings_window.fiscal_label_ym(period, q_no, 期末月)` で写す

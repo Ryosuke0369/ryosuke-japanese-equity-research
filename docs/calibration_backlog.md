@@ -2358,3 +2358,16 @@ F2a / F2b は3本とも v2 と同じか浅い。ただし期待値の符号は�
   測るには T+0 の開示時刻以降の価格（最低でも後場寄り）が要る
 
 **判断はしない。** 上の2つが事実で、次にどちらへ進めるかはユーザーが決める。
+
+## 45. 外部リストの手動アーカイブ（株探ウォッチ・2026-09-20・記録専用）
+
+週次で人手コピーする株探の「業績上方修正が有望」等のリストを、**記録としてだけ**貯める。
+置き場 `C:\screener_data\kabutan_watch\`、取り込み `screener/extract/kabutan_watch.py`、
+テーブル `kabutan_watch`（PK = date × list_type × code）。運用は CLAUDE.md §4。
+
+- **自動取得はしない**（規約上の判断）。モジュールは `requests` も `urllib` も import しない（テストで検査）
+- **スコアリング・採否・出口に一切使わない。** スコア側（signals / projection / weekly_screen /
+  paper_weekly / backtest_* / entry_sim / exit_sim / earnings_window）が `kabutan` を参照しないことを
+  `test_kabutan_watch.py` が検査する。テクニカル層（E-0）と同じ「約束ではなく構造で守る」形
+- 取り込み時点の `universe_flag` を行に凍結する。後から「当時ユニバース内だったか」を問えるようにするため
+- 用途は将来の PIT 検証（外部が「有望」と言った銘柄のその後）。**今回の測定には使っていない**
