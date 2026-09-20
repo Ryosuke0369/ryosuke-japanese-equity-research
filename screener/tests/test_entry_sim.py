@@ -66,5 +66,20 @@ class TestAdmitHook(unittest.TestCase):
         self.assertNotEqual(full["nav_final"], half["nav_final"])
 
 
+class TestVerdict(unittest.TestCase):
+    """サイジングだけの変種は期待値が動かない。0 を「マイナス一致」と書かない。"""
+
+    def test_zero_difference(self):
+        from screener.report import entry_sim as F
+        self.assertIn("差なし", F.verdict([0.0, 0.0, 0.0]))
+
+    def test_signs(self):
+        from screener.report import entry_sim as F
+        self.assertIn("プラス", F.verdict([0.01, 0.02, 0.003]))
+        self.assertIn("マイナス", F.verdict([-0.01, -0.02, -0.003]))
+        self.assertIn("符号不定", F.verdict([0.01, -0.02, 0.003]))
+        self.assertIn("3本", F.verdict([0.01]))
+
+
 if __name__ == "__main__":
     unittest.main()

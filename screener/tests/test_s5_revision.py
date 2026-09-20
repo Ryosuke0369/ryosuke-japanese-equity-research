@@ -46,6 +46,15 @@ class TestS5State(unittest.TestCase):
         self.assertTrue(G.s5_state({"S5": {"available": True, "score": 0.4,
                                            "details": {"guidance_dead": True}}})[2])
 
+    def test_guidance_dead_survives_strict_rule6(self):
+        # evidence_strict は §36 の規則6 で加点しない。available=False に落ちるが
+        # フラグは strict_flags に残る。ここを拾わないと 0件になる（2026-09-20 に踏んだ）
+        r = {"S5": {"available": False, "score": 0.0, "details": {"guidance_dead": True},
+                    "strict_flags": ["guidance_dead_unscored"]}}
+        group, score, dead = G.s5_state(r)
+        self.assertEqual(group, "S5評価不能")
+        self.assertTrue(dead)
+
 
 class TestDiffCI(unittest.TestCase):
     def test_zero_difference_has_ci_around_zero(self):

@@ -171,6 +171,24 @@ def run_shift(shift, out_dir):
     return {"shift": shift, "m": out, "log": log, "csv": path}
 
 
+def verdict(ds, eps=1e-9):
+    """3本の差の符号が一致しているか。**差が0の変種は「動かない」と書く。**
+
+    サイジングだけを変える F1b は、1トレードあたりのリターンを変えないので
+    期待値の差は必ず 0 になる。これを「マイナスで一致」と書くと読み違える
+    （見るべきは MDD と資産曲線）。
+    """
+    if len(ds) < 3:
+        return "–（3本そろっていない）"
+    if all(abs(d) < eps for d in ds):
+        return "差なし（期待値では動かない。MDD を見る）"
+    if all(d > eps for d in ds):
+        return "はい（プラス）"
+    if all(d < -eps for d in ds):
+        return "はい（マイナス）"
+    return "いいえ（符号不定）"
+
+
 def render(store):
     L = ["# シャドウF: 受容帯とテーゼ破綻を入口で使う（記述統計・採用しない）", ""]
     for s, st in store.items():
@@ -196,9 +214,7 @@ def render(store):
     for v in VARIANTS[1:]:
         ds = [store[s]["m"][v]["expectancy_net"] - store[s]["m"]["v2"]["expectancy_net"]
               for s in store]
-        agree = "–（3本そろっていない）" if len(ds) < 3 else (
-            "はい（%s）" % ("プラス" if all(d > 0 for d in ds) else "マイナス")
-            if len({d > 0 for d in ds}) == 1 else "いいえ（符号不定）")
+        agree = verdict(ds)
         L.append("| %s | %s | %s |" % (v, " | ".join("%+.4f" % d for d in ds), agree))
     L.append("")
     L.append("## 入口で見送った候補が、建てていたらどうだったか（F-3）")

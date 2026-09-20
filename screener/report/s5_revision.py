@@ -89,11 +89,20 @@ def outcome_for(revs, code, as_of, horizon_end):
 
 
 def s5_state(res):
-    """S5 の状態と、その連続量（スコア）。"""
+    """S5 の状態と、その連続量（スコア）。
+
+    `guidance_dead` は evidence_strict の規則6（§36）で**加点されない**ので、
+    available=False / score=0 に落ちて `strict_flags` に残る。
+    「発火/非発火」の分類とは別に、フラグは詳細から拾う（G-3 は記録のみと定めている）。
+    """
     s5 = res.get("S5") if isinstance(res, dict) else None
-    if not isinstance(s5, dict) or not s5.get("available"):
+    if not isinstance(s5, dict):
         return "S5評価不能", None, False
-    dead = bool((s5.get("details") or {}).get("guidance_dead") or s5.get("guidance_dead"))
+    dead = bool((s5.get("details") or {}).get("guidance_dead")
+                or s5.get("guidance_dead")
+                or "guidance_dead_unscored" in (s5.get("strict_flags") or []))
+    if not s5.get("available"):
+        return "S5評価不能", None, dead
     if (s5.get("score") or 0) > 0:
         return "S5発火(進捗超過)", s5.get("score"), dead
     return "S5非発火", s5.get("score"), dead
