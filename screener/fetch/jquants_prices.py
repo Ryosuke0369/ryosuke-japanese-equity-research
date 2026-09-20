@@ -76,13 +76,31 @@ def covered_range(msg: str):
     return lo, hi
 
 
+MIN_DAY_RATIO = 0.5      # その日を「取得済み」とみなす最低の行数（最大の日の何割か）
+
+
+def covered_days(con, ratio: float = MIN_DAY_RATIO) -> set[str]:
+    """「取得済み」の日。行が**全銘柄ぶんある**日だけを数える。
+
+    行の有無だけで判定すると、銘柄単位モード（--codes-file）で数百銘柄だけ
+    入れた日が「取得済み」になり、以後その日は永久に埋まらない。
+    2026-09-01〜09-18 がこれで抜けていた（新規456銘柄だけの行があった）。
+    最大の日の %d%% 未満しか行が無い日は未取得として取り直す。
+    """ % int(MIN_DAY_RATIO * 100)
+    rows = con.execute(
+        "SELECT date, COUNT(*) n, SUM(CASE WHEN adj_close IS NULL THEN 1 ELSE 0 END) nulls "
+        "FROM prices GROUP BY date").fetchall()
+    if not rows:
+        return set()
+    top = max(r[1] for r in rows)
+    return {r[0] for r in rows if r[2] == 0 and r[1] >= top * ratio}
+
+
 def backfill_prices(con, fetcher, start: date, end: date, codes: set | None) -> dict:
     """日次四本値を1日1リクエストで埋める。既に入っている日は飛ばす。"""
     # 既に取得済みでも、調整後株価などの新しい列が NULL の日は取り直す。
     # 「行がある」と「必要な列が埋まっている」は違う。
-    have = {r["date"] for r in con.execute(
-        "SELECT date FROM prices GROUP BY date "
-        "HAVING SUM(CASE WHEN adj_close IS NULL THEN 1 ELSE 0 END) = 0")}
+    have = covered_days(con)
     todo = [d for d in _days(start, end) if d.isoformat() not in have]
     C.log(f"株価バックフィル {start}..{end}: 対象 {len(todo)} 営業日 "
           f"(取得済み {len(have)} 日はスキップ)")
@@ -252,6 +270,8 @@ def main(argv=None) -> int:
     p.add_argument("--report", action="store_true")
     p.add_argument("--from", dest="dfrom", default="2021-08-31")
     p.add_argument("--to", dest="dto")
+    p.add_argument("--recent", type=int,
+                   help="直近 N 日だけを対象にする（日次ジョブ用。--from より優先）")
     p.add_argument("--rpm", type=int, default=60,
                    help="契約プランのレート上限。Free 5 / Light 60 / Standard 120")
     p.add_argument("--all-codes", action="store_true",
@@ -265,8 +285,8 @@ def main(argv=None) -> int:
     if a.report:
         report(con)
         return 0
-    start = C.parse_date_arg(a.dfrom)
     end = C.parse_date_arg(a.dto) if a.dto else date.today()
+    start = (end - timedelta(days=a.recent)) if a.recent else C.parse_date_arg(a.dfrom)
     # 公称値ぎりぎりは1分窓の境界で429になる。+30%のマージンを取る。
     fetcher = C.Fetcher(min_interval=60.0 / max(a.rpm, 1) * 1.3)
     jq_auth(fetcher)

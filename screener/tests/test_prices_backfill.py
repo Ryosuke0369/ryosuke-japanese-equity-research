@@ -176,3 +176,26 @@ class BackfillTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestCoveredDays(unittest.TestCase):
+    """部分的にしか行が無い日を「取得済み」にしない（2026-09 の欠落の再発防止）。
+
+    銘柄単位モードで数百銘柄だけ入れた日を covered と数えたせいで、
+    2026-09-01〜09-18 が日次モードで永久にスキップされていた。
+    """
+
+    def setUp(self):
+        import sqlite3
+        self.con = sqlite3.connect(":memory:")
+        self.con.execute("CREATE TABLE prices (code TEXT, date TEXT, adj_close REAL)")
+        rows = [("%04d" % i, "2026-09-18", 100.0) for i in range(1000)]        # 全銘柄
+        rows += [("%04d" % i, "2026-09-17", 100.0) for i in range(400)]        # 一部だけ
+        rows += [("%04d" % i, "2026-09-16", None) for i in range(1000)]        # adj_close 欠け
+        self.con.executemany("INSERT INTO prices VALUES (?,?,?)", rows)
+
+    def test_partial_day_is_not_covered(self):
+        cov = P.covered_days(self.con)
+        self.assertIn("2026-09-18", cov)
+        self.assertNotIn("2026-09-17", cov)      # 40% しか無い
+        self.assertNotIn("2026-09-16", cov)      # adj_close が NULL

@@ -1,4 +1,4 @@
-<#
+﻿<#
     screener/run_daily.ps1 - the daily job Task Scheduler runs (仕様書 §2-1
     「cron/タスクスケジューラで平日夕方1回+リトライ」).
 
@@ -88,12 +88,22 @@ if (-not $SkipParse) {
     Write-Log "edinet parser exit=$LASTEXITCODE"
 }
 
+# 日次株価 + TOPIX（2026-09-20 追加）。
+# これが無かったせいで 2026-09-01〜09-18 の株価が抜けており、イベント反応の
+# 測定（シャドウE フェーズA）の直前に 1,188 銘柄を手で取り直すことになった。
+# 日次モードは「その日の行が全銘柄ぶんある」日だけを飛ばす（jquants_prices.covered_days）。
+# 直近10日ぶんを見るので、1日落ちても翌日の実行が自分で埋める。
+& $PythonExe -m screener.fetch.jquants_prices --prices --topix --recent 10 --rpm 60 2>&1 |
+    ForEach-Object { Add-Content -Path $log -Value $_ -Encoding utf8; Write-Output $_ }
+$pricesExit = $LASTEXITCODE
+Write-Log "prices exit=$pricesExit"
+
 # Coverage is printed on every run: a silent job that has stopped collecting is
 # the failure mode this whole design is trying to avoid.
 & $PythonExe -m screener.fetch.tdnet_archiver --report 14 2>&1 |
     ForEach-Object { Add-Content -Path $log -Value $_ -Encoding utf8; Write-Output $_ }
 $reportExit = $LASTEXITCODE
 
-Write-Log "=== run_daily end (archiver=$archiveExit, coverage=$reportExit, titles=$titlesExit, edinet=$edinetExit) ==="
-if ($archiveExit -ne 0 -or $reportExit -ne 0 -or $titlesExit -ne 0 -or $edinetExit -ne 0) { exit 1 }
+Write-Log "=== run_daily end (archiver=$archiveExit, coverage=$reportExit, titles=$titlesExit, edinet=$edinetExit, prices=$pricesExit) ==="
+if ($archiveExit -ne 0 -or $reportExit -ne 0 -or $titlesExit -ne 0 -or $edinetExit -ne 0 -or $pricesExit -ne 0) { exit 1 }
 exit 0
