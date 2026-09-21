@@ -86,6 +86,7 @@ scratch_block.py
 #          （ファイルは消えない。追跡しないだけ）。テンプレートのヘッダだけは例外
 *.log
 *.csv
+data/comps/
 !templates/comps_input_template.csv
 batch/cache/
 batch/draft/
