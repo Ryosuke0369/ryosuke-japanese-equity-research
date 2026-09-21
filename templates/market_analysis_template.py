@@ -2144,7 +2144,6 @@ if __name__ == "__main__":
         "ticker": "2359.T",
         "company_name": "株式会社コア",
         "current_price": 2006,
-        "entry_price":   2127,
         "segment_layout": {
             "segments": [
                 {"name": "未来社会ソリューション",

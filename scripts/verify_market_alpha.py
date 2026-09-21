@@ -118,7 +118,6 @@ if __name__ == '__main__':
         [
             ('Current Price',       2006, -0.108),
             ('DCF Base PGM Target', 3290,  1.000),
-            ('Entry Price',         2127, None),
         ],
     )
 

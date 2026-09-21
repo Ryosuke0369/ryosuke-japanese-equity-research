@@ -77,3 +77,22 @@ dist/
 *.zip
 Downloads/
 scratch_block.py
+
+# --- 公開前の最終確認（2026-09-21・B-2 基準） ------------------------------
+# 生データ・キャッシュ・ログ・CSV は追跡しない。自作の分析成果物（xlsx / PDF）は従来どおり公開。
+#   batch/cache/  yfinance の生ダンプ（株価・財務諸表）。batch/draft/ と analysis_all.txt はその転記
+#   *.log / batch/logs_*.txt / batch/probe_*.txt  実行ログ
+#   *.csv  data/comps/ を含む。generate_dcf.py は手元の data/comps/<ticker>_comps.csv を読み続ける
+#          （ファイルは消えない。追跡しないだけ）。テンプレートのヘッダだけは例外
+*.log
+*.csv
+!templates/comps_input_template.csv
+batch/cache/
+batch/draft/
+batch/analysis_all.txt
+batch/logs_*.txt
+batch/probe_*.txt
+# 配布パッケージの展開コピー・作業用の複製・ローカル設定
+105/
+Kimi_Agent_Bモジュール進行 (2)/
+.claude/settings.local.json
