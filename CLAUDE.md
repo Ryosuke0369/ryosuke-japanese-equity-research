@@ -116,6 +116,7 @@ Two methods for projecting Net Working Capital, toggled via `nwc_method` in over
 
 ### パス契約（重要 — 5246事故の再発防止）
 - comps の唯一の入力は **`data/comps/<ticker>_comps.csv`**（または `--comps-csv PATH`）。
+  **2026-09-21 から git 追跡外**（`*.csv` を公開しない方針。手元のファイルをそのまま読む。新しいPCへは手で運ぶ）。
   **`.txt` 拡張子は読まれない**。CSVが無いと generate_dcf.py は**エラー停止**する
   （comps なしで生成したい場合のみ `--no-comps` を明示）。
 - 旧 `scripts/comps_input.csv` は廃止済み（パイプラインは一度も読んでいなかった遺物。
@@ -213,7 +214,9 @@ Two methods for projecting Net Working Capital, toggled via `nwc_method` in over
   ```
 - 中身（直列）: `tdnet_archiver --backfill 14` → `xbrl_parser --all`（TDnet）→
   `tdnet_titles --days 5`（非決算の開示タイトル）→ `edinet_bulk --recent 7`（EDINET 再索引+欠損補完+取得）→
-  `xbrl_parser --source edinet --all --resume`（未解析の EDINET 書類だけ）→ `tdnet_archiver --report 14`
+  `xbrl_parser --source edinet --all --resume`（未解析の EDINET 書類だけ）→
+  `jquants_prices --prices --topix --recent 10`（株価・TOPIX。取得後に verify_range で突合）→ `tdnet_archiver --report 14`
+- 決算サマリー（`fins_summary`・S5c の出典）は日次に**入っていない**。§5 のコマンドで手動追加する
 - 所要: xbrl_parser は1回ごとに全DBの coverage/unknown 集計で約10分かかる（解析0件でも）。日付ごとに呼ばないこと
 - 出力: `raw\tdnet\YYYYMMDD\`、`raw\edinet\YYYY-MM-DD\`、`filings` / `financials_cum` / `fetch_runs` /
   `disclosure_titles`、ログ `logs\run_daily_YYYYMM.log`
@@ -249,6 +252,8 @@ $py='C:\dev\ryosuke-japanese-equity-research\.venv\Scripts\python.exe'
   売上前年比2倍超/半分以下のS1S2・DSO<1日を点にしない（calibration_backlog §31）/ `prefer_span`（旧既定）。
   過去推薦の遡及計測（stale_audit）と materialize の事後条件ゲートは `prefer_span` に固定している。
   paper_weekly はもともと span_runner を通らず別枠 `module_b.run_scorers` を直接使うので切替の影響を受けない
+- 週次ペーパー（記録のみ・実弾なし）: `& $py -m screener.report.paper_weekly` の後に
+  `& $py -m screener.report.thesis_observe`（テーゼ破綻の観測ログ。売買を変えない）
 - 根拠の健全性監査: `python -m screener.report.evidence_audit --as-of YYYY-MM-DD --policy <policy> --out <csv>`、
   方針の前後比較: `python -m screener.report.policy_shadow_compare --before <csv> --after <csv> --out <csv>`、
   再スコアの要約と差分: `python -m screener.report.rescore_diff --new <csv> --old <csv> ...`
@@ -265,7 +270,10 @@ $py='C:\dev\ryosuke-japanese-equity-research\.venv\Scripts\python.exe'
 - 発表日の根拠は行ごとに `basis` 列: 1=TDnet適時開示タイトル / 1b=JPX一覧(会社届出) / 2=前年同期実績+364日 / 3=システムest_date単独
 - 並べ替えの第一基準は `prev_quarter_in_db`（発表される四半期の**直前四半期**が本体DBにあるか）。stale_flag は補助
 - 休場日は別枠 `common/jp_calendar.py` で判定（2026-09 は 21/22/23 が休場）
-- 成功条件: exit 0、ログに「窓内(未発表) N」「根拠」「直前四半期が本体にある」の3行が出ていること
+- 前年同期の基準（basis 2）用の決算サマリーのキャッシュを任意期間で埋めるときは `--fetch-from/--fetch-to` を明示する
+  （`--from/--to` は決算窓。取得期間は既定で「窓 −400〜−330日」。§50 の訂正）
+- 成功条件: exit 0、ログに「窓内(未発表) N」「根拠」「直前四半期が本体にある」の3行が出ていること、
+  `決算サマリーのキャッシュ: … 欠け 0 日`（verify_range）
 - テスト: `python -m unittest screener.tests.test_earnings_window`
 
 ### 4. 外部リストの手動アーカイブ（株探ウォッチ・**記録専用**）
@@ -283,6 +291,52 @@ $py='C:\dev\ryosuke-japanese-equity-research\.venv\Scripts\python.exe'
 - **スコアリング・採否・出口に一切使わない。記録専用**（将来の PIT 検証用）。
   スコア側がこのテーブルを読まないことは `screener/tests/test_kabutan_watch.py` が検査する
 - 取り込み時点の `universe_flag` を行に凍結して保存する（後から「当時ユニバースだったか」を問えるように）
+
+### 5. S5c（進捗率の季節性 R）—— **0点・表示のみ。スコアに接続しない**（2026-09-21 ユーザー判断・§57）
+
+定義の正本は `docs/backtest_acceptance_criteria.md`「シャドウI-v2」。実装は `screener/signals/progress_history.py`。
+
+    R = 当期の進捗率 ÷ 過去中央値進捗率 = (累計OP ÷ 会社予想OP) ÷ median(過去の 累計OP ÷ 着地OP)
+
+- パラメータ（動かさない）: 発火 R ≥ 1.30（営業利益）/ R_sales ≥ 1.10 は記録のみ / 分母は同じ四半期の
+  **最大5年・最低3年**の中央値 / 進捗 5%未満・200%超の年と Q4 は使わない / PIT（as_of 以前の開示だけ）
+- 出典は本体DBの `fins_summary`（J-Quants `/fins/summary` の必要18列・2021-09〜）。**日次収集には入っていない**:
+  ```powershell
+  & $py -m screener.fetch.jquants_fins --from 2026-09-01 --to YYYY-MM-DD   # 追加取得（取得後に verify_range で突合）
+  & $py -m screener.fetch.jquants_fins --report                            # 在庫
+  & $py -m screener.report.progress_profile --as-of YYYY-MM-DD             # 全銘柄の R 分布 → DATA_ROOT\progress_profile.md/.csv
+  & $py -m screener.report.seasonality_profile --codes 6741 6742 --as-of YYYY-MM-DD --out <md>  # 個別銘柄の内訳（年ごとの進捗・ばらつき・単独値）
+  ```
+- 測定済みの結論（calibration_backlog §51〜§57）: **予測力はある**（R ≥ 1.30 の上方修正率 30.9% 対 母集団 12.0%・t 7.51）が、
+  **固定1か月（K）でも事象出口（L）でも取れない**。「修正先回り型は現行データでは成立しない」で確定
+- **計算不能になる型**: Q1〜Q3 が毎年赤字の会社（期末偏重の受注産業に多い。例: 6741 / 6742）は、進捗が負で
+  除外条件に落ち、分母が作れない。定義どおりの結果であり、閾値を動かして救わない
+- 測定モジュールは `s5c_power`（予測力・J）/ `s5c_trade`（K）/ `s5c_event_exit`（L）/ `revision_gap_5y`（H-5y）。
+  **いずれも事前登録済みの定義を実装するだけ。結果を見てパラメータを変えない**
+
+### 6. 取得の完了条件 `common.verify_range()`（§53）
+
+「実行は成功したが、頼んだ範囲は埋まっていない」事故が3件あった（空転・部分取得を ok 記録・別期間を埋めた）。
+**取得系のコマンドは、終わったあとに要求範囲と実際に入っている日を突き合わせる。**
+
+```python
+from screener import common as C
+v = C.verify_range("日次株価", start, end, have_days)   # have_days = 実際にDBにある日（str / date）
+if not v["ok"]:                                          # {"requested", "present", "missing", "ok"}
+    status = "incomplete"; exit_code = 1                 # 欠けがあれば完了扱いにしない
+```
+
+- 組み込み済み: `jquants_fins` / `jquants_prices` / `earnings_window --fetch-jquants`
+- 未組み込み（次に触るとき）: `tdnet_archiver` / `edinet_bulk`
+- 新しい取得コマンドを書いたら verify_range を通し、欠けを**ログと終了コードの両方**に出すこと
+
+### 7. 公開リポジトリの境界（2026-09-21）
+
+- **追跡しない**: `.env` / DB 一式 / `*.zip` / `*.csv`（`data/comps/` を含む。手元のファイルは消えない）/ `*.log` /
+  `batch/cache/`（yfinance 生ダンプ）/ `batch/draft/` / `DATA_ROOT` 配下すべて（TDnet・EDINET・J-Quants 由来の生データ）
+- **追跡する**: コード・設定 JSON・docs・自作の分析成果物（`models/` `reports/` の xlsx / PDF）
+- **成果物に取得単価・保有・売買の記録を書かない。** market_analysis の `entry_price` はコミットしない
+  （2359 のデモ値は 2026-09-21 にマスク済み）。ローカル絶対パスは `%USERPROFILE%` / `.env` に外出しする
 
 ### 既知の落とし穴（再発防止）
 

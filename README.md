@@ -34,14 +34,59 @@ Both halves of that record matter. The earnings estimates landed within 1% on th
 - **Pre-registration & public verification cycle** — estimates published before the print, reconciled publicly after
 - **Python + EDINET XBRL automation pipeline** — financial data extracted directly from EDINET filings; models generated and validated by code in [`scripts/`](scripts/) and [`templates/`](templates/)
 
+## Earnings Pre-emption Screener (`screener/`) — research in progress
+
+**Purpose.** Automate the "read every earnings release" step: detect the moment a change in the slope of a
+company's results shows up *as reported numbers* (not plans or promises), before the market prices it, and narrow
+the TSE universe to a short weekly list of evidence. The screener outputs evidence and its sources; it does not
+issue buy/sell recommendations. Valuation (reverse DCF) and the final judgement stay with the model pipeline above
+and a human.
+
+**Four layers** (plus one observation-only layer):
+
+| Layer | Package | What it does |
+|---|---|---|
+| 1. Fetch | `screener/fetch/` | TDnet daily archive (earnings releases, forecast revisions), EDINET bulk (annual / half-year reports), J-Quants (universe, prices, earnings summaries) |
+| 2. Extract | `screener/extract/` | XBRL → cumulative and stand-alone quarterly financials, guidance and revisions, disclosure flags |
+| 3. Signals | `screener/signals/` | Point-in-time evidence scores (S1–S5 …); S5c = progress ratio against the company's own seasonality (display only) |
+| 4. Report | `screener/report/` | Weekly screen, earnings-window filter, paper-trading ledger, pre-registered measurement reports |
+| (Technical) | `screener/technical/` | Price-reaction records only. Isolated by tests: the scoring path never imports it |
+
+**Current phase (Sep 2026).** Forward paper-trading (records only — this code never places live orders) running
+alongside pre-registered shadow variants. Every rule change is first registered in
+[`docs/backtest_acceptance_criteria.md`](docs/backtest_acceptance_criteria.md) with its parameters and pass/fail
+criteria fixed *before* the measurement; results, negative ones included, are logged in
+[`docs/calibration_backlog.md`](docs/calibration_backlog.md).
+
+**Main measured results so far** (in-sample, ~5 years of disclosures; section numbers refer to the calibration log):
+
+- **The initial reaction to an upward guidance revision is completed in the overnight gap.** For the 1,825 upward
+  revisions disclosed after the close (5 years, 43.9% price coverage), the move from the next open to the close is
+  +0.00% (date-clustered t −1.55); the reaction is the gap. The median gap widened from +0.32% (2022) to
+  +1.25% (2026). (§44, §56)
+- **S5c (progress vs. the company's own 5-year seasonal median, R ≥ 1.30) has predictive power but cannot be
+  captured.** The upward-revision rate within 90 days is 30.9% vs. a 12.0% base rate (+18.9pt, t 7.51). But a fixed
+  one-month hold averages +0.71% (t 0.64; −0.39% vs. TOPIX), and exiting on the revision event (5/10/20-day
+  variants) fails all three pre-registered checks. Conclusion: *front-running revisions is not viable with the
+  current data*. S5c stays at zero weight, display only. (§51–§57)
+- The raw progress-ratio signal (S5) adds little: +0.39pt over a matched base rate, from a thin sample. (§42, §46)
+- Volume-profile "acceptance zones" did not improve entries or exits in pre-registered tests; the technical layer
+  remains observation-only. (§39, §43)
+
+**Data.** Raw TDnet / EDINET / J-Quants data, databases, caches and logs are never committed (J-Quants terms
+prohibit redistribution). The repository holds code, configuration, documentation and the author's own analysis
+outputs.
+
 ## Repository Layout
 
 ```
 reports/     Published research PDFs and their final Excel models
+models/      Generated DCF / SOTP / market-analysis workbooks (drafts included)
 templates/   Generic model templates (DCF, SOTP, market analysis, narrative stage)
 scripts/     Per-ticker runners, EDINET fetcher/parser, validators
-data/        Per-ticker assumption overrides (JSON) and comps inputs (CSV)
-docs/        Design docs and analysis notes
+data/        Per-ticker assumption overrides, segments, adjustments (JSON). Comps CSVs stay local, not committed
+screener/    Earnings pre-emption screener (fetch / extract / signals / report / technical)
+docs/        Design docs, pre-registrations, calibration log and analysis notes
 ```
 
 ## Disclaimer
