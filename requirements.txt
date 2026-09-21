@@ -1,0 +1,34 @@
+# requirements.txt — screener の直接依存。2026-09-09 の PC移行時に、
+# import 走査 (screener/ scripts/) の結果から起こして固定した。
+#
+#   python -m venv .venv
+#   .venv\Scripts\python.exe -m pip install -r requirements.txt
+#
+# 推移的依存 (numpy, pdfminer.six, soupsieve 等) は pip が解決する。
+
+# --- データ処理 ---
+pandas==3.0.5
+openpyxl==3.1.5
+
+# --- 取得 (EDINET / TDnet / J-Quants / yfinance) ---
+requests==2.34.2
+yfinance==1.7.0
+
+# --- HTML/XBRL パース ---
+# lxml は import されないが BeautifulSoup(..., "lxml") / "lxml-xml" の
+# バックエンドとして必須。外すと XBRL パースが実行時に落ちる。
+beautifulsoup4==4.15.0
+lxml==6.1.3
+
+# --- PDF (TDnet 短信・決算説明資料) ---
+pdfplumber==0.11.10
+pypdf==6.18.0
+PyPDF2==3.0.1
+
+# --- 設定 / Excel COM ---
+PyYAML==6.0.3
+python-dotenv==1.2.3
+pywin32==312
+
+# --- テスト ---
+pytest==9.1.1

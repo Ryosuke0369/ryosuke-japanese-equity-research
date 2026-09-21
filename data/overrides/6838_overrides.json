@@ -1,0 +1,182 @@
+{
+  "_README": "多摩川ホールディングス (6838) overrides — 型A・傾き実現型(3441型)+官公庁・防衛テーマ、10月期決算。原典の決算短信・有報・半期報告書は千円表記、本ファイルは全て百万円に換算済み。分析日 2026-09-14 は FY2026/10期の第4四半期(残り約1.5ヶ月)。基準年は FY2026/10E(H1実績 + H2推定)、予測Y1は FY2027/10。時系列は二重に断絶している(IFRS移行日2024-11-01 / FY2024/10は2024-04-01〜10-31の7ヶ月変則決算)ため、hist列の前年比は比較可能性がない。Q3短信(2026-09-14発表予定)は未取込 — Segment Bridge 表1に差し替えセルを用意した。",
+
+  "ticker": "6838",
+  "company_name": "Tamagawa Holdings",
+  "exchange": "TSE Standard",
+  "sector": "Electronic & Communication Equipment / Renewable Energy",
+  "fiscal_year_end_month": 10,
+  "company_type": "A",
+  "_fiscal_note": "10月期決算(FY2024/10から。旧3月期)。有報は1月下旬提出(FY2025/10 = S100XHR9, 2026-01-28)。",
+
+  "current_price": 1530,
+  "_price_note": "1,530円 = プロンプト指定(2026-09-14)。Yahoo!ファイナンス 2026-09-11終値 1,526円 / 9-14 前場 1,522〜1,528円と整合。2026-06-04の2,372円(年初来高値2,496円 6/3)からの下落は株式分割ではない(株数は同期間に+3%のみ)。",
+
+  "shares_outstanding": 9121192,
+  "shares": { "fully_diluted_shares": 9121192 },
+  "_shares_note": "【ユーザー承認済み 2026-09-14】発行済9,182,700株(2026-06-15提出日現在、半期報告書S100YBBW) − 自己株式61,508株(2026-05-18開示) = 9,121,192株。プロンプト指定の9,182,700株は自己株控除前。MSワラント第15〜17回は全て行使完了(残0)。基本EPSの期中平均7,226,437株は使わない。",
+
+  "net_debt": -2756.3,
+  "_net_debt_note": "【ユーザー承認済み】-2,756 = 有利子負債3,545.0(借入金 流動671.6+非流動2,667.3 + リース負債 流動37.0+非流動169.1, 2026-04-30) − 現金及び現金同等物3,795.3 − 5月のワラント払込金251.7(第16回104,300株x764円=79.7 + 第17回160,800株x1,070円=172.1。株数9,121,192に含まれる株の払込で4/30 BSに未計上) − Addvalue Technologies株 公正価値2,254.3(2026-04-30、レベル1、非事業資産として現金同等に扱う)。素のEV(Addvalue非控除)は net debt -502 相当で、Segment Bridge 表2に生きた数式で併記。正常化EBIT/純利益からは評価益1,595.5を除外しており、資産控除と合わせて二重計上にならない。",
+
+  "book_value": 9372,
+  "_book_value_note": "親会社所有者帰属持分9,120.4(2026-04-30) + 5月ワラント払込251.7 = 9,372(株数と基準日を揃えたプロフォーマ)。非支配持分なし。",
+
+  "tax_rate": 0.30,
+  "_tax_note": "【推定・要確認】正常化税率30%。H1の実効税率20.6%(475.4/2,307.9)は評価益に対する繰延税金(DTL 97.3→376.0)を含み正常値ではない。国内法定実効税率約30.6%を丸めた。海外子会社(ベトナム工場・インドネシア小水力)の軽課は未考慮。",
+
+  "risk_free": 0.030,
+  "_risk_free_note": "財務省 国債金利情報 jgbcm.csv の10年債 2.987%(R8.9.11 = 2026-09-11、取得 2026-09-14)を3.0%に丸め。",
+  "erp": 0.055,
+  "_erp_note": "日本株ERP 5.5%(リポジトリ標準)。",
+  "beta": 1.436,
+  "_beta_note": "6838 週次リターン(2024-08〜2026-08-31、104週、screener.db prices の調整後終値)を TOPIX(market_index)に回帰した raw β = 1.436、相関0.379、年率ボラ60.6%。1年 1.775(相関0.338)/3年 1.267。yfinance は venv の numpy DLL がアプリ制御ポリシーでブロックされ使用不可のため自前回帰。テンプレが Blume 調整 0.67x1.436+0.33 = 1.292 を掛ける。MSワラント行使期(2025-12〜2026-05)の需給が β・ボラを押し上げている可能性あり。",
+  "size_premium": 0.040,
+  "_size_premium_note": "時価総額約140億円の東証スタンダード小型株。テンプレ自動判定(1,000億円未満→3.0%)より1pt上乗せし4.0%。根拠: (a) 同規模の3441(117億円)・2962(142億円)で4.0%を検討の上採用、(b) 浮動株が薄く年率ボラ60%、(c) 直近1年でMSワラントによる希薄化(発行済+約33%)を経験。流用ではなく本銘柄の流動性・希薄化履歴から判断。",
+  "de_ratio": 0.0,
+  "_de_ratio_note": "【設計判断】0.0。ネット有利子負債がマイナス(ネットキャッシュ、Addvalue控除前でも-502)のため、ネット基準の資本構成は全額株主資本とする。自動計算は負のnet_debtから負のD/Eを出すため明示指定。グロス基準(3,545/13,955=0.254)なら WACC は約2.6pt低下する — Sensitivity Table 1 の WACC 列で確認できる。EV→株式価値ブリッジがネット控除である点と整合させた保守側の判断。",
+  "interest_expense": 58.4,
+  "debt_beginning": 3646.0,
+  "debt_ending": 3718.0,
+  "_cost_of_debt_note": "FY2025/10(J-GAAP、12ヶ月)の支払利息58.4 ÷ 平均有利子負債(期首3,646.0 / 期末3,718.0、プロンプト指定)= 税引前Kd 1.59%、税引後 1.11%。de_ratio=0 のため WACC への寄与はゼロだが、実績値として記録。既存借入の平均コストであり限界調達コストではない。",
+
+  "terminal_growth": 0.010,
+  "_terminal_growth_note": "【設計判断】1.0%。官公庁・防衛予算の拡大は中期で見えるが、案件型の受注生産で数量成長の永続性は担保されない。10年JGB 3.0%の名目環境では控えめ。",
+  "exit_multiple": 7.0,
+  "primary_multiple": "EV/EBITDA",
+  "_exit_note": "【設計判断】Exit EV/EBITDA 7.0x。ピア中央値18.9x は防衛テーマで再評価中の東京計器(18.9x)・日本アビオニクス(19.7x)と、利益の薄いアルチザ(19.0x)が押し上げており、ターミナル(成熟期)に防衛プレミアムを持ち込まない。WACC 14%台・g 1%の PGM 逆算Exit倍率は4〜5x程度になるため、乖離チェック(1.8倍)の境界付近になる7.0xを採用。実測の乖離は1.98倍(PGM逆算3.53x)で WARN 11 が出るが、PGM逆算倍率を押し下げているのは WACC 14.1%であり、ピア中央値18.9xの約1/3の7.0xは既に保守的と判断して据え置いた(裁定: 収斂・裁定不要)。",
+
+  "capex_method": "direct",
+  "da_method": "direct",
+  "capex_pct": 0.060,
+  "da_pct": 0.055,
+  "capex_direct": {
+    "historical": [199.8, 66.9, 188.9, 606.9, 500.0],
+    "projections": [700, 650, 520, 460, 430]
+  },
+  "da_direct": {
+    "historical": [197.7, 290.2, 170.9, 347.8, 377.2],
+    "projections": [400, 430, 450, 455, 440]
+  },
+  "_capex_da_note": "direct方式。実績は有報(FY2023/3・FY2024/3・FY2025/10 はCF計算書の有形固定資産取得、FY2024/10(7M)はセグメント注記の有形・無形固定資産増加額188.9で代替=推定)。FY2026/10E: capex 500【推定・要確認】(H1実績88.8 + 系統用蓄電所取得(2026-05契約、みやま市、2026-08-31引渡し完了。取得額未確認) + 本社第二工場の着工準備)、D&A 377.2 = H1 188.6 x2。予測: 第二工場建設(2026-08-31施工業者内定)でY1-Y2 capex 700/650、以降逓減。ターミナル capex/D&A = 430/440 = 0.98。シナリオ非連動(Downsideでも同額)である点は保守側の割り切り。",
+
+  "nwc_method": "days",
+  "base_year_ar": 1537.8,
+  "base_year_inv": 2573.5,
+  "base_year_ap": 792.7,
+  "_nwc_note": "2026-04-30 IFRS BS(最新): 営業債権及びその他の債権1,537.8 / 棚卸資産2,573.5 / 営業債務及びその他の債務792.7。基準年(FY2026/10E 売上6,950・原価4,093.6)換算で DSO 80.8日 / DIH 229.5日 / DPO 70.7日。受注生産型で DIH が極端に長く、FCF の最大スイングファクター。仕掛品の分解(J-GAAP FY2024/10末→FY2025/10末 +50.6% = COGS規模 +38.1% x 日数 +9.0%)と受注高5,787 vs 売上5,588 は Segment Bridge 表3。H1 FY26 に債権-483・棚卸-179 の回収が進み営業CF +1,340.6 を生んだ事実は Base の DIH 逓減(220→200日)に反映。",
+
+  "projection_years": 5,
+  "projection_start_fy": "FY2027(E)",
+  "stub_months_elapsed": 10,
+  "stub_fraction": 1.13,
+  "_stub_note": "分析日2026-09-14。FY2026/10期は残り約1.5ヶ月(第4四半期)。予測Y1 = FY2027/10(期末2027-10-31)まで412日 = 1.13年。テンプレの割引指数は (C19 + yr) で Y1 が1.13年。FY2026/10期 H2(2026-05〜10)のFCFは評価に含めていない(net debt は4/30+5月払込の時点)— 保守側の割り切りとして Adjustments Log に記録。",
+
+  "base_year_revenue": 6950.0,
+  "base_year_cogs": 4093.6,
+  "core_ebitda": 1613,
+  "core_net_income": 810,
+  "ltm_revenue": 6754,
+  "_base_year_note": "基準年 FY2026/10E。売上6,950 = 会社予想(2026-06-15、2度目の上方修正)。営業利益1,236【推定】= H1実績751.6 + H2売上3,207.1(=6,950−3,742.9) x Q2単独OPM15.1%(484.4)。会社予想の事業利益820は H1進捗91.7%・暗黙のH2 68.4 で陳腐化(S5型)しており基準年には使わない(Management シナリオの起点と Reverse DCF の op0 に使う)。売上原価4,093.6 = 6,950 x H1原価率58.86%、販管費(その他収益・費用の純額を含む)1,620.4。core_ebitda = 1,236 + D&A 377 = 1,613。core_net_income 810 = (1,236 − 金融費用純額78.4) x 0.70、評価益除外。ltm_revenue 6,754 = FY2025/10(J-GAAP)5,588.0 − H1 FY2025(IFRS)2,576.8 + H1 FY2026(IFRS)3,742.9 — GAAP混在の近似。",
+
+  "normalized_net_income": {
+    "pretax": 1157.6,
+    "addbacks": 0,
+    "label": "Net Income normalised (FY2026/10E pretax 1,158 ex Addvalue FV gain x normalised tax C6) [参考・Target不算入]",
+    "note": "会社予想の親会社帰属当期利益1,835は Addvalue株の評価益(税効果控除後)を含み PER の分母として不適。FY2026/10E 推定営業利益1,236 − 金融費用純額78.4 = 1,157.6 に DCF Model!C6 の正常化税率30%を適用。H1実績でも中間利益1,832.4の約73%が評価益由来(正常化純利益499、Segment Bridge 表4)。FY2025/10(J-GAAP)の特別利益132.1(投資有価証券売却益124.4・固定資産売却益7.7)も正常化で除外。"
+  },
+
+  "reverse_dcf": {
+    "op0": 820,
+    "op0_label": "FY2026/10 guidance",
+    "peak_op": 1022.4,
+    "peak_label": "Q2 FY26 single x4",
+    "peak_opm": 0.151,
+    "opm_grid": [0.05, 0.10, 0.12, null, 0.20],
+    "n_years": [3, 5, 7, 10],
+    "_note": "逆算の問い: 1,530円(Addvalue控除後EV=主、素のEVは併記)は、会社予想の事業利益820の何倍の定常営業利益を何年後に要求するか。op0 = 820(会社予想)、peak_op = 1,022.4 = Q2単独営業利益255.6 x4(年率換算の上限目安であり累計値の年率換算ではない)、peak_opm = Q2単独OPM 15.1%。opm_grid 5%(FY2025/10水準)/10%/12%/live 15.1%/20%(Upside定常)。素のEV と Addvalue 半値ケースの必要利益は Block E の代替として Segment Bridge 表2に Reverse DCF の係数セル(F39/F44)への生きた数式で置いた。benchmark_ticker は指定しない(官公庁向け無線機器の小型株で参照可能な直近TOB事例を特定できず)。"
+  },
+
+  "_fx_note": "fx_sensitivity は使用しない。(a) 地域別売上は本邦90%超で開示省略(有報 関連情報)、海外売上比率を短信から推定できない、(b) Addvalue はシンガポール株だが非事業資産であり、そのSGD/JPY変動は事業の為替エクスポージャーではなく EV控除額の変動(Segment Bridge 表2の50%ケース)で扱う、(c) ベトナム工場のコスト側連動比率も未開示。必須キー usd_revenue_ratio / usd_cogs_ratio に確定値を与えられないため Table 3 は生成しない。",
+
+  "fundamentals_fy2025": {
+    "revenue": 5588.0,
+    "operating_income": 278.9,
+    "net_income": 268.6,
+    "ebitda": 626.7,
+    "net_assets": 5499.5,
+    "_note": "FY2025/10(2024-11-01〜2025-10-31、J-GAAP 12ヶ月)。EDINET取得が10月期・決算期変更で失敗した場合の非致命化用。ebitda = 営業利益278.9 + 減価償却費347.8。純資産はIFRS組替後の前期末資本合計。"
+  },
+
+  "hist_years": ["FY2023/3", "FY2024/3", "FY2024/10(7M)", "FY2025/10", "FY2026/10E"],
+  "hist_revenue": [3294.5, 4154.0, 2356.4, 5588.0, 6950.0],
+  "hist_cogs": [2404.8, 3059.3, 1644.9, 3895.1, 4093.6],
+  "hist_sga": [1327.0, 1309.9, 759.3, 1414.0, 1620.4],
+  "hist_operating_income": [-437.2, -215.3, -47.8, 278.9, 1236.0],
+  "hist_net_income": [-482.8, -443.4, -113.7, 268.6, 810.0],
+  "hist_ocf": [-1883.9, -1132.8, 257.8, -25.7, 1740.0],
+  "hist_capex": [199.8, 66.9, 188.9, 606.9, 500.0],
+  "hist_cash": [1055.1, 1210.6, 1601.8, 1221.9, 4047.0],
+  "hist_debt": [2116.2, 3210.1, 3646.0, 3718.0, 3545.0],
+  "hist_depreciation": [197.7, 290.2, 170.9, 347.8, 377.2],
+  "_hist_note": "【比較可能性の制約】FY2023/3・FY2024/3・FY2024/10(7M)・FY2025/10 は J-GAAP、FY2026/10E は IFRS ベースの推定。FY2024/10 は2024-04-01〜10-31の7ヶ月変則決算で、12ヶ月の列と並べた成長率は無意味(Financial Statements の成長率行は読まないこと)。出所: FY2023/3 = 有報S100R5MN、FY2024/3 = 有報S100TV0O(EDINET XBRL、千円→百万円)、FY2024/10・FY2025/10 = プロンプト転記値(有報S100XHR9と照合、支払利息58.405・減価償却費347.765一致)。FY2024/10 の現金1,601.8 は IFRS 移行日残高、有利子負債3,646.0 はプロンプト指定の期首残高。FY2026/10E: 純利益810 = 正常化(評価益除外)推定、営業CF 1,740【推定】= H1実績1,340.6 + H2 約400、現金4,047.0 = 2026-04-30の3,795.3 + 5月ワラント払込251.7(期末値ではなくプロフォーマ)、有利子負債3,545.0 = 2026-04-30。",
+
+  "scenarios": {
+    "Base": {
+      "_desc": "Q2単独OPM15.1%を定常マージンの手掛かりとし、量産効果の一部剥落と第二工場の立ち上げ費用で12〜15%帯へ収斂(15.0%→13.0%)。売上は中期経営計画(FY2027 7,052→FY2030 11,154、年率+15%前後)より遅いペース(+8/+10/+10/+8/+5%)。Y5 売上10,053 / 営業利益1,307。原価率63%固定、販管費率で OPM を調整。DIH は H1 の在庫回収を反映し220→200日。",
+      "revenue_growth": [0.08, 0.10, 0.10, 0.08, 0.05],
+      "cogs_pct": [0.63, 0.63, 0.63, 0.63, 0.63],
+      "sga_pct": [0.22, 0.225, 0.23, 0.235, 0.24],
+      "dso_days": [80, 80, 80, 80, 80],
+      "dih_days": [220, 215, 210, 205, 200],
+      "dpo_days": [70, 70, 70, 70, 70]
+    },
+    "Upside": {
+      "_desc": "官公庁・防衛予算の拡大継続+モバイルインフラ大口受注の上積み。Q2の減速は期ズレ(顧客支給品遅延で完成が翌月にずれ込んだ案件、説明資料p13)と解釈し、定常OPM 20%超(20→21%)。売上 +18/+16/+14/+12/+10%。Y5 売上14,213 / 営業利益2,985。",
+      "revenue_growth": [0.18, 0.16, 0.14, 0.12, 0.10],
+      "cogs_pct": [0.58, 0.58, 0.58, 0.58, 0.58],
+      "sga_pct": [0.22, 0.21, 0.21, 0.21, 0.21],
+      "dso_days": [78, 76, 75, 75, 75],
+      "dih_days": [210, 200, 190, 185, 180],
+      "dpo_days": [72, 72, 72, 72, 72]
+    },
+    "Management": {
+      "_desc": "会社予想(売上6,950 / 事業利益820)を起点に、量産フェーズが継続し FY2027以降も二桁成長(+12/+12/+11/+10/+10%)。820は H1進捗92%の下限値と読み、OPM は13.0%→15.0%へ漸増(中期計画 FY2030 12.7%の上方修正版)。在庫日数は Base と同じ220→200日。Y5 売上11,707 / 営業利益1,756。",
+      "revenue_growth": [0.12, 0.12, 0.11, 0.10, 0.10],
+      "cogs_pct": [0.63, 0.63, 0.63, 0.63, 0.63],
+      "sga_pct": [0.24, 0.235, 0.23, 0.225, 0.22],
+      "dso_days": [80, 80, 80, 80, 80],
+      "dih_days": [220, 215, 210, 205, 200],
+      "dpo_days": [70, 70, 70, 70, 70]
+    },
+    "Downside 1": {
+      "_desc": "量産フェーズの初期特需が一巡し、FY2025/10水準(OPM 5.0%)へ回帰(9%→6%→5%)。売上 -8/0/+2/+2/+2%。受注生産の回転悪化で DIH 240日。Y5 売上6,653 / 営業利益333。",
+      "revenue_growth": [-0.08, 0.0, 0.02, 0.02, 0.02],
+      "cogs_pct": [0.66, 0.68, 0.69, 0.69, 0.69],
+      "sga_pct": [0.25, 0.26, 0.26, 0.26, 0.26],
+      "dso_days": [85, 85, 85, 85, 85],
+      "dih_days": [240, 240, 240, 240, 240],
+      "dpo_days": [65, 65, 65, 65, 65]
+    },
+    "Downside 2": {
+      "_desc": "官公庁案件の期ズレ・端境期 + 再エネ事業の減損(系統用蓄電所・小水力の立ち上げ遅延)。営業赤字近傍(FY2024/10期の水準): OPM 1%→-1%→0%→1%→2%。売上 -20/-5/+3/+3/+3%。DSO 95日 / DIH 260日。Y5 売上5,873 / 営業利益117。",
+      "revenue_growth": [-0.20, -0.05, 0.03, 0.03, 0.03],
+      "cogs_pct": [0.70, 0.72, 0.71, 0.70, 0.70],
+      "sga_pct": [0.29, 0.29, 0.29, 0.29, 0.28],
+      "dso_days": [95, 95, 95, 95, 95],
+      "dih_days": [260, 260, 260, 260, 260],
+      "dpo_days": [60, 60, 60, 60, 60]
+    }
+  },
+
+  "investment_thesis": [
+    "The earnings slope is real: government-related revenue more than doubled to JPY2,089mn in the first half of FY10/26 as the main RF module moved from development into mass production, taking first-half operating profit to JPY752mn and already past the FY10/28 mid-term plan target of JPY761mn.",
+    "Company guidance is stale rather than a ceiling: the revised full-year operating profit of JPY820mn implies only JPY68mn for the whole second half, and first-half orders of JPY4,295mn ran 15% ahead of sales with contract liabilities more than doubling.",
+    "At {price} the market is valued net of the Addvalue stake and net cash; our target of {target_price} implies {upside_pct} at a WACC of {wacc}, on {pb} book, with the gain on the Singapore shares excluded from earnings and the stake counted once in the EV bridge."
+  ],
+  "key_risks": [
+    "The slope is already bending: second-quarter stand-alone operating margin fell to 15.1% from 24.2% in the first quarter and quarterly revenue fell 17.5%, so the first-quarter margin may have been a mass-production launch peak rather than a steady state.",
+    "Reported profit is dominated by a mark-to-market gain: about 73% of first-half net profit is the fair-value gain on 125.8mn Addvalue Technologies shares listed in Singapore, whose price moves about 9% a week; a halving of the stake would remove about JPY124 per share of value deducted in this model.",
+    "Balance-sheet quality depends on a build-to-order working-capital cycle of over 200 inventory days, and the equity base was rebuilt with moving-strike warrants that added about a third to the share count in one year; further equity funding for the second factory or grid batteries would dilute again."
+  ]
+}

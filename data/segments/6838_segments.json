@@ -1,0 +1,152 @@
+{
+  "_source": "6838 多摩川ホールディングス。J-GAAP列は有報 第58期(S100XHR9, 2026-01-28提出)のセグメント注記、IFRS列は半期報告書 第59期(S100YBBW, 2026-06-15提出)のセグメント注記・収益分解注記。原典は千円、本ファイルは百万円に換算済み。Q1値はQ1短信(2026-03-16)ベースのプロンプト転記値。",
+  "_ticker": "6838 多摩川ホールディングス",
+  "title": "Segment Bridge - Tamagawa HD (6838)",
+  "intro": [
+    "Two reportable segments: Electronic & Communication Equipment (radio, measurement, information and industrial equipment; government and 5G/mobile infrastructure) and Renewable Energy (small wind / solar plant sales and power sales). All figures JPY mn; the source filings are in JPY thousands.",
+    "COMPARABILITY WARNING: the four columns are NOT a time series. FY2024/10 is a 7-month transition period (Apr-Oct 2024) under J-GAAP; FY2025/10 is 12 months under J-GAAP; the two H1 columns are 6 months under IFRS (transition date 2024-11-01). No growth rate is computed across these columns on purpose. Margins within a column are comparable; growth between columns is not.",
+    "Segment profit is operating-profit based. The adjustment row is disclosed group overhead (plus unrealised-profit eliminations), so the profit bridge closes to the disclosed consolidated operating profit.",
+    "Informational sheet: no cell on the DCF Model sheet references it. Tables 2-5 below reference 'Reverse DCF' and hold the Q3 replacement cells, the Addvalue EV bridge, the NWC decomposition and the normalisation bridge."
+  ],
+  "periods": ["FY2024/10 (7M) J-GAAP", "FY2025/10 J-GAAP", "H1 FY2025/10 IFRS", "H1 FY2026/10 IFRS"],
+  "segments": [
+    {
+      "label": "Electronic & Communication Equipment  電子・通信用機器",
+      "revenue": [2096.22, 5029.48, 2254.50, 3449.48],
+      "profit": [202.00, 574.04, 313.33, 900.28],
+      "da": [72.10, 181.98, null, null],
+      "note": "Main customers FY2025/10: NEC 1,331.6 / Toshiba 857.6. H1 FY2026 revenue split: government 2,089.1, mobile infrastructure 769.0, public projects 386.5, FA/measurement/other 204.9."
+    },
+    {
+      "label": "Renewable Energy  再生可能エネルギー",
+      "revenue": [260.20, 558.49, 322.27, 293.41],
+      "profit": [-30.21, 74.99, 79.53, 83.35],
+      "da": [95.25, 161.75, null, null],
+      "note": "Power sales plus plant sales. Flores (Indonesia) small-hydro and the Miyama grid battery (grid-connected Jul-2026, handed over 2026-08-31) are not yet in these columns."
+    }
+  ],
+  "adjustment": {
+    "revenue": "derive",
+    "revenue_note": "No inter-segment revenue is disclosed in any period, so the derived adjustment is zero.",
+    "profit": [-219.56, -370.13, -192.56, -232.02],
+    "profit_label": "Adjustment  調整額 (全社費用・未実現利益消去)",
+    "da": [3.51, 4.03, null, null],
+    "da_label": "Adjustment  調整額 (D&A)",
+    "da_note": "Segment D&A is not disclosed in the IFRS interim note; the H1 consolidated D&A (CF statement) is shown on the consolidated row only, so the H1 D&A bridge is intentionally open."
+  },
+  "consolidated": {
+    "revenue": [2356.42, 5587.97, 2576.77, 3742.89],
+    "revenue_note": "Disclosed consolidated revenue (J-GAAP 売上高 / IFRS 売上収益).",
+    "profit": [-47.77, 278.90, 200.31, 751.61],
+    "profit_note": "Disclosed consolidated operating profit. IFRS operating profit = 事業利益 at present (company note: no equity-method or non-recurring items).",
+    "da": [170.86, 347.77, 197.40, 188.60],
+    "da_note": "CF-statement depreciation and amortisation."
+  },
+  "show_margin_table": true,
+  "show_ebitda_row": true,
+  "extra_tables": [
+    {
+      "title": "Single-quarter decomposition and Q3 replacement cells (Q3 results due 2026-09-14 - NOT yet loaded)",
+      "headers": ["Item", "Q1 FY26 (Nov-Jan)", "H1 FY26 cumulative", "Q2 single (derived)", "9M FY26 cumulative - INPUT", "Q3 single (derived)", "Note"],
+      "formats": ["text", "yen", "yen", "yen", "yen", "yen", "text"],
+      "rows": [
+        ["Revenue  売上収益", 2051.0, 3742.89, {"formula": "=D{row}-C{row}"}, null, {"formula": "=IF(ISNUMBER(F{row}),F{row}-D{row},\"未入力\")"}, "Q2 single 1,691.9 = H1 - Q1 (-17.5% vs Q1). Type the 9M cumulative figure into column F over the dash when the Q3 短信 is released."],
+        ["Operating profit  営業利益", 496.0, 751.61, {"formula": "=D{row}-C{row}"}, null, {"formula": "=IF(ISNUMBER(F{row}),F{row}-D{row},\"未入力\")"}, "Q2 single 255.6. Do not annualise the H1 cumulative figure (3441 lesson)."],
+        ["Operating margin", {"formula": "=C{r1}/C{r0}", "fmt": "pct"}, {"formula": "=D{r1}/D{r0}", "fmt": "pct"}, {"formula": "=E{r1}/E{r0}", "fmt": "pct", "highlight": true}, {"formula": "=IF(ISNUMBER(F{r0}),F{r1}/F{r0},\"未入力\")", "fmt": "pct"}, {"formula": "=IF(ISNUMBER(G{r0}),G{r1}/G{r0},\"未入力\")", "fmt": "pct"}, "Q1 24.2% -> Q2 single 15.1% (about -9pt). Base scenario anchors the steady-state margin on the Q2 single figure."],
+        ["Government revenue  官公庁向け売上", 1240.0, 2089.08, {"formula": "=D{row}-C{row}"}, null, {"formula": "=IF(ISNUMBER(F{row}),F{row}-D{row},\"未入力\")"}, "Q1 1,240 (about 5.1x YoY). Q2 single derived 849.1. The 9M figure is in the Q3 revenue-disaggregation note."],
+        ["E&C segment profit  電子・通信セグメント利益", 555.0, 900.28, {"formula": "=D{row}-C{row}"}, null, {"formula": "=IF(ISNUMBER(F{row}),F{row}-D{row},\"未入力\")"}, "Q1 555 (3.7x YoY). Q2 single derived 345.3."],
+        ["Q2 single operating profit x4 (annualised run-rate)", null, null, {"formula": "=E{r1}*4"}, null, {"formula": "=IF(ISNUMBER(G{r1}),G{r1}*4,\"未入力\")"}, "1,022.4 = the Reverse DCF peak_op input. Replace the Reverse DCF C15 input with the Q3 single x4 figure once column G is populated."],
+        ["Implied H2 operating profit if FY guidance 820 holds", null, {"formula": "=820-D{r1}"}, null, {"formula": "=IF(ISNUMBER(F{r1}),820-F{r1},\"未入力\")"}, null, "68.4 for the whole of H2 = guidance is stale (S5 type). H1 progress 91.7% of 820."],
+        ["H1 progress vs FY guidance (OP 820 / revenue 6,950)", {"formula": "=C{r1}/820", "fmt": "pct"}, {"formula": "=D{r1}/820", "fmt": "pct"}, {"formula": "=D{r0}/6950", "fmt": "pct"}, {"formula": "=IF(ISNUMBER(F{r1}),F{r1}/820,\"未入力\")", "fmt": "pct"}, null, "Column E of this row is H1 REVENUE progress (53.9%), the others are operating-profit progress."]
+      ],
+      "note": "Blue cells are inputs. Column F shows '-' until the Q3 figures are typed in; every derived cell reads 未入力 until then. Adjustments Log records that the Q3 results were NOT loaded in this DRAFT (built 2026-09-14 10:15 JST, TDnet list had no 6838 entry)."
+    },
+    {
+      "title": "EV bridge - Addvalue deduction (double-count guard) and alternative EVs, live off 'Reverse DCF' (Block E substitute)",
+      "headers": ["Item", "JPY mn", "Note"],
+      "formats": ["text", "yen", "text"],
+      "rows": [
+        ["Market capitalisation (live)", {"formula": "='Reverse DCF'!C8"}, "Price x 9,121,192 shares (issued 9,182,700 at 2026-06-15 less 61,508 treasury)."],
+        ["Interest-bearing debt 2026-04-30 (borrowings 3,338.9 + leases 206.1)", 3545.0, "IFRS BS. Leases included, consistent with IFRS EBITDA."],
+        ["Cash and cash equivalents 2026-04-30", -3795.3, "IFRS BS."],
+        ["May-2026 warrant proceeds not yet in the 04-30 BS", -251.7, "16th series 104,300 sh x 764 = 79.7; 17th series 160,800 sh x 1,070 = 172.1. Pro forma so that cash and share count share one basis date."],
+        ["BARE EV - Addvalue NOT deducted", {"formula": "=SUM(C{r0}:C{r3})", "bold": true}, "Reference only. Mixing this EV with normalised (gain-excluded) earnings would undercount the stake."],
+        ["Addvalue Technologies stake, FV 2026-04-30 (Level 1)", 2254.3, "125,802,352 SGX shares, FVTPL. H1 FV gain 1,595.5 booked in finance income."],
+        ["PRIMARY EV - Addvalue deducted (= model)", {"formula": "=C{r4}-C{r5}", "bold": true, "highlight": true}, "Gain removed from earnings AND stake deducted from EV, once each. Never add the gain back to EBIT and deduct the stake at the same time as well."],
+        ["Check: primary EV less 'Reverse DCF'!C10 (must be 0)", {"formula": "='Reverse DCF'!C10-C{r6}"}, "Non-zero means DCF Model!C16 net debt and this bridge have drifted apart."],
+        ["EV if Addvalue is marked at 50%", {"formula": "=C{r4}-0.5*C{r5}"}, "SGX small cap, weekly moves of about 9%. 4/30 value per share about JPY 17.9."],
+        ["Block A required steady OP (immediate) - BARE EV", {"formula": "=C{r4}*('Reverse DCF'!C11-'Reverse DCF'!C12)/(1-'Reverse DCF'!C13)"}, "EV x (WACC - g) / (1 - t)."],
+        ["Block A required steady OP (immediate) - PRIMARY EV", {"formula": "='Reverse DCF'!C25", "highlight": true}, "Live link."],
+        ["Block A required steady OP (immediate) - Addvalue 50%", {"formula": "=C{r8}*('Reverse DCF'!C11-'Reverse DCF'!C12)/(1-'Reverse DCF'!C13)"}, "Same formula on the 50% EV."],
+        ["Block B-3 required steady OP, N=5, model WACC - BARE EV", {"formula": "=(C{r4}/(1-'Reverse DCF'!C13)-'Reverse DCF'!C14*'Reverse DCF'!F39)/'Reverse DCF'!F44"}, "OP* = (EV/(1-t) - OP0 x (A-B)) / (B+TVF), factors from Reverse DCF F39 / F44."],
+        ["Block B-3 required steady OP, N=5, model WACC - PRIMARY EV", {"formula": "='Reverse DCF'!F49", "highlight": true}, "Live link."],
+        ["Block B-3 required steady OP, N=5, model WACC - Addvalue 50%", {"formula": "=(C{r8}/(1-'Reverse DCF'!C13)-'Reverse DCF'!C14*'Reverse DCF'!F39)/'Reverse DCF'!F44"}, "Same formula on the 50% EV."],
+        ["Primary B-3 (N=5) as % of FY guidance OP 820", {"formula": "=C{r13}/820", "fmt": "pct", "highlight": true}, "The headline multiple asked in the prompt."],
+        ["Primary B-3 (N=5) as % of Q2 single x4 (1,022.4)", {"formula": "=C{r13}/1022.4", "fmt": "pct"}, "Against the Q2 single-quarter run-rate."],
+        ["Bare-EV B-3 (N=5) as % of FY guidance OP 820", {"formula": "=C{r12}/820", "fmt": "pct"}, "Reference."],
+        ["Addvalue-50% B-3 (N=5) as % of FY guidance OP 820", {"formula": "=C{r14}/820", "fmt": "pct"}, "Reference."],
+        ["Primary Block A as % of FY guidance OP 820", {"formula": "=C{r10}/820", "fmt": "pct"}, "No-ramp floor."]
+      ],
+      "note": "Gross deduction is the primary case per instruction. A deferred tax liability sits against the unrealised gain (DTL 97.3 -> 376.0 in H1, +278.7); deducting the stake net of that DTL would cut the deduction to about 1,976 (about JPY -30 per share). Recorded as 要確認 in the Adjustments Log."
+    },
+    {
+      "title": "NWC - work-in-process build: activity (COGS scale) vs days, plus order intake vs sales (J-GAAP)",
+      "headers": ["Item", "FY2024/10 end (7M)", "FY2025/10 end", "Change / derived", "Note"],
+      "formats": ["text", "yen", "yen", "pct", "text"],
+      "rows": [
+        ["Work in process  仕掛品", 1042.1, 1569.5, {"formula": "=D{row}/C{row}-1"}, "+50.6%."],
+        ["COGS run-rate (FY2024/10 = 7M x 12/7)", {"formula": "=1644.9*12/7"}, 3895.1, {"formula": "=D{row}/C{row}-1"}, "Annualising a 7-month period is an approximation (seasonality not removed) - 推定."],
+        ["WIP days (balance / COGS x 365)", {"formula": "=C{r0}/C{r1}*365", "fmt": "int"}, {"formula": "=D{r0}/D{r1}*365", "fmt": "int"}, {"formula": "=D{row}/C{row}-1"}, "Days lengthened about 9%."],
+        ["Check: (1+COGS growth) x (1+days growth) - 1", null, null, {"formula": "=(1+E{r1})*(1+E{r2})-1"}, "Must equal the WIP growth in row 1."],
+        ["WIP increase explained by activity (COGS scale)", null, {"formula": "=C{r0}*E{r1}"}, {"formula": "=D{row}/(D{r0}-C{r0})"}, "Price and volume are inseparable here: COGS growth carries both material-price inflation and unit volume."],
+        ["WIP increase explained by longer days (build-up)", null, {"formula": "=(D{r0}-C{r0})-D{r4}"}, {"formula": "=D{row}/(D{r0}-C{r0})"}, "Ambiguous: for a build-to-order maker a longer WIP cycle can lead orders (mass-production ramp) or signal slippage (customer-supplied parts delayed one H1 FY26 project)."],
+        ["Orders vs sales FY2025/10 (consolidated)", 5588.0, 5787.0, {"formula": "=D{row}/C{row}-1"}, "Orders exceeded sales by 199 -> backlog build."],
+        ["Orders vs sales H1 FY2026 (consolidated)", 3742.9, 4295.0, {"formula": "=D{row}/C{row}-1"}, "Book-to-bill 1.15. E&C segment: orders 3,881 vs sales 3,449.5 (prior-year H1 orders 2,460)."],
+        ["Contract liabilities  契約負債", 30.1, 71.2, {"formula": "=D{row}/C{row}-1"}, "Advances up 2.4x - supports the order-led reading."],
+        ["Trade receivables incl. contract assets", 1325.1, 2065.6, {"formula": "=D{row}/C{row}-1"}, "Unwound in H1 FY26 (IFRS receivables 2,021.2 -> 1,537.8), releasing +489.9 of operating CF."]
+      ],
+      "note": "Verdict (両義判定): activity explains about three quarters of the WIP build and is order-backed (book-to-bill above 1, contract liabilities up). The days component is the part to watch; H1 FY26 inventories already fell 2,752.7 -> 2,573.5 (IFRS), so the build has started to convert."
+    },
+    {
+      "title": "Normalisation bridge - valuation gain and special items removed",
+      "headers": ["Item", "H1 FY2026 IFRS", "FY2026/10E", "Note"],
+      "formats": ["text", "yen", "yen", "text"],
+      "rows": [
+        ["Profit before tax (reported / company-implied)", 2307.9, null, "H1 reported."],
+        ["Operating profit", 751.61, 1236.0, "FY = model estimate 1,236 (H1 actual 751.6 + H2 revenue 3,207.1 x Q2 single OPM 15.1%). Company guidance 事業利益 820 is stale."],
+        ["Less: Addvalue FV gain in finance income", -1595.5, null, "Non-cash; H1 CF adds back 1,594.0."],
+        ["Finance income ex-gain less finance costs", {"formula": "=C{r0}+C{r2}-C{r1}"}, -78.4, "H1 derived. FY = 2 x H1 finance costs 39.2 (推定)."],
+        ["Normalised profit before tax", {"formula": "=C{r1}+C{r3}", "bold": true}, {"formula": "=D{r1}+D{r3}", "bold": true}, "Gain excluded in every period (FY2025/10 J-GAAP special gain 124.4 on securities also excluded)."],
+        ["Normalised tax at 30% (推定・要確認)", {"formula": "=-C{r4}*0.3"}, {"formula": "=-D{r4}*0.3"}, "Reported H1 effective rate 20.6% (475.4 / 2,307.9) is distorted by the deferred tax on the gain."],
+        ["Normalised net profit", {"formula": "=C{r4}+C{r5}", "bold": true, "highlight": true}, {"formula": "=D{r4}+D{r5}", "bold": true, "highlight": true}, "FY2026/10E 810 is the Comps subject Net_Income, core_net_income and the normalized_net_income reference row."],
+        ["Reported profit attributable to owners", 1832.4, 1835.0, "FY = company forecast incl. the after-tax gain."],
+        ["Share of reported profit that is NOT operating", {"formula": "=1-C{r6}/C{r7}", "fmt": "pct"}, {"formula": "=1-D{r6}/D{r7}", "fmt": "pct"}, "About 73% of H1 profit is the Addvalue mark (normalised 499 vs reported 1,832)."],
+        ["Normalised EPS on 9,121,192 shares (JPY)", {"formula": "=C{r6}*1000000/9121192", "fmt": "int"}, {"formula": "=D{r6}*1000000/9121192", "fmt": "int"}, "Reported basic EPS 253.57 used 7,226,437 weighted-average shares - never mix the two share counts."]
+      ],
+      "note": "The EV deducts the Addvalue stake (table 2) and this bridge removes its gain from earnings, so the stake is counted exactly once."
+    },
+    {
+      "title": "Share count reconciliation (price / share basis-date gate, 2026-09-14)",
+      "headers": ["Item", "Shares", "Note"],
+      "formats": ["text", "int", "text"],
+      "rows": [
+        ["Issued shares 2026-04-30", 8912700, "Half-year report S100YBBW."],
+        ["16th series MS warrant, May exercises (completed 2026-05-12)", 104300, "At JPY 764. Series fully exercised, 0 remaining."],
+        ["17th series MS warrant, May exercises (completed 2026-05-18)", 160800, "At JPY 1,070. Series fully exercised, 0 remaining."],
+        ["Other exercises to 2026-06-15 (13th/14th series - 要確認)", {"formula": "=C{r4}-SUM(C{r0}:C{r2})"}, "Residual; proceeds not identified and not added to cash."],
+        ["Issued shares at filing date 2026-06-15", 9182700, "Excludes exercises from 2026-06-01 to the filing date (per the report's own note)."],
+        ["Less treasury shares", -61508, "Per the 2026-05-18 disclosure."],
+        ["Shares used for per-share value", {"formula": "=C{r4}+C{r5}", "bold": true, "highlight": true}, "9,121,192. Weighted-average 7,226,437 (basic EPS) is NOT used."]
+      ],
+      "note": "No stock split: YTD low JPY 696 (2026-01-05), high JPY 2,496 (2026-06-03), 2026-09-11 close JPY 1,526, while shares rose only 3%. The fall from JPY 2,372 (2026-06-04) is a genuine price move; the company's 2026-07-21 letter reports no change to guidance."
+    }
+  ],
+  "notes": [
+    "Electronic & Communication margin: 9.6% (FY2024/10 7M) / 11.4% (FY2025/10) / 13.9% (H1 FY2025) / 26.1% (H1 FY2026) - within-column margins, not a trend line across bases.",
+    "Mid-term plan (2025-12, pre-revision): revenue 7,052 / 8,291 / 9,697 / 11,154 and OP 446 / 761 / 1,071 / 1,419 for FY2027/10-FY2030/10. The revised FY2026/10 guidance (OP 820) already exceeds the FY2028/10 plan.",
+    "Revenue-disaggregation H1 FY2026 vs H1 FY2025 (IFRS both): government 2,089.1 vs 848.2; mobile infrastructure 769.0 vs 693.9; public projects 386.5 vs 376.5; FA/measurement 204.9 vs 336.0."
+  ],
+  "open_items": [
+    ["2026-09-14", "'Segment Bridge' table 1 column F", "Q3 FY2026/10 results (due 2026-09-14) not loaded", "Built before the release; TDnet list at 10:15 JST had no 6838 entry. Type the 9M figures into column F, then update overrides reverse_dcf.peak_op and re-generate.", "-", "未解決"]
+  ]
+}

@@ -1,0 +1,130 @@
+{
+  "ticker": "7202",
+  "company_name": "Isuzu Motors Limited",
+  "_company_name_en": "Isuzu Motors Limited (EDINET-registered English name; JP: いすゞ自動車株式会社)",
+  "sector": "Automobiles (Commercial Vehicles)",
+  "company_type": "C",
+  "_company_type_note": "Type C assessment: Isuzu has captive finance subsidiaries (e.g. Isuzu Financial Services Australia, newly consolidated H1 FY2026/3), but pre-cutoff disclosure is single-segment ('vehicles, parts and industrial engines') with no business/finance P&L split, and finance receivables are a small share of the balance sheet. Captive-finance debt cannot be reliably separated from pre-cutoff filings, so the DCF runs on consolidated figures and net_debt is consolidated interest-bearing debt minus cash -- a conservative Type C approximation (finance debt stays IN net debt). Documented as a design decision; reclassify when Isuzu's IFRS-era segment split (from FY2026/3) matures.",
+  "fiscal_year_end_month": 3,
+  "projection_start_fy": "FY2026",
+  "projection_years": 5,
+
+  "current_price": 2439.5,
+  "_current_price_note": "TSE raw close 2025-12-30 (last trading day of 2025), yfinance history auto_adjust=False, cross-checked vs adjusted close 2391.21 (difference = post-cutoff dividends). Live price NOT used (2025-12-31 information cutoff).",
+  "shares": {
+    "shares_issued": 777442069,
+    "treasury_shares": 87522085,
+    "fully_diluted_shares": 689919984,
+    "unit": "shares"
+  },
+  "_shares_note": "Verification formula: issued 777,442,069 - treasury 87,522,085 = 689,919,984 outstanding. Outstanding total = yfinance get_shares_full last pre-cutoff observation (2025-12-09), reflecting the buyback announced 2025-05-29 (up to 35,000,000 shares / JPY 50,000mn; 14,313,500 acquired by 2025-09-30 per Q2 FY2026/3 tanshin). The issued/treasury split is derived (outstanding subtracted from the last disclosed issued count); totals cross-check against tanshin share data.",
+
+  "hist_years": ["FY2022/3", "FY2023/3", "FY2024/3", "FY2025/3"],
+  "_hist_note": "EDINET annual securities reports (J-GAAP; FY2024/3 figures are the restated basis in the FY2025/3 report: revenue 3,404,633 vs originally-reported 3,386,676, OP 281,641 vs 293,086 -- restatement confirmed by EDINET parse of successive yuho). Isuzu adopts IFRS from FY2026/3, so forecast Year 1 maps to IFRS guidance (revenue 3,300,000 / OP 210,000) while history is J-GAAP; definitional gap documented, not material to margins (<1pt). hist_capex = PP&E acquisitions per cash-flow statement (EDINET); FY2025/3 capex from stockanalysis CF (EDINET parser returned None for that year). hist_debt = interest-bearing debt INCLUDING lease liabilities (yfinance), consistent with the Sep-2025 tanshin disclosure of 801.2bn.",
+  "hist_revenue":          [2514291, 3195537, 3404633, 3235648],
+  "hist_cogs":             [2056104, 2600347, 2709113, 2573346],
+  "hist_sga":              [270989,  341642,  398051,  430265],
+  "hist_operating_income": [187197,  253546,  281641,  229461],
+  "hist_net_income":       [126193,  151743,  168996,  140062],
+  "hist_ocf":              [172056,  227085,  308738,  254059],
+  "hist_capex":            [100325,  107319,  161381,  158816],
+  "hist_cash":             [341713,  358231,  367315,  358711],
+  "hist_debt":             [530478,  513143,  556820,  758843],
+  "hist_depreciation":     [98335,   107255,  115033,  151201],
+
+  "base_year_revenue": 3235648,
+  "base_year_cogs": 2573346,
+  "base_year_ar": 660512,
+  "base_year_inv": 681798,
+  "base_year_ap": 684051,
+  "core_ebitda": 380662,
+  "core_net_income": 140062,
+
+  "ltm_revenue": 3336652,
+  "_ltm_note": "LTM = FY2025/3 annual 3,235,648 - H1 FY2025/3 cumulative 1,536,305 + H1 FY2026/3 cumulative 1,637,309 (Q2 tanshin 2025-11-12) = 3,336,652. Auto-built LTM neutralized because the pipeline's yfinance enrichment uses post-cutoff quarters.",
+  "stub_months_elapsed": 6,
+  "stub_fraction": 0.5,
+
+  "net_debt": 400132,
+  "_net_debt_note": "Consolidated: interest-bearing debt incl. leases 758,843 (yfinance, FY2025/3) - cash & equivalents 358,711 = 400,132 (net debt, positive). Type C approximation: finance-backed debt NOT separable from pre-cutoff filings, so it stays in net_debt (conservative). Cross-check: Q2 FY2026/3 tanshin shows interest-bearing debt 801.2bn at 2025-09-30.",
+
+  "risk_free": 0.0207,
+  "_risk_free_note": "10Y JGB yield ~2.07% on 2025-12-30 (MOF Japan historical data; Tradeweb December-2025 month-end close 2.07%).",
+  "beta": 0.555,
+  "_beta_note": "Raw regression beta: 2-year weekly returns vs Nikkei 225, window ending 2025-12-31 (n=109). Template applies Blume adjustment (0.67*raw+0.33 -> ~0.70).",
+  "erp": 0.060,
+  "size_premium": 0.0,
+  "_size_premium_note": "Market cap at 2025-12-30: 2439.5 x 689,919,984 = JPY 1,683bn >> 1tn -> 0.0 per template brackets.",
+  "cost_of_debt_at": 0.010,
+  "tax_rate": 0.30,
+
+  "terminal_growth": 0.010,
+  "exit_multiple": 6.0,
+  "_exit_note": "EV/EBITDA exit 6.0x: Japanese OEM/truck peer set at 2025-12-30 trades ~4-7x consolidated EV/EBITDA; Isuzu's commercial-vehicle franchise (higher aftermarket share) supports mid-pack. Set independently of the 7203 reference model.",
+
+  "capex_method": "revenue_pct",
+  "capex_pct": 0.049,
+  "_capex_note": "Hist capex/revenue: FY2023/3 3.4%, FY2024/3 4.7%, FY2025/3 4.9%. 4.9% reflects the CV capacity/electrification investment phase; terminal capex/D&A = 0.049/0.047 = 1.04 (within 0.90-1.15).",
+  "da_method": "revenue_pct",
+  "da_pct": 0.047,
+
+  "nwc_method": "days",
+  "scenarios": {
+    "Base": {
+      "_note": "Central estimate: FY2026 OP margin ~6.4% (tariff year, guidance-consistent), recovering to ~7.3% by FY2028 as Thai LCV demand normalizes and price/mix offsets costs.",
+      "revenue_growth": [0.020, 0.030, 0.030, 0.025, 0.020],
+      "cogs_pct":       [0.800, 0.795, 0.792, 0.790, 0.790],
+      "sga_pct":        [0.136, 0.135, 0.135, 0.134, 0.134],
+      "dso_days":       [75, 75, 74, 74, 74],
+      "dih_days":       [97, 96, 95, 95, 95],
+      "dpo_days":       [97, 97, 97, 97, 97]
+    },
+    "Upside": {
+      "_note": "Thai LCV recovery + North America CV cycle upswing + FX tailwind; OPM toward FY2024/3 restated peak (~8.3%).",
+      "revenue_growth": [0.035, 0.045, 0.040, 0.030, 0.025],
+      "cogs_pct":       [0.795, 0.788, 0.784, 0.782, 0.782],
+      "sga_pct":        [0.135, 0.133, 0.132, 0.132, 0.132],
+      "dso_days":       [74, 74, 73, 73, 73],
+      "dih_days":       [95, 93, 92, 92, 92],
+      "dpo_days":       [98, 98, 98, 98, 98]
+    },
+    "Management": {
+      "_note": "Y1 = company guidance issued 2025-05-14, maintained at Q2 (2025-11-12): revenue 3,300,000 (+2.0%), OP 210,000 (implied OPM 6.4%, tariff impact -16,000 baked in). Y2+ fade to a conservative recovery.",
+      "revenue_growth": [0.0199, 0.025, 0.025, 0.020, 0.020],
+      "cogs_pct":       [0.801, 0.797, 0.794, 0.792, 0.792],
+      "sga_pct":        [0.135, 0.135, 0.135, 0.134, 0.134],
+      "dso_days":       [75, 75, 75, 74, 74],
+      "dih_days":       [97, 96, 96, 95, 95],
+      "dpo_days":       [97, 97, 97, 97, 97]
+    },
+    "Downside 1": {
+      "_note": "Tariffs persist + Thai demand stays weak + strong yen: flat revenue, OPM stuck at ~5.5%.",
+      "revenue_growth": [0.000, 0.010, 0.010, 0.010, 0.005],
+      "cogs_pct":       [0.810, 0.808, 0.805, 0.805, 0.805],
+      "sga_pct":        [0.138, 0.138, 0.137, 0.137, 0.137],
+      "dso_days":       [77, 77, 76, 76, 76],
+      "dih_days":       [100, 99, 98, 98, 98],
+      "dpo_days":       [95, 95, 96, 96, 96]
+    },
+    "Downside 2": {
+      "_note": "Global CV recession + yen appreciation to mid-130s: revenue declines, OPM to ~4% (below FY2022/3 level ex-COVID-recovery).",
+      "revenue_growth": [-0.030, -0.010, 0.000, 0.005, 0.005],
+      "cogs_pct":       [0.825, 0.822, 0.818, 0.815, 0.815],
+      "sga_pct":        [0.140, 0.140, 0.139, 0.139, 0.139],
+      "dso_days":       [79, 79, 78, 78, 78],
+      "dih_days":       [104, 103, 101, 100, 100],
+      "dpo_days":       [93, 93, 94, 94, 94]
+    }
+  },
+
+  "investment_thesis": [
+    "1. Commercial-vehicle franchise with a visible tariff-year floor. Guidance maintained all year at OP JPY 210bn despite a disclosed JPY 16bn tariff headwind, and the model's DCF mid of {target_price} sits {upside_pct} versus the {price} close, with the PGM leg anchored by mid-cycle truck margins rather than peak earnings.",
+    "2. Balance sheet supports the cycle. Even on a consolidated (finance-inclusive) net debt basis, leverage is modest against ~JPY 380bn of EBITDA, funding the IFRS-era growth capex and the ongoing JPY 50bn buyback without stressing the payout.",
+    "3. Thailand LCV and Middle East CV demand are the swing factors; the CV upcycle in emerging markets plus parts/aftersales (a growing share of revenue) gives margin resilience that the market's ~{per} PER does not fully price."
+  ],
+  "key_risks": [
+    "1. FX and tariff persistence: an extended strong-yen / US-tariff regime maps to the Downside 2 path (OPM ~4%), well below the FY2024/3 restated ~8.3% level.",
+    "2. Thailand LCV market structural weakness; a failure of the FY2026 recovery to materialize keeps revenue flat and compresses working-capital efficiency.",
+    "3. Type C approximation: captive-finance debt is not separable in pre-cutoff filings, so net debt is conservative (finance debt included) while finance profits remain in the DCF flows; directionally prudent but approximate."
+  ]
+}

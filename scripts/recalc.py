@@ -4,10 +4,14 @@ Parses formulas and checks for common errors without a full Excel engine.
 """
 
 import openpyxl
+import os
 import re
 import sys
 
-WORKBOOK = r"<HOME>\Core_Corporation_2359T_Equity_Research.xlsx"
+# 検査対象は引数で渡す。既定値は環境変数 RECALC_WORKBOOK。
+# 以前ここには旧PCのホーム直下の絶対パスが直書きされていたが、PC移行
+# (2026-09-09) で行き先が消えた。マシン固有のパスをコードに残さない。
+WORKBOOK = os.environ.get("RECALC_WORKBOOK", "")
 
 def check_workbook(path):
     wb = openpyxl.load_workbook(path)
@@ -144,4 +148,6 @@ def check_workbook(path):
 
 if __name__ == "__main__":
     path = sys.argv[1] if len(sys.argv) > 1 else WORKBOOK
+    if not path:
+        sys.exit("usage: recalc.py <workbook.xlsx>  (または環境変数 RECALC_WORKBOOK)")
     sys.exit(check_workbook(path))
