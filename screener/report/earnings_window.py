@@ -391,6 +391,8 @@ def main(argv=None):
     p.add_argument("--scored-only", action="store_true", help="週次CSVに行がある銘柄だけ出す")
     p.add_argument("--all-universe", action="store_true", help="universe_flag=0 も含める")
     p.add_argument("--fetch-jpx", action="store_true", help="JPX 一覧を取得して終了")
+    p.add_argument("--fetch-from", help="決算サマリーの取得開始日（--fetch-jquants と併用）")
+    p.add_argument("--fetch-to", help="決算サマリーの取得終了日（--fetch-jquants と併用）")
     p.add_argument("--fetch-jquants", action="store_true",
                    help="前年同期と当期既発表の判定に要る J-Quants 日次データを取得して終了")
     a = p.parse_args(argv)
@@ -403,6 +405,17 @@ def main(argv=None):
         fetch_jpx()
         return 0
     if a.fetch_jquants:
+        # 既定は「窓の前年同期（−400〜−330日）」と「直近40日」。**--from/--to は窓の指定であって
+        # 取得範囲ではない**（2026-09-20、これを取り違えて別の期間を埋めてしまった）。
+        # 任意の期間を埋めたいときは --fetch-from/--fetch-to を明示する。
+        if a.fetch_from or a.fetch_to:
+            f0 = date.fromisoformat(a.fetch_from) if a.fetch_from else as_of - timedelta(days=40)
+            f1 = date.fromisoformat(a.fetch_to) if a.fetch_to else as_of
+            C.log("J-Quants 決算サマリー: 指定された期間 %s 〜 %s を取得する" % (f0, f1))
+            fetch_jquants(f0, f1)
+            return 0
+        C.log("J-Quants 決算サマリー: 前年同期 %s 〜 %s と 直近40日を取得する"
+              % (lo - timedelta(days=400), hi - timedelta(days=330)))
         fetch_jquants(lo - timedelta(days=400), hi - timedelta(days=330))
         fetch_jquants(as_of - timedelta(days=40), as_of)
         return 0
