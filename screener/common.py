@@ -320,6 +320,37 @@ def finish_run(con, run_id: int, status: str, **kw) -> None:
     con.commit()
 
 
+def verify_range(label: str, start, end, have_days, weekdays_only: bool = True,
+                 log_missing: int = 8) -> dict:
+    """**取得のあとに「頼んだ範囲が実際に埋まったか」を突き合わせる。**
+
+    2026-09 までに「完了した」と報告した取得が、実際には意図した範囲を埋めて
+    いなかった事故が3件あった:
+      1. 待機ループが自分のコマンドラインに一致して空転（2026-09-18）
+      2. 部分取得の日を ok と記録（2026-09-13 / 株価では 2026-09-20 に再発）
+      3. `--fetch-jquants` が --from/--to を窓と解釈し別の期間を埋めた（2026-09-21）
+    3件とも「実行は成功した」が「意図した範囲は埋まっていない」型である。
+    取得側が自分で突合し、**欠けを数えて返す**（呼び出し側はそれをログと終了コードに出す）。
+
+    have_days は「実際に入っている日」の集合（文字列 YYYY-MM-DD でも date でも可）。
+    戻り値: {"requested": n, "present": n, "missing": [...], "ok": bool}
+    """
+    have = {d if isinstance(d, str) else d.isoformat() for d in have_days}
+    want, d = [], start
+    while d <= end:
+        if not (weekdays_only and d.weekday() >= 5):
+            want.append(d.isoformat())
+        d += timedelta(days=1)
+    missing = [x for x in want if x not in have]
+    log(f"{label}: 要求 {start}..{end} = {len(want)} 日 / 実際に入っている "
+        f"{len(want) - len(missing)} 日 / 欠け {len(missing)} 日")
+    if missing:
+        head = ", ".join(missing[:log_missing])
+        log(f"  ! 欠け: {head}{' …' if len(missing) > log_missing else ''}")
+    return {"requested": len(want), "present": len(want) - len(missing),
+            "missing": missing, "ok": not missing}
+
+
 def missing_days(con, source: str, start: date, end: date,
                  weekdays_only: bool = True) -> list[str]:
     """Days in [start, end] with no successful fetch_runs row.

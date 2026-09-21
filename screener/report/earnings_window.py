@@ -166,6 +166,9 @@ def fetch_jquants(start, end, cache_dir=JQ_CACHE):
             n_new += 1
         d += timedelta(days=1)
     C.log("J-Quants fins/summary: %d 日ぶん新規取得 -> %s" % (n_new, cache_dir))
+    # **頼んだ範囲が実際に埋まったか**を、ファイルの有無で突き合わせる（§53）。
+    have = {os.path.basename(f)[:-5] for f in glob.glob(os.path.join(cache_dir, "*.json"))}
+    C.verify_range("決算サマリーのキャッシュ", start, end, have)
 
 
 # ------------------------------------------------------------------ 読み込み

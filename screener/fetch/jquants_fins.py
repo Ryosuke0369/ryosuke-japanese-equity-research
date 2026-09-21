@@ -87,6 +87,14 @@ def to_row(r: dict, fetched_at: str):
     return tuple(vals)
 
 
+def _weekdays(start, end):
+    d = start
+    while d <= end:
+        if d.weekday() < 5:
+            yield d.isoformat()
+        d += timedelta(days=1)
+
+
 def covered_days(con) -> set:
     return {r[0] for r in con.execute("SELECT DISTINCT disc_date FROM fins_summary")}
 
@@ -188,8 +196,19 @@ def main(argv=None) -> int:
     run_id = C.start_run(con, SOURCE, end.isoformat())
     try:
         st = backfill(con, fetcher, start, end, a.force)
-        C.finish_run(con, run_id, "ok", n_saved=st["rows"],
-                     note="fins summary %d days" % st["days"])
+        # **頼んだ範囲が実際に埋まったかを突き合わせる**（common.verify_range・§53）。
+        # 市場休場日も「欠け」に出るので、TOPIX のある日（＝営業日）だけを要求とみなす。
+        cal = {r[0] for r in con.execute(
+            "SELECT date FROM market_index WHERE date BETWEEN ? AND ?",
+            (start.isoformat(), end.isoformat()))}
+        got = covered_days(con)
+        v = C.verify_range("決算サマリー", start, end,
+                           got | ({d for d in _weekdays(start, end)} - cal))
+        C.finish_run(con, run_id, "ok" if v["ok"] else "incomplete", n_saved=st["rows"],
+                     note="fins summary %d days / 欠け %d" % (st["days"], len(v["missing"])))
+        if not v["ok"]:
+            report(con)
+            return 1
     except Exception as e:
         C.finish_run(con, run_id, "failed", error=str(e)[:400])
         raise

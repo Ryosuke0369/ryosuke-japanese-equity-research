@@ -313,7 +313,16 @@ def main(argv=None) -> int:
             note = f"prices {r['days']} days"
             if r.get("skipped"):
                 note += f" / {r['skipped']} 日は契約範囲外"
-            C.finish_run(con, run_id, "ok", n_saved=r["rows"], note=note)
+            # 取得後の突合（§53）。契約範囲外として飛ばした日と休場日は要求から外す。
+            cal = {x[0] for x in con.execute(
+                "SELECT date FROM market_index WHERE date BETWEEN ? AND ?",
+                (start.isoformat(), end.isoformat()))}
+            have = covered_days(con) | {d.isoformat() for d in _days(start, end)
+                                        if d.isoformat() not in cal}
+            v = C.verify_range("日次株価", start, end, have)
+            note += " / 欠け %d" % len(v["missing"])
+            C.finish_run(con, run_id, "ok" if v["ok"] else "incomplete",
+                         n_saved=r["rows"], note=note)
         if a.topix:
             r = backfill_topix(con, fetcher, start, end)
             C.finish_run(con, run_id, "ok", n_saved=r["rows"], note="topix")
