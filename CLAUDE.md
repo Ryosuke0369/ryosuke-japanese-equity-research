@@ -337,6 +337,12 @@ if not v["ok"]:                                          # {"requested", "presen
 - **追跡する**: コード・設定 JSON・docs・自作の分析成果物（`models/` `reports/` の xlsx / PDF）
 - **成果物に取得単価・保有・売買の記録を書かない。** market_analysis の `entry_price` はコミットしない
   （2359 のデモ値は 2026-09-21 にマスク済み）。ローカル絶対パスは `%USERPROFILE%` / `.env` に外出しする
+- **push ガード `scripts/hooks/pre-push`**（クローンごとに `git config core.hooksPath scripts/hooks` で有効化）。
+  止めるもの: `backup/*` と `scripts/hooks/local_only_branches.txt` のブランチ / 送る履歴で上記の追跡しない種類の
+  ファイルを追加するコミット / API キーの実値・ユーザー名入り絶対パスを足す行 / 100MB 超。
+  2026-09-21 の履歴書き換え前のローカルブランチ（screener-signal-fixes-20260918 ほか）は内容検査だけでも止まる。
+  さらに各ローカル専用ブランチに `branch.<name>.pushRemote=DO-NOT-PUSH` を設定済み（引数なし push が失敗する）。
+  止められたら中身を直す。`--no-verify` は使わない
 
 ### 既知の落とし穴（再発防止）
 

@@ -1,0 +1,6 @@
+# pre-push が名前で止めるローカル専用ブランチ（1行1つ。backup/* は常に止まる）。
+# 2026-09-21 の履歴書き換え前の内容（yfinance キャッシュ・ログ・CSV）を持つもの。
+screener-signal-fixes-20260918
+screener-false-positive-20260913
+screener-universe-mktcap3000-20260919
+phase2-pipeline-fixes-20260906

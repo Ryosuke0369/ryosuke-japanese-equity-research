@@ -1,0 +1,79 @@
+#!/bin/sh
+# pre-push — 公開リポジトリに出してはいけないものを push 前に止める（2026-09-21 導入）。
+#
+# 有効化（クローンごとに1回）:  git config core.hooksPath scripts/hooks
+#
+# 止めるもの:
+#   1. ローカル専用ブランチ: backup/* と scripts/hooks/local_only_branches.txt に書いた名前
+#   2. 送る履歴に、追跡しない種類のファイルを追加・変更するコミットがある
+#      （CSV・ログ・DB・zip・.env・yfinance キャッシュ・data/comps/ など。CLAUDE.md §7 の境界）
+#   3. 送る履歴に、API キーの実値やユーザー名入りのローカル絶対パスを足す行がある
+#   4. 100MB 超のファイル
+# 2 と 3 はブランチ名に関係なく効く。履歴を書き換える前の古いブランチも、ここで止まる。
+#
+# 止められたら: 中身を直すのが先。どうしても通す必要があるときだけ `git push --no-verify`。
+
+remote="$1"
+zero=0000000000000000000000000000000000000000
+hookdir=$(dirname "$0")
+list="$hookdir/local_only_branches.txt"
+status=0
+
+forbidden_paths='(\.(csv|log|zip|db|db-wal|db-shm|sqlite|sqlite3)$)|(^|/)\.env$|(^|/)\.env\.(?!example$)[^/]+$|^batch/(cache|draft)/|^batch/analysis_all\.txt$|^batch/(logs|probe)_[^/]*\.txt$|^data/comps/|^screener/data/|^\.claude/settings\.local\.json$'
+allowed_paths='^templates/comps_input_template\.csv$'
+secret_lines='^\+(?!\+\+).*((EDINET|JQUANTS)_API_KEY\s*=\s*[A-Za-z0-9]|[A-Za-z]:\\\\Users\\\\[^\\\\%$<]+\\\\|/[cC]/Users/[^/]+/|[A-Za-z]:/Users/[^/]+/)'
+
+fail() {
+    echo "pre-push: 拒否 — $1" >&2
+    status=1
+}
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+    [ "$local_sha" = "$zero" ] && continue          # リモートブランチの削除は止めない
+    branch=${local_ref#refs/heads/}
+
+    # 1. ローカル専用ブランチ
+    case "$branch" in
+        backup/*) fail "$branch はローカル専用（backup/*）"; continue ;;
+    esac
+    if [ -f "$list" ] && grep -vE '^\s*(#|$)' "$list" | tr -d '\r' | grep -qxF "$branch"; then
+        fail "$branch はローカル専用（$list）"
+        continue
+    fi
+
+    # 送る範囲: リモートが既に持っているコミットは除く
+    if [ "$remote_sha" = "$zero" ]; then
+        range="$local_sha --not --remotes=$remote"
+    else
+        range="$remote_sha..$local_sha"
+    fi
+
+    # 2. 追跡しない種類のファイル
+    bad=$(git log --format= --name-only --diff-filter=AMR $range 2>/dev/null \
+          | grep -v '^$' | sort -u | grep -P "$forbidden_paths" | grep -vP "$allowed_paths")
+    if [ -n "$bad" ]; then
+        n=$(printf '%s\n' "$bad" | wc -l | tr -d ' ')
+        fail "$branch の履歴が追跡しない種類のファイルを $n 件含む（CLAUDE.md §7）"
+        printf '%s\n' "$bad" | head -10 | sed 's/^/    /' >&2
+        continue
+    fi
+
+    # 3. API キーの実値・ユーザー名入りのローカル絶対パス
+    leak=$(git log -p --text --format= $range 2>/dev/null | grep -aP "$secret_lines" | head -5)
+    if [ -n "$leak" ]; then
+        fail "$branch の履歴に API キーまたはローカル絶対パスを足す行がある"
+        printf '%s\n' "$leak" | cut -c1-160 | sed 's/^/    /' >&2
+        continue
+    fi
+
+    # 4. 100MB 超
+    big=$(git rev-list --objects $range 2>/dev/null \
+          | git cat-file --batch-check='%(objecttype) %(objectsize) %(rest)' \
+          | awk '$1=="blob" && $2>104857600 {print "    " $2 " " $3}')
+    if [ -n "$big" ]; then
+        fail "$branch に 100MB 超のファイルがある"
+        printf '%s\n' "$big" >&2
+    fi
+done
+
+exit $status
